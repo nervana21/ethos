@@ -1,0 +1,24 @@
+[meta]
+updated = "2026-01-06"
+
+[projects]
+
+# Corpus projects
+bdk = { type = "upstream", origin = "https://github.com/bitcoindevkit/bdk" }
+bips = { type = "upstream", origin = "https://github.com/bitcoin/bips" }
+bitcoin = { type = "upstream", origin = "https://github.com/bitcoin/bitcoin" }
+bitcoind-async-client = { type = "upstream", origin = "https://github.com/alpenlabs/bitcoind-async-client" }
+book-of-bdk = { type = "upstream", origin = "https://github.com/bitcoindevkit/book-of-bdk" }
+btcd = { type = "upstream", origin = "https://github.com/btcsuite/btcd" }
+core-lightning = { type = "upstream", origin = "https://github.com/ElementsProject/lightning" }
+corepc = { type = "upstream", origin = "https://github.com/rust-bitcoin/corepc" }
+eclair = { type = "upstream", origin = "https://github.com/ACINQ/eclair" }
+electrsd = { type = "upstream", origin = "https://github.com/RCasatta/electrsd" }
+fuzzamoto = { type = "upstream", origin = "https://github.com/dergoegge/fuzzamoto" }
+lnd = { type = "upstream", origin = "https://github.com/lightningnetwork/lnd" }
+rust-bitcoin = { type = "upstream", origin = "https://github.com/rust-bitcoin/rust-bitcoin" }
+rust-bitcoincore-rpc = { type = "upstream", origin = "https://github.com/rust-bitcoin/rust-bitcoincore-rpc" }
+rust-bitcoinkernel = { type = "upstream", origin = "https://github.com/sedited/rust-bitcoinkernel" }
+rust-lightning = { type = "upstream", origin = "https://github.com/lightningdevkit/rust-lightning" }
+rust-payjoin = { type = "upstream", origin = "https://github.com/payjoin/rust-payjoin" }
+swiftsync = { type = "upstream", origin = "https://github.com/2140-dev/swiftsync" }

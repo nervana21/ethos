@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# === Ethos git hook shim ===
+#
+# This hook is intentionally minimal and delegates to `prek`, which is
+# configured via the repository-level `.pre-commit-config.yaml`.
+#
+# Recommended setup:
+#   1. Install prek (for example on macOS/Linux):
+#        brew install prek
+#   2. Install git hooks:
+#        prek install
+#
+# After that, `.git/hooks/pre-commit` will be managed directly by `prek`.
+# This file remains as a fallback shim for environments that still call it.
+
+set -euo pipefail
+
+if command -v prek >/dev/null 2>&1; then
+  exec prek run
+else
+  echo "prek is not installed or not on PATH." >&2
+  echo "Install it (e.g., 'brew install prek') and run 'prek install'." >&2
+  exit 1
+fi

@@ -1,0 +1,56 @@
+name: Lint
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+env:
+  CARGO_TERM_COLOR: always
+
+permissions: {}
+
+jobs:
+  clippy:
+    name: Run clippy
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
+      - run: cargo clippy --all-features --all-targets --locked
+        env:
+          RUSTFLAGS: -D warnings
+
+  fmt:
+    name: Check formatting
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - name: Read nightly version
+        id: read_nightly
+        run: echo "nightly_version=$(cat nightly-version)" >> $GITHUB_OUTPUT
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          toolchain: ${{ steps.read_nightly.outputs.nightly_version }}
+          components: rustfmt
+      - run: cargo fmt --all --check
+
+  taplo:
+    name: Check TOML formatting
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install taplo
+        run: |
+          curl -fsSL https://github.com/tamasfe/taplo/releases/latest/download/taplo-full-linux-x86_64.gz \
+            | gzip -d - | install -m 755 /dev/stdin /usr/local/bin/taplo
+      - name: Run taplo lint
+        run: taplo lint
+      - name: Run taplo format check
+        run: taplo fmt --check
