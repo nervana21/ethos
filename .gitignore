@@ -1,0 +1,39 @@
+# Compiled outputs and generated files
+mutants.out/
+outputs/
+target/
+
+# Rust artifacts
+**/*.rs.bk
+
+# Project-specific
+.DS_Store
+*.sh
+*.patch
+*.py
+
+# Fuzzing corpus and artifacts
+**/fuzz/corpus/
+**/fuzz/artifacts/
+**/fuzz/target/
+**/corpus/
+**/crashes/
+**/fuzz_targets/
+
+# Log files (project-specific)
+*.log
+logs/
+fuzz-logs/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# editor backups
+*~
+*-e
+*.swp
+*.swo
+/corpus/

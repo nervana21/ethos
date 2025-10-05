@@ -1,0 +1,46 @@
+[package]
+name = "ethos"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.70"
+description = "Ethos — A meta-compiler for the Bitcoin Protocol"
+readme = "README.md"
+license = "CC0-1.0"
+repository = "https://github.com/nervana21/ethos"
+homepage = "https://github.com/nervana21/ethos"
+documentation = "https://github.com/nervana21/ethos#readme"
+keywords = ["bitcoin", "compiler", "codegen", "dsl"]
+categories = ["development-tools::build-utilities", "cryptography::cryptocurrencies"]
+
+[features]
+default = ["std"]
+std = []
+
+[workspace]
+members = [
+    "adapters",
+    "backends/codegen",
+    "backends/http",
+    "cli/orchestrator",
+    "compiler/analysis",
+    "compiler/codegen",
+    "compiler/config",
+    "compiler/fuzzctl",
+    "compiler/logging",
+    "compiler/pipeline",
+    "compiler/semantics",
+    "primitives/*",
+]
+exclude = [
+    "corpus/",
+]
+resolver = "2"
+
+[workspace.package]
+description = "Ethos — A meta-compiler for the Bitcoin Protocol"
+edition = "2021"
+license = "CC0-1.0"
+version = "0.1.0"
+
+[workspace.dependencies]
+bitcoin = { version = "0.32.8", features = ["serde"] }
