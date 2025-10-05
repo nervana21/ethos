@@ -1,0 +1,39 @@
+%%{init: {'theme': 'neutral',
+          'themeVariables': { 'primaryColor': '#ffffff', 'fontSize': '13px' }}}%%
+flowchart LR
+
+classDef ethos fill:#fae9e8,stroke:#b74f4f,stroke-width:2px,color:#000
+classDef core fill:#e8faf1,stroke:#3ca977,color:#000
+classDef impl fill:#f3f1fb,stroke:#786bb3,color:#000
+classDef output fill:#e6fafa,stroke:#4fb7b7,color:#000
+classDef feedback fill:#fffbe8,stroke:#b7a24f,color:#000
+
+%% === Simplified Ethos Flow ===
+subgraph INPUTS["Protocol Sources"]
+direction LR
+bitcoin["Bitcoin Implementation"]:::impl
+lightning["Lightning Implementation"]:::impl
+end
+
+subgraph CORE["Ethos Compiler"]
+direction LR
+parse["Parse & Model<br/>(Implementation → IR)"]:::core
+analyze["Analyze & Verify<br/>(Rules · Invariants)"]:::ethos
+generate["Generate Code<br/>(Rust Clients · Docs)"]:::core
+end
+
+subgraph OUTPUTS["Outputs"]
+direction LR
+clients["Client Libraries<br/>· RPC Wrappers<br/>· Artifacts"]:::output
+end
+
+subgraph FEEDBACK["Learning Loop"]
+direction TB
+fuzz["Differential Fuzzing"]:::feedback
+refine["Refine Model"]:::feedback
+end
+
+bitcoin --> parse
+lightning --> parse
+parse --> analyze --> generate --> clients
+clients --> fuzz --> refine --> parse

@@ -1,0 +1,23 @@
+name: Prek checks
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  prek:
+    name: Run prek hooks
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Install prek
+        run: cargo install prek
+
+      - name: Run prek on all files
+        run: prek run --all-files
