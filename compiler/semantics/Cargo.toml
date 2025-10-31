@@ -1,0 +1,8 @@
+[package]
+name = "ethos-semantics"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+ir = { package = "ethos-ir", version = "0.1.0", path = "../../primitives/ir" }
+thiserror = "2.0.17"
