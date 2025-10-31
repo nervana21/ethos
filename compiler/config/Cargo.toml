@@ -1,0 +1,15 @@
+[package]
+name = "ethos-config"
+version = "0.1.0"
+license = "CC0-1.0"
+edition = "2021"
+
+[dependencies]
+bitcoin = { version = "0.32.8", features = ["serde"] }
+dirs = "6.0.0"
+serde = { version = "1.0", features = ["derive"] }
+thiserror = "2.0.17"
+toml = "0.9.7"
+
+[dev-dependencies]
+tempfile = "3.8"
