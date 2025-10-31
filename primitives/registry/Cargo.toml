@@ -1,0 +1,17 @@
+[package]
+name = "ethos-registry"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "registry"
+path = "src/lib.rs"
+
+[dependencies]
+ir = { package = "ethos-ir", version = "0.1.0", path = "../ir" }
+logging = { package = "ethos-logging", version = "0.1.0", path = "../../compiler/logging" }
+path = { package = "ethos-path", version = "0.1.0", path = "../path" }
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.145"
+thiserror = "2.0.17"
+types = { package = "ethos-types", version = "0.1.0", path = "../types" }
