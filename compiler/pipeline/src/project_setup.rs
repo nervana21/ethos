@@ -1,0 +1,255 @@
+//! Project setup and metadata generation for the pipeline.
+//!
+//! This module handles project scaffolding, Cargo.toml generation, README creation,
+//! and other project metadata files.
+
+use std::fs;
+use std::path::Path;
+
+use types::{Implementation, ProtocolVersion};
+
+use crate::PipelineError;
+use path::find_project_root;
+
+/// Setup project files (Cargo.toml, README, license, .gitignore)
+///
+/// # Arguments
+///
+/// * `crate_root` - Path to the crate root directory
+/// * `target_version` - The target protocol version
+/// * `artifact_name` - The artifact name for the generated crate
+///
+/// # Returns
+///
+/// Returns `Result<()>` indicating success or failure
+pub fn setup_project_files(
+    crate_root: &Path,
+    target_version: &ProtocolVersion,
+    artifact_name: Implementation,
+) -> Result<(), PipelineError> {
+    write_cargo_toml(crate_root, target_version, artifact_name)?;
+
+    let gitignore_path = crate_root.join(".gitignore");
+    fs::write(&gitignore_path, "/target\n/Cargo.lock\n")?;
+
+    write_readme(crate_root, target_version, artifact_name)?;
+    write_license(crate_root)?;
+
+    Ok(())
+}
+
+/// Write the Cargo.toml file for the generated crate
+///
+/// # Arguments
+///
+/// * `root` - The root directory of the generated crate
+/// * `target_version` - The implementation version being targeted
+/// * `artifact_name` - The artifact name for the generated crate (e.g., "bitcoin-core", "lightning")
+///
+/// # Returns
+///
+/// Returns `Result<()>` indicating success or failure of writing the Cargo.toml file
+pub fn write_cargo_toml(
+    root: &Path,
+    target_version: &ProtocolVersion,
+    artifact_name: Implementation,
+) -> Result<(), PipelineError> {
+    let version = target_version.crate_version();
+    let protocol_version = target_version.as_str().trim_start_matches('v');
+
+    // Use the full crate name format to match directory naming
+    let version_clean = target_version.as_str().replace('v', "").replace('.', "-");
+    let crate_name = format!("{}-client-rpc-{}", artifact_name.crate_name(), version_clean);
+
+    // Calculate the correct relative paths to the ethos root
+    let project_root = find_project_root().map_err(|e| PipelineError::Message(e.to_string()))?;
+    let relative_to_root = pathdiff::diff_paths(&project_root, root).ok_or_else(|| {
+        PipelineError::Message("Could not calculate relative path to project root".to_string())
+    })?;
+
+    let types_path = format!("{}/primitives/types", relative_to_root.to_string_lossy());
+    let transport_path = format!("{}/primitives/transport", relative_to_root.to_string_lossy());
+    let http_path = format!("{}/backends/http", relative_to_root.to_string_lossy());
+
+    let toml = format!(
+        r#"[workspace]
+
+[package]
+publish = true
+
+name = "{}"
+version = "{}"
+edition = "2021"
+authors = ["Ethos Core Developers"]
+license = "MIT OR Apache-2.0"
+description = "Generated client for {} v{}."
+readme = "README.md"
+keywords = ["bitcoin", "protocol", "compiler", "integration-testing"]
+categories = ["cryptography", "data-structures", "api-bindings"]
+repository = "https://github.com/nervana21/ethos"
+homepage = "https://github.com/nervana21/ethos"
+documentation = "https://docs.rs/ethos"
+
+[dependencies]
+async-trait = "0.1.89"
+bitcoin = {{ version = "0.32.8", features = ["rand", "serde"] }}
+ethos-types = {{ path = "{}" }}
+ethos-transport = {{ path = "{}" }}
+ethos-http = {{ path = "{}" }}
+reqwest = {{ version = "0.12.26", default-features = false, features = [
+    "json",
+    "rustls-tls",
+] }}
+serde = {{ version = "1.0", features = ["derive"] }}
+serde_json = {{ version = "1.0.145", features = ["preserve_order"] }}
+tempfile = "3.8.2"
+thiserror = "2.0.12"
+tokio = {{ version = "1", features = ["full"] }}
+tracing = "0.1.39"
+
+[features]
+serde-deny-unknown-fields = []
+"#,
+        crate_name,
+        version,
+        artifact_name.as_str(),
+        protocol_version,
+        types_path,
+        transport_path,
+        http_path
+    );
+
+    fs::write(root.join("Cargo.toml"), toml)?;
+    Ok(())
+}
+
+/// Write the README.md file for the generated crate
+///
+/// # Arguments
+///
+/// * `root` - The root directory of the generated crate
+/// * `target_version` - The implementation version being targeted
+/// * `artifact_name` - The artifact name for the generated crate (e.g., "bitcoin-core", "lightning")
+///
+/// # Returns
+///
+/// Returns `Result<()>` indicating success or failure of writing the README.md file
+pub fn write_readme(
+    root: &Path,
+    target_version: &ProtocolVersion,
+    artifact_name: Implementation,
+) -> Result<(), PipelineError> {
+    let _version = target_version.crate_version();
+    let crate_name = artifact_name.crate_name().to_string();
+
+    // Determine protocol-specific content
+    let protocol_name = artifact_name.display_name();
+    let executable_name = artifact_name.executable_name();
+    let test_client_name = artifact_name.test_client_prefix();
+    let example_method = artifact_name.example_method();
+    let example_description = artifact_name.example_description();
+
+    let readme = format!(
+        r#"# {crate_name}
+
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+[![Docs.rs](https://img.shields.io/docsrs/{crate_name})](https://docs.rs/{crate_name})
+[![crates.io](https://img.shields.io/crates/v/{crate_name})](https://crates.io/crates/{crate_name})
+
+Type-safe Rust client for {protocol_name} v{version} RPCs, supporting integration testing with locally-started nodes. Generated by the ethos toolchain.
+
+## Why Use This?
+
+This client aims to provide:
+- Less repetitive boilerplate
+- Easier upgrades across protocol versions
+- Compile-time type checks for RPC requests/responses
+- Managed integration testing (spawns protocol daemons as subprocesses, handles ports)
+
+## Project Structure
+
+- `client_trait/`: Rust traits for {protocol_name} RPC endpoints
+- `node/`: Node manager for process orchestration in integration environments
+- `{crate_name}_clients/`: Utilities for driving integration tests against spawned local nodes
+- `transport/`: Async transport layer with batching and error handling
+- `types/`: Typed response structs and enums for all RPC methods
+
+## Example
+
+This async example (using [Tokio](https://tokio.rs)) demonstrates integration testing with a spawned node:
+
+```toml
+[dependencies]
+{crate_name} = "{version}"
+tokio = {{ version = "1", features = ["full"] }}
+```
+
+```rust
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {{
+    let manager = crate::node::BitcoinNodeManager::new()?;
+    manager.start().await?;
+    let transport = manager.create_transport().await?;
+    let client = crate::{test_client_name}::new(transport);
+    let result = client.{example_method}().await?;
+    println!("{example_description}: {{:?}}", result);
+    manager.stop().await?;
+    Ok(())
+}}
+```
+
+## Requirements
+Requires a working `{executable_name}` (`bitcoind`, `lightningd`, etc.) in `$PATH`.
+
+## About
+This crate is generated by [ethos](https://github.com/nervana21/ethos). Its code is kept synchronized with upstream protocol changes through code generation.
+
+## Contributing
+See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## License
+Ethos is released under the terms of the MIT license. See [LICENSE](LICENSE) for details.
+
+## Security
+This library launches {protocol_name} daemons for local integration testing. For real network use, use strong network/firewall controls and carefully audit all dependencies.
+"#,
+        crate_name = crate_name,
+        protocol_name = protocol_name,
+        version = target_version.crate_version(),
+        executable_name = executable_name,
+        test_client_name = test_client_name,
+        example_method = example_method,
+        example_description = example_description
+    );
+
+    fs::write(root.join("README.md"), readme)?;
+    Ok(())
+}
+
+/// Write the LICENSE.md file for the generated crate
+pub fn write_license(root: &Path) -> Result<(), PipelineError> {
+    let license = r#"MIT License
+
+Copyright (c) 2025 ethos
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE."#;
+
+    fs::write(root.join("LICENSE.md"), license)?;
+    Ok(())
+}
