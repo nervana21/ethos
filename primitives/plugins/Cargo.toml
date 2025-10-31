@@ -1,0 +1,9 @@
+[package]
+name = "ethos-plugins"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+ir = { package = "ethos-ir", version = "0.1.0", path = "../ir" }
+types = { package = "ethos-types", version = "0.1.0", path = "../types" }
+serde = { version = "1.0", features = ["derive"] }
