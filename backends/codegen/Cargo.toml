@@ -1,0 +1,11 @@
+[package]
+name = "ethos-backend-codegen"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+ir = { package = "ethos-ir", version = "0.1.0", path = "../../primitives/ir" }
+types = { package = "ethos-types", version = "0.1.0", path = "../../primitives/types" }
+serde = { version = "1.0", features = ["derive"] }
+chrono = { version = "0.4", features = ["serde"] }
+thiserror = "2.0.17"
