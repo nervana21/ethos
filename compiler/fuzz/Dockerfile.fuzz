@@ -1,0 +1,18 @@
+# Dockerfile.fuzz
+FROM rust:1.80-bullseye
+
+# System deps for building Rust + common crates
+RUN apt-get update && apt-get install -y \
+    clang lld llvm-dev pkg-config libssl-dev zlib1g-dev cmake git ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
+
+# Preinstall nightly toolchain and cargo-fuzz so runs are fast and linking is stable
+RUN rustup toolchain install nightly && rustup component add rust-src --toolchain nightly
+RUN rustup default nightly
+RUN cargo install cargo-fuzz
+
+# Cache-friendly envs
+ENV CARGO_HOME=/usr/local/cargo
+ENV RUSTUP_HOME=/usr/local/rustup
+
+WORKDIR /work

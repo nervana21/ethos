@@ -1,0 +1,107 @@
+# Bitcoin RPC Fuzzing - Justfile
+# Provides commands for running fuzzing tests with Docker
+
+# Default recipe - show available commands
+default:
+    @just --list
+
+# Build fuzzing targets
+build:
+    cargo build --release
+
+# Build with fuzz features
+build-fuzz:
+    cargo build --release --features fuzz
+
+# Run fuzzing for a specific target and duration
+fuzz-duration target duration="1h":
+    @echo "Running fuzz target '{{target}}' for {{duration}}"
+    @bash -lc 'DUR={{duration}}; case "$DUR" in *h) SECS=$(( ${DUR%h} * 3600 )) ;; *m) SECS=$(( ${DUR%m} * 60 )) ;; *s) SECS=$(( ${DUR%s} )) ;; *) SECS=$DUR ;; esac; export FUZZ_TARGET={{target}} SECS; docker-compose run --rm fuzz bash -c "cd /work/compiler/fuzz && cargo fuzz run {{target}} -- -max_total_time=${SECS}"'
+
+# Quick fuzzing runs
+fuzz-1m target:
+    @just fuzz-duration {{target}} 1m
+
+fuzz-5m target:
+    @just fuzz-duration {{target}} 5m
+
+fuzz-1h target:
+    @just fuzz-duration {{target}} 1h
+
+fuzz-2h target:
+    @just fuzz-duration {{target}} 2h
+
+fuzz-6h target:
+    @just fuzz-duration {{target}} 6h
+
+# Generate corpus
+codegen:
+    @echo "Generating fuzzing corpus..."
+    cargo run --release --bin main -- corpus-gen
+
+# Run all fuzz targets for 7 seconds each (compile once, run all)
+fuzz-all:
+    @echo "Running all fuzz targets for 7 seconds each..."
+    @echo "=== Compiling fuzz targets once ==="
+    docker-compose run --rm fuzz bash -c "cd /work/compiler/fuzz && cargo fuzz build && mkdir -p fuzz/corpus/_smoke_empty"
+    @echo "=== Fuzzing schema ==="
+    @export FUZZ_TARGET=schema && docker-compose run --rm fuzz bash -c "cd /work/compiler/fuzz && cargo fuzz run schema fuzz/corpus/_smoke_empty -- -max_total_time=7 -runs=10000"
+    @echo "=== Fuzzing rpc ==="
+    @export FUZZ_TARGET=rpc && docker-compose run --rm fuzz bash -c "cd /work/compiler/fuzz && cargo fuzz run rpc fuzz/corpus/_smoke_empty -- -max_total_time=7 -runs=10000"
+    @echo "=== Fuzzing transport ==="
+    @export FUZZ_TARGET=transport && docker-compose run --rm fuzz bash -c "cd /work/compiler/fuzz && cargo fuzz run transport fuzz/corpus/_smoke_empty -- -max_total_time=7 -runs=10000"
+    @echo "✅ All fuzz targets completed!"
+
+# Check fuzzing status
+status:
+    @echo "Fuzzing status:"
+    @echo "Corpus entries:"
+    @find ../../outputs/generated/fuzz/bitcoin_core/corpus -name "*.json" | wc -l
+    @echo "Crash inputs:"
+    @find ../../outputs/generated/fuzz/bitcoin_core/crashes -name "*.json" | wc -l
+
+# Clean fuzzing artifacts
+clean:
+    @echo "Cleaning fuzzing artifacts..."
+    rm -rf ../../outputs/generated/fuzz/bitcoin_core/corpus/* ../../outputs/generated/fuzz/bitcoin_core/crashes/* target/debug target/release
+
+# Docker-based fuzzing (recommended)
+docker-fuzz target duration="1h":
+    @just fuzz-duration {{target}} {{duration}}
+
+# Pipeline generation (orthogonal to fuzzing)
+pipeline-generate:
+    @echo "Generating Lightning client code with pipeline..."
+    docker-compose --profile pipeline up --build pipeline-generate
+
+# Differential fuzzing (uses generated code from pipeline)
+differential-fuzz:
+    @echo "Running differential fuzzing with Docker (uses generated code)..."
+    docker-compose --profile differential up --build differential-fuzz
+
+# Differential fuzzing with custom duration
+differential-fuzz-duration duration="1h":
+    @echo "Running differential fuzzing for {{duration}}..."
+    @export FUZZ_DURATION={{duration}} && \
+     docker-compose --profile differential run --rm differential-fuzz
+
+# Full workflow: generate code, then fuzz
+full-workflow:
+    @echo "🔄 Full workflow: Generate code, then run differential fuzzing..."
+    @echo "Step 1: Generating Lightning client code..."
+    docker-compose --profile pipeline up --build pipeline-generate
+    @echo "Step 2: Running differential fuzzing on generated code..."
+    docker-compose --profile differential up --build differential-fuzz
+
+# Examples
+examples:
+    @echo "Examples:"
+    @echo "  just fuzz-duration schema 1h"
+    @echo "  just fuzz-1h rpc"
+    @echo "  just fuzz-all"
+    @echo "  just codegen"
+    @echo "  just docker-fuzz transport 2h"
+    @echo "  just pipeline-generate"
+    @echo "  just differential-fuzz"
+    @echo "  just differential-fuzz-duration 2h"
+    @echo "  just full-workflow"

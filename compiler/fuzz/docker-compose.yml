@@ -1,0 +1,227 @@
+services:
+
+  bitcoind:
+    image: bitcoin/bitcoin:30.0
+    command: bitcoind -regtest -rpcallowip=0.0.0.0/0 -rpcbind=0.0.0.0:18443 -rpcuser=user -rpcpassword=pass -fallbackfee=0.00001 -server -zmqpubrawblock=tcp://0.0.0.0:28332 -zmqpubrawtx=tcp://0.0.0.0:28333
+    ports:
+      - "18443:18443"
+      - "28332:28332"  # ZMQ raw block
+      - "28333:28333"  # ZMQ raw tx
+    volumes:
+      - bitcoind_data:/root/.bitcoin
+    mem_limit: 1g
+    networks: [ethos]
+    healthcheck:
+      test: ["CMD", "bitcoin-cli", "-regtest", "-rpcuser=user", "-rpcpassword=pass", "getblockchaininfo"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  core-lightning:
+    image: elementsproject/lightningd:latest
+    environment:
+      - LIGHTNINGD_NETWORK=regtest
+      - BITCOIND_RPCUSER=user
+      - BITCOIND_RPCPASSWORD=pass
+      - BITCOIND_RPCCONNECT=bitcoind
+      - BITCOIND_RPCPORT=18443
+      - LIGHTNINGD_LOG_LEVEL=debug
+      - LIGHTNINGD_LOG_FILE=/root/.lightning/debug.log
+    ports:
+      - "9835:9835"  # Core Lightning RPC port
+    volumes:
+      - cln_data:/root/.lightning
+      - ./core-lightning-config:/root/.lightning/config
+    networks: [ethos]
+    depends_on:
+      bitcoind:
+        condition: service_healthy
+    restart: unless-stopped
+    mem_limit: 512m
+    healthcheck:
+      test: ["CMD", "lightning-cli", "--lightning-dir=/root/.lightning", "getinfo"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  rust-lightning-harness:
+    build:
+      context: ../../../ethos/rust-lightning-harness
+      dockerfile: Dockerfile
+    ports:
+      - "9836:9836"  # Rust-Lightning Harness port
+    environment:
+      - RUST_LIGHTNING_HARNESS_PORT=9836
+      - RUST_LOG=info
+    networks: [ethos]
+    depends_on:
+      - bitcoind
+    mem_limit: 256m
+    # healthcheck:
+    #   test: ["CMD", "sh", "-c", "echo 'GET /health HTTP/1.1\r\nHost: localhost\r\n\r\n' | timeout 5 cat > /dev/tcp/localhost/9836 || exit 1"]
+    #   interval: 10s
+    #   timeout: 5s
+    #   retries: 5
+    #   start_period: 30s
+
+  lnd:
+    image: lightninglabs/lnd:v0.18.0-beta
+    command: ["lnd", "--bitcoin.active", "--bitcoin.regtest", "--bitcoin.node=bitcoind", "--bitcoind.rpchost=bitcoind", "--bitcoind.rpcuser=user", "--bitcoind.rpcpass=pass", "--bitcoind.zmqpubrawblock=tcp://bitcoind:28332", "--bitcoind.zmqpubrawtx=tcp://bitcoind:28333", "--rpclisten=0.0.0.0:10009", "--restlisten=0.0.0.0:8080", "--debuglevel=debug"]
+    environment:
+      - LND_CHAIN=bitcoin
+      - LND_NETWORK=regtest
+    ports:
+      - "10009:10009" # gRPC
+      - "8080:8080"   # REST
+    volumes:
+      - lnd_data:/root/.lnd
+    networks: [ethos]
+    depends_on:
+      bitcoind:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-s", "http://localhost:8080/v1/getinfo"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    mem_limit: 512m
+
+  fuzz:
+    build:
+      context: .
+      dockerfile: Dockerfile.fuzz
+    image: bitcoin-rpc-fuzz:latest
+    working_dir: /work/compiler/fuzz
+    volumes:
+      - ../../:/work
+      - corpus_data:${FUZZ_CORPUS_PATH:-/work/outputs/generated/fuzz/${FUZZ_TARGET:-transport}/corpus}
+      - crashes_data:${FUZZ_CRASHES_PATH:-/work/outputs/generated/fuzz/${FUZZ_TARGET:-transport}/crashes}
+    environment:
+      - RUST_BACKTRACE=1
+      - RUST_LOG=info
+      - BITCOIND_RPC_URL=http://bitcoind:18443
+      - BITCOIND_RPC_USER=user
+      - BITCOIND_RPC_PASS=pass
+      - CLN_RPC_SOCKET=/root/.lightning/regtest/lightning-rpc
+      - FUZZ_TARGET=${FUZZ_TARGET:-differential}
+      - FUZZ_SEED=${FUZZ_SEED:-42}
+      - ARTIFACT_DIR=/corpus_data/crashes
+    command: tail -f /dev/null
+    networks: [ethos]
+    depends_on:
+      - bitcoind
+      - core-lightning
+    tmpfs:
+      - /tmp:rw,size=1g
+    mem_limit: 2g
+
+  fuzz-target:
+    extends: fuzz
+    command: /bin/sh -lc "/usr/local/cargo/bin/cargo fuzz run ${FUZZ_TARGET:-transport}"
+    profiles: ["fuzz"]
+
+  regtest-init:
+    image: bitcoin/bitcoin:30.0
+    command: ["/bin/bash", "-c", "apt-get update && apt-get install -y curl jq && curl -s -u user:pass -X POST -H 'Content-Type: application/json' -d '{\"jsonrpc\":\"2.0\",\"method\":\"getblockchaininfo\",\"id\":1}' http://bitcoind:18443 && echo 'Regtest ready'"]
+    depends_on:
+      - bitcoind
+    profiles: ["fuzzamoto"]
+
+  fuzz-runner:
+    extends: fuzz
+    command: ./target/release/main stdin-run
+    profiles: ["fuzzamoto"]
+    depends_on:
+      regtest-init:
+        condition: service_completed_successfully
+
+  fuzzamoto-harness:
+    extends: fuzz
+    command: cargo run --release --bin main -- stdin-run --verbose
+    profiles: ["fuzzamoto"]
+    depends_on:
+      regtest-init:
+        condition: service_completed_successfully
+
+  # Pipeline generation (orthogonal to fuzzing)
+  pipeline-generate:
+    extends: fuzz
+    command: /bin/sh -lc "cd /work && cargo run --bin ethos-compiler -- pipeline"
+    profiles: ["pipeline"]
+    environment:
+      - RUST_BACKTRACE=1
+      - RUST_LOG=info
+
+  # Differential fuzzing (uses generated code from pipeline)
+  differential-fuzz:
+    build:
+      context: .
+      dockerfile: Dockerfile.fuzz
+    image: bitcoin-rpc-fuzz:latest
+    working_dir: /work/compiler/fuzz
+    volumes:
+      - ../../:/work
+      - corpus_data:${FUZZ_CORPUS_PATH:-/work/outputs/generated/fuzz/${FUZZ_TARGET:-transport}/corpus}
+      - crashes_data:${FUZZ_CRASHES_PATH:-/work/outputs/generated/fuzz/${FUZZ_TARGET:-transport}/crashes}
+      - cln_data:/root/.lightning
+      - lnd_data:/root/.lnd
+    command: /bin/sh -lc "echo 'Starting fuzzer immediately...' && cd /work/compiler/fuzz && /usr/local/cargo/bin/cargo fuzz run differential -- -max_total_time=1h"
+    profiles: ["differential"]
+    networks: [ethos]
+    depends_on:
+      bitcoind:
+        condition: service_healthy
+      core-lightning:
+        condition: service_healthy
+      rust-lightning-harness:
+        condition: service_started
+      lnd:
+        condition: service_healthy
+    environment:
+      - RUST_BACKTRACE=1
+      - RUST_LOG=debug
+      - BITCOIND_RPC_URL=http://bitcoind:18443
+      - BITCOIND_RPC_USER=user
+      - BITCOIND_RPC_PASS=pass
+      - CLN_RPC_SOCKET=/root/.lightning/regtest/lightning-rpc
+      - CLN_RPC_TIMEOUT_MS=10000
+      - CLN_RPC_MAX_RETRIES=5
+      - CLN_RPC_RETRY_DELAY_MS=2000
+      - RUST_LIGHTNING_URL=http://rust-lightning-harness:9836
+      - LND_RPC_URL=http://lnd:8080
+      - LND_MACAROON_PATH=/root/.lnd/data/chain/bitcoin/regtest/admin.macaroon
+      - LND_CERT_PATH=/root/.lnd/tls.cert
+      - LND_RPC_TIMEOUT_MS=10000
+      - LND_RPC_MAX_RETRIES=5
+      - LND_RPC_RETRY_DELAY_MS=2000
+      - FUZZ_TARGET=differential
+      - FUZZ_SEED=${FUZZ_SEED:-42}
+      - ARTIFACT_DIR=/corpus_data/crashes
+      - ETHOS_FUZZ=1
+      - ETHOS_DIFFERENTIAL=1
+      - DEBUG_DOCKER=1
+      - DEBUG_CORE_LIGHTNING=1
+    tmpfs:
+      - /tmp:rw,size=1g
+    mem_limit: 2g
+
+networks:
+  ethos:
+    driver: bridge
+  default:
+    driver: bridge
+
+volumes:
+  corpus_data:
+    driver: local
+  crashes_data:
+    driver: local
+  bitcoind_data:
+    driver: local
+  cln_data:
+    driver: local
+  lnd_data:
+    driver: local
