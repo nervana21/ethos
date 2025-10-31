@@ -1,0 +1,16 @@
+[package]
+name = "ethos-ir"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "ethos_ir"
+path = "src/lib.rs"
+
+[dependencies]
+chrono = { version = "0.4", features = ["clock", "serde"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0.145"
+
+[dev-dependencies]
+tempfile = "3.0"
