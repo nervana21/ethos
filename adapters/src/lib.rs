@@ -57,25 +57,25 @@ pub use fuzz_types::{
 };
 
 /// Type alias for Bitcoin Core RPC adapter
-pub type BitcoinCoreRpcSchemaAdapter = RpcAdapter;
+pub type BitcoinCoreRpcAdapter = RpcAdapter;
 
 /// Type alias for Core Lightning RPC adapter
-pub type CoreLightningRpcSchemaAdapter = RpcAdapter;
+pub type CoreLightningRpcAdapter = RpcAdapter;
 
 /// Type alias for LND RPC adapter
-pub type LndRpcSchemaAdapter = RpcAdapter;
+pub type LndRpcAdapter = RpcAdapter;
 
 /// Trait for Lightning network adapters
 pub trait LightningAdapter: LightningProtocolAdapter {}
 
-/// Protocol-agnostic trait for loading schemas from different Bitcoin dialects
-pub trait SchemaAdapter {
-	/// Load a schema from the given path and convert it to Protocol IR
-	fn load_schema(&self, path: &Path) -> ProtocolAdapterResult<ProtocolIR>;
+/// Protocol-agnostic trait for loading IR from different Bitcoin protocol implementations
+pub trait IrLoader {
+	/// Load Protocol IR from the given path
+	fn load_ir(&self, path: &Path) -> ProtocolAdapterResult<ProtocolIR>;
 }
 
-impl<T: ProtocolAdapter> SchemaAdapter for T {
-	fn load_schema(&self, path: &Path) -> ProtocolAdapterResult<ProtocolIR> {
+impl<T: ProtocolAdapter> IrLoader for T {
+	fn load_ir(&self, path: &Path) -> ProtocolAdapterResult<ProtocolIR> {
 		self.extract_protocol_ir(path)
 	}
 }
