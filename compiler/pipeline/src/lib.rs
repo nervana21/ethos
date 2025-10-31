@@ -13,7 +13,6 @@
 //! The pipeline is organized into focused modules:
 //!
 //! - `orchestration` - Main pipeline entry points (`run`, `run_all`)
-//! - `path_utils` - Path and registry utility functions
 //! - `project_setup` - Project scaffolding and metadata generation
 //! - `schema_processing` - Schema loading and normalization
 //! - `template_management` - Template file operations
@@ -64,7 +63,6 @@ pub mod feature_aware_mod;
 pub mod generation_context;
 pub mod module_generators;
 pub mod orchestration;
-pub mod path_utils;
 pub mod project_setup;
 pub mod protocol_compiler;
 pub mod template_management;
