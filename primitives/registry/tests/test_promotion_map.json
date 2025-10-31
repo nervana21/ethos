@@ -1,0 +1,6 @@
+{
+  "TxInput": "TransactionInput",
+  "TxOutput": "TransactionOutput",
+  "BlockHash": "Hash",
+  "TxId": "Hash"
+}
