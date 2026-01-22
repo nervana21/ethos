@@ -31,16 +31,15 @@ impl VersionedTypeGenerator for BitcoinCoreVersionedGenerator {
     }
 
     fn supports_version(&self, version: &ProtocolVersion) -> bool {
-        let version_str = version.as_str();
-        // Check that version string starts with 'v' prefix and parse the version number
-        // This matches the original behavior: "v30.1.0" -> "30.1.0" -> 30.1
-        if let Some(version_num) = version_str.strip_prefix('v') {
-            // Parse as float to get major.minor (e.g., "30.1.0" -> 30.1, "20.0.0" -> 20.0)
-            if let Ok(version_float) = version_num.parse::<f64>() {
-                return (17.0..=30.0).contains(&version_float);
-            }
+        // Support versions 17.0 and above
+        if version.major < 17 {
+            return false;
         }
-        false
+        // Exclude versions 30.0.x and 30.1.x
+        if version.major == 30 && version.minor < 2 {
+            return false;
+        }
+        true
     }
 
     fn implementation(&self) -> &'static str { "bitcoin_core" }

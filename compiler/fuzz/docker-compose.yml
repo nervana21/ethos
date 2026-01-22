@@ -1,7 +1,7 @@
 services:
 
   bitcoind:
-    image: bitcoin/bitcoin:30.0
+    image: bitcoin/bitcoin:30.2
     command: bitcoind -regtest -rpcallowip=0.0.0.0/0 -rpcbind=0.0.0.0:18443 -rpcuser=user -rpcpassword=pass -fallbackfee=0.00001 -server -zmqpubrawblock=tcp://0.0.0.0:28332 -zmqpubrawtx=tcp://0.0.0.0:28333
     ports:
       - "18443:18443"
@@ -124,7 +124,7 @@ services:
     profiles: ["fuzz"]
 
   regtest-init:
-    image: bitcoin/bitcoin:30.0
+    image: bitcoin/bitcoin:30.2
     command: ["/bin/bash", "-c", "apt-get update && apt-get install -y curl jq && curl -s -u user:pass -X POST -H 'Content-Type: application/json' -d '{\"jsonrpc\":\"2.0\",\"method\":\"getblockchaininfo\",\"id\":1}' http://bitcoind:18443 && echo 'Regtest ready'"]
     depends_on:
       - bitcoind

@@ -96,14 +96,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "bitcoin-core-client-rpc-30-0-0"
-version = "30.0.0"
+name = "bitcoin-core-client-rpc-30-2-0"
+version = "30.2.0"
 dependencies = [
  "async-trait",
  "bitcoin",
- "ethos-http",
- "ethos-transport",
- "ethos-types",
  "reqwest",
  "serde",
  "serde_json",
@@ -304,7 +301,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "bitcoin",
- "bitcoin-core-client-rpc-30-0-0",
+ "bitcoin-core-client-rpc-30-2-0",
  "core-lightning-client-rpc-25-09-1",
  "ethos-transport",
  "serde",
