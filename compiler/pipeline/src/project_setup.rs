@@ -93,9 +93,6 @@ documentation = "https://docs.rs/ethos"
 [dependencies]
 async-trait = "0.1.89"
 bitcoin = {{ version = "0.32.8", features = ["rand", "serde"] }}
-ethos-types = {{ path = "{}" }}
-ethos-transport = {{ path = "{}" }}
-ethos-http = {{ path = "{}" }}
 reqwest = {{ version = "0.12.26", default-features = false, features = [
     "json",
     "rustls-tls",
@@ -114,9 +111,6 @@ serde-deny-unknown-fields = []
         version,
         artifact_name.as_str(),
         protocol_version,
-        types_path,
-        transport_path,
-        http_path
     );
 
     fs::write(root.join("Cargo.toml"), toml)?;

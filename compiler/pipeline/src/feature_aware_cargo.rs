@@ -59,7 +59,6 @@ documentation = "https://docs.rs/ethos-spec"
         r#"[dependencies]
 async-trait = "0.1.89"
 bitcoin = { version = "0.32.8", features = ["rand", "serde"] }
-http = { package = "ethos-http", path = "../../../backends/http" }
 reqwest = { version = "0.12.26", default-features = false, features = [
     "json",
     "rustls-tls",
@@ -70,8 +69,6 @@ tempfile = "3.23.0"
 thiserror = "2.0.17"
 tokio = { version = "1", features = ["full"] }
 tracing = "0.1.41"
-transport = { package = "ethos-transport", path = "../../../primitives/transport" }
-types = { package = "ethos-types", path = "../../../primitives/types" }
 
 "#,
     );

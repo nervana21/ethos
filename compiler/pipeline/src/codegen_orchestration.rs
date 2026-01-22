@@ -10,7 +10,6 @@ use std::sync::{Arc, Mutex, OnceLock};
 use analysis::{CompilerContext, CompilerPhase, SemanticAnalyzer};
 use codegen::generators::version_specific_response_type::set_external_symbol_recorder;
 use codegen::generators::versioned_registry::VersionedGeneratorRegistry;
-use codegen::namespace_scaffolder::ModuleGenerator as NamespaceModuleGenerator;
 use ir::ProtocolIR;
 use types::{Implementation, ProtocolVersion};
 
@@ -23,7 +22,7 @@ use crate::module_generators::test_node::TestNodeModuleGenerator;
 use crate::module_generators::transport::TransportModuleGenerator;
 use crate::module_generators::ModuleGenerator;
 use crate::template_management::copy_templates_to;
-use crate::{feature_aware_cargo, feature_aware_mod, PipelineError};
+use crate::{feature_aware_cargo, PipelineError};
 
 // Bridge from generators back into the pipeline's shared collector (safe, no unsafe)
 static EXTERNAL_COLLECTOR: OnceLock<Mutex<Option<Arc<UsedExternalSymbols>>>> = OnceLock::new();
@@ -132,10 +131,5 @@ pub fn generate_into(out_dir: &Path, compiler_ctx: &CompilerContext) -> Result<(
 
     let crate_name = format!("{}-client-rpc-{}", implementation.crate_name(), version.identifier());
     feature_aware_cargo::generate_cargo_toml(out_dir, &ctx.rpc_methods, &crate_name, &version)?;
-    feature_aware_mod::generate_methods_mod_rs(out_dir, &ctx.rpc_methods)?;
-    feature_aware_mod::generate_responses_mod_rs(out_dir, &ctx.rpc_methods)?;
-    feature_aware_mod::generate_category_modules(out_dir, &ctx.rpc_methods, ctx.implementation)?;
-
-    NamespaceModuleGenerator::new(vec![version.clone()], out_dir.to_path_buf()).generate_all()?;
     Ok(())
 }
