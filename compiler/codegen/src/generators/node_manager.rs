@@ -263,7 +263,13 @@ impl {} {{"#,
 
         // Handle automatic port selection
         let rpc_port = if config.rpc_port == 0 {{
-            crate::transport::get_random_free_port()?
+            // Get a random free port by binding to 127.0.0.1:0
+            // The listener is dropped at the end of the block, freeing the port
+            let port = {{
+                let listener = std::net::TcpListener::bind("127.0.0.1:0")?;
+                listener.local_addr()?.port()
+            }};
+            port
         }} else {{
             config.rpc_port
         }};"#
@@ -572,8 +578,12 @@ fn generate_unix_start_logic(code: &mut String, metadata: &types::node_metadata:
             return Ok(());
         }}
 
-        // Find available port for lightningd
-        let port = crate::transport::get_random_free_port()?;
+        // Find available port for lightningd by binding to 127.0.0.1:0
+        // The listener is dropped at the end of the block, freeing the port
+        let port = {{
+            let listener = std::net::TcpListener::bind("127.0.0.1:0")?;
+            listener.local_addr()?.port()
+        }};
 
         let mut cmd = Command::new("{}");
         cmd.arg("--network=regtest")
