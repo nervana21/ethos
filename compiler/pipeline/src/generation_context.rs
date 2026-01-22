@@ -51,10 +51,9 @@ impl GenerationContext {
     /// Get the artifact name (crate name without version)
     pub fn artifact_name(&self) -> String { self.implementation.crate_name().to_string() }
 
-    /// Get the full crate name with version
+    /// Gets the full published crate name
     pub fn full_crate_name(&self) -> String {
-        let version_clean = self.versioned_registry.version().identifier();
-        format!("{}-client-rpc-{}", self.artifact_name(), version_clean)
+        self.implementation.published_crate_name().to_string()
     }
 
     /// Get the transport protocol for this implementation

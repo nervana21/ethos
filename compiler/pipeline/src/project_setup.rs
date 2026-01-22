@@ -9,7 +9,6 @@ use std::path::Path;
 use types::{Implementation, ProtocolVersion};
 
 use crate::PipelineError;
-use path::find_project_root;
 
 /// Setup project files (Cargo.toml, README, license, .gitignore)
 ///
@@ -57,20 +56,8 @@ pub fn write_cargo_toml(
     let version = target_version.crate_version();
     let protocol_version = target_version.as_str().trim_start_matches('v');
 
-    // Use the full crate name format to match directory naming
-    let version_clean = target_version.as_str().replace('v', "").replace('.', "-");
-    let crate_name = format!("{}-client-rpc-{}", artifact_name.crate_name(), version_clean);
-
-    // Calculate the correct relative paths to the ethos root
-    let project_root = find_project_root().map_err(|e| PipelineError::Message(e.to_string()))?;
-    let relative_to_root = pathdiff::diff_paths(&project_root, root).ok_or_else(|| {
-        PipelineError::Message("Could not calculate relative path to project root".to_string())
-    })?;
-
-    let types_path = format!("{}/primitives/types", relative_to_root.to_string_lossy());
-    let transport_path = format!("{}/primitives/transport", relative_to_root.to_string_lossy());
-    let http_path = format!("{}/backends/http", relative_to_root.to_string_lossy());
-
+    // Use hardcoded published crate name
+    let crate_name = artifact_name.published_crate_name();
     let toml = format!(
         r#"[workspace]
 
@@ -88,7 +75,7 @@ keywords = ["bitcoin", "protocol", "compiler", "integration-testing"]
 categories = ["cryptography", "data-structures", "api-bindings"]
 repository = "https://github.com/nervana21/ethos"
 homepage = "https://github.com/nervana21/ethos"
-documentation = "https://docs.rs/ethos"
+documentation = "https://docs.rs/{}"
 
 [dependencies]
 async-trait = "0.1.89"
@@ -111,6 +98,7 @@ serde-deny-unknown-fields = []
         version,
         artifact_name.as_str(),
         protocol_version,
+        crate_name,
     );
 
     fs::write(root.join("Cargo.toml"), toml)?;
@@ -134,7 +122,7 @@ pub fn write_readme(
     artifact_name: Implementation,
 ) -> Result<(), PipelineError> {
     let _version = target_version.crate_version();
-    let crate_name = artifact_name.crate_name().to_string();
+    let crate_name = artifact_name.published_crate_name();
 
     // Determine protocol-specific content
     let protocol_name = artifact_name.display_name();
