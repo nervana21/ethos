@@ -6,7 +6,6 @@ edition = "2021"
 
 [dependencies]
 adapters = { package = "ethos-adapters", version = "0.1.0", path = "../../adapters" }
-logging = { package = "ethos-logging", version = "0.1.0", path = "../logging" }
 ir = { package = "ethos-ir", version = "0.1.0", path = "../../primitives/ir" }
 semantics = { package = "ethos-semantics", version = "0.1.0", path = "../semantics" }
 lazy_static = "1.4.0"
