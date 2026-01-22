@@ -1,0 +1,12 @@
+[package]
+name = "ethos-path"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "ethos_path"
+path = "src/lib.rs"
+
+[dependencies]
+serde_json = "1.0.145"
+types = { package = "ethos-types", version = "0.1.0", path = "../types" }
