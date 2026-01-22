@@ -17,6 +17,8 @@ use ir::ProtocolIR;
 
 /// Bitcoin Core type definitions and utilities
 pub mod bitcoin_core {
+    /// Bitcoin Core schema converter (raw schema.json -> ProtocolIR)
+    pub mod schema;
     /// Bitcoin Core type definitions and utilities
     pub mod types;
 }
