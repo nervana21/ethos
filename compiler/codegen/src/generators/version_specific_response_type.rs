@@ -583,20 +583,25 @@ impl VersionSpecificResponseTypeGenerator {
         writeln!(buf, "            }}")?;
         writeln!(buf)?;
         // Handle string case (when verbose=false)
-        writeln!(buf, "            fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>")?;
+        // Find the txid field (or first field) to populate from string
+        let txid_field = if let Some(fields) = &result.fields {
+            fields.iter().find(|f| f.name == "txid" || f.name.contains("txid"))
+        } else {
+            None
+        };
+        let param_name = if txid_field.is_some() { "v" } else { "_v" };
+        writeln!(buf, "            fn visit_str<E>(self, {}: &str) -> Result<Self::Value, E>", param_name)?;
         writeln!(buf, "            where")?;
         writeln!(buf, "                E: de::Error,")?;
         writeln!(buf, "            {{")?;
-        // Find the txid field (or first field) to populate from string
         if let Some(fields) = &result.fields {
-            let txid_field = fields.iter().find(|f| f.name == "txid" || f.name.contains("txid"));
             if let Some(field) = txid_field {
                 let field_name = self.sanitize_field_name(&field.name);
                 let field_type = self.map_ir_type_to_rust(&field.field_type, &field.name);
                 writeln!(
                     buf,
-                    "                let {} = {}::from_str(v).map_err(de::Error::custom)?;",
-                    field_name, field_type
+                    "                let {} = {}::from_str({}).map_err(de::Error::custom)?;",
+                    field_name, field_type, param_name
                 )?;
                 writeln!(buf, "                Ok({} {{", struct_name)?;
                 for f in fields {
