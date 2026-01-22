@@ -90,16 +90,14 @@ pub fn compile_from_ir(
     version: &ProtocolVersion,
     crate_root: Option<PathBuf>,
 ) -> Result<(), PipelineError> {
-    let artifact_name = implementation.crate_name();
-
     let crate_root = match crate_root {
         Some(path) => path,
         None => {
             let project_root = find_project_root().map_err(|e| PipelineError::Message(e.to_string()))?;
-            // Use canonical ProtocolVersion formatting for version-specific naming
+            // Use {published_crate_name}-{version} format for directory naming
             let version_clean = version.identifier();
             let generated_path = project_root
-                .join(format!("outputs/generated/{}-client-rpc-{}", artifact_name, version_clean));
+                .join(format!("outputs/generated/{}-{}", implementation.published_crate_name(), version_clean));
             generated_path
         }
     };

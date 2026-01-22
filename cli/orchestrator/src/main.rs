@@ -142,7 +142,7 @@ async fn main() {
             }
         };
 
-        // Determine project output directory: outputs/generated/{impl}-client-rpc-{version}
+        // Determine project output directory: outputs/generated/{published_crate_name}-{version}
         let project_root = match path::find_project_root() {
             Ok(root) => root,
             Err(e) => {
@@ -151,8 +151,8 @@ async fn main() {
             }
         };
         let crate_dir = project_root.join(format!(
-            "outputs/generated/{}-client-rpc-{}",
-            implementation.crate_name(),
+            "outputs/generated/{}-{}",
+            implementation.published_crate_name(),
             protocol_version.identifier()
         ));
         if crate_dir.exists() {
