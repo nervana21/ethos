@@ -215,6 +215,16 @@ impl Implementation {
     /// Get the example method description for documentation.
     pub fn example_description(&self) -> &'static str { self.metadata().example_description }
 
+    /// Get the published crate name for this implementation (e.g., "ethos-bitcoind").
+    pub fn published_crate_name(&self) -> &'static str {
+        match self {
+            Implementation::BitcoinCore => "ethos-bitcoind",
+            Implementation::CoreLightning => "ethos-core-lightning",
+            Implementation::Lnd => "ethos-lnd",
+            Implementation::RustLightning => "ethos-rust-lightning",
+        }
+    }
+
     /// Get node metadata for this implementation
     pub fn node_metadata(&self) -> crate::node_metadata::NodeMetadata {
         match self {

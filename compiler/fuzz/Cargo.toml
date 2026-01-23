@@ -19,7 +19,6 @@ serde_json = "1.0.149"
 sha2 = "0.10"
 thiserror = "2.0.17"
 tokio = { version = "1.49.0", features = ["rt", "rt-multi-thread", "macros"] }
-transport = { package = "ethos-transport", path = "../../primitives/transport" }
 types = { package = "ethos-types", path = "../../primitives/types" }
 
 

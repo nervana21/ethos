@@ -142,7 +142,7 @@ async fn main() {
             }
         };
 
-        // Determine project output directory: outputs/generated/{impl}-client-rpc-{version}
+        // Determine project output directory: outputs/generated/{published_crate_name}-{version}
         let project_root = match path::find_project_root() {
             Ok(root) => root,
             Err(e) => {
@@ -151,8 +151,8 @@ async fn main() {
             }
         };
         let crate_dir = project_root.join(format!(
-            "outputs/generated/{}-client-rpc-{}",
-            implementation.crate_name(),
+            "outputs/generated/{}-{}",
+            implementation.published_crate_name(),
             protocol_version.identifier()
         ));
         if crate_dir.exists() {
@@ -232,7 +232,7 @@ fn compile_with_ir(
 /// These versions should be updated as new stable releases become available.
 fn get_latest_version_for_implementation(implementation: &Implementation) -> &'static str {
     match implementation {
-        Implementation::BitcoinCore => "v30.0.0",
+        Implementation::BitcoinCore => "v30.2.0",
         Implementation::CoreLightning => "v25.09.1",
         Implementation::Lnd => "v0.20.0",
         Implementation::RustLightning => "v0.1.0",
