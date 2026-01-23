@@ -76,7 +76,6 @@ impl ModuleGenerator for LibRsModuleGenerator {
 #![allow(missing_docs)]
 #![allow(clippy::unwrap_used)]
 #![allow(clippy::too_many_arguments)]
-#![allow(clippy::manual_is_multiple_of)]
 #![allow(clippy::empty_docs)]
 #![allow(clippy::doc_lazy_continuation)]
 #![allow(non_snake_case)]
