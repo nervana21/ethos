@@ -7,7 +7,7 @@ use ethos_bitcoind::node::NodeManager;
 
 pub async fn run_test() -> Result<()> {
 	let default_config = TestConfig::default();
-	let default_node_manager =
+	let mut default_node_manager =
 		ethos_bitcoind::BitcoinNodeManager::new_with_config(&default_config)?;
 
 	default_node_manager.start().await?;
@@ -96,6 +96,10 @@ pub async fn run_test() -> Result<()> {
 
 	let hashps_since_diff = client.get_network_hash_ps(Some(-1i64), None).await?;
 	assert!(hashps_since_diff.value > 0u64);
+
+	if let Err(e) = default_node_manager.stop().await {
+		eprintln!("Warning: Failed to stop Bitcoin node: {}", e);
+	}
 
 	Ok(())
 }
