@@ -23,8 +23,8 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.100"
 bitcoin = "0.32.8"
-ethos-bitcoind = { path = "../../outputs/generated/ethos-bitcoind-30-2-0" }
-ethos-core-lightning = { path = "../../outputs/generated/ethos-core-lightning-25-09-1" }
+ethos-bitcoind = { path = "../../outputs/generated/ethos-bitcoind" }
+ethos-core-lightning = { path = "../../outputs/generated/ethos-core-lightning" }
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.145"
 tokio = { version = "1", features = ["full"] }
