@@ -265,11 +265,10 @@ impl {} {{"#,
         let rpc_port = if config.rpc_port == 0 {{
             // Get a random free port by binding to 127.0.0.1:0
             // The listener is dropped at the end of the block, freeing the port
-            let port = {{
+            {{
                 let listener = std::net::TcpListener::bind("127.0.0.1:0")?;
                 listener.local_addr()?.port()
-            }};
-            port
+            }}
         }} else {{
             config.rpc_port
         }};"#
