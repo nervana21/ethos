@@ -280,6 +280,7 @@ impl VersionSpecificResponseTypeGenerator {
             out.push_str("\n");
             out.push_str("    struct OptionAmountVisitor;\n");
             out.push_str("\n");
+            out.push_str("    #[allow(clippy::needless_lifetimes)]\n");
             out.push_str("    impl<'de> Visitor<'de> for OptionAmountVisitor {\n");
             out.push_str("        type Value = Option<bitcoin::Amount>;\n");
             out.push_str("\n");
@@ -572,6 +573,7 @@ impl VersionSpecificResponseTypeGenerator {
         writeln!(buf)?;
         writeln!(buf, "        struct ConditionalResponseVisitor;")?;
         writeln!(buf)?;
+        writeln!(buf, "        #[allow(clippy::needless_lifetimes)]")?;
         writeln!(buf, "        impl<'de> Visitor<'de> for ConditionalResponseVisitor {{")?;
         writeln!(buf, "            type Value = {};", struct_name)?;
         writeln!(buf)?;
@@ -932,7 +934,7 @@ impl VersionSpecificResponseTypeGenerator {
         writeln!(&mut buf)?;
         writeln!(&mut buf, "        struct PrimitiveWrapperVisitor;")?;
         writeln!(&mut buf)?;
-        writeln!(&mut buf, "        #[allow(unused_variables)]")?;
+        writeln!(&mut buf, "        #[allow(unused_variables, clippy::needless_lifetimes)]")?;
         writeln!(&mut buf, "        impl<'de> Visitor<'de> for PrimitiveWrapperVisitor {{")?;
         writeln!(&mut buf, "            type Value = {};", struct_name)?;
         writeln!(&mut buf)?;
