@@ -966,11 +966,19 @@ impl VersionSpecificResponseTypeGenerator {
                 struct_name
             )?;
         } else if self.is_numeric_type(&inner_type) {
-            writeln!(
-                &mut buf,
-                "                Ok({} {{ value: v as {} }})",
-                struct_name, inner_type
-            )?;
+            if inner_type == "u64" {
+                writeln!(
+                    &mut buf,
+                    "                Ok({} {{ value: v }})",
+                    struct_name
+                )?;
+            } else {
+                writeln!(
+                    &mut buf,
+                    "                Ok({} {{ value: v as {} }})",
+                    struct_name, inner_type
+                )?;
+            }
         } else {
             writeln!(
                 &mut buf,
@@ -1008,11 +1016,19 @@ impl VersionSpecificResponseTypeGenerator {
                 struct_name
             )?;
         } else if self.is_numeric_type(&inner_type) {
-            writeln!(
-                &mut buf,
-                "                Ok({} {{ value: v as {} }})",
-                struct_name, inner_type
-            )?;
+            if inner_type == "u64" {
+                writeln!(
+                    &mut buf,
+                    "                Ok({} {{ value: v as u64 }})",
+                    struct_name
+                )?;
+            } else {
+                writeln!(
+                    &mut buf,
+                    "                Ok({} {{ value: v as {} }})",
+                    struct_name, inner_type
+                )?;
+            }
         } else {
             writeln!(
                 &mut buf,
@@ -1044,11 +1060,19 @@ impl VersionSpecificResponseTypeGenerator {
             )?;
             writeln!(&mut buf, "                Ok({} {{ value: amount }})", struct_name)?;
         } else if self.is_numeric_type(&inner_type) {
-            writeln!(
-                &mut buf,
-                "                Ok({} {{ value: v as {} }})",
-                struct_name, inner_type
-            )?;
+            if inner_type == "u64" {
+                writeln!(
+                    &mut buf,
+                    "                Ok({} {{ value: v as u64 }})",
+                    struct_name
+                )?;
+            } else {
+                writeln!(
+                    &mut buf,
+                    "                Ok({} {{ value: v as {} }})",
+                    struct_name, inner_type
+                )?;
+            }
         } else {
             writeln!(
                 &mut buf,
