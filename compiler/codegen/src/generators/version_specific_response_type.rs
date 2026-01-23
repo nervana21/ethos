@@ -228,7 +228,7 @@ impl VersionSpecificResponseTypeGenerator {
             out.push_str("\n");
             out.push_str("    struct AmountVisitor;\n");
             out.push_str("\n");
-            out.push_str("    impl<'de> Visitor<'de> for AmountVisitor {\n");
+            out.push_str("    impl Visitor<'_> for AmountVisitor {\n");
             out.push_str("        type Value = bitcoin::Amount;\n");
             out.push_str("\n");
             out.push_str(
