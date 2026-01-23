@@ -80,7 +80,6 @@ impl ModuleGenerator for TransportModuleGenerator {
         writeln!(content, "pub mod rpc_client;")?;
         writeln!(content, "pub use rpc_client::RpcClient;")?;
         writeln!(content, "pub mod methods;")?;
-        writeln!(content, "pub use ::transport::get_random_free_port;")?;
         std::fs::write(&mod_rs, content)?;
 
         // Generate mod.rs for methods subdirectory

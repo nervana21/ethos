@@ -20,13 +20,11 @@ std = []
 members = [
     "adapters",
     "backends/codegen",
-    "backends/http",
     "cli/orchestrator",
     "compiler/analysis",
     "compiler/codegen",
     "compiler/config",
     "compiler/fuzzctl",
-    "compiler/logging",
     "compiler/pipeline",
     "compiler/semantics",
     "primitives/*",

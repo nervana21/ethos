@@ -13,9 +13,7 @@ adapters = { package = "ethos-adapters", version = "0.1.0", path = "../../adapte
 analysis = { package = "ethos-analysis", version = "0.1.0", path = "../analysis" }
 chrono = { version = "0.4", features = ["serde"] }
 codegen = { package = "ethos-codegen", version = "0.1.0", path = "../codegen" }
-http = { package = "ethos-http", version = "0.1.0", path = "../../backends/http" }
 ir = { package = "ethos-ir", version = "0.1.0", path = "../../primitives/ir" }
-logging = { package = "ethos-logging", version = "0.1.0", path = "../logging" }
 path = { package = "ethos-path", version = "0.1.0", path = "../../primitives/path" }
 pathdiff = "0.2"
 plugins = { package = "ethos-plugins", version = "0.1.0", path = "../../primitives/plugins" }
@@ -25,7 +23,6 @@ semantics = { package = "ethos-semantics", version = "0.1.0", path = "../semanti
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0.145"
 thiserror = "2.0.17"
-transport = { package = "ethos-transport", version = "0.1.0", path = "../../primitives/transport" }
 types = { package = "ethos-types", version = "0.1.0", path = "../../primitives/types" }
 wait-timeout = "0.2"
 

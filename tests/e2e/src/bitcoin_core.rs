@@ -1,14 +1,14 @@
 use anyhow::Result;
 use std::str::FromStr;
-use bitcoin_core_client_rpc_30_0_0::{
-	Address, Amount, BitcoinClientV30_0_0, DefaultTransport, Network, TestConfig,
+use bitcoin_core_client_rpc_30_2_0::{
+	Address, Amount, BitcoinClientV30_2_0, DefaultTransport, Network, TestConfig,
 };
-use bitcoin_core_client_rpc_30_0_0::node::NodeManager;
+use bitcoin_core_client_rpc_30_2_0::node::NodeManager;
 
 pub async fn run_test() -> Result<()> {
 	let default_config = TestConfig::default();
 	let default_node_manager =
-		bitcoin_core_client_rpc_30_0_0::BitcoinNodeManager::new_with_config(&default_config)?;
+		bitcoin_core_client_rpc_30_2_0::BitcoinNodeManager::new_with_config(&default_config)?;
 
 	default_node_manager.start().await?;
 	let client: std::sync::Arc<DefaultTransport> = default_node_manager.create_transport().await?;

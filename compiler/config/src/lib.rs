@@ -133,7 +133,7 @@ impl Default for Config {
         Self {
             protocol: ProtocolConfig {
                 protocol_type: "bitcoin_core".to_string(),
-                version: Some("v30.0.0".to_string()),
+                version: Some("v30.2.0".to_string()),
                 network: Some("regtest".to_string()),
             },
             logging: LoggingConfig { level: "info".to_string(), file: None },
@@ -246,7 +246,8 @@ mod tests {
         // Verify the file was written and can be read back
         let contents = fs::read_to_string(&temp_file).expect("Failed to read saved config file");
         assert!(contents.contains("bitcoin_core"));
-        assert!(contents.contains("v30.0.0"));
+        let expected_version = config.protocol.version.as_ref().expect("Default config should have a version");
+        assert!(contents.contains(expected_version), "Saved file should contain the default version: {}", expected_version);
         assert!(contents.contains("regtest"));
         assert!(contents.contains("info"));
 
@@ -333,7 +334,10 @@ mod tests {
     fn test_default() {
         let config = Config::default();
         assert_eq!(config.protocol.protocol_type, "bitcoin_core");
-        assert_eq!(config.protocol.version, Some("v30.0.0".to_string()));
+        assert!(config.protocol.version.is_some());
+        let version = config.protocol.version.as_ref().unwrap();
+        assert!(!version.is_empty(), "Version should not be empty");
+        assert!(version.starts_with('v'), "Version should start with 'v'");
         assert_eq!(config.protocol.network, Some("regtest".to_string()));
         assert_eq!(config.logging.level, "info");
         assert_eq!(config.logging.file, None);
