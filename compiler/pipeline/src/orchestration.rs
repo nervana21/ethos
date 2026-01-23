@@ -94,10 +94,9 @@ pub fn compile_from_ir(
         Some(path) => path,
         None => {
             let project_root = find_project_root().map_err(|e| PipelineError::Message(e.to_string()))?;
-            // Use {published_crate_name}-{version} format for directory naming
-            let version_clean = version.identifier();
+            // Use {published_crate_name} format for directory naming
             let generated_path = project_root
-                .join(format!("outputs/generated/{}-{}", implementation.published_crate_name(), version_clean));
+                .join(format!("outputs/generated/{}", implementation.published_crate_name()));
             generated_path
         }
     };
