@@ -3,9 +3,9 @@ use std::process::{Command, Stdio};
 use std::time::Duration;
 
 use anyhow::Result;
-use core_lightning_client_rpc_25_09_1::{CoreLightningNodeManager, TestConfig};
-use core_lightning_client_rpc_25_09_1::node::NodeManager;
-use core_lightning_client_rpc_25_09_1::transport::TransportTrait;
+use ethos_core_lightning::{CoreLightningNodeManager, TestConfig};
+use ethos_core_lightning::node::NodeManager;
+use ethos_core_lightning::transport::TransportTrait;
 
 struct TestCleanup {
 	bitcoin_child: Option<std::process::Child>,
