@@ -72,21 +72,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "bitcoin-core-client-rpc-30-2-0"
-version = "30.2.0"
-dependencies = [
- "async-trait",
- "bitcoin",
- "reqwest",
- "serde",
- "serde_json",
- "tempfile",
- "thiserror",
- "tokio",
- "tracing",
-]
-
-[[package]]
 name = "bitcoin-internals"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -163,21 +148,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "613afe47fcd5fac7ccf1db93babcb082c5994d996f20b8b159f2ad1658eb5724"
 
 [[package]]
-name = "core-lightning-client-rpc-25-09-1"
-version = "25.9.1"
-dependencies = [
- "async-trait",
- "bitcoin",
- "reqwest",
- "serde",
- "serde_json",
- "tempfile",
- "thiserror",
- "tokio",
- "tracing",
-]
-
-[[package]]
 name = "displaydoc"
 version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -205,13 +175,43 @@ dependencies = [
 ]
 
 [[package]]
+name = "ethos-bitcoind"
+version = "30.2.0"
+dependencies = [
+ "async-trait",
+ "bitcoin",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "ethos-core-lightning"
+version = "25.9.1"
+dependencies = [
+ "async-trait",
+ "bitcoin",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "ethos-tests"
 version = "0.1.0"
 dependencies = [
  "anyhow",
  "bitcoin",
- "bitcoin-core-client-rpc-30-2-0",
- "core-lightning-client-rpc-25-09-1",
+ "ethos-bitcoind",
+ "ethos-core-lightning",
  "serde",
  "serde_json",
  "tokio",
