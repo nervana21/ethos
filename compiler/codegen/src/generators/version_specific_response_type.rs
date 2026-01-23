@@ -851,9 +851,6 @@ impl VersionSpecificResponseTypeGenerator {
         rust_type.to_string()
     }
 
-    /// Helper function to determine if a type is a unit type
-    fn is_unit_type(&self, inner_type: &str) -> bool { inner_type == "()" }
-
     /// Helper function to determine if a type is a boolean type
     fn is_bool_type(&self, inner_type: &str) -> bool { inner_type == "bool" }
 
@@ -915,6 +912,8 @@ impl VersionSpecificResponseTypeGenerator {
         // Map the type name to Rust type
         let inner_type = self.map_metadata_type_to_rust(type_name, false);
 
+        let is_unit = inner_type.trim() == "()";
+
         // Generate transparent wrapper struct with custom deserializer
         writeln!(&mut buf, "#[derive(Debug, Clone, PartialEq, Serialize)]")?;
         writeln!(&mut buf, "pub struct {} {{", struct_name)?;
@@ -949,7 +948,7 @@ impl VersionSpecificResponseTypeGenerator {
         writeln!(&mut buf, "            where")?;
         writeln!(&mut buf, "                E: de::Error,")?;
         writeln!(&mut buf, "            {{")?;
-        if self.is_unit_type(&inner_type) {
+        if is_unit {
             writeln!(&mut buf, "                Ok({} {{ value: () }})", struct_name)?;
         } else if self.is_bool_type(&inner_type) {
             writeln!(&mut buf, "                Ok({} {{ value: v != 0 }})", struct_name)?;
@@ -985,7 +984,7 @@ impl VersionSpecificResponseTypeGenerator {
         writeln!(&mut buf, "            where")?;
         writeln!(&mut buf, "                E: de::Error,")?;
         writeln!(&mut buf, "            {{")?;
-        if self.is_unit_type(&inner_type) {
+        if is_unit {
             writeln!(&mut buf, "                Ok({} {{ value: () }})", struct_name)?;
         } else if self.is_bool_type(&inner_type) {
             writeln!(&mut buf, "                Ok({} {{ value: v != 0 }})", struct_name)?;
@@ -1027,7 +1026,7 @@ impl VersionSpecificResponseTypeGenerator {
         writeln!(&mut buf, "            where")?;
         writeln!(&mut buf, "                E: de::Error,")?;
         writeln!(&mut buf, "            {{")?;
-        if self.is_unit_type(&inner_type) {
+        if is_unit {
             writeln!(&mut buf, "                Ok({} {{ value: () }})", struct_name)?;
         } else if self.is_bool_type(&inner_type) {
             writeln!(&mut buf, "                Ok({} {{ value: v != 0.0 }})", struct_name)?;
@@ -1063,7 +1062,7 @@ impl VersionSpecificResponseTypeGenerator {
         writeln!(&mut buf, "            where")?;
         writeln!(&mut buf, "                E: de::Error,")?;
         writeln!(&mut buf, "            {{")?;
-        if self.is_unit_type(&inner_type) {
+        if is_unit {
             writeln!(&mut buf, "                Ok({} {{ value: () }})", struct_name)?;
         } else if self.is_bool_type(&inner_type) {
             writeln!(
@@ -1095,7 +1094,7 @@ impl VersionSpecificResponseTypeGenerator {
         writeln!(&mut buf, "            where")?;
         writeln!(&mut buf, "                E: de::Error,")?;
         writeln!(&mut buf, "            {{")?;
-        if self.is_unit_type(&inner_type) {
+        if is_unit {
             writeln!(&mut buf, "                Ok({} {{ value: () }})", struct_name)?;
         } else if self.is_bool_type(&inner_type) {
             writeln!(&mut buf, "                Ok({} {{ value: v }})", struct_name)?;
@@ -1128,7 +1127,7 @@ impl VersionSpecificResponseTypeGenerator {
         writeln!(&mut buf, "            }}")?;
         writeln!(&mut buf)?;
         // Handle null JSON values (for unit types like () that return null)
-        if self.is_unit_type(&inner_type) {
+        if is_unit {
             writeln!(&mut buf, "            fn visit_none<E>(self) -> Result<Self::Value, E>")?;
             writeln!(&mut buf, "            where")?;
             writeln!(&mut buf, "                E: de::Error,")?;
@@ -1176,7 +1175,11 @@ impl VersionSpecificResponseTypeGenerator {
             "                            return Err(de::Error::duplicate_field(\"value\"));"
         )?;
         writeln!(&mut buf, "                        }}")?;
-        writeln!(&mut buf, "                        value = Some(map.next_value()?);")?;
+        if is_unit {
+            writeln!(&mut buf, "                        value = Some(map.next_value::<()>()?);")?;
+        } else {
+            writeln!(&mut buf, "                        value = Some(map.next_value()?);")?;
+        }
         writeln!(&mut buf, "                    }} else {{")?;
         writeln!(&mut buf, "                        let _ = map.next_value::<de::IgnoredAny>()?;")?;
         writeln!(&mut buf, "                    }}")?;
