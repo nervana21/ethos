@@ -190,28 +190,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "ethos-core-lightning"
-version = "25.9.1"
-dependencies = [
- "async-trait",
- "bitcoin",
- "reqwest",
- "serde",
- "serde_json",
- "tempfile",
- "thiserror",
- "tokio",
- "tracing",
-]
-
-[[package]]
 name = "ethos-tests"
 version = "0.1.0"
 dependencies = [
  "anyhow",
  "bitcoin",
  "ethos-bitcoind",
- "ethos-core-lightning",
  "serde",
  "serde_json",
  "tokio",
