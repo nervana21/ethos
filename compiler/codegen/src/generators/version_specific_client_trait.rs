@@ -226,7 +226,7 @@ impl VersionSpecificClientTraitGenerator {
         // Generate method signature (trait definition)
         writeln!(
             buf,
-            "    fn {}(&self{}) -> impl Future<Output = Result<{}, Self::Error>> + Send;",
+            "    async fn {}(&self{}) -> Result<{}, Self::Error>;",
             method_name, params_sig, response_type
         )
         .expect("Failed to write method signature");
@@ -306,36 +306,34 @@ impl VersionSpecificClientTraitGenerator {
         // Generate method implementation
         writeln!(
             buf,
-            "    fn {}(&self{}) -> impl Future<Output = Result<{}, Self::Error>> + Send {{",
+            "    async fn {}(&self{}) -> Result<{}, Self::Error> {{",
             method_name, params_sig, response_type
         )
         .expect("Failed to write method signature");
 
         // Add method body - delegate to the transport layer
-        writeln!(buf, "        async move {{").expect("Failed to write async move");
-
         // Generate individual parameter serialization
         if !rpc.params.is_empty() {
             // Create params array from individual parameters
             // Optional parameters (Option<T>) should only be included if they're Some(...)
             // Use rpc_params as variable name to avoid conflict with parameter named "params"
-            writeln!(buf, "            let mut rpc_params = vec![];")
+            writeln!(buf, "        let mut rpc_params = vec![];")
                 .expect("Failed to write params array initialization");
             for param in &rpc.params {
                 let param_name = sanitize_field_name(&param.name);
                 if !param.required {
                     // Optional parameter: only include if Some
-                    writeln!(buf, "            if let Some(val) = {} {{", param_name)
+                    writeln!(buf, "        if let Some(val) = {} {{", param_name)
                         .expect("Failed to write optional parameter check");
-                    writeln!(buf, "                rpc_params.push(serde_json::json!(val));")
+                    writeln!(buf, "            rpc_params.push(serde_json::json!(val));")
                         .expect("Failed to write optional parameter push");
-                    writeln!(buf, "            }}")
+                    writeln!(buf, "        }}")
                         .expect("Failed to write optional parameter closing");
                 } else {
                     // Required parameter: always include
                     writeln!(
                         buf,
-                        "            rpc_params.push(serde_json::json!({}));",
+                        "        rpc_params.push(serde_json::json!({}));",
                         param_name
                     )
                     .expect("Failed to write required parameter serialization");
@@ -343,7 +341,7 @@ impl VersionSpecificClientTraitGenerator {
             }
             writeln!(
                 buf,
-                "            self.call::<{}>(\"{}\", &rpc_params).await",
+                "        self.call::<{}>(\"{}\", &rpc_params).await",
                 response_type, rpc.name
             )
             .expect("Failed to write method body");
@@ -351,12 +349,11 @@ impl VersionSpecificClientTraitGenerator {
             // For methods with no parameters, use empty array
             writeln!(
                 buf,
-                "            self.call::<{}>(\"{}\", &[]).await",
+                "        self.call::<{}>(\"{}\", &[]).await",
                 response_type, rpc.name
             )
             .expect("Failed to write method body");
         }
-        writeln!(buf, "        }}").expect("Failed to write async block closing");
         writeln!(buf, "    }}").expect("Failed to write method closing brace");
 
         buf
