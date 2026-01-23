@@ -1181,8 +1181,13 @@ impl VersionSpecificResponseTypeGenerator {
         writeln!(&mut buf, "                        let _ = map.next_value::<de::IgnoredAny>()?;")?;
         writeln!(&mut buf, "                    }}")?;
         writeln!(&mut buf, "                }}")?;
-        writeln!(&mut buf, "                let value = value.ok_or_else(|| de::Error::missing_field(\"value\"))?;")?;
-        writeln!(&mut buf, "                Ok({} {{ value }})", struct_name)?;
+        if inner_type.trim() == "()" {
+            writeln!(&mut buf, "                value.ok_or_else(|| de::Error::missing_field(\"value\"))?;")?;
+            writeln!(&mut buf, "                Ok({} {{ value: () }})", struct_name)?;
+        } else {
+            writeln!(&mut buf, "                let value = value.ok_or_else(|| de::Error::missing_field(\"value\"))?;")?;
+            writeln!(&mut buf, "                Ok({} {{ value }})", struct_name)?;
+        }
         writeln!(&mut buf, "            }}")?;
         writeln!(&mut buf, "        }}")?;
         writeln!(&mut buf)?;
