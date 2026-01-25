@@ -123,6 +123,7 @@ pub fn write_readme(
 ) -> Result<(), PipelineError> {
     let _version = target_version.crate_version();
     let crate_name = artifact_name.published_crate_name();
+    let clients_dir_name = artifact_name.client_dir_name();
 
     // Determine protocol-specific content
     let protocol_name = artifact_name.display_name();
@@ -152,7 +153,7 @@ This client aims to provide:
 
 - `client_trait/`: Rust traits for {protocol_name} RPC endpoints
 - `node/`: Node manager for process orchestration in integration environments
-- `{crate_name}_clients/`: Utilities for driving integration tests against spawned local nodes
+- `{clients_dir_name}/`: Utilities for driving integration tests against spawned local nodes
 - `transport/`: Async transport layer with batching and error handling
 - `types/`: Typed response structs and enums for all RPC methods
 
@@ -196,6 +197,7 @@ Ethos is released under the terms of the CC0-1.0 license. See [LICENSE](LICENSE)
 This library launches {protocol_name} daemons for local integration testing. For real network use, use strong network/firewall controls and carefully audit all dependencies.
 "#,
         crate_name = crate_name,
+        clients_dir_name = clients_dir_name,
         protocol_name = protocol_name,
         version = target_version.crate_version(),
         executable_name = executable_name,
