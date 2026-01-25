@@ -29,7 +29,7 @@ pub fn rpc_method_to_rust_name(rpc_method: &str) -> String {
         return pascal_to_snake_case(rpc_method);
     }
 
-    let sanitized = sanitize_method_name(rpc_method);
+    let sanitized = sanitize_external_identifier(rpc_method);
     camel_to_snake_case(&sanitized)
 }
 
@@ -164,8 +164,8 @@ pub fn sanitize_field_name(name: &str) -> String {
     }
 }
 
-/// Sanitize method names to be valid Rust identifiers
-pub fn sanitize_method_name(name: &str) -> String {
+/// Sanitizes external identifiers (e.g. RPC schemas) to be valid Rust identifiers
+pub fn sanitize_external_identifier(name: &str) -> String {
     // Handle reserved keywords
     match name {
         "type" => "r#type".to_string(),
