@@ -9,10 +9,10 @@ Ethos is a meta-compiler for The Bitcoin Protocol.
 See [docs/architecture.mmd](docs/architecture.mmd) for a full system diagram.
 
 The compiler pipeline:
-1. **Adapters** extract protocol schemas from implementations via RPC
-2. **Analysis** normalizes schemas into Protocol IR and validates consistency
-3. **Codegen** generates Rust client libraries, traits, and types
-4. **Transport** provides async RPC transport with batching and error handling
+1. **Schema Input**: Projects produce `schema.json` files in the expected format
+2. **IR Generation**: Convert `schema.json` to `XXX_XXX.ir.json`
+3. **Analysis** normalizes IR and validates consistency
+4. **Codegen** generates Rust client libraries, traits, and types
 
 Deep Dive: [docs/semantic-convergence.md](docs/semantic-convergence.md)
 
@@ -25,8 +25,6 @@ Deep Dive: [docs/semantic-convergence.md](docs/semantic-convergence.md)
 3. Protocol executables (for integration tests):
    - `bitcoind` (Bitcoin Core)
    - `lightningd` (Core Lightning)
-   - `lnd` (Lightning Network Daemon)
-   - `lightning` (Rust Lightning)
 
 ### Quick Start
 

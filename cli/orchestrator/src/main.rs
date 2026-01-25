@@ -142,7 +142,7 @@ async fn main() {
             }
         };
 
-        // Determine project output directory: outputs/generated/{published_crate_name}-{version}
+        // Determine project output directory: outputs/generated/{published_crate_name}
         let project_root = match path::find_project_root() {
             Ok(root) => root,
             Err(e) => {
@@ -151,9 +151,8 @@ async fn main() {
             }
         };
         let crate_dir = project_root.join(format!(
-            "outputs/generated/{}-{}",
+            "outputs/generated/{}",
             implementation.published_crate_name(),
-            protocol_version.identifier()
         ));
         if crate_dir.exists() {
             std::fs::remove_dir_all(&crate_dir).ok();

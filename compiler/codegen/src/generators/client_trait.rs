@@ -184,7 +184,7 @@ impl<'a> MethodTemplate<'a> {
 
         let mut fields = Vec::new();
         for arg in &reordered_args {
-            let field_name = format!("_{}", crate::utils::sanitize_field_name(&arg.names[0]));
+            let field_name = format!("_{}", crate::utils::sanitize_external_identifier(&arg.names[0]));
 
             // Use protocol-specific type adapter to map parameter types
             let (base_ty, _) =
@@ -203,7 +203,7 @@ impl<'a> MethodTemplate<'a> {
                 .position(|&x| x == original_idx)
                 .expect("Parameter mapping should contain all original indices");
             let arg = &reordered_args[reordered_idx];
-            let field_name = &format!("_{}", crate::utils::sanitize_field_name(&arg.names[0]));
+            let field_name = &format!("_{}", crate::utils::sanitize_external_identifier(&arg.names[0]));
             serialize_fields.push(format!("        seq.serialize_element(&self.{})?;", field_name));
         }
 
@@ -218,7 +218,7 @@ impl<'a> MethodTemplate<'a> {
         // Generate field documentation
         let mut documented_fields = Vec::new();
         for arg in reordered_args.iter() {
-            let field_name = format!("_{}", crate::utils::sanitize_field_name(&arg.names[0]));
+            let field_name = format!("_{}", crate::utils::sanitize_external_identifier(&arg.names[0]));
 
             // Use protocol-specific type adapter to map parameter types
             let (base_ty, _) =
@@ -346,7 +346,7 @@ impl<'a> MethodTemplate<'a> {
                     // This distinguishes parameters from other identifiers and follows Rust conventions
                     // for intentionally prefixed names. The special case for "type" uses r#_type
                     // to properly escape the reserved keyword.
-                    let name = format!("_{}", crate::utils::sanitize_field_name(&arg.names[0]));
+                    let name = format!("_{}", crate::utils::sanitize_external_identifier(&arg.names[0]));
 
                     // Use protocol-specific type adapter to map parameter types
                     let (base_ty, _) =
@@ -415,7 +415,7 @@ impl<'a> MethodTemplate<'a> {
                 // If there are optional parameters, use conditional logic
                 let mut lines = Vec::new();
                 for arg in &arguments {
-                    let name = &format!("_{}", crate::utils::sanitize_field_name(&arg.names[0]));
+                    let name = &format!("_{}", crate::utils::sanitize_external_identifier(&arg.names[0]));
                     if arg.required {
                         // Required parameter: always include
                         lines.push(format!(
@@ -437,7 +437,7 @@ impl<'a> MethodTemplate<'a> {
                     .iter()
                     .map(|arg| {
                         let name =
-                            &format!("_{}", crate::utils::sanitize_field_name(&arg.names[0]));
+                            &format!("_{}", crate::utils::sanitize_external_identifier(&arg.names[0]));
                         format!("            serde_json::json!({name}),")
                     })
                     .collect::<Vec<_>>()

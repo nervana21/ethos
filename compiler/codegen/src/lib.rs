@@ -296,7 +296,7 @@ impl CodeGenerator for MethodWrapperGenerator {
                 /* ---------- fn signature ---------- */
                 let fn_args = std::iter::once("transport: &dyn TransportTrait".into())
                     .chain(m.params.iter().map(|param| {
-                        let name = crate::utils::sanitize_field_name(&param.name);
+                        let name = crate::utils::sanitize_external_identifier(&param.name);
                         format!("{name}: serde_json::Value")
                     }))
                     .collect::<Vec<_>>()
@@ -310,7 +310,7 @@ impl CodeGenerator for MethodWrapperGenerator {
                         .params
                         .iter()
                         .map(|param| {
-                            let name = crate::utils::sanitize_field_name(&param.name);
+                            let name = crate::utils::sanitize_external_identifier(&param.name);
                             format!("json!({name})")
                         })
                         .collect::<Vec<_>>()
