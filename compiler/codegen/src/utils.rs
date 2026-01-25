@@ -147,23 +147,6 @@ pub fn snake_to_pascal_case(s: &str) -> String {
         .collect()
 }
 
-/// Sanitize field names to be valid Rust identifiers
-pub fn sanitize_field_name(name: &str) -> String {
-    // Handle reserved keywords
-    match name {
-        "type" => "r#type".to_string(),
-        "self" => "self_".to_string(),
-        "super" => "super_".to_string(),
-        "crate" => "crate_".to_string(),
-        _ => {
-            // Replace hyphens with underscores and remove other invalid characters
-            let sanitized = name.replace('-', "_");
-            // Remove any remaining invalid characters (keep only alphanumeric and underscores)
-            sanitized.chars().filter(|c| c.is_alphanumeric() || *c == '_').collect()
-        }
-    }
-}
-
 /// Sanitizes external identifiers (e.g. RPC schemas) to be valid Rust identifiers
 pub fn sanitize_external_identifier(name: &str) -> String {
     // Handle reserved keywords

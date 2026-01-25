@@ -7,7 +7,7 @@ use ir::RpcDef;
 use types::Implementation;
 
 use super::doc_comment::{format_doc_comment, write_doc_comment};
-use crate::utils::{rpc_method_to_rust_name, sanitize_field_name, snake_to_pascal_case};
+use crate::utils::{rpc_method_to_rust_name, sanitize_external_identifier, snake_to_pascal_case};
 use crate::{CodeGenerator, ProtocolVersion};
 pub mod utils;
 
@@ -103,7 +103,7 @@ impl TestNodeGenerator {
             .expect("Failed to write struct name");
 
             for p in &m.params {
-                let field = sanitize_field_name(&p.name);
+                let field = sanitize_external_identifier(&p.name);
 
                 // Convert param to Argument format and map through type adapter
                 let protocol_type = p.param_type.protocol_type.as_ref().unwrap_or_else(|| {

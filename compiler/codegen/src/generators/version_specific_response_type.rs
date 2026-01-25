@@ -423,7 +423,7 @@ impl VersionSpecificResponseTypeGenerator {
 
         // Generate field definition
         let base_field_type = self.map_ir_type_to_rust(&field.field_type, &field.name);
-        let field_name = self.sanitize_field_name(&field.name);
+        let field_name = self.sanitize_identifier(&field.name);
         let mut field_type = if field.required {
             base_field_type.clone()
         } else {
@@ -598,7 +598,7 @@ impl VersionSpecificResponseTypeGenerator {
         writeln!(buf, "            {{")?;
         if let Some(fields) = &result.fields {
             if let Some(field) = txid_field {
-                let field_name = self.sanitize_field_name(&field.name);
+                let field_name = self.sanitize_identifier(&field.name);
                 let field_type = self.map_ir_type_to_rust(&field.field_type, &field.name);
                 writeln!(
                     buf,
@@ -607,7 +607,7 @@ impl VersionSpecificResponseTypeGenerator {
                 )?;
                 writeln!(buf, "                Ok({} {{", struct_name)?;
                 for f in fields {
-                    let fn_name = self.sanitize_field_name(&f.name);
+                    let fn_name = self.sanitize_identifier(&f.name);
                     if f.name == field.name {
                         writeln!(buf, "                    {}: Some({}),", fn_name, fn_name)?;
                     } else {
@@ -619,7 +619,7 @@ impl VersionSpecificResponseTypeGenerator {
                 // Fallback: create struct with all fields as None
                 writeln!(buf, "                Ok({} {{", struct_name)?;
                 for f in fields {
-                    let fn_name = self.sanitize_field_name(&f.name);
+                    let fn_name = self.sanitize_identifier(&f.name);
                     writeln!(buf, "                    {}: None,", fn_name)?;
                 }
                 writeln!(buf, "                }})")?;
@@ -637,12 +637,12 @@ impl VersionSpecificResponseTypeGenerator {
         writeln!(buf, "            {{")?;
         if let Some(fields) = &result.fields {
             for f in fields {
-                let fn_name = self.sanitize_field_name(&f.name);
+                let fn_name = self.sanitize_identifier(&f.name);
                 writeln!(buf, "                let mut {} = None;", fn_name)?;
             }
             writeln!(buf, "                while let Some(key) = map.next_key::<String>()? {{")?;
             for f in fields {
-                let fn_name = self.sanitize_field_name(&f.name);
+                let fn_name = self.sanitize_identifier(&f.name);
                 writeln!(buf, "                    if key == \"{}\" {{", f.name)?;
                 writeln!(buf, "                        if {}.is_some() {{", fn_name)?;
                 writeln!(
@@ -732,7 +732,7 @@ impl VersionSpecificResponseTypeGenerator {
             writeln!(buf, "                }}")?;
             writeln!(buf, "                Ok({} {{", struct_name)?;
             for f in fields {
-                let fn_name = self.sanitize_field_name(&f.name);
+                let fn_name = self.sanitize_identifier(&f.name);
                 writeln!(buf, "                    {},", fn_name)?;
             }
             writeln!(buf, "                }})")?;
@@ -756,7 +756,7 @@ impl VersionSpecificResponseTypeGenerator {
     }
 
     /// Sanitize field name for Rust identifier
-    fn sanitize_field_name(&self, name: &str) -> String { crate::utils::sanitize_field_name(name) }
+    fn sanitize_identifier(&self, name: &str) -> String { crate::utils::sanitize_external_identifier(name) }
 
     /// Map metadata type to Rust type
     fn map_metadata_type_to_rust(&self, type_name: &str, is_optional: bool) -> String {

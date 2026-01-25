@@ -11,7 +11,7 @@ use types::{Implementation, ProtocolVersion, TypeRegistry};
 
 use super::doc_comment::{format_doc_comment, write_doc_line};
 use crate::generators::version_specific_response_type::record_external_symbol_usage;
-use crate::utils::{protocol_rpc_method_to_rust_name, sanitize_field_name, snake_to_pascal_case};
+use crate::utils::{protocol_rpc_method_to_rust_name, sanitize_external_identifier, snake_to_pascal_case};
 use crate::CodeGenerator;
 
 /// Enhanced client trait generator that uses version-specific metadata
@@ -187,7 +187,7 @@ impl VersionSpecificClientTraitGenerator {
             let param_parts: Vec<String> = arguments
                 .iter()
                 .map(|arg| {
-                    let param_name = sanitize_field_name(&arg.names[0]);
+                    let param_name = sanitize_external_identifier(&arg.names[0]);
                     // Use protocol adapter to map parameter types in a protocol-agnostic way
                     let (base_ty, _) =
                         TypeRegistry::map_argument_type_with_adapter(arg, adapter.as_ref());
@@ -273,7 +273,7 @@ impl VersionSpecificClientTraitGenerator {
             let param_parts: Vec<String> = arguments
                 .iter()
                 .map(|arg| {
-                    let param_name = sanitize_field_name(&arg.names[0]);
+                    let param_name = sanitize_external_identifier(&arg.names[0]);
                     // Use protocol adapter to map parameter types in a protocol-agnostic way
                     let (base_ty, _) =
                         TypeRegistry::map_argument_type_with_adapter(arg, adapter.as_ref());
@@ -320,7 +320,7 @@ impl VersionSpecificClientTraitGenerator {
             writeln!(buf, "        let mut rpc_params = vec![];")
                 .expect("Failed to write params array initialization");
             for param in &rpc.params {
-                let param_name = sanitize_field_name(&param.name);
+                let param_name = sanitize_external_identifier(&param.name);
                 if !param.required {
                     // Optional parameter: only include if Some
                     writeln!(buf, "        if let Some(val) = {} {{", param_name)
