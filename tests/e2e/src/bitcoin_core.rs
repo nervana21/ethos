@@ -1,14 +1,14 @@
 use anyhow::Result;
 use std::str::FromStr;
-use bitcoin_core_client_rpc_30_2_0::{
+use ethos_bitcoind::{
 	Address, Amount, BitcoinClientV30_2_0, DefaultTransport, Network, TestConfig,
 };
-use bitcoin_core_client_rpc_30_2_0::node::NodeManager;
+use ethos_bitcoind::node::NodeManager;
 
 pub async fn run_test() -> Result<()> {
 	let default_config = TestConfig::default();
-	let default_node_manager =
-		bitcoin_core_client_rpc_30_2_0::BitcoinNodeManager::new_with_config(&default_config)?;
+	let mut default_node_manager =
+		ethos_bitcoind::BitcoinNodeManager::new_with_config(&default_config)?;
 
 	default_node_manager.start().await?;
 	let client: std::sync::Arc<DefaultTransport> = default_node_manager.create_transport().await?;
@@ -96,6 +96,10 @@ pub async fn run_test() -> Result<()> {
 
 	let hashps_since_diff = client.get_network_hash_ps(Some(-1i64), None).await?;
 	assert!(hashps_since_diff.value > 0u64);
+
+	if let Err(e) = default_node_manager.stop().await {
+		eprintln!("Warning: Failed to stop Bitcoin node: {}", e);
+	}
 
 	Ok(())
 }

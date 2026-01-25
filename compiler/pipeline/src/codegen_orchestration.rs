@@ -129,7 +129,7 @@ pub fn generate_into(out_dir: &Path, compiler_ctx: &CompilerContext) -> Result<(
         generator.generate_and_write(&ctx)?;
     }
 
-    let crate_name = format!("{}-client-rpc-{}", implementation.crate_name(), version.identifier());
+    let crate_name = implementation.published_crate_name().to_string();
     feature_aware_cargo::generate_cargo_toml(out_dir, &ctx.rpc_methods, &crate_name, &version)?;
     Ok(())
 }

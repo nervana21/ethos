@@ -228,7 +228,7 @@ impl VersionSpecificResponseTypeGenerator {
             out.push_str("\n");
             out.push_str("    struct AmountVisitor;\n");
             out.push_str("\n");
-            out.push_str("    impl<'de> Visitor<'de> for AmountVisitor {\n");
+            out.push_str("    impl Visitor<'_> for AmountVisitor {\n");
             out.push_str("        type Value = bitcoin::Amount;\n");
             out.push_str("\n");
             out.push_str(
@@ -280,6 +280,7 @@ impl VersionSpecificResponseTypeGenerator {
             out.push_str("\n");
             out.push_str("    struct OptionAmountVisitor;\n");
             out.push_str("\n");
+            out.push_str("    #[allow(clippy::needless_lifetimes)]\n");
             out.push_str("    impl<'de> Visitor<'de> for OptionAmountVisitor {\n");
             out.push_str("        type Value = Option<bitcoin::Amount>;\n");
             out.push_str("\n");
@@ -422,7 +423,7 @@ impl VersionSpecificResponseTypeGenerator {
 
         // Generate field definition
         let base_field_type = self.map_ir_type_to_rust(&field.field_type, &field.name);
-        let field_name = self.sanitize_field_name(&field.name);
+        let field_name = self.sanitize_identifier(&field.name);
         let mut field_type = if field.required {
             base_field_type.clone()
         } else {
@@ -572,6 +573,7 @@ impl VersionSpecificResponseTypeGenerator {
         writeln!(buf)?;
         writeln!(buf, "        struct ConditionalResponseVisitor;")?;
         writeln!(buf)?;
+        writeln!(buf, "        #[allow(clippy::needless_lifetimes)]")?;
         writeln!(buf, "        impl<'de> Visitor<'de> for ConditionalResponseVisitor {{")?;
         writeln!(buf, "            type Value = {};", struct_name)?;
         writeln!(buf)?;
@@ -596,7 +598,7 @@ impl VersionSpecificResponseTypeGenerator {
         writeln!(buf, "            {{")?;
         if let Some(fields) = &result.fields {
             if let Some(field) = txid_field {
-                let field_name = self.sanitize_field_name(&field.name);
+                let field_name = self.sanitize_identifier(&field.name);
                 let field_type = self.map_ir_type_to_rust(&field.field_type, &field.name);
                 writeln!(
                     buf,
@@ -605,7 +607,7 @@ impl VersionSpecificResponseTypeGenerator {
                 )?;
                 writeln!(buf, "                Ok({} {{", struct_name)?;
                 for f in fields {
-                    let fn_name = self.sanitize_field_name(&f.name);
+                    let fn_name = self.sanitize_identifier(&f.name);
                     if f.name == field.name {
                         writeln!(buf, "                    {}: Some({}),", fn_name, fn_name)?;
                     } else {
@@ -617,7 +619,7 @@ impl VersionSpecificResponseTypeGenerator {
                 // Fallback: create struct with all fields as None
                 writeln!(buf, "                Ok({} {{", struct_name)?;
                 for f in fields {
-                    let fn_name = self.sanitize_field_name(&f.name);
+                    let fn_name = self.sanitize_identifier(&f.name);
                     writeln!(buf, "                    {}: None,", fn_name)?;
                 }
                 writeln!(buf, "                }})")?;
@@ -635,12 +637,12 @@ impl VersionSpecificResponseTypeGenerator {
         writeln!(buf, "            {{")?;
         if let Some(fields) = &result.fields {
             for f in fields {
-                let fn_name = self.sanitize_field_name(&f.name);
+                let fn_name = self.sanitize_identifier(&f.name);
                 writeln!(buf, "                let mut {} = None;", fn_name)?;
             }
             writeln!(buf, "                while let Some(key) = map.next_key::<String>()? {{")?;
             for f in fields {
-                let fn_name = self.sanitize_field_name(&f.name);
+                let fn_name = self.sanitize_identifier(&f.name);
                 writeln!(buf, "                    if key == \"{}\" {{", f.name)?;
                 writeln!(buf, "                        if {}.is_some() {{", fn_name)?;
                 writeln!(
@@ -730,7 +732,7 @@ impl VersionSpecificResponseTypeGenerator {
             writeln!(buf, "                }}")?;
             writeln!(buf, "                Ok({} {{", struct_name)?;
             for f in fields {
-                let fn_name = self.sanitize_field_name(&f.name);
+                let fn_name = self.sanitize_identifier(&f.name);
                 writeln!(buf, "                    {},", fn_name)?;
             }
             writeln!(buf, "                }})")?;
@@ -754,7 +756,7 @@ impl VersionSpecificResponseTypeGenerator {
     }
 
     /// Sanitize field name for Rust identifier
-    fn sanitize_field_name(&self, name: &str) -> String { crate::utils::sanitize_field_name(name) }
+    fn sanitize_identifier(&self, name: &str) -> String { crate::utils::sanitize_external_identifier(name) }
 
     /// Map metadata type to Rust type
     fn map_metadata_type_to_rust(&self, type_name: &str, is_optional: bool) -> String {
@@ -849,9 +851,6 @@ impl VersionSpecificResponseTypeGenerator {
         rust_type.to_string()
     }
 
-    /// Helper function to determine if a type is a unit type
-    fn is_unit_type(&self, inner_type: &str) -> bool { inner_type == "()" }
-
     /// Helper function to determine if a type is a boolean type
     fn is_bool_type(&self, inner_type: &str) -> bool { inner_type == "bool" }
 
@@ -913,6 +912,8 @@ impl VersionSpecificResponseTypeGenerator {
         // Map the type name to Rust type
         let inner_type = self.map_metadata_type_to_rust(type_name, false);
 
+        let is_unit = inner_type.trim() == "()";
+
         // Generate transparent wrapper struct with custom deserializer
         writeln!(&mut buf, "#[derive(Debug, Clone, PartialEq, Serialize)]")?;
         writeln!(&mut buf, "pub struct {} {{", struct_name)?;
@@ -932,7 +933,7 @@ impl VersionSpecificResponseTypeGenerator {
         writeln!(&mut buf)?;
         writeln!(&mut buf, "        struct PrimitiveWrapperVisitor;")?;
         writeln!(&mut buf)?;
-        writeln!(&mut buf, "        #[allow(unused_variables)]")?;
+        writeln!(&mut buf, "        #[allow(unused_variables, clippy::needless_lifetimes)]")?;
         writeln!(&mut buf, "        impl<'de> Visitor<'de> for PrimitiveWrapperVisitor {{")?;
         writeln!(&mut buf, "            type Value = {};", struct_name)?;
         writeln!(&mut buf)?;
@@ -947,7 +948,7 @@ impl VersionSpecificResponseTypeGenerator {
         writeln!(&mut buf, "            where")?;
         writeln!(&mut buf, "                E: de::Error,")?;
         writeln!(&mut buf, "            {{")?;
-        if self.is_unit_type(&inner_type) {
+        if is_unit {
             writeln!(&mut buf, "                Ok({} {{ value: () }})", struct_name)?;
         } else if self.is_bool_type(&inner_type) {
             writeln!(&mut buf, "                Ok({} {{ value: v != 0 }})", struct_name)?;
@@ -965,11 +966,19 @@ impl VersionSpecificResponseTypeGenerator {
                 struct_name
             )?;
         } else if self.is_numeric_type(&inner_type) {
-            writeln!(
-                &mut buf,
-                "                Ok({} {{ value: v as {} }})",
-                struct_name, inner_type
-            )?;
+            if inner_type == "u64" {
+                writeln!(
+                    &mut buf,
+                    "                Ok({} {{ value: v }})",
+                    struct_name
+                )?;
+            } else {
+                writeln!(
+                    &mut buf,
+                    "                Ok({} {{ value: v as {} }})",
+                    struct_name, inner_type
+                )?;
+            }
         } else {
             writeln!(
                 &mut buf,
@@ -983,7 +992,7 @@ impl VersionSpecificResponseTypeGenerator {
         writeln!(&mut buf, "            where")?;
         writeln!(&mut buf, "                E: de::Error,")?;
         writeln!(&mut buf, "            {{")?;
-        if self.is_unit_type(&inner_type) {
+        if is_unit {
             writeln!(&mut buf, "                Ok({} {{ value: () }})", struct_name)?;
         } else if self.is_bool_type(&inner_type) {
             writeln!(&mut buf, "                Ok({} {{ value: v != 0 }})", struct_name)?;
@@ -1007,11 +1016,19 @@ impl VersionSpecificResponseTypeGenerator {
                 struct_name
             )?;
         } else if self.is_numeric_type(&inner_type) {
-            writeln!(
-                &mut buf,
-                "                Ok({} {{ value: v as {} }})",
-                struct_name, inner_type
-            )?;
+            if inner_type == "u64" {
+                writeln!(
+                    &mut buf,
+                    "                Ok({} {{ value: v as u64 }})",
+                    struct_name
+                )?;
+            } else {
+                writeln!(
+                    &mut buf,
+                    "                Ok({} {{ value: v as {} }})",
+                    struct_name, inner_type
+                )?;
+            }
         } else {
             writeln!(
                 &mut buf,
@@ -1025,7 +1042,7 @@ impl VersionSpecificResponseTypeGenerator {
         writeln!(&mut buf, "            where")?;
         writeln!(&mut buf, "                E: de::Error,")?;
         writeln!(&mut buf, "            {{")?;
-        if self.is_unit_type(&inner_type) {
+        if is_unit {
             writeln!(&mut buf, "                Ok({} {{ value: () }})", struct_name)?;
         } else if self.is_bool_type(&inner_type) {
             writeln!(&mut buf, "                Ok({} {{ value: v != 0.0 }})", struct_name)?;
@@ -1043,11 +1060,19 @@ impl VersionSpecificResponseTypeGenerator {
             )?;
             writeln!(&mut buf, "                Ok({} {{ value: amount }})", struct_name)?;
         } else if self.is_numeric_type(&inner_type) {
-            writeln!(
-                &mut buf,
-                "                Ok({} {{ value: v as {} }})",
-                struct_name, inner_type
-            )?;
+            if inner_type == "u64" {
+                writeln!(
+                    &mut buf,
+                    "                Ok({} {{ value: v as u64 }})",
+                    struct_name
+                )?;
+            } else {
+                writeln!(
+                    &mut buf,
+                    "                Ok({} {{ value: v as {} }})",
+                    struct_name, inner_type
+                )?;
+            }
         } else {
             writeln!(
                 &mut buf,
@@ -1061,7 +1086,7 @@ impl VersionSpecificResponseTypeGenerator {
         writeln!(&mut buf, "            where")?;
         writeln!(&mut buf, "                E: de::Error,")?;
         writeln!(&mut buf, "            {{")?;
-        if self.is_unit_type(&inner_type) {
+        if is_unit {
             writeln!(&mut buf, "                Ok({} {{ value: () }})", struct_name)?;
         } else if self.is_bool_type(&inner_type) {
             writeln!(
@@ -1093,7 +1118,7 @@ impl VersionSpecificResponseTypeGenerator {
         writeln!(&mut buf, "            where")?;
         writeln!(&mut buf, "                E: de::Error,")?;
         writeln!(&mut buf, "            {{")?;
-        if self.is_unit_type(&inner_type) {
+        if is_unit {
             writeln!(&mut buf, "                Ok({} {{ value: () }})", struct_name)?;
         } else if self.is_bool_type(&inner_type) {
             writeln!(&mut buf, "                Ok({} {{ value: v }})", struct_name)?;
@@ -1126,7 +1151,7 @@ impl VersionSpecificResponseTypeGenerator {
         writeln!(&mut buf, "            }}")?;
         writeln!(&mut buf)?;
         // Handle null JSON values (for unit types like () that return null)
-        if self.is_unit_type(&inner_type) {
+        if is_unit {
             writeln!(&mut buf, "            fn visit_none<E>(self) -> Result<Self::Value, E>")?;
             writeln!(&mut buf, "            where")?;
             writeln!(&mut buf, "                E: de::Error,")?;
@@ -1174,13 +1199,22 @@ impl VersionSpecificResponseTypeGenerator {
             "                            return Err(de::Error::duplicate_field(\"value\"));"
         )?;
         writeln!(&mut buf, "                        }}")?;
-        writeln!(&mut buf, "                        value = Some(map.next_value()?);")?;
+        if is_unit {
+            writeln!(&mut buf, "                        value = Some(map.next_value::<()>()?);")?;
+        } else {
+            writeln!(&mut buf, "                        value = Some(map.next_value()?);")?;
+        }
         writeln!(&mut buf, "                    }} else {{")?;
         writeln!(&mut buf, "                        let _ = map.next_value::<de::IgnoredAny>()?;")?;
         writeln!(&mut buf, "                    }}")?;
         writeln!(&mut buf, "                }}")?;
-        writeln!(&mut buf, "                let value = value.ok_or_else(|| de::Error::missing_field(\"value\"))?;")?;
-        writeln!(&mut buf, "                Ok({} {{ value }})", struct_name)?;
+        if inner_type.trim() == "()" {
+            writeln!(&mut buf, "                value.ok_or_else(|| de::Error::missing_field(\"value\"))?;")?;
+            writeln!(&mut buf, "                Ok({} {{ value: () }})", struct_name)?;
+        } else {
+            writeln!(&mut buf, "                let value = value.ok_or_else(|| de::Error::missing_field(\"value\"))?;")?;
+            writeln!(&mut buf, "                Ok({} {{ value }})", struct_name)?;
+        }
         writeln!(&mut buf, "            }}")?;
         writeln!(&mut buf, "        }}")?;
         writeln!(&mut buf)?;
