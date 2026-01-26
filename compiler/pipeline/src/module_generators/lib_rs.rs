@@ -18,17 +18,7 @@ impl ModuleGenerator for LibRsModuleGenerator {
         &self,
         ctx: &GenerationContext,
     ) -> Result<Vec<(String, String)>, PipelineError> {
-        // Generate implementation-specific client name using the same format as client trait generator
-        let version_no = format!(
-            "V{}",
-            ctx.versioned_registry
-                .version()
-                .as_str()
-                .trim_start_matches('v')
-                .trim_start_matches('V')
-                .replace('.', "_")
-        );
-        let client_name = format!("{}{}", ctx.implementation.client_prefix(), version_no);
+        let client_name = ctx.implementation.client_prefix().to_string();
 
         // Generate implementation-specific node manager and test client names
         let node_manager_name = ctx.implementation.node_manager_name();

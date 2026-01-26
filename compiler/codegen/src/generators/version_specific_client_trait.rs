@@ -58,6 +58,7 @@ impl CodeGenerator for VersionSpecificClientTraitGenerator {
             "bitcoin_core" => "BitcoinClient",
             _ => panic!("Unsupported protocol: {}", self.protocol),
         };
+        let exported_trait_name = client_name.to_string();
         let mod_rs = format!(
             "//! Auto-generated module for {client_name}{version_no}\n\
              //!\n\
@@ -66,8 +67,9 @@ impl CodeGenerator for VersionSpecificClientTraitGenerator {
              //! This module contains version-specific method signatures that may\n\
              //! not be compatible with other Bitcoin Core versions.\n\
              pub mod client;\n\
-             pub use self::client::{client_name}{version_no};\n",
-            self.version.as_str()
+             pub use self::client::{};\n",
+            self.version.as_str(),
+            exported_trait_name
         );
 
         vec![("client.rs".into(), client_trait), ("mod.rs".into(), mod_rs)]

@@ -1,7 +1,7 @@
 use anyhow::Result;
 use std::str::FromStr;
 use ethos_bitcoind::{
-	Address, Amount, BitcoinClientV30_2_0, DefaultTransport, Network, TestConfig,
+	Address, Amount, BitcoinClient, DefaultTransport, Network, TestConfig,
 };
 use ethos_bitcoind::node::NodeManager;
 

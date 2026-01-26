@@ -10,7 +10,7 @@ use serde::de::DeserializeOwned;
 
 #[doc = r#"A versioned client trait for Core Lightning {{VERSION}}"#]
 #[async_trait]
-pub trait CoreLightningClient{{VERSION_NODOTS}}: Send + Sync + TransportTrait + TransportExt + RpcDispatchExt {
+pub trait CoreLightningClient: Send + Sync + TransportTrait + TransportExt + RpcDispatchExt {
     type Error;
 
 {{TRAIT_METHOD_SIGNATURES}}
@@ -52,7 +52,7 @@ impl<T: TransportTrait + TransportExt + ?Sized> LightningTransportExt for T {}
 
 // Provide default implementation for any type that implements TransportTrait + TransportExt
 #[async_trait]
-impl<T: TransportTrait + TransportExt + Send + Sync> CoreLightningClient{{VERSION_NODOTS}} for T {
+impl<T: TransportTrait + TransportExt + Send + Sync> CoreLightningClient for T {
     type Error = TransportError;
 
 {{TRAIT_METHOD_IMPLEMENTATIONS}}
