@@ -45,10 +45,13 @@ impl CodeGenerator for ClientTraitGenerator {
             Implementation::BitcoinCore => "BitcoinClient",
             _ => panic!("Unsupported protocol: {}", self.protocol.as_str()),
         };
+        // Use unversioned client name for all implementations (version controlled by Cargo.toml)
+        let exported_trait_name = client_name.to_string();
         let mod_rs = format!(
             "//! Auto-generated module for {client_name}{version_no}\n\
              pub mod client;\n\
-             pub use self::client::{client_name}{version_no};\n"
+             pub use self::client::{};\n",
+            exported_trait_name
         );
 
         vec![("client.rs".into(), client_trait), ("mod.rs".into(), mod_rs)]
