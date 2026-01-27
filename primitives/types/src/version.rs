@@ -139,29 +139,6 @@ impl ProtocolVersion {
     /// Removes the 'v' prefix and replaces dots with dashes (e.g., "v30.1.0" -> "30-1-0").
     pub fn identifier(&self) -> String { self.as_str().replace('v', "").replace('.', "-") }
 
-    /// Render as a version module name segment for use in generated code.
-    ///
-    /// # Returns
-    ///
-    /// Returns a version string formatted for use as a module name segment.
-    /// Preserves CalVer formatting and uses underscores (e.g., "v30.1.0" -> "v30_1_0", "v25.09" -> "v25_09_0").
-    pub fn as_version_module_name(&self) -> String {
-        // For CalVer versions (like Core Lightning), preserve the original minor version format
-        // Extract the minor version from the original version string to preserve leading zeros
-        let minor_str = if let Some(dot_pos) = self.version_string.find('.') {
-            let after_dot = &self.version_string[dot_pos + 1..];
-            if let Some(next_dot) = after_dot.find('.') {
-                &after_dot[..next_dot]
-            } else {
-                after_dot
-            }
-        } else {
-            &self.minor.to_string()
-        };
-
-        format!("v{}_{}_{}", self.major, minor_str, self.patch)
-    }
-
     /// Format version string for filename (e.g., "30.2" -> "30_2", "v30.2.1" -> "30_2_1").
     ///
     /// Replaces dots with underscores and removes the 'v' prefix to create filesystem-safe version strings.
@@ -392,18 +369,6 @@ mod tests {
             protocol: None,
         };
         assert_eq!(version.identifier(), "30-1-0");
-    }
-
-    #[test]
-    fn test_as_version_module_name() {
-        let version = ProtocolVersion {
-            version_string: "v25.09".to_string(),
-            major: 25,
-            minor: 9,
-            patch: 0,
-            protocol: None,
-        };
-        assert_eq!(version.as_version_module_name(), "v25_09_0");
     }
 
     #[test]
