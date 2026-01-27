@@ -123,7 +123,6 @@ pub fn write_readme(
     target_version: &ProtocolVersion,
     artifact_name: Implementation,
 ) -> Result<(), PipelineError> {
-    let _version = target_version.crate_version();
     let crate_name = artifact_name.published_crate_name();
     let crate_module_name = crate_name.replace('-', "_");
     let clients_dir_name = artifact_name.client_dir_name();

@@ -252,15 +252,13 @@ pub fn write_generated<P: AsRef<Path>>(
 /// 3. A call to `transport.send_request(method_name, &params).await`.
 /// 4. Deserialization of the raw response into a typed `Response` struct (or raw `Value`).
 pub struct MethodWrapperGenerator {
-    client_name: String,
-    crate_name: String,
     protocol: String, // e.g., "bitcoin_core" | "core_lightning"
 }
 
 impl MethodWrapperGenerator {
     /// Create a new MethodWrapperGenerator with the specified context
-    pub fn new(client_name: String, crate_name: String, protocol: String) -> Self {
-        Self { client_name, crate_name, protocol }
+    pub fn new(protocol: String) -> Self {
+        Self { protocol }
     }
 }
 
@@ -320,7 +318,7 @@ impl CodeGenerator for MethodWrapperGenerator {
 
                 /* ---------- docs + types ---------- */
                 let docs_md =
-                    doc_comment::generate_example_docs(m, &self.client_name, &self.crate_name)
+                    doc_comment::generate_example_docs(m)
                         .trim_end()
                         .to_string();
 

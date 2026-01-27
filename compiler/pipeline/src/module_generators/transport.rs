@@ -25,8 +25,6 @@ impl ModuleGenerator for TransportModuleGenerator {
     ) -> Result<Vec<(String, String)>, PipelineError> {
         // Generate method wrapper files
         let tx_files = MethodWrapperGenerator::new(
-            ctx.client_name(),
-            ctx.full_crate_name(),
             ctx.implementation.as_str().to_string(),
         )
         .generate(&ctx.rpc_methods);
