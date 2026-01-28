@@ -337,12 +337,7 @@ impl VersionSpecificResponseTypeGenerator {
             out.push_str("}\n");
         }
 
-        // Use the same naming convention as as_module_name() to match namespace scaffolder
-        let module_name = self
-            .version
-            .as_module_name()
-            .map_err(|e| format!("Failed to generate module name: {}", e))?;
-        let filename = format!("{}_responses.rs", module_name);
+        let filename = "responses.rs".to_string();
         Ok(vec![(filename, out)])
     }
 
