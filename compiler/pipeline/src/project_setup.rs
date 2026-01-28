@@ -131,8 +131,9 @@ pub fn write_readme(
     let protocol_name = artifact_name.display_name();
     let executable_name = artifact_name.executable_name();
     let example_method_raw = artifact_name.example_method();
-    let example_method = protocol_rpc_method_to_rust_name(artifact_name.as_str(), example_method_raw)
-        .unwrap_or_else(|_| rpc_method_to_rust_name(example_method_raw));
+    let example_method =
+        protocol_rpc_method_to_rust_name(artifact_name.as_str(), example_method_raw)
+            .unwrap_or_else(|_| rpc_method_to_rust_name(example_method_raw));
     let example_description = artifact_name.example_description();
     let node_manager_name = artifact_name.node_manager_name();
     let client_prefix = artifact_name.client_prefix();
@@ -225,18 +226,16 @@ This library launches {protocol_name} daemons for local integration testing. For
 /// # Returns
 ///
 /// Returns `Result<()>` indicating success or failure of writing the examples/basic.rs file
-fn write_example_basic(
-    root: &Path,
-    artifact_name: Implementation,
-) -> Result<(), PipelineError> {
+fn write_example_basic(root: &Path, artifact_name: Implementation) -> Result<(), PipelineError> {
     let crate_name = artifact_name.published_crate_name();
     let crate_module_name = crate_name.replace('-', "_");
 
     // Determine protocol-specific content
     let example_method_raw = artifact_name.example_method();
     // Convert RPC method name to Rust snake_case function name
-    let example_method = protocol_rpc_method_to_rust_name(artifact_name.as_str(), example_method_raw)
-        .unwrap_or_else(|_| rpc_method_to_rust_name(example_method_raw));
+    let example_method =
+        protocol_rpc_method_to_rust_name(artifact_name.as_str(), example_method_raw)
+            .unwrap_or_else(|_| rpc_method_to_rust_name(example_method_raw));
     let example_description = artifact_name.example_description();
     let node_manager_name = artifact_name.node_manager_name();
     let client_prefix = artifact_name.client_prefix();

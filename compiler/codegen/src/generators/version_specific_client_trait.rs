@@ -11,7 +11,9 @@ use types::{Implementation, ProtocolVersion, TypeRegistry};
 
 use super::doc_comment::format_doc_comment;
 use crate::generators::version_specific_response_type::record_external_symbol_usage;
-use crate::utils::{protocol_rpc_method_to_rust_name, sanitize_external_identifier, snake_to_pascal_case};
+use crate::utils::{
+    protocol_rpc_method_to_rust_name, sanitize_external_identifier, snake_to_pascal_case,
+};
 use crate::CodeGenerator;
 
 /// Enhanced client trait generator that uses version-specific metadata
@@ -316,12 +318,8 @@ impl VersionSpecificClientTraitGenerator {
                         .expect("Failed to write optional parameter closing");
                 } else {
                     // Required parameter: always include
-                    writeln!(
-                        buf,
-                        "        rpc_params.push(serde_json::json!({}));",
-                        param_name
-                    )
-                    .expect("Failed to write required parameter serialization");
+                    writeln!(buf, "        rpc_params.push(serde_json::json!({}));", param_name)
+                        .expect("Failed to write required parameter serialization");
                 }
             }
             writeln!(
@@ -332,12 +330,8 @@ impl VersionSpecificClientTraitGenerator {
             .expect("Failed to write method body");
         } else {
             // For methods with no parameters, use empty array
-            writeln!(
-                buf,
-                "        self.call::<{}>(\"{}\", &[]).await",
-                response_type, rpc.name
-            )
-            .expect("Failed to write method body");
+            writeln!(buf, "        self.call::<{}>(\"{}\", &[]).await", response_type, rpc.name)
+                .expect("Failed to write method body");
         }
         writeln!(buf, "    }}").expect("Failed to write method closing brace");
 
