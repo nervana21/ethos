@@ -150,10 +150,8 @@ async fn main() {
                 std::process::exit(1);
             }
         };
-        let crate_dir = project_root.join(format!(
-            "outputs/generated/{}",
-            implementation.published_crate_name(),
-        ));
+        let crate_dir = project_root
+            .join(format!("outputs/generated/{}", implementation.published_crate_name(),));
         if crate_dir.exists() {
             std::fs::remove_dir_all(&crate_dir).ok();
         }
