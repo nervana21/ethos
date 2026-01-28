@@ -257,9 +257,7 @@ pub struct MethodWrapperGenerator {
 
 impl MethodWrapperGenerator {
     /// Create a new MethodWrapperGenerator with the specified context
-    pub fn new(protocol: String) -> Self {
-        Self { protocol }
-    }
+    pub fn new(protocol: String) -> Self { Self { protocol } }
 }
 
 impl CodeGenerator for MethodWrapperGenerator {
@@ -317,10 +315,7 @@ impl CodeGenerator for MethodWrapperGenerator {
                 };
 
                 /* ---------- docs + types ---------- */
-                let docs_md =
-                    doc_comment::generate_example_docs(m)
-                        .trim_end()
-                        .to_string();
+                let docs_md = doc_comment::generate_example_docs(m).trim_end().to_string();
 
                 // For transport code generation, we use generic Value types
                 let ok_ty = "Value".to_string();

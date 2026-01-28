@@ -55,7 +55,8 @@ pub fn get_protocol_spec_path(
             return Err(format!(
                 "Unknown protocol '{}'. Supported protocols: bitcoin, lightning",
                 protocol_name
-            ).into());
+            )
+            .into());
         }
     };
 
@@ -90,7 +91,11 @@ pub fn validate_input_path(input_path: PathBuf) -> Result<PathBuf, Box<dyn std::
 
     match resolved_path.canonicalize() {
         Ok(canonical_path) => Ok(canonical_path),
-        Err(e) => Err(format!("Input file not found: {:?}. Please provide a path to an API JSON file. Error: {}", resolved_path, e).into()),
+        Err(e) => Err(format!(
+            "Input file not found: {:?}. Please provide a path to an API JSON file. Error: {}",
+            resolved_path, e
+        )
+        .into()),
     }
 }
 

@@ -591,7 +591,11 @@ impl VersionSpecificResponseTypeGenerator {
             None
         };
         let param_name = if txid_field.is_some() { "v" } else { "_v" };
-        writeln!(buf, "            fn visit_str<E>(self, {}: &str) -> Result<Self::Value, E>", param_name)?;
+        writeln!(
+            buf,
+            "            fn visit_str<E>(self, {}: &str) -> Result<Self::Value, E>",
+            param_name
+        )?;
         writeln!(buf, "            where")?;
         writeln!(buf, "                E: de::Error,")?;
         writeln!(buf, "            {{")?;
@@ -755,7 +759,9 @@ impl VersionSpecificResponseTypeGenerator {
     }
 
     /// Sanitize field name for Rust identifier
-    fn sanitize_identifier(&self, name: &str) -> String { crate::utils::sanitize_external_identifier(name) }
+    fn sanitize_identifier(&self, name: &str) -> String {
+        crate::utils::sanitize_external_identifier(name)
+    }
 
     /// Map metadata type to Rust type
     fn map_metadata_type_to_rust(&self, type_name: &str, is_optional: bool) -> String {
@@ -966,11 +972,7 @@ impl VersionSpecificResponseTypeGenerator {
             )?;
         } else if self.is_numeric_type(&inner_type) {
             if inner_type == "u64" {
-                writeln!(
-                    &mut buf,
-                    "                Ok({} {{ value: v }})",
-                    struct_name
-                )?;
+                writeln!(&mut buf, "                Ok({} {{ value: v }})", struct_name)?;
             } else {
                 writeln!(
                     &mut buf,
@@ -1016,11 +1018,7 @@ impl VersionSpecificResponseTypeGenerator {
             )?;
         } else if self.is_numeric_type(&inner_type) {
             if inner_type == "u64" {
-                writeln!(
-                    &mut buf,
-                    "                Ok({} {{ value: v as u64 }})",
-                    struct_name
-                )?;
+                writeln!(&mut buf, "                Ok({} {{ value: v as u64 }})", struct_name)?;
             } else {
                 writeln!(
                     &mut buf,
@@ -1060,11 +1058,7 @@ impl VersionSpecificResponseTypeGenerator {
             writeln!(&mut buf, "                Ok({} {{ value: amount }})", struct_name)?;
         } else if self.is_numeric_type(&inner_type) {
             if inner_type == "u64" {
-                writeln!(
-                    &mut buf,
-                    "                Ok({} {{ value: v as u64 }})",
-                    struct_name
-                )?;
+                writeln!(&mut buf, "                Ok({} {{ value: v as u64 }})", struct_name)?;
             } else {
                 writeln!(
                     &mut buf,
@@ -1208,7 +1202,10 @@ impl VersionSpecificResponseTypeGenerator {
         writeln!(&mut buf, "                    }}")?;
         writeln!(&mut buf, "                }}")?;
         if inner_type.trim() == "()" {
-            writeln!(&mut buf, "                value.ok_or_else(|| de::Error::missing_field(\"value\"))?;")?;
+            writeln!(
+                &mut buf,
+                "                value.ok_or_else(|| de::Error::missing_field(\"value\"))?;"
+            )?;
             writeln!(&mut buf, "                Ok({} {{ value: () }})", struct_name)?;
         } else {
             writeln!(&mut buf, "                let value = value.ok_or_else(|| de::Error::missing_field(\"value\"))?;")?;

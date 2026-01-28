@@ -246,8 +246,13 @@ mod tests {
         // Verify the file was written and can be read back
         let contents = fs::read_to_string(&temp_file).expect("Failed to read saved config file");
         assert!(contents.contains("bitcoin_core"));
-        let expected_version = config.protocol.version.as_ref().expect("Default config should have a version");
-        assert!(contents.contains(expected_version), "Saved file should contain the default version: {}", expected_version);
+        let expected_version =
+            config.protocol.version.as_ref().expect("Default config should have a version");
+        assert!(
+            contents.contains(expected_version),
+            "Saved file should contain the default version: {}",
+            expected_version
+        );
         assert!(contents.contains("regtest"));
         assert!(contents.contains("info"));
 
