@@ -163,7 +163,7 @@ pub fn format_struct_field(field_name: &str, field_type: &str, description: &str
 }
 
 /// Generate example usage documentation for an RPC method
-pub fn generate_example_docs(method: &RpcDef, _client_name: &str, _crate_name: &str) -> String {
+pub fn generate_example_docs(method: &RpcDef) -> String {
     let mut docs = String::new();
 
     if !method.description.trim().is_empty() {

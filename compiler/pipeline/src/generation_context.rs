@@ -39,13 +39,9 @@ impl GenerationContext {
     /// Get the protocol display name
     pub fn protocol_name(&self) -> String { self.implementation.display_name().to_string() }
 
-    /// Get the client class name for this version
+    /// Get the client trait name for this implementation
     pub fn client_name(&self) -> String {
-        format!(
-            "{}{}",
-            self.implementation.test_client_prefix(),
-            self.versioned_registry.version().as_version_module_name()
-        )
+        self.implementation.client_prefix().to_string()
     }
 
     /// Get the artifact name (crate name without version)
