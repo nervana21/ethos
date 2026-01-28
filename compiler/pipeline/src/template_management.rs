@@ -5,10 +5,10 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
+use path::find_project_root;
 use types::Implementation;
 
 use crate::PipelineError;
-use path::find_project_root;
 
 /// Template files to be copied to the generated crate
 const TEMPLATE_FILES: &[&str] = &["config.rs", "test_config.rs"];

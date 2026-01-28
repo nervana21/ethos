@@ -6,12 +6,12 @@
 use std::fs;
 use std::path::PathBuf;
 
+use path::{find_project_root, load_registry};
 use registry::ir_resolver::IrResolver;
 use types::{Implementation, ProtocolVersion};
 
 use crate::codegen_orchestration::{analyze_implementation, generate_into};
 use crate::project_setup::setup_project_files;
-use path::{find_project_root, load_registry};
 use crate::protocol_compiler::EthosCompiler;
 use crate::template_management::create_source_directory_with_templates;
 use crate::PipelineError;
@@ -93,7 +93,8 @@ pub fn compile_from_ir(
     let crate_root = match crate_root {
         Some(path) => path,
         None => {
-            let project_root = find_project_root().map_err(|e| PipelineError::Message(e.to_string()))?;
+            let project_root =
+                find_project_root().map_err(|e| PipelineError::Message(e.to_string()))?;
             // Use {published_crate_name} format for directory naming
             let generated_path = project_root
                 .join(format!("outputs/generated/{}", implementation.published_crate_name()));

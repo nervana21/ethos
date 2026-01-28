@@ -189,15 +189,11 @@ trait HasTypeAndInner {
 }
 
 impl HasTypeAndInner for RawArgument {
-    fn has_object_inner(&self) -> bool {
-        self.r#type == "object" && !self.inner.is_empty()
-    }
+    fn has_object_inner(&self) -> bool { self.r#type == "object" && !self.inner.is_empty() }
 }
 
 impl HasTypeAndInner for RawResult {
-    fn has_object_inner(&self) -> bool {
-        self.r#type == "object" && !self.inner.is_empty()
-    }
+    fn has_object_inner(&self) -> bool { self.r#type == "object" && !self.inner.is_empty() }
 }
 
 /// Trait for extracting field information from inner elements
@@ -208,27 +204,16 @@ trait InnerFieldInfo {
 }
 
 impl InnerFieldInfo for RawArgument {
-    fn field_name(&self) -> String {
-        self.names.first().cloned().unwrap_or_default()
-    }
-    fn is_required(&self) -> bool {
-        self.required
-    }
+    fn field_name(&self) -> String { self.names.first().cloned().unwrap_or_default() }
+    fn is_required(&self) -> bool { self.required }
     fn default_value(&self) -> Option<String> {
-        self.default
-            .as_ref()
-            .map(|v| v.to_string())
-            .or_else(|| self.default_hint.clone())
+        self.default.as_ref().map(|v| v.to_string()).or_else(|| self.default_hint.clone())
     }
 }
 
 impl InnerFieldInfo for RawResult {
-    fn field_name(&self) -> String {
-        self.key_name.clone()
-    }
-    fn is_required(&self) -> bool {
-        !self.optional
-    }
+    fn field_name(&self) -> String { self.key_name.clone() }
+    fn is_required(&self) -> bool { !self.optional }
     fn default_value(&self) -> Option<String> {
         None // Results don't have default values
     }
@@ -545,14 +530,12 @@ fn convert_argument_to_type_def(raw: &RawArgument) -> TypeDef {
 
     // Handle nested structures
     if matches!(kind, TypeKind::Object) && !raw.inner.is_empty() {
-        let fields = build_fields_from_inner(&raw.inner, |inner| {
-            FieldDef {
-                name: inner.field_name(),
-                field_type: convert_argument_to_type_def(inner),
-                required: inner.is_required(),
-                description: inner.description.clone(),
-                default_value: inner.default_value(),
-            }
+        let fields = build_fields_from_inner(&raw.inner, |inner| FieldDef {
+            name: inner.field_name(),
+            field_type: convert_argument_to_type_def(inner),
+            required: inner.is_required(),
+            description: inner.description.clone(),
+            default_value: inner.default_value(),
         });
 
         type_def.fields = Some(if raw.r#type == "array" {
@@ -794,10 +777,7 @@ fn convert_rpc_method(raw: RawRpcMethod, version_added: Option<String>) -> RpcDe
 }
 
 /// Convert raw Bitcoin Core schema to ProtocolIR with optional version
-pub fn convert_to_protocol_ir_with_version(
-    raw: RawSchema,
-    version: Option<String>,
-) -> ProtocolIR {
+pub fn convert_to_protocol_ir_with_version(raw: RawSchema, version: Option<String>) -> ProtocolIR {
     use ir::{ProtocolDef, ProtocolModule};
 
     let mut definitions = Vec::new();
@@ -827,11 +807,7 @@ pub fn convert_to_protocol_ir_with_version(
     sort_definitions_by_name(&mut definitions);
 
     // Create module using the public constructor
-    let module = ProtocolModule::new(
-        "rpc".to_string(),
-        "Bitcoin RPC API".to_string(),
-        definitions,
-    );
+    let module = ProtocolModule::new("rpc".to_string(), "Bitcoin RPC API".to_string(), definitions);
 
     ProtocolIR::new(vec![module])
 }
@@ -847,7 +823,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     if args.len() < 2 {
         eprintln!("Usage:");
-        eprintln!("  {} <schema_file> [output_file]                    # Convert schema to IR", args[0]);
+        eprintln!(
+            "  {} <schema_file> [output_file]                    # Convert schema to IR",
+            args[0]
+        );
         eprintln!("  {} <version> [output_file]                         # Extract version-specific IR from canonical IR", args[0]);
         eprintln!();
         eprintln!("Examples:");
@@ -860,10 +839,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let first_arg = &args[1];
 
     // Check if first argument is a version string (contains only digits and dots, or starts with 'v')
-    let is_version = first_arg
-        .trim_start_matches('v')
-        .chars()
-        .all(|c| c.is_ascii_digit() || c == '.');
+    let is_version =
+        first_arg.trim_start_matches('v').chars().all(|c| c.is_ascii_digit() || c == '.');
 
     if is_version {
         // Mode 3: Extract version-specific IR from canonical IR
@@ -898,10 +875,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let version = extract_version_from_schema(&raw_schema)?;
 
         // Convert to ProtocolIR
-        let protocol_ir = convert_to_protocol_ir_with_version(
-            raw_schema,
-            Some(version.clone()),
-        );
+        let protocol_ir = convert_to_protocol_ir_with_version(raw_schema, Some(version.clone()));
 
         // Determine output file
         let output_file = if args.len() >= 3 {

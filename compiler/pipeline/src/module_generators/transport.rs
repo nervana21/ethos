@@ -24,10 +24,8 @@ impl ModuleGenerator for TransportModuleGenerator {
         ctx: &GenerationContext,
     ) -> Result<Vec<(String, String)>, PipelineError> {
         // Generate method wrapper files
-        let tx_files = MethodWrapperGenerator::new(
-            ctx.implementation.as_str().to_string(),
-        )
-        .generate(&ctx.rpc_methods);
+        let tx_files = MethodWrapperGenerator::new(ctx.implementation.as_str().to_string())
+            .generate(&ctx.rpc_methods);
 
         // Generate transport infrastructure files
         let core_files = TransportInfrastructureGenerator::new(ctx.transport_protocol())

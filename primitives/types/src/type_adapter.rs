@@ -54,10 +54,7 @@ pub trait TypeAdapter: Send + Sync {
     /// # Returns
     /// * `Some(Vec<MethodResult>)` - Parsed response schema if available
     /// * `None` - If no structured response schema exists
-    fn parse_response_schema(
-        &self,
-        rpc: &RpcDef,
-    ) -> Option<Vec<crate::MethodResult>>;
+    fn parse_response_schema(&self, rpc: &RpcDef) -> Option<Vec<crate::MethodResult>>;
 
     /// Map protocol-specific type to Rust type.
     ///
