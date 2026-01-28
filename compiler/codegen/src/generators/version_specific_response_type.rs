@@ -5,10 +5,11 @@
 //! Bitcoin Core version.
 
 use std::fmt::Write as _;
+use std::str::FromStr;
 use std::sync::{Mutex, OnceLock};
 
 use ir::{ProtocolIR, RpcDef};
-use types::ProtocolVersion;
+use types::{Implementation, ProtocolVersion};
 
 use super::doc_comment::{sanitize_doc_line, write_doc_comment, write_doc_line};
 use crate::Result;
@@ -65,10 +66,13 @@ impl VersionSpecificResponseTypeGenerator {
     pub fn generate(&self, methods: &[RpcDef]) -> Result<Vec<(String, String)>> {
         let mut out = String::from("//! Generated version-specific RPC response types\n");
         out.push_str("//! \n");
+        let implementation_display = Implementation::from_str(&self.implementation)
+            .map(|impl_| impl_.display_name().to_string())
+            .unwrap_or_else(|_| self.implementation.clone());
         out.push_str(&format!(
             "//! Generated for {} {}\n",
-            self.implementation,
-            self.version.as_str()
+            implementation_display,
+            self.version.short()
         ));
         out.push_str("//! \n");
         out.push_str("//! These types are version-specific and may not match other versions.\n");

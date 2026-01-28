@@ -9,7 +9,7 @@ use ir::RpcDef;
 use types::type_adapter::TypeAdapter;
 use types::{Implementation, ProtocolVersion, TypeRegistry};
 
-use super::doc_comment::{format_doc_comment, write_doc_line};
+use super::doc_comment::format_doc_comment;
 use crate::generators::version_specific_response_type::record_external_symbol_usage;
 use crate::utils::{protocol_rpc_method_to_rust_name, sanitize_external_identifier, snake_to_pascal_case};
 use crate::CodeGenerator;
@@ -52,24 +52,23 @@ impl CodeGenerator for VersionSpecificClientTraitGenerator {
         let client_trait = self.render_client_trait(template, &available_methods);
 
         // render mod.rs that re-exports the trait
-        let version_no = self.version.as_version_module_name().replace('v', "V");
         let client_name = match self.protocol.as_str() {
             "core_lightning" => "CoreLightningClient",
             "bitcoin_core" => "BitcoinClient",
             _ => panic!("Unsupported protocol: {}", self.protocol),
         };
         let exported_trait_name = client_name.to_string();
+        let protocol_display = self.protocol.display_name();
+        let version_short = self.version.short();
         let mod_rs = format!(
-            "//! Auto-generated module for {client_name}{version_no}\n\
+            "//! Auto-generated module for {client_name}\n\
              //!\n\
-             //! Generated for Bitcoin Core {}\n\
+             //! Generated for {protocol_display} {version_short}\n\
              //!\n\
              //! This module contains version-specific method signatures that may\n\
-             //! not be compatible with other Bitcoin Core versions.\n\
+             //! not be compatible with other {protocol_display} versions.\n\
              pub mod client;\n\
-             pub use self::client::{};\n",
-            self.version.as_str(),
-            exported_trait_name
+             pub use self::client::{exported_trait_name};\n"
         );
 
         vec![("client.rs".into(), client_trait), ("mod.rs".into(), mod_rs)]
@@ -83,10 +82,8 @@ impl VersionSpecificClientTraitGenerator {
     fn render_client_trait(&self, template: &str, methods: &[&RpcDef]) -> String {
         let mut out = template.to_owned();
 
-        let version_str = self.version.as_str();
-        let version_no = self.version.as_version_module_name().replace('v', "V");
-        out = out.replace("{{VERSION}}", version_str);
-        out = out.replace("{{VERSION_NODOTS}}", &version_no);
+        let version_str = self.version.short();
+        out = out.replace("{{VERSION}}", &version_str);
 
         out = out.replace("{{IMPORTS}}", &self.build_imports(methods));
 
@@ -217,13 +214,6 @@ impl VersionSpecificClientTraitGenerator {
         for line in formatted_desc.lines() {
             writeln!(buf, "    {}", line).expect("Failed to write method documentation");
         }
-        writeln!(buf, "    ///").expect("Failed to write documentation");
-        write_doc_line(
-            &mut buf,
-            &format!("**Version**: Bitcoin Core {}", self.version.as_str()),
-            "    ",
-        )
-        .expect("Failed to write version documentation");
 
         // Generate method signature (trait definition)
         writeln!(
@@ -297,13 +287,6 @@ impl VersionSpecificClientTraitGenerator {
         for line in formatted_desc.lines() {
             writeln!(buf, "    {}", line).expect("Failed to write method documentation");
         }
-        writeln!(buf, "    ///").expect("Failed to write documentation");
-        write_doc_line(
-            &mut buf,
-            &format!("**Version**: Bitcoin Core {}", self.version.as_str()),
-            "    ",
-        )
-        .expect("Failed to write version documentation");
 
         // Generate method implementation
         writeln!(
