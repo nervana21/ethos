@@ -6,6 +6,7 @@
 use std::fs;
 use std::path::Path;
 
+use codegen::utils::{protocol_rpc_method_to_rust_name, rpc_method_to_rust_name};
 use types::{Implementation, ProtocolVersion};
 
 use crate::PipelineError;
@@ -32,6 +33,7 @@ pub fn setup_project_files(
     fs::write(&gitignore_path, "/target\n/Cargo.lock\n")?;
 
     write_readme(crate_root, target_version, artifact_name)?;
+    write_example_basic(crate_root, artifact_name)?;
     write_license(crate_root)?;
 
     Ok(())
@@ -123,14 +125,27 @@ pub fn write_readme(
 ) -> Result<(), PipelineError> {
     let _version = target_version.crate_version();
     let crate_name = artifact_name.published_crate_name();
+    let crate_module_name = crate_name.replace('-', "_");
     let clients_dir_name = artifact_name.client_dir_name();
 
     // Determine protocol-specific content
     let protocol_name = artifact_name.display_name();
     let executable_name = artifact_name.executable_name();
-    let test_client_name = artifact_name.test_client_prefix();
-    let example_method = artifact_name.example_method();
+    let example_method_raw = artifact_name.example_method();
+    let example_method = protocol_rpc_method_to_rust_name(artifact_name.as_str(), example_method_raw)
+        .unwrap_or_else(|_| rpc_method_to_rust_name(example_method_raw));
     let example_description = artifact_name.example_description();
+    let node_manager_name = artifact_name.node_manager_name();
+    let client_prefix = artifact_name.client_prefix();
+
+    // Generate example code
+    let example_code = generate_example_code(
+        &crate_module_name,
+        node_manager_name,
+        client_prefix,
+        &example_method,
+        example_description,
+    );
 
     let readme = format!(
         r#"# {crate_name}
@@ -168,18 +183,7 @@ tokio = {{ version = "1", features = ["full"] }}
 ```
 
 ```rust
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {{
-    let manager = crate::node::BitcoinNodeManager::new()?;
-    manager.start().await?;
-    let transport = manager.create_transport().await?;
-    let client = crate::{test_client_name}::new(transport);
-    let result = client.{example_method}().await?;
-    println!("{example_description}: {{:?}}", result);
-    manager.stop().await?;
-    Ok(())
-}}
-```
+{example_code}```
 
 ## Requirements
 Requires a working `{executable_name}` in `$PATH`.
@@ -201,12 +205,54 @@ This library launches {protocol_name} daemons for local integration testing. For
         protocol_name = protocol_name,
         version = target_version.crate_version(),
         executable_name = executable_name,
-        test_client_name = test_client_name,
-        example_method = example_method,
-        example_description = example_description
+        example_code = example_code
     );
 
     fs::write(root.join("README.md"), readme)?;
+    Ok(())
+}
+
+/// Write the examples/basic.rs file for the generated crate
+///
+/// # Arguments
+///
+/// * `root` - The root directory of the generated crate
+/// * `artifact_name` - The artifact name for the generated crate (e.g., "bitcoin-core", "lightning")
+///
+/// # Returns
+///
+/// Returns `Result<()>` indicating success or failure of writing the examples/basic.rs file
+fn write_example_basic(
+    root: &Path,
+    artifact_name: Implementation,
+) -> Result<(), PipelineError> {
+    let crate_name = artifact_name.published_crate_name();
+    let crate_module_name = crate_name.replace('-', "_");
+
+    // Determine protocol-specific content
+    let example_method_raw = artifact_name.example_method();
+    // Convert RPC method name to Rust snake_case function name
+    let example_method = protocol_rpc_method_to_rust_name(artifact_name.as_str(), example_method_raw)
+        .unwrap_or_else(|_| rpc_method_to_rust_name(example_method_raw));
+    let example_description = artifact_name.example_description();
+    let node_manager_name = artifact_name.node_manager_name();
+    let client_prefix = artifact_name.client_prefix();
+
+    // Generate the example code
+    let example_code = generate_example_code(
+        &crate_module_name,
+        node_manager_name,
+        client_prefix,
+        &example_method,
+        example_description,
+    );
+
+    // Create examples directory if it doesn't exist
+    let examples_dir = root.join("examples");
+    fs::create_dir_all(&examples_dir)?;
+
+    // Write the example file
+    fs::write(examples_dir.join("basic.rs"), example_code)?;
     Ok(())
 }
 
@@ -328,4 +374,51 @@ For more information, please see
 
     fs::write(root.join("LICENSE.md"), license)?;
     Ok(())
+}
+
+/// Generate the example Rust code as a string
+///
+/// # Arguments
+///
+/// * `crate_module_name` - The crate module name (e.g., "ethos_bitcoind")
+/// * `node_manager_name` - The node manager type name (e.g., "BitcoinNodeManager")
+/// * `client_prefix` - The client type name (e.g., "BitcoinClient")
+/// * `example_method` - The example method name in snake_case (e.g., "get_blockchain_info")
+/// * `example_description` - The description for the example (e.g., "Blockchain info")
+///
+/// # Returns
+///
+/// Returns the example Rust code as a formatted string
+fn generate_example_code(
+    crate_module_name: &str,
+    node_manager_name: &str,
+    client_prefix: &str,
+    example_method: &str,
+    example_description: &str,
+) -> String {
+    format!(
+        r#"use {crate_module_name}::{{{node_manager_name}, {client_prefix}, DefaultTransport}};
+use {crate_module_name}::node::NodeManager;
+use std::sync::Arc;
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {{
+    let mut manager = {node_manager_name}::new()?;
+    manager.start().await?;
+    let client: Arc<DefaultTransport> = manager.create_transport().await?;
+
+    let result = client.{example_method}().await?;
+    println!("{example_description}: {{:?}}", result);
+
+    manager.stop().await?;
+
+    Ok(())
+}}
+"#,
+        crate_module_name = crate_module_name,
+        node_manager_name = node_manager_name,
+        client_prefix = client_prefix,
+        example_method = example_method,
+        example_description = example_description
+    )
 }
