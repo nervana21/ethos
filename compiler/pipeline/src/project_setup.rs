@@ -147,14 +147,16 @@ pub fn write_readme(
         example_description,
     );
 
+    let protocol_version_short = target_version.short();
+    let crate_version = target_version.crate_version();
     let readme = format!(
         r#"# {crate_name}
 
 [![License: CC0-1.0](https://img.shields.io/badge/license-CC0--1.0-blue)](LICENSE)
 [![Docs.rs](https://img.shields.io/docsrs/{crate_name})](https://docs.rs/{crate_name})
-[![crates.io](https://img.shields.io/crates/v/{crate_name})](https://crates.io/crates/{crate_name})
+[![crates.io](https://img.shields.io/crates/v/{crate_name}/{crate_version})](https://crates.io/crates/{crate_name})
 
-A type-safe Rust client for {protocol_name} v{version} RPCs.
+A type-safe Rust client for {protocol_name} {protocol_version} RPCs.
 
 ## Why Use This?
 
@@ -201,9 +203,11 @@ Ethos is released under the terms of the CC0-1.0 license. See [LICENSE](LICENSE)
 This library launches {protocol_name} daemons for local integration testing. For real network use, use strong network/firewall controls and carefully audit all dependencies.
 "#,
         crate_name = crate_name,
+        crate_version = crate_version,
         clients_dir_name = clients_dir_name,
         protocol_name = protocol_name,
-        version = target_version.crate_version(),
+        protocol_version = protocol_version_short,
+        version = crate_version,
         executable_name = executable_name,
         example_code = example_code
     );
