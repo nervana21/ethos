@@ -22,9 +22,7 @@ impl ModuleGenerator for LibRsModuleGenerator {
 
         // Generate implementation-specific node manager and test client names
         let node_manager_name = ctx.implementation.node_manager_name();
-
-        // Use generic TestClient name for protocol-agnostic codegen
-        let test_client_name = "TestClient";
+        let test_client_name = ctx.implementation.test_client_prefix();
 
         // Generate clients directory name
         let clients_dir_name = ctx.implementation.client_dir_name();
