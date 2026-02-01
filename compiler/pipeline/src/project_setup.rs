@@ -257,7 +257,7 @@ fn write_example_basic(root: &Path, artifact_name: Implementation) -> Result<(),
     Ok(())
 }
 
-/// Write the LICENSE.md file for the generated crate
+/// Write the LICENSE file for the generated crate
 pub fn write_license(root: &Path) -> Result<(), PipelineError> {
     let license = r#"CC0-1.0 Universal
 
@@ -373,7 +373,7 @@ express Statement of Purpose.
 For more information, please see
 <http://creativecommons.org/publicdomain/zero/1.0/>"#;
 
-    fs::write(root.join("LICENSE.md"), license)?;
+    fs::write(root.join("LICENSE"), license)?;
     Ok(())
 }
 
