@@ -17,11 +17,11 @@ pub mod types;
 
 // Re-exports for ergonomic access
 pub use config::Config;
-pub use client_trait::client::BitcoinClient;
+pub use client_trait::BitcoinClient;
 pub use node::BitcoinNodeManager;
 pub use bitcoin::Network;
 pub use test_config::TestConfig;
-pub use bitcoin_core_clients::client::BitcoinTestClient;
+pub use bitcoin_core_clients::BitcoinTestClient;
 pub use responses::*;
 pub use transport::{
     DefaultTransport,
