@@ -6,6 +6,7 @@
 use std::fs;
 use std::path::Path;
 
+use codegen::format_with_rustfmt;
 use codegen::utils::{protocol_rpc_method_to_rust_name, rpc_method_to_rust_name};
 use types::{Implementation, ProtocolVersion};
 
@@ -254,7 +255,9 @@ fn write_example_basic(root: &Path, artifact_name: Implementation) -> Result<(),
     fs::create_dir_all(&examples_dir)?;
 
     // Write the example file
-    fs::write(examples_dir.join("basic.rs"), example_code)?;
+    let example_path = examples_dir.join("basic.rs");
+    fs::write(&example_path, example_code)?;
+    format_with_rustfmt(&example_path);
     Ok(())
 }
 
@@ -399,9 +402,10 @@ fn generate_example_code(
     example_description: &str,
 ) -> String {
     format!(
-        r#"use {crate_module_name}::{{{node_manager_name}, {client_prefix}, DefaultTransport}};
+        r#"use std::sync::Arc;
+
 use {crate_module_name}::node::NodeManager;
-use std::sync::Arc;
+use {crate_module_name}::{{{client_prefix}, DefaultTransport, {node_manager_name}}};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {{
