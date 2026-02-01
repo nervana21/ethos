@@ -197,8 +197,8 @@ pub trait CodeGenerator {
     fn validate(&self, _methods: &[RpcDef]) -> Result<()> { Ok(()) }
 }
 
-#[allow(unused)]
-fn format_with_rustfmt(path: &Path) {
+/// Formats a Rust source file using rustfmt with the project's .rustfmt.toml
+pub fn format_with_rustfmt(path: &Path) {
     // Find the project root to use its .rustfmt.toml for consistent formatting
     let config_path = path::find_project_root()
         .map(|root| root.join(".rustfmt.toml"))
