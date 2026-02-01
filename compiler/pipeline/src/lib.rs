@@ -68,4 +68,4 @@ pub mod protocol_compiler;
 pub mod template_management;
 
 // Re-export public API from orchestration module
-pub use orchestration::{compile_from_ir, run_all};
+pub use orchestration::{compile_from_ir, prepare_output_dir, run_all};
