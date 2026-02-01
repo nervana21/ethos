@@ -21,6 +21,18 @@ generate input_file="":
     fi
     cargo run --package ethos-cli --bin ethos-compiler -- pipeline --implementation core_lightning
 
+# Usage: just generate-into-repo /path/to/ethos-bitcoind [version] [impl]
+# First time: mkdir ../ethos-bitcoind && cd ../ethos-bitcoind && git init
+# Then from ethos: just generate-into-repo ../ethos-bitcoind
+#   or with version: just generate-into-repo ../ethos-bitcoind v30.2.1
+#   or with both:    just generate-into-repo ../ethos-bitcoind v30.2.1 bitcoin_core
+generate-into-repo output_path version="" impl="bitcoin_core":
+    @if [ -n "{{version}}" ]; then \
+        cargo run --package ethos-cli --bin ethos-compiler -- pipeline --implementation {{impl}} --version {{version}} --output {{output_path}}; \
+    else \
+        cargo run --package ethos-cli --bin ethos-compiler -- pipeline --implementation {{impl}} --output {{output_path}}; \
+    fi
+
 # Alias for process-schema
 create-version-ir schema_file output_file="":
     @just process-schema {{schema_file}} {{output_file}}
@@ -110,6 +122,7 @@ corpus-pull:
 examples:
     @echo "Examples:"
     @echo "  just generate           # Generate from IR files"
+    @echo "  just generate-into-repo ../ethos-bitcoind   # Generate into a separate git repo for diff review"
     @echo "  just e2e                # Run e2e tests"
     @echo "  just ethos               # Complete code generation workflow"
     @echo "  just corpus-pull         # Pull all corpus repositories"
