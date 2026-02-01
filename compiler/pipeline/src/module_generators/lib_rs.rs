@@ -85,11 +85,11 @@ pub mod types;
 
 // Re-exports for ergonomic access
 pub use config::Config;
-pub use client_trait::client::{};
+pub use client_trait::{};
 pub use node::{};
 {}
 pub use test_config::TestConfig;
-pub use {}::client::{};
+pub use {}::{};
 pub use types::*;
 pub use transport::{{
     DefaultTransport,
