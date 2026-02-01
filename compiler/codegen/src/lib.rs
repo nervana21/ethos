@@ -251,7 +251,7 @@ pub fn write_generated<P: AsRef<Path>>(
         }
         let cleaned = clean_generated_source(src);
         fs::write(&path, cleaned.as_bytes())?;
-        // format_with_rustfmt(&path);
+        format_with_rustfmt(&path);
     }
     Ok(())
 }
