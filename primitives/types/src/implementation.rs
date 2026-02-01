@@ -114,7 +114,7 @@ const IMPLEMENTATION_METADATA: [ImplementationMetadata; 4] = [
         "bitcoin",
         "Bitcoin Core",
         "bitcoin-core",
-        "bitcoin_core_clients",
+        "bitcoin_core_client",
         "http",
         "bitcoind",
         "BitcoinTestClient",
@@ -128,7 +128,7 @@ const IMPLEMENTATION_METADATA: [ImplementationMetadata; 4] = [
         "lightning",
         "Core Lightning",
         "core-lightning",
-        "core_lightning_clients",
+        "core_lightning_client",
         "unix",
         "lightningd",
         "CoreLightningTestClient",
@@ -142,7 +142,7 @@ const IMPLEMENTATION_METADATA: [ImplementationMetadata; 4] = [
         "lightning",
         "Lightning Network Daemon",
         "lnd",
-        "lnd_clients",
+        "lnd_client",
         "http",
         "lnd",
         "LndTestClient",
@@ -156,7 +156,7 @@ const IMPLEMENTATION_METADATA: [ImplementationMetadata; 4] = [
         "lightning",
         "Rust Lightning",
         "rust-lightning",
-        "rust_lightning_clients",
+        "rust_lightning_client",
         "http",
         "lightning",
         "RustLightningTestClient",
@@ -393,10 +393,10 @@ mod tests {
 
     #[test]
     fn test_implementation_client_dir_name() {
-        assert_eq!(Implementation::BitcoinCore.client_dir_name(), "bitcoin_core_clients");
-        assert_eq!(Implementation::CoreLightning.client_dir_name(), "core_lightning_clients");
-        assert_eq!(Implementation::Lnd.client_dir_name(), "lnd_clients");
-        assert_eq!(Implementation::RustLightning.client_dir_name(), "rust_lightning_clients");
+        assert_eq!(Implementation::BitcoinCore.client_dir_name(), "bitcoin_core_client");
+        assert_eq!(Implementation::CoreLightning.client_dir_name(), "core_lightning_client");
+        assert_eq!(Implementation::Lnd.client_dir_name(), "lnd_client");
+        assert_eq!(Implementation::RustLightning.client_dir_name(), "rust_lightning_client");
     }
 
     #[test]
