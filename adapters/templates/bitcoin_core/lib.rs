@@ -10,7 +10,7 @@ pub mod config;
 pub mod client_trait;
 pub mod node;
 pub mod test_config;
-pub mod bitcoin_core_clients;
+pub mod bitcoin_core_client;
 pub mod transport;
 pub mod responses;
 pub mod types;
