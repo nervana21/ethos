@@ -199,7 +199,20 @@ pub trait CodeGenerator {
 
 #[allow(unused)]
 fn format_with_rustfmt(path: &Path) {
-    if let Ok(status) = Command::new("rustfmt").arg("--edition=2021").arg(path).status() {
+    // Find the project root to use its .rustfmt.toml for consistent formatting
+    let config_path = path::find_project_root()
+        .map(|root| root.join(".rustfmt.toml"))
+        .ok()
+        .filter(|p| p.exists());
+
+    let mut cmd = Command::new("rustfmt");
+    cmd.arg("--edition=2021");
+    if let Some(config) = config_path {
+        cmd.arg("--config-path").arg(config);
+    }
+    cmd.arg(path);
+
+    if let Ok(status) = cmd.status() {
         if !status.success() {}
     }
 }
