@@ -11,7 +11,7 @@ use std::sync::{Mutex, OnceLock};
 use ir::{ProtocolIR, RpcDef};
 use types::{Implementation, ProtocolVersion};
 
-use super::doc_comment::{sanitize_doc_line, write_doc_comment, write_doc_line};
+use super::doc_comment::{write_doc_comment, write_doc_line};
 use crate::Result;
 
 // Type alias to reduce type complexity
@@ -365,9 +365,11 @@ impl VersionSpecificResponseTypeGenerator {
         let struct_name = self.response_struct_name(rpc);
         let mut buf = String::new();
 
-        // Generate struct documentation
-        let sanitized_name = sanitize_doc_line(&rpc.name);
-        write_doc_line(&mut buf, &format!("Response for the `{}` RPC method", sanitized_name), "")?;
+        // Generate struct documentation using PascalCase canonical method name
+        let canonical_name =
+            crate::utils::canonical_from_adapter_method(&self.implementation, &rpc.name)
+                .unwrap_or_else(|_| struct_name.replace("Response", ""));
+        write_doc_line(&mut buf, &format!("Response for the `{}` RPC method", canonical_name), "")?;
         writeln!(&mut buf, "///")?;
         if !result.description.is_empty() {
             write_doc_comment(&mut buf, &result.description, "")?;
@@ -527,9 +529,11 @@ impl VersionSpecificResponseTypeGenerator {
             }
         }
 
-        // Generate struct documentation
-        let sanitized_name = sanitize_doc_line(&rpc.name);
-        write_doc_line(&mut buf, &format!("Response for the `{}` RPC method", sanitized_name), "")?;
+        // Generate struct documentation using PascalCase canonical method name
+        let canonical_name =
+            crate::utils::canonical_from_adapter_method(&self.implementation, &rpc.name)
+                .unwrap_or_else(|_| struct_name.replace("Response", ""));
+        write_doc_line(&mut buf, &format!("Response for the `{}` RPC method", canonical_name), "")?;
         writeln!(&mut buf, "///")?;
         write_doc_line(&mut buf, "This method returns no meaningful data.", "")?;
 
@@ -897,13 +901,15 @@ impl VersionSpecificResponseTypeGenerator {
     ) -> Result<String> {
         let mut buf = String::new();
 
-        // Generate struct documentation
+        // Generate struct documentation using PascalCase canonical method name
         if let Some(doc) = doc_comment {
             write_doc_line(&mut buf, doc, "")?;
         } else {
+            // Use PascalCase from struct name
+            let canonical_name = struct_name.replace("Response", "");
             write_doc_line(
                 &mut buf,
-                &format!("Response for the `{}` RPC method", struct_name.replace("Response", "")),
+                &format!("Response for the `{}` RPC method", canonical_name),
                 "",
             )?;
         }
@@ -1266,9 +1272,11 @@ impl VersionSpecificResponseTypeGenerator {
     fn generate_array_wrapper(&self, rpc: &RpcDef, struct_name: &str) -> Result<String> {
         let mut buf = String::new();
 
-        // Generate struct documentation
-        let sanitized_name = sanitize_doc_line(&rpc.name);
-        write_doc_line(&mut buf, &format!("Response for the `{}` RPC method", sanitized_name), "")?;
+        // Generate struct documentation using PascalCase canonical method name
+        let canonical_name =
+            crate::utils::canonical_from_adapter_method(&self.implementation, &rpc.name)
+                .unwrap_or_else(|_| struct_name.replace("Response", "").to_string());
+        write_doc_line(&mut buf, &format!("Response for the `{}` RPC method", canonical_name), "")?;
         writeln!(&mut buf, "///")?;
         write_doc_line(
             &mut buf,
