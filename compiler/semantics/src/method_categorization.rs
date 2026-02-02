@@ -6,7 +6,7 @@
 use ir::{AccessLevel, RpcDef};
 
 /// Categories for RPC methods based on Bitcoin ecosystem architecture
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 #[non_exhaustive]
 pub enum MethodCategory {
     /// Blockchain/chain state methods — durable consensus state (headers, UTXO, validation)
@@ -222,8 +222,8 @@ pub fn categorize_method(method: &RpcDef) -> MethodCategory {
 /// Group methods by semantic category
 pub fn group_methods_by_category(
     methods: &[RpcDef],
-) -> std::collections::HashMap<MethodCategory, Vec<&RpcDef>> {
-    let mut groups = std::collections::HashMap::new();
+) -> std::collections::BTreeMap<MethodCategory, Vec<&RpcDef>> {
+    let mut groups = std::collections::BTreeMap::new();
 
     for method in methods {
         let category = categorize_method(method);

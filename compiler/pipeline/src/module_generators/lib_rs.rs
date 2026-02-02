@@ -22,9 +22,7 @@ impl ModuleGenerator for LibRsModuleGenerator {
 
         // Generate implementation-specific node manager and test client names
         let node_manager_name = ctx.implementation.node_manager_name();
-
-        // Use generic TestClient name for protocol-agnostic codegen
-        let test_client_name = "TestClient";
+        let test_client_name = ctx.implementation.test_client_prefix();
 
         // Generate clients directory name
         let clients_dir_name = ctx.implementation.client_dir_name();
@@ -87,11 +85,11 @@ pub mod types;
 
 // Re-exports for ergonomic access
 pub use config::Config;
-pub use client_trait::client::{};
+pub use client_trait::{};
 pub use node::{};
 {}
 pub use test_config::TestConfig;
-pub use {}::client::{};
+pub use {}::{};
 pub use types::*;
 pub use transport::{{
     DefaultTransport,

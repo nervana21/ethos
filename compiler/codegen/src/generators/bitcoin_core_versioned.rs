@@ -88,7 +88,7 @@ mod tests {
             .unwrap();
 
         assert_eq!(result.len(), 1);
-        assert!(result[0].0.ends_with("_responses.rs"));
+        assert_eq!(result[0].0, "responses.rs");
         assert!(result[0].1.contains("Generated version-specific RPC response types"));
     }
 

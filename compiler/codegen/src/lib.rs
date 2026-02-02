@@ -197,9 +197,22 @@ pub trait CodeGenerator {
     fn validate(&self, _methods: &[RpcDef]) -> Result<()> { Ok(()) }
 }
 
-#[allow(unused)]
-fn format_with_rustfmt(path: &Path) {
-    if let Ok(status) = Command::new("rustfmt").arg("--edition=2021").arg(path).status() {
+/// Formats a Rust source file using rustfmt with the project's .rustfmt.toml
+pub fn format_with_rustfmt(path: &Path) {
+    // Find the project root to use its .rustfmt.toml for consistent formatting
+    let config_path = path::find_project_root()
+        .map(|root| root.join(".rustfmt.toml"))
+        .ok()
+        .filter(|p| p.exists());
+
+    let mut cmd = Command::new("rustfmt");
+    cmd.arg("--edition=2021");
+    if let Some(config) = config_path {
+        cmd.arg("--config-path").arg(config);
+    }
+    cmd.arg(path);
+
+    if let Ok(status) = cmd.status() {
         if !status.success() {}
     }
 }
@@ -238,7 +251,7 @@ pub fn write_generated<P: AsRef<Path>>(
         }
         let cleaned = clean_generated_source(src);
         fs::write(&path, cleaned.as_bytes())?;
-        // format_with_rustfmt(&path);
+        format_with_rustfmt(&path);
     }
     Ok(())
 }

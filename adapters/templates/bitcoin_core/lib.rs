@@ -10,18 +10,18 @@ pub mod config;
 pub mod client_trait;
 pub mod node;
 pub mod test_config;
-pub mod bitcoin_core_clients;
+pub mod bitcoin_core_client;
 pub mod transport;
 pub mod responses;
 pub mod types;
 
 // Re-exports for ergonomic access
 pub use config::Config;
-pub use client_trait::client::BitcoinClient;
+pub use client_trait::BitcoinClient;
 pub use node::BitcoinNodeManager;
 pub use bitcoin::Network;
 pub use test_config::TestConfig;
-pub use bitcoin_core_clients::client::BitcoinTestClient;
+pub use bitcoin_core_clients::BitcoinTestClient;
 pub use responses::*;
 pub use transport::{
     DefaultTransport,

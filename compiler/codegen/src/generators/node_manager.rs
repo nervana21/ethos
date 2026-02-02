@@ -85,7 +85,10 @@ use crate::transport::{{TransportError, core::TransportExt}};"#
         writeln!(
             code,
             r#"
-use tracing::{{info, debug, error}};"#
+use tracing::{{info, debug, error}};
+use tokio::io::AsyncBufReadExt;
+use std::time::Instant;
+use crate::transport::DefaultTransport;"#
         )
         .expect("Failed to write HTTP tracing imports");
     } else {
@@ -104,16 +107,6 @@ use tracing::info;"#
 use std::path::PathBuf;"#
         )
         .expect("Failed to write Unix-specific imports");
-    }
-
-    if metadata.transport == "http" {
-        writeln!(
-            code,
-            r#"
-use tokio::io::AsyncBufReadExt;
-use std::time::Instant;"#
-        )
-        .expect("Failed to write HTTP-specific imports");
     }
 }
 
@@ -503,6 +496,12 @@ fn generate_http_start_logic(code: &mut String, metadata: &types::node_metadata:
         info!("Waiting for {} node to initialize...");
         tokio::time::sleep(Duration::from_millis(150)).await;
 
+        // Create transport for RPC health check
+        let transport = DefaultTransport::new(
+            format!("http://127.0.0.1:{{}}/", self.rpc_port),
+            Some((self.config.rpc_username.clone(), self.config.rpc_password.clone())),
+        );
+
         // Wait for node to be ready
         let deadline = Instant::now() + Duration::from_secs(10);
         let mut attempts = 0;
@@ -516,31 +515,12 @@ fn generate_http_start_logic(code: &mut String, metadata: &types::node_metadata:
             }}
 
             // Try to connect to RPC
-            let client = reqwest::Client::new();
-            match client
-                .post(format!("http://127.0.0.1:{{}}/", self.rpc_port))
-                .basic_auth(&self.config.rpc_username, Some(&self.config.rpc_password))
-                .json(&serde_json::json!({{
-                    "jsonrpc": "2.0",
-                    "method": "{}",
-                    "params": [],
-                    "id": 1
-                }}))
-                .send()
-                .await
-            {{
-                Ok(response) =>
-                    if response.status().is_success() {{
-                        state.is_running = true;
-                        info!("{} node started successfully on port {{}}", self.rpc_port);
-                        return Ok(());
-                    }} else {{
-                        debug!(
-                            "RPC request failed with status {{}} (attempt {{}})",
-                            response.status(),
-                            attempts
-                        );
-                    }},
+            match transport.call::<serde_json::Value>("{}", &[]).await {{
+                Ok(_) => {{
+                    state.is_running = true;
+                    info!("{} node started successfully on port {{}}", self.rpc_port);
+                    return Ok(());
+                }}
                 Err(e) => {{
                     debug!("Failed to connect to RPC (attempt {{}}): {{}}", attempts, e);
                 }}

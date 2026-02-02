@@ -16,6 +16,10 @@ jobs:
 
       - uses: dtolnay/rust-toolchain@stable
 
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: rustfmt
+
       - name: Install prek
         run: cargo install prek
 
