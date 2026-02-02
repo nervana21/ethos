@@ -32,11 +32,12 @@ async fn main() {
         println!(
             "    --version <version>           Override version (e.g., v30.0.0, v25.09.1, v0.20.0)"
         );
+        println!("    --output <path>               Write generated crate to <path> (e.g. a separate git repo). Preserves .git for easier diff review.");
         println!();
         println!("EXAMPLES:");
         println!("    ethos-cli pipeline --input resources/ir/bitcoin.ir.json");
         println!("    ethos-cli pipeline --input resources/ir/lightning.ir.json --implementation core_lightning --version v25.09.1");
-        println!("    ethos-cli pipeline --input resources/ir/custom.ir.json --implementation bitcoin_core --version v30.0.0");
+        println!("    ethos-cli pipeline --implementation bitcoin_core --output ../ethos-bitcoind   # generate into a separate repo");
         return;
     }
 
@@ -142,20 +143,27 @@ async fn main() {
             }
         };
 
-        // Determine project output directory: outputs/generated/{published_crate_name}
-        let project_root = match path::find_project_root() {
-            Ok(root) => root,
-            Err(e) => {
-                eprintln!("Error: Failed to locate project root: {}", e);
-                std::process::exit(1);
+        // Output directory: --output <path> or default outputs/generated/{crate_name}
+        let output_arg = args.iter().position(|a| a == "--output").and_then(|i| args.get(i + 1));
+        let crate_dir = match output_arg {
+            Some(path) => PathBuf::from(path),
+            None => {
+                let project_root = match path::find_project_root() {
+                    Ok(root) => root,
+                    Err(e) => {
+                        eprintln!("Error: Failed to locate project root: {}", e);
+                        std::process::exit(1);
+                    }
+                };
+                project_root
+                    .join(format!("outputs/generated/{}", implementation.published_crate_name()))
             }
         };
-        let crate_dir = project_root
-            .join(format!("outputs/generated/{}", implementation.published_crate_name(),));
-        if crate_dir.exists() {
-            std::fs::remove_dir_all(&crate_dir).ok();
+
+        if let Err(e) = pipeline::prepare_output_dir(&crate_dir) {
+            eprintln!("Error: Failed to prepare output dir: {}", e);
+            std::process::exit(1);
         }
-        std::fs::create_dir_all(&crate_dir).expect("Failed to create output dir");
 
         // Run compilation with the loaded IR
         if let Err(e) = compile_with_ir(ir, implementation, &protocol_version, &crate_dir) {

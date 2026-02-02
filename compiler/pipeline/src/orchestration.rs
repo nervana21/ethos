@@ -4,7 +4,7 @@
 //! to execute the complete code generation process.
 
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use path::{find_project_root, load_registry};
 use registry::ir_resolver::IrResolver;
@@ -15,6 +15,37 @@ use crate::project_setup::setup_project_files;
 use crate::protocol_compiler::EthosCompiler;
 use crate::template_management::create_source_directory_with_templates;
 use crate::PipelineError;
+
+/// Paths under the crate root that are fully generated and safe to remove.
+/// Excludes `.git` and other repo metadata so artifact repos can track changes.
+const GENERATED_PATHS: &[&str] =
+    &["src", "examples", "Cargo.toml", "README.md", "LICENSE", ".gitignore"];
+
+/// Prepares the output directory for code generation.
+///
+/// Ensures the output directory exists, then removes only the generated paths listed in
+/// [`GENERATED_PATHS`]. This preserves `.git` and any other repo metadata, ensuring:
+/// - No orphan files linger from previous generations
+/// - `git diff` shows net changes against the last commit
+/// - The artifact repo stays usable for reviewing what actually changed
+///
+/// This function intentionally does NOT delete the entire directory. If you need a full
+/// wipe, do it manually before invoking the pipeline.
+pub fn prepare_output_dir(crate_root: &Path) -> Result<(), PipelineError> {
+    fs::create_dir_all(crate_root)?;
+
+    // Remove only generated paths, preserving .git and other repo metadata.
+    for rel in GENERATED_PATHS {
+        let p = crate_root.join(rel);
+        if p.is_dir() {
+            fs::remove_dir_all(&p)?;
+        } else if p.is_file() {
+            fs::remove_file(&p)?;
+        }
+    }
+
+    Ok(())
+}
 
 /// Run the pipeline for all implementations with their default versions.
 ///
@@ -102,9 +133,7 @@ pub fn compile_from_ir(
         }
     };
 
-    if crate_root.exists() {
-        fs::remove_dir_all(&crate_root)?;
-    }
+    prepare_output_dir(&crate_root)?;
 
     // Create source directory structure and copy template files
     let src_dir = create_source_directory_with_templates(&crate_root, implementation)?;

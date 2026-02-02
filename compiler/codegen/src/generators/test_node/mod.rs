@@ -190,12 +190,12 @@ impl CodeGenerator for TestNodeGenerator {
 
         let client_trait_files = client_trait_generator.generate(methods);
 
-        // Generate protocol-agnostic client name
-        let client_name = "TestClient";
+        // Use implementation-specific test client name (e.g. BitcoinTestClient, CoreLightningTestClient)
+        let client_name = self.implementation.test_client_prefix();
 
         let client_code = self.generate_combined_client(client_name, &self.version);
 
-        let mod_rs_code = utils::generate_mod_rs("test", client_name);
+        let mod_rs_code = utils::generate_mod_rs(self.implementation.display_name(), client_name);
 
         // Combine all files
         let mut all_files = client_trait_files;
