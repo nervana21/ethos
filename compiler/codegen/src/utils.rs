@@ -98,11 +98,19 @@ fn camel_to_snake_case(input: &str) -> String {
     result
 }
 
+/// Bitcoin compound terms that should be kept together when converting to snake_case.
+/// These are domain-specific terms where the PascalCase form (e.g., "TxOut") should
+/// become a single snake_case word (e.g., "txout") rather than being split (e.g., "tx_out").
+const BITCOIN_COMPOUND_TERMS: &[&str] = &["AddrMan", "HashPs", "PrevOut", "PubKey", "TxOut"];
+
 /// Converts a PascalCase string to snake_case
 ///
 /// This function is used to convert RPC method names from their PascalCase type name form
 /// (e.g., `GetBlockchainInfo`, `AddNode`) to idiomatic Rust snake_case function names
 /// (e.g., `get_blockchain_info`, `add_node`).
+///
+/// Bitcoin compound terms like "TxOut" are preserved as single words (e.g., "txout")
+/// rather than being split (e.g., "tx_out").
 ///
 /// # Examples
 /// ```
@@ -110,16 +118,45 @@ fn camel_to_snake_case(input: &str) -> String {
 /// assert_eq!(pascal_to_snake_case("GetBlockchainInfo"), "get_blockchain_info");
 /// assert_eq!(pascal_to_snake_case("AddNode"), "add_node");
 /// assert_eq!(pascal_to_snake_case("GetBalance"), "get_balance");
+/// assert_eq!(pascal_to_snake_case("ScanTxOutSet"), "scan_txout_set");
+/// assert_eq!(pascal_to_snake_case("GetTxOutProof"), "get_txout_proof");
 /// ```
 pub fn pascal_to_snake_case(input: &str) -> String {
-    let mut result = String::new();
-    let chars = input.chars();
+    // First, replace compound terms with placeholders to preserve them
+    // Use \x01 as start marker and \x02 as end marker
+    let mut processed = input.to_string();
+    for term in BITCOIN_COMPOUND_TERMS {
+        let replacement = term.to_lowercase();
+        processed = processed.replace(term, &format!("\x01{}\x02", replacement));
+    }
 
-    for c in chars {
-        if c.is_uppercase() && !result.is_empty() {
-            result.push('_');
+    // Now do standard PascalCase to snake_case conversion
+    let mut result = String::new();
+    let mut in_placeholder = false;
+
+    for c in processed.chars() {
+        if c == '\x01' {
+            // Starting a compound term - add underscore if needed
+            if !result.is_empty() && !result.ends_with('_') {
+                result.push('_');
+            }
+            in_placeholder = true;
+            continue;
         }
-        result.push(c.to_lowercase().next().unwrap_or(c));
+        if c == '\x02' {
+            in_placeholder = false;
+            continue;
+        }
+
+        if in_placeholder {
+            // Inside a compound term placeholder - just add the character as-is
+            result.push(c);
+        } else if c.is_uppercase() && !result.is_empty() {
+            result.push('_');
+            result.push(c.to_lowercase().next().unwrap_or(c));
+        } else {
+            result.push(c.to_lowercase().next().unwrap_or(c));
+        }
     }
 
     result
@@ -196,6 +233,31 @@ mod tests {
         assert_eq!(pascal_to_snake_case("GetBlockchainInfo"), "get_blockchain_info");
         assert_eq!(pascal_to_snake_case("AddNode"), "add_node");
         assert_eq!(pascal_to_snake_case("GetBalance"), "get_balance");
+    }
+
+    #[test]
+    fn test_pascal_to_snake_case_compound_terms() {
+        // TxOut compound term
+        assert_eq!(pascal_to_snake_case("ScanTxOutSet"), "scan_txout_set");
+        assert_eq!(pascal_to_snake_case("GetTxOut"), "get_txout");
+        assert_eq!(pascal_to_snake_case("GetTxOutProof"), "get_txout_proof");
+        assert_eq!(pascal_to_snake_case("GetTxOutSetInfo"), "get_txout_set_info");
+        assert_eq!(pascal_to_snake_case("DumpTxOutSet"), "dump_txout_set");
+        assert_eq!(pascal_to_snake_case("LoadTxOutSet"), "load_txout_set");
+        assert_eq!(pascal_to_snake_case("VerifyTxOutProof"), "verify_txout_proof");
+
+        // PrevOut compound term
+        assert_eq!(pascal_to_snake_case("GetTxSpendingPrevOut"), "get_tx_spending_prevout");
+
+        // PubKey compound term
+        assert_eq!(pascal_to_snake_case("ScriptPubKey"), "script_pubkey");
+
+        // HashPs compound term (hashes per second)
+        assert_eq!(pascal_to_snake_case("GetNetworkHashPs"), "get_network_hashps");
+
+        // AddrMan compound term (address manager)
+        assert_eq!(pascal_to_snake_case("GetAddrManInfo"), "get_addrman_info");
+        assert_eq!(pascal_to_snake_case("GetRawAddrMan"), "get_raw_addrman");
     }
 
     #[test]
