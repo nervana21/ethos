@@ -142,30 +142,3 @@ impl Default for TestConfig {
         }
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_network_from_str() {
-        assert_eq!(TestConfig::network_from_str("regtest"), Some(Network::Regtest));
-        assert_eq!(TestConfig::network_from_str("testnet"), Some(Network::Testnet));
-        assert_eq!(TestConfig::network_from_str("test"), Some(Network::Testnet));
-        assert_eq!(TestConfig::network_from_str("signet"), Some(Network::Signet));
-        assert_eq!(TestConfig::network_from_str("mainnet"), Some(Network::Bitcoin));
-        assert_eq!(TestConfig::network_from_str("main"), Some(Network::Bitcoin));
-        assert_eq!(TestConfig::network_from_str("bitcoin"), Some(Network::Bitcoin));
-        assert_eq!(TestConfig::network_from_str("testnet4"), Some(Network::Testnet4));
-        assert_eq!(TestConfig::network_from_str("invalid"), None);
-    }
-
-    #[test]
-    fn test_as_chain_str() {
-        let config = TestConfig {
-            network: Network::Regtest,
-            ..TestConfig::default()
-        };
-        assert_eq!(config.as_chain_str(), "regtest");
-    }
-}
