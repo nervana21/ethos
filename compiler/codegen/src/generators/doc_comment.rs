@@ -70,12 +70,8 @@ pub fn format_doc_comment(description: &str) -> String {
         }
 
         // Process the line
-        let processed_line = if !in_code_block {
-            // Sanitize the line for Rust doc comments
-            sanitize_doc_line(line)
-        } else {
-            line.to_string()
-        };
+        let processed_line =
+            if !in_code_block { sanitize_doc_line(line) } else { line.to_string() };
 
         if processed_line.is_empty() {
             if !current_section.is_empty() {
