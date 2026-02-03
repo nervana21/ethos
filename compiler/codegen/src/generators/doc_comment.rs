@@ -1,44 +1,107 @@
+//! Doc comment formatting for generated Rust code.
+//!
+//! All text that ends up in `///` doc lines must go through [sanitize_doc_line] so that
+//! rustdoc sees escaped brackets and proper URL links (e.g. placeholders like `<txid>` and
+//! bare URLs are handled correctly).
+
 use ir::RpcDef;
+use regex::Regex;
 
 use crate::utils::rpc_method_to_rust_name;
 
 /// Sanitize a line for use in Rust doc comments
+///
+/// Handles rustdoc-specific escaping:
+/// - Wraps bare URLs in angle brackets for proper linking
+/// - Escapes square brackets to prevent link interpretation
+/// - Escapes angle brackets (except around URLs) to prevent HTML interpretation
 pub fn sanitize_doc_line(line: &str) -> String {
+    // First, wrap bare URLs in angle brackets for proper rustdoc linking
+    let line = wrap_bare_urls(line);
+
     let mut result = String::new();
     let mut chars = line.chars().peekable();
+    let mut in_url_link = false; // Track if we're inside <https://...>
 
     while let Some(ch) = chars.next() {
         match ch {
-            '`' => {
-                // Escape backticks by doubling them for markdown
-                result.push('`');
-                result.push('`');
+            '[' => {
+                // Escape square brackets to prevent rustdoc from interpreting them as links
+                result.push('\\');
+                result.push('[');
             }
-            '\'' => {
-                // Handle single quotes that might be confused with character literals
-                // Check if this looks like a character literal
-                if let Some(&next_char) = chars.peek() {
-                    if next_char != ' ' {
-                        // This might be a character literal, escape it
-                        result.push('\\');
-                        result.push('\'');
-                    } else {
-                        // Regular apostrophe, convert to double quote
-                        result.push('"');
-                    }
+            ']' => {
+                // Escape square brackets to prevent rustdoc from interpreting them as links
+                result.push('\\');
+                result.push(']');
+            }
+            '<' => {
+                // Check if this is a URL wrapped in angle brackets (we want to keep those)
+                // or an HTML-like tag that should be escaped
+                let remaining: String = chars.clone().collect();
+                if remaining.starts_with("http://") || remaining.starts_with("https://") {
+                    // This is a URL link, keep the angle bracket and mark we're in a URL
+                    in_url_link = true;
+                    result.push('<');
                 } else {
-                    // Regular apostrophe, convert to double quote
-                    result.push('"');
+                    // Use HTML entity to prevent rustdoc from interpreting it as HTML
+                    result.push_str("&lt;");
                 }
             }
-            '\\' => {
-                // Escape backslashes
-                result.push('\\');
-                result.push('\\');
+            '>' => {
+                if in_url_link {
+                    // We're closing a URL link, keep the bracket
+                    in_url_link = false;
+                    result.push('>');
+                } else {
+                    // Use HTML entity
+                    result.push_str("&gt;");
+                }
             }
             _ => result.push(ch),
         }
     }
+
+    result
+}
+
+/// Wrap bare URLs in angle brackets for proper rustdoc linking
+fn wrap_bare_urls(line: &str) -> String {
+    // Match URLs - we'll check context manually since regex crate doesn't support look-around
+    let url_pattern = Regex::new(r"https?://[^\s\)<>\]]+").expect("Invalid regex pattern");
+
+    let mut result = String::new();
+    let mut last_end = 0;
+
+    for mat in url_pattern.find_iter(line) {
+        let start = mat.start();
+        let end = mat.end();
+
+        // Add text before the URL
+        result.push_str(&line[last_end..start]);
+
+        // Check if URL is already wrapped in angle brackets (start/end are byte indices)
+        let char_before = if start > 0 { line[..start].chars().last() } else { None };
+        let char_after = line[end..].chars().next();
+
+        if char_before == Some('<') && char_after == Some('>') {
+            // Already wrapped, keep as-is
+            result.push_str(mat.as_str());
+        } else if char_before == Some('<') {
+            // Has opening bracket but no closing - keep as-is (will be handled by angle bracket escaping)
+            result.push_str(mat.as_str());
+        } else {
+            // Not wrapped, add angle brackets
+            result.push('<');
+            result.push_str(mat.as_str());
+            result.push('>');
+        }
+
+        last_end = end;
+    }
+
+    // Add remaining text
+    result.push_str(&line[last_end..]);
 
     result
 }
@@ -69,9 +132,8 @@ pub fn format_doc_comment(description: &str) -> String {
             continue;
         }
 
-        // Process the line
-        let processed_line =
-            if !in_code_block { sanitize_doc_line(line) } else { line.to_string() };
+        // Process the line (sanitize only outside code blocks so e.g. ``` is not escaped)
+        let processed_line = if in_code_block { line.to_string() } else { sanitize_doc_line(line) };
 
         if processed_line.is_empty() {
             if !current_section.is_empty() {
@@ -114,8 +176,7 @@ fn process_section(doc: &mut String, section: &str, in_section: bool, first_sect
         for section_line in section.lines().skip(1) {
             let section_line = section_line.trim();
             if !section_line.is_empty() {
-                let sanitized_line = sanitize_doc_line(section_line);
-                doc.push_str(&format!("/// {sanitized_line}\n"));
+                doc.push_str(&format!("/// {section_line}\n"));
             }
         }
     } else if section.starts_with("Result:") {
@@ -123,8 +184,7 @@ fn process_section(doc: &mut String, section: &str, in_section: bool, first_sect
         for section_line in section.lines().skip(1) {
             let section_line = section_line.trim();
             if !section_line.is_empty() {
-                let sanitized_line = sanitize_doc_line(section_line);
-                doc.push_str(&format!("/// {sanitized_line}\n"));
+                doc.push_str(&format!("/// {section_line}\n"));
             }
         }
     } else if section.starts_with("Examples:") {
@@ -132,8 +192,7 @@ fn process_section(doc: &mut String, section: &str, in_section: bool, first_sect
         for section_line in section.lines().skip(1) {
             let section_line = section_line.trim();
             if !section_line.is_empty() {
-                let sanitized_line = sanitize_doc_line(section_line);
-                doc.push_str(&format!("/// {sanitized_line}\n"));
+                doc.push_str(&format!("/// {section_line}\n"));
             }
         }
     } else if !in_section {
@@ -141,8 +200,7 @@ fn process_section(doc: &mut String, section: &str, in_section: bool, first_sect
         for desc_line in section.lines() {
             let desc_line = desc_line.trim();
             if !desc_line.is_empty() {
-                let sanitized_line = sanitize_doc_line(desc_line);
-                doc.push_str(&format!("/// {sanitized_line}\n"));
+                doc.push_str(&format!("/// {desc_line}\n"));
             }
         }
     }
@@ -182,14 +240,13 @@ pub fn generate_example_docs(method: &RpcDef) -> String {
     docs.trim_end().to_string()
 }
 
-/// Write a sanitized doc comment line with proper prefix
+/// Write a doc comment line with proper prefix (sanitized for rustdoc).
 pub fn write_doc_line(buf: &mut String, text: &str, indent: &str) -> std::fmt::Result {
     use std::fmt::Write;
-    let sanitized = sanitize_doc_line(text);
-    writeln!(buf, "{}/// {}", indent, sanitized)
+    writeln!(buf, "{}/// {}", indent, sanitize_doc_line(text))
 }
 
-/// Write a sanitized multi-line doc comment
+/// Write a multi-line doc comment
 pub fn write_doc_comment(buf: &mut String, text: &str, indent: &str) -> std::fmt::Result {
     for line in text.lines() {
         let trimmed = line.trim();
