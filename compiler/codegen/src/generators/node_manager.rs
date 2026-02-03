@@ -299,7 +299,10 @@ impl {} {{"#,
     }}
 
     /// Get the RPC port for this node manager
-    pub fn rpc_port(&self) -> u16 {{ self.rpc_port }}"#
+    pub fn rpc_port(&self) -> u16 {{ self.rpc_port }}
+
+    /// Gets the test configuration used by this node manager
+    pub fn config(&self) -> &TestConfig {{ &self.config }}"#
     )
     .expect("Failed to write rpc_port method");
 
