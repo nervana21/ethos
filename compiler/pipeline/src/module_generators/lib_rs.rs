@@ -59,6 +59,8 @@ impl ModuleGenerator for LibRsModuleGenerator {
 
         let bitcoin_reexports = re_export_lines.join("\n");
 
+        let node_reexports = format!("pub use node::{{NodeManager, {}}};", node_manager_name);
+
         let lib_content = format!(
             r#"#![forbid(unsafe_code)]
 #![allow(missing_docs)]
@@ -86,7 +88,7 @@ pub mod types;
 // Re-exports for ergonomic access
 pub use config::Config;
 pub use client_trait::{};
-pub use node::{};
+{}
 {}
 pub use test_config::TestConfig;
 pub use {}::{};
@@ -102,7 +104,7 @@ pub use transport::{{
             ctx.implementation.as_str(),
             clients_dir_name,
             client_name,
-            node_manager_name,
+            node_reexports,
             bitcoin_reexports,
             clients_dir_name,
             test_client_name

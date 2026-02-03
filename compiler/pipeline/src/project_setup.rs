@@ -400,8 +400,7 @@ fn generate_example_code(
     format!(
         r#"use std::sync::Arc;
 
-use {crate_module_name}::node::NodeManager;
-use {crate_module_name}::{{{client_prefix}, DefaultTransport, {node_manager_name}}};
+use {crate_module_name}::{{{client_prefix}, DefaultTransport, NodeManager, {node_manager_name}}};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {{

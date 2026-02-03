@@ -44,9 +44,6 @@ impl CodeGenerator for NodeManagerGenerator {
         generate_node_manager_impl(&mut code, node_manager_name, &metadata);
         generate_trait_impl(&mut code, node_manager_name, &metadata);
 
-        // Generate tests
-        generate_tests(&mut code, node_manager_name);
-
         vec![("node_manager.rs".to_string(), code)]
     }
 }
@@ -302,7 +299,10 @@ impl {} {{"#,
     }}
 
     /// Get the RPC port for this node manager
-    pub fn rpc_port(&self) -> u16 {{ self.rpc_port }}"#
+    pub fn rpc_port(&self) -> u16 {{ self.rpc_port }}
+
+    /// Gets the test configuration used by this node manager
+    pub fn config(&self) -> &TestConfig {{ &self.config }}"#
     )
     .expect("Failed to write rpc_port method");
 
@@ -813,30 +813,4 @@ fn generate_create_transport_method(
             metadata.readiness_method
         ).expect("Failed to write Unix create_transport method");
     }
-}
-
-fn generate_tests(code: &mut String, node_manager_name: &str) {
-    writeln!(
-        code,
-        r#"
-#[cfg(test)]
-mod tests {{
-    use super::*;
-
-    #[test]
-    fn test_extra_args() {{
-        let config = crate::test_config::TestConfig {{
-            extra_args: vec!["-debug=1".to_string()],
-            ..crate::test_config::TestConfig::default()
-        }};
-
-        let node_manager = {}::new_with_config(&config)
-            .expect("Failed to create node manager with extra args");
-
-        assert_eq!(node_manager.config.extra_args[0], "-debug=1");
-    }}
-}}"#,
-        node_manager_name
-    )
-    .expect("Failed to write tests");
 }
