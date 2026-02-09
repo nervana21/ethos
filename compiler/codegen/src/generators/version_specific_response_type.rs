@@ -757,9 +757,17 @@ impl VersionSpecificResponseTypeGenerator {
 
     /// Get response struct name for a method
     fn response_struct_name(&self, rpc: &RpcDef) -> String {
-        let snake = crate::utils::protocol_rpc_method_to_rust_name(&self.implementation, &rpc.name)
-            .unwrap_or_else(|_| crate::utils::rpc_method_to_rust_name(&rpc.name));
-        format!("{}Response", crate::utils::snake_to_pascal_case(&snake))
+        let canonical =
+            crate::utils::canonical_from_adapter_method(&self.implementation, &rpc.name);
+        match canonical {
+            Ok(name) => format!("{}Response", name),
+            Err(_) => {
+                let snake =
+                    crate::utils::protocol_rpc_method_to_rust_name(&self.implementation, &rpc.name)
+                        .unwrap_or_else(|_| crate::utils::rpc_method_to_rust_name(&rpc.name));
+                format!("{}Response", crate::utils::snake_to_pascal_case(&snake))
+            }
+        }
     }
 
     /// Sanitize field name for Rust identifier
