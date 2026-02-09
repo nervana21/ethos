@@ -39,17 +39,17 @@ create-version-ir schema_file output_file="":
 # Process Bitcoin Core schema.json to IR
 process-schema schema_file output_file="":
     @if [ -z "{{output_file}}" ]; then \
-        cd adapters && cargo run --bin process_bitcoin_schema -- {{schema_file}}; \
+        cargo run -p ethos-adapters --bin process_bitcoin_schema -- {{schema_file}}; \
     else \
-        cd adapters && cargo run --bin process_bitcoin_schema -- {{schema_file}} {{output_file}}; \
+        cargo run -p ethos-adapters --bin process_bitcoin_schema -- {{schema_file}} {{output_file}}; \
     fi
 
 # Extract version-specific IR from canonical bitcoin.ir.json
 extract-version-ir version output_file="":
     @if [ -z "{{output_file}}" ]; then \
-        cd adapters && cargo run --bin process_bitcoin_schema -- {{version}}; \
+        cargo run -p ethos-adapters --bin process_bitcoin_schema -- {{version}}; \
     else \
-        cd adapters && cargo run --bin process_bitcoin_schema -- {{version}} {{output_file}}; \
+        cargo run -p ethos-adapters --bin process_bitcoin_schema -- {{version}} {{output_file}}; \
     fi
 
 e2e:
