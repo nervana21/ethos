@@ -12,7 +12,8 @@ use types::{Implementation, ProtocolVersion, TypeRegistry};
 use super::doc_comment::format_doc_comment;
 use crate::generators::version_specific_response_type::record_external_symbol_usage;
 use crate::utils::{
-    protocol_rpc_method_to_rust_name, sanitize_external_identifier, snake_to_pascal_case,
+    canonical_from_adapter_method, protocol_rpc_method_to_rust_name, sanitize_external_identifier,
+    snake_to_pascal_case,
 };
 use crate::CodeGenerator;
 
@@ -339,13 +340,16 @@ impl VersionSpecificClientTraitGenerator {
         if rpc.result.is_none() {
             "()".to_string()
         } else {
-            format!(
-                "{}Response",
-                snake_to_pascal_case(
-                    &protocol_rpc_method_to_rust_name(self.protocol.as_str(), &rpc.name,)
-                        .unwrap_or_else(|e| panic!("{}", e)),
-                )
-            )
+            match canonical_from_adapter_method(self.protocol.as_str(), &rpc.name) {
+                Ok(canonical) => format!("{}Response", canonical),
+                Err(_) => format!(
+                    "{}Response",
+                    snake_to_pascal_case(
+                        &protocol_rpc_method_to_rust_name(self.protocol.as_str(), &rpc.name)
+                            .unwrap_or_else(|e| panic!("{}", e)),
+                    )
+                ),
+            }
         }
     }
 }
