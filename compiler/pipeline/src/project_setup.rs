@@ -85,6 +85,7 @@ async-trait = "0.1.89"
 base64 = "0.22"
 bitcoin = {{ version = "0.32.8", features = ["rand", "serde"] }}
 bitreq = {{ version = "0.3.1", default-features = false, features = ["async-https"] }}
+bytes = ">=1.11.1"  # RUSTSEC-2026-0007: Integer overflow in BytesMut::reserve (tokio transitive)
 serde = {{ version = "1.0", features = ["derive"] }}
 serde_json = {{ version = "1.0.145", features = ["preserve_order"] }}
 tempfile = "3.8.2"
