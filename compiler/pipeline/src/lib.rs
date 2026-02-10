@@ -57,6 +57,7 @@ pub enum PipelineError {
 }
 
 // Module declarations
+pub mod cargo_dependencies;
 pub mod codegen_orchestration;
 pub mod feature_aware_cargo;
 pub mod feature_aware_mod;

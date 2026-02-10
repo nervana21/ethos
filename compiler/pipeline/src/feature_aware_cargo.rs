@@ -8,6 +8,7 @@ use ir::RpcDef;
 use semantics::method_categorization::{group_methods_by_category, MethodCategory};
 use types::ProtocolVersion;
 
+use crate::cargo_dependencies::GENERATED_CRATE_DEPENDENCIES;
 use crate::PipelineError;
 
 /// Generate Cargo.toml with feature flags
@@ -55,22 +56,8 @@ documentation = "https://docs.rs/{}"
 
     cargo_content.push_str("[workspace]\n\n");
 
-    // Dependencies (same as current)
-    cargo_content.push_str(
-        r#"[dependencies]
-async-trait = "0.1.89"
-base64 = "0.22"
-bitcoin = { version = "0.32.8", features = ["rand", "serde"] }
-bitreq = { version = "0.3.1", default-features = false, features = ["async-https"] }
-serde = { version = "1.0", features = ["derive"] }
-serde_json = { version = "1.0.145", features = ["preserve_order"] }
-tempfile = "3.23.0"
-thiserror = "2.0.17"
-tokio = { version = "1", features = ["full"] }
-tracing = "0.1.41"
-
-"#,
-    );
+    cargo_content.push_str(GENERATED_CRATE_DEPENDENCIES);
+    cargo_content.push_str("\n");
 
     cargo_content.push_str("\n[features]\n");
 

@@ -10,6 +10,7 @@ use codegen::format_with_rustfmt;
 use codegen::utils::{protocol_rpc_method_to_rust_name, rpc_method_to_rust_name};
 use types::{Implementation, ProtocolVersion};
 
+use crate::cargo_dependencies::GENERATED_CRATE_DEPENDENCIES;
 use crate::PipelineError;
 
 /// Setup project files (Cargo.toml, README, license, .gitignore)
@@ -80,18 +81,7 @@ repository = "https://github.com/nervana21/ethos"
 homepage = "https://github.com/nervana21/ethos"
 documentation = "https://docs.rs/{}"
 
-[dependencies]
-async-trait = "0.1.89"
-base64 = "0.22"
-bitcoin = {{ version = "0.32.8", features = ["rand", "serde"] }}
-bitreq = {{ version = "0.3.1", default-features = false, features = ["async-https"] }}
-serde = {{ version = "1.0", features = ["derive"] }}
-serde_json = {{ version = "1.0.145", features = ["preserve_order"] }}
-tempfile = "3.8.2"
-thiserror = "2.0.12"
-tokio = {{ version = "1", features = ["full"] }}
-tracing = "0.1.39"
-
+{}
 [features]
 serde-deny-unknown-fields = []
 "#,
@@ -100,6 +90,7 @@ serde-deny-unknown-fields = []
         artifact_name.as_str(),
         protocol_version,
         crate_name,
+        GENERATED_CRATE_DEPENDENCIES,
     );
 
     fs::write(root.join("Cargo.toml"), toml)?;
