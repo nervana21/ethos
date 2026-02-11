@@ -12,10 +12,6 @@ documentation = "https://github.com/nervana21/ethos#readme"
 keywords = ["bitcoin", "compiler", "codegen", "dsl"]
 categories = ["development-tools::build-utilities", "cryptography::cryptocurrencies"]
 
-[features]
-default = ["std"]
-std = []
-
 [workspace]
 members = [
     "adapters",
