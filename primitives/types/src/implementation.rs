@@ -2,6 +2,9 @@
 //!
 //! This module provides the `Implementation` enum that provides
 //! compile-time validation.
+//!
+//! To add a new protocol later: add a variant to `Protocol`, a dialect in
+//! `resources/adapters/registry.json`, and an adapter (plus `Implementation` variant and metadata).
 
 use std::fmt;
 use std::str::FromStr;
