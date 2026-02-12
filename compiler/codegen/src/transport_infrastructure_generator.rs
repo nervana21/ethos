@@ -452,7 +452,7 @@ impl TransportTrait for DefaultTransport {{
     .expect("Failed to write transport impl");
 }
 
-// Unix socket transport functions for Core Lightning
+// Unix socket transport functions (for implementations using Unix socket RPC)
 fn emit_unix_socket_imports(code: &mut String) {
     writeln!(
         code,

@@ -22,9 +22,7 @@ Deep Dive: [docs/semantic-convergence.md](docs/semantic-convergence.md)
 
 1. **Rust** (edition 2021, rust-version 1.70+)
 2. **just** command runner (install with `cargo install just`)
-3. Protocol executables (for integration tests):
-   - `bitcoind` (Bitcoin Core)
-   - `lightningd` (Core Lightning)
+3. Protocol executable (for integration tests): `bitcoind` (Bitcoin Core)
 
 ### Quick Start
 

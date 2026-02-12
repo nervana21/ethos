@@ -4,12 +4,11 @@
 
 //! Protocol Adapter Library
 //!
-//! This module provides a unified set of interface adapters to translate various protocol dialects
-//! (e.g., Bitcoin Core, Core Lightning, LND, and others) into a shared intermediate representation (IR)
-//! understood by higher-level components in the repository. Each adapter implements the canonical RPC
-//! interface for its respective protocol dialect, enabling interoperability and modular integration
-//! across diverse backend protocols. The design supports extensibility, simplifying the addition of new
-//! protocol adapters as requirements evolve.
+//! This module provides a unified set of interface adapters to translate protocol dialects
+//! into a shared intermediate representation (IR) understood by higher-level components.
+//! Each adapter implements the canonical RPC interface for its respective protocol dialect.
+//! The design supports extensibility: add a new protocol by implementing an adapter and
+//! registering it in the registry.
 
 use std::path::Path;
 
