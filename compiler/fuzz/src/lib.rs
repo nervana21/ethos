@@ -95,12 +95,6 @@ pub fn fuzz_differential_case(case: FuzzCase) {
 }
 
 fn build_default_rpc_adapters() -> Vec<Box<RpcAdapter>> {
-    let mut out: Vec<Box<RpcAdapter>> = Vec::new();
-    if let Ok(adapter) = RpcAdapter::new(Implementation::CoreLightning, None) {
-        out.push(Box::new(adapter));
-    }
-    if let Ok(adapter) = RpcAdapter::new(Implementation::Lnd, None) {
-        out.push(Box::new(adapter));
-    }
-    out
+    // No backends registered by default (Bitcoin Core uses IR-from-file; add backends when needed for fuzzing)
+    Vec::new()
 }
