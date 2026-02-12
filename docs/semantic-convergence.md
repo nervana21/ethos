@@ -23,7 +23,7 @@ In this limit, Bitcoin becomes formally described allowing all behaviors of the 
 
 ## 2. Behavioral vs. Formal Specifications
 
-Bitcoin Core defines the base protocol through implementation; its behavior *is* the specification. Lightning implementations follow written standards like the BOLTs, yet still encode much of their logic behaviorally. In all cases, the complete truth of the protocol is found only in running systems. The task of convergence is to express that truth formally, in a structure that can be shared, verified, and preserved.
+Bitcoin Core defines the base protocol through implementation; its behavior *is* the specification. The complete truth of the protocol is found in the running system. The task of convergence is to express that truth formally, in a structure that can be shared, verified, and preserved.
 
 The structured schema Δ, by contrast, is explicit.
 It defines the same behaviors in a declarative form that can be checked for consistency, versioned across releases, and used to generate type-safe clients or proofs of correctness.
