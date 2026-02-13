@@ -28,7 +28,7 @@ pub type Result<T> = std::result::Result<T, PipelineError>;
 #[derive(Debug, Error)]
 pub enum PipelineError {
     /// Unsupported implementation error.
-    #[error("Unsupported implementation: {0}. Supported: BitcoinCore, CoreLightning")]
+    #[error("Unsupported implementation: {0}. Supported: BitcoinCore")]
     UnsupportedImplementation(types::Implementation),
     /// Generic message-based error.
     #[error("{0}")]

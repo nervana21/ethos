@@ -1,13 +1,12 @@
 //! Registry for version-specific type generators
 //!
 //! This module provides a registry that manages different version-specific
-//! generators for various implementations (Bitcoin Core, Core Lightning, etc.).
+//! generators for various implementations (Bitcoin Core, etc.).
 
 use ir::{ProtocolIR, RpcDef};
 use types::ProtocolVersion;
 
 use super::bitcoin_core_versioned::BitcoinCoreVersionedGenerator;
-use super::core_lightning_versioned::CoreLightningVersionedGenerator;
 use super::versioned_generator::VersionedTypeGenerator;
 use crate::Result;
 
@@ -38,16 +37,6 @@ impl VersionedGeneratorRegistry {
                         format!("Failed to create Bitcoin Core versioned generator from IR: {}", e)
                     })?;
                 Box::new(bitcoin_gen)
-            }
-            "core_lightning" => {
-                let cln_gen = CoreLightningVersionedGenerator::from_ir(version.clone(), ir)
-                    .map_err(|e| {
-                        format!(
-                            "Failed to create Core Lightning versioned generator from IR: {}",
-                            e
-                        )
-                    })?;
-                Box::new(cln_gen)
             }
             _ => {
                 return Err(format!(

@@ -190,7 +190,7 @@ impl CodeGenerator for TestNodeGenerator {
 
         let client_trait_files = client_trait_generator.generate(methods);
 
-        // Use implementation-specific test client name (e.g. BitcoinTestClient, CoreLightningTestClient)
+        // Use implementation-specific test client name (e.g. BitcoinTestClient)
         let client_name = self.implementation.test_client_prefix();
 
         let client_code = self.generate_combined_client(client_name, &self.version);

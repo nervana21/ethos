@@ -11,7 +11,7 @@ const LIGHTNING_NORMALIZATION_JSON: &str =
 
 /// Strict registry-driven conversion: adapter-specific RPC → canonical → snake_case
 ///
-/// - protocol: "bitcoin_core" | "core_lightning"
+/// - protocol: "bitcoin_core"
 /// - rpc_method: adapter-specific RPC method (e.g., "getblockchaininfo", "getinfo")
 ///
 /// Errors if the preset is missing or the rpc_method has no mapping.
@@ -37,12 +37,7 @@ pub fn rpc_method_to_rust_name(rpc_method: &str) -> String {
 pub fn canonical_from_adapter_method(protocol: &str, rpc_method: &str) -> Result<String, String> {
     let (preset_json_str, impl_key) = match protocol {
         "bitcoin_core" => (BITCOIN_NORMALIZATION_JSON, "bitcoin_core"),
-        "core_lightning" => (LIGHTNING_NORMALIZATION_JSON, "core_lightning"),
-        other =>
-            return Err(format!(
-                "Unsupported protocol '{}'. Supported: bitcoin_core, core_lightning",
-                other
-            )),
+        other => return Err(format!("Unsupported protocol '{}'. Supported: bitcoin_core", other)),
     };
 
     let preset: Value = serde_json::from_str(preset_json_str)

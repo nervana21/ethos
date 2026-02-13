@@ -1,6 +1,6 @@
 //! Version-specific type generator trait for extensible implementation support
 //!
-//! This module defines the trait that any implementation (Bitcoin Core, Core Lightning, LND, etc.)
+//! This module defines the trait that any implementation (Bitcoin Core, etc.)
 //! can implement to provide version-specific type generation capabilities.
 
 use ir::{ProtocolIR, RpcDef};
@@ -48,6 +48,6 @@ pub trait VersionedTypeGenerator: Send + Sync {
     /// Get the implementation name this generator handles
     ///
     /// Returns the string identifier for the implementation this generator
-    /// is designed to handle (e.g., "bitcoin_core", "core_lightning").
+    /// is designed to handle (e.g., "bitcoin_core").
     fn implementation(&self) -> &'static str;
 }

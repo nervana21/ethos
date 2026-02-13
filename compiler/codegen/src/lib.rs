@@ -265,7 +265,7 @@ pub fn write_generated<P: AsRef<Path>>(
 /// 3. A call to `transport.send_request(method_name, &params).await`.
 /// 4. Deserialization of the raw response into a typed `Response` struct (or raw `Value`).
 pub struct MethodWrapperGenerator {
-    protocol: String, // e.g., "bitcoin_core" | "core_lightning"
+    protocol: String, // e.g., "bitcoin_core"
 }
 
 impl MethodWrapperGenerator {

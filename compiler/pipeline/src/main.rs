@@ -58,9 +58,11 @@ fn main() {
                 args[0]
             );
             eprintln!("Examples:");
-            eprintln!("  {}                                    # Build bitcoin_core v30.0 and core_lightning v25.09.1", args[0]);
-            eprintln!("  {} resources/bitcoin-api.json bitcoin_core v30.0", args[0]);
-            eprintln!("  {} resources/lightning-api.json core_lightning v25.09.1", args[0]);
+            eprintln!(
+                "  {}                                    # Build bitcoin_core from registry",
+                args[0]
+            );
+            eprintln!("  {} resources/ir/bitcoin.ir.json bitcoin_core v30.2.0", args[0]);
             eprintln!("  {} --dump-ir bitcoin_core", args[0]);
             std::process::exit(1);
         }

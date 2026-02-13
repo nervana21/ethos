@@ -6,18 +6,18 @@ We warmly welcome contributions and are committed to free and open source softwa
 
 ### Adding a New Protocol Adapter
 
-The best way to contribute is by adding support for a new Bitcoin protocol implementation. Adapters translate protocol-specific schemas into a standardized Protocol IR.
+The best way to contribute is by adding support for a new Bitcoin protocol implementation. Adapters translate protocol-specific schemas into a standardized Protocol IR. The registry and Implementation pattern allow adding new protocols; the pipeline is implementation-agnostic.
 
-**Current adapters:** Bitcoin Core, Core Lightning
+**Current adapters:** Bitcoin Core
 
 **Quick start:**
 
 1. Create `adapters/src/<your_protocol>/` with `types.rs` and `rpc_client.rs`
 
-2. Implement the `RpcBackend` trait (see `adapters/src/core_lightning/rpc_client.rs` for an example):
+2. Implement the `ProtocolBackend` trait (see existing traits in `adapters/src/rpc_adapter.rs`):
    ```rust
    #[async_trait::async_trait]
-   impl RpcBackend for YourProtocolRpcClient {
+   impl ProtocolBackend for YourProtocolRpcClient {
        fn name(&self) -> &'static str { "your_protocol" }
        fn capabilities(&self) -> Vec<&'static str> { vec![CAP_RPC] }
        fn extract_protocol_ir(&self, path: &Path) -> ProtocolAdapterResult<ProtocolIR> { ... }
@@ -30,20 +30,14 @@ The best way to contribute is by adding support for a new Bitcoin protocol imple
    ```rust
    impl BackendProvider for YourProtocolRpcClient {
        fn implementation() -> Implementation { Implementation::YourProtocol }
-       fn build() -> ProtocolAdapterResult<Box<dyn RpcBackend + Send + Sync>> { ... }
+       fn build() -> ProtocolAdapterResult<Box<dyn ProtocolBackend + Send + Sync>> { ... }
    }
    ```
-   Add to `REGISTERED_BACKENDS` and the `Implementation` enum in `primitives/types/src/implementation.rs`.
+   Add to `REGISTERED_BACKENDS` and add an `Implementation` variant in `primitives/types/src/implementation.rs`.
 
-4. Add module to `adapters/src/lib.rs`:
-   ```rust
-   pub mod your_protocol {
-       pub mod types;
-       pub mod rpc_client;
-   }
-   ```
+4. Add module to `adapters/src/lib.rs`.
 
-5. Update `resources/adapters/registry.json` under the appropriate protocol section (`bitcoin` or `lightning`):
+5. Update `resources/adapters/registry.json` under the appropriate protocol section (e.g. `bitcoin`):
    ```json
    "your_protocol": {
        "name": "Your Protocol",
@@ -56,7 +50,7 @@ The best way to contribute is by adding support for a new Bitcoin protocol imple
 
 6. (Optional) Add templates in `adapters/templates/your_protocol/` and normalization rules in `resources/adapters/normalization/`
 
-**Need help?** Check out `adapters/src/core_lightning/` for a complete example.
+**Need help?** Check out `adapters/src/bitcoin_core/` for the reference implementation.
 
 ## Questions?
 

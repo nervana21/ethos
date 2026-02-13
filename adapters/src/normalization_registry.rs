@@ -11,7 +11,6 @@ use std::path::Path;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use thiserror::Error;
-use types::Implementation;
 
 /// Errors that can occur during normalization
 #[derive(Debug, Error)]
@@ -95,23 +94,6 @@ pub struct NormalizationMetadata {
 pub enum AdapterKind {
     /// Bitcoin Core adapter
     BitcoinCore,
-    /// Core Lightning adapter
-    CoreLightning,
-    /// LND adapter
-    Lnd,
-    /// Rust Lightning adapter
-    RustLightning,
-}
-
-impl From<Implementation> for AdapterKind {
-    fn from(impl_: Implementation) -> Self {
-        match impl_ {
-            Implementation::BitcoinCore => AdapterKind::BitcoinCore,
-            Implementation::CoreLightning => AdapterKind::CoreLightning,
-            Implementation::Lnd => AdapterKind::Lnd,
-            Implementation::RustLightning => AdapterKind::RustLightning,
-        }
-    }
 }
 
 /// Registry for normalization rules
@@ -147,9 +129,6 @@ impl NormalizationRegistry {
     pub fn for_adapter(adapter: AdapterKind) -> Result<Self, NormalizationError> {
         let preset = match adapter {
             AdapterKind::BitcoinCore => "bitcoin",
-            AdapterKind::CoreLightning => "lightning",
-            AdapterKind::Lnd => "lightning",
-            AdapterKind::RustLightning => "lightning",
         };
         Self::from_preset(preset)
     }
@@ -365,23 +344,25 @@ mod tests {
     #[test]
     fn test_method_mapping() {
         let mut registry = NormalizationRegistry::default();
-        registry.add_method_mapping(AdapterKind::CoreLightning, "ListChannels", "listchannels");
-        registry.add_method_mapping(AdapterKind::CoreLightning, "GetInfo", "getinfo");
-
-        // Test Core Lightning mapping
-        assert_eq!(
-            registry.to_adapter_method(AdapterKind::CoreLightning, "ListChannels"),
-            "listchannels"
+        registry.add_method_mapping(
+            AdapterKind::BitcoinCore,
+            "GetBlockChainInfo",
+            "getblockchaininfo",
         );
-        assert_eq!(registry.to_adapter_method(AdapterKind::CoreLightning, "GetInfo"), "getinfo");
+        registry.add_method_mapping(AdapterKind::BitcoinCore, "GetBlockCount", "getblockcount");
 
-        // Test LND passthrough (no mapping)
-        assert_eq!(registry.to_adapter_method(AdapterKind::Lnd, "ListChannels"), "ListChannels");
-        assert_eq!(registry.to_adapter_method(AdapterKind::Lnd, "GetInfo"), "GetInfo");
+        assert_eq!(
+            registry.to_adapter_method(AdapterKind::BitcoinCore, "GetBlockChainInfo"),
+            "getblockchaininfo"
+        );
+        assert_eq!(
+            registry.to_adapter_method(AdapterKind::BitcoinCore, "GetBlockCount"),
+            "getblockcount"
+        );
 
         // Test unknown method passthrough
         assert_eq!(
-            registry.to_adapter_method(AdapterKind::CoreLightning, "UnknownMethod"),
+            registry.to_adapter_method(AdapterKind::BitcoinCore, "UnknownMethod"),
             "UnknownMethod"
         );
     }
