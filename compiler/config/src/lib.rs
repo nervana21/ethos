@@ -6,7 +6,7 @@
 //!
 //! This crate provides configuration management for Ethos.
 //! It handles loading, saving, and managing configuration files that specify:
-//! - Protocol connection settings (Bitcoin Core, Core Lightning, LND, etc.)
+//! - Protocol connection settings (Bitcoin Core, etc.)
 //! - Logging configuration
 //! - Code generation parameters
 //!
@@ -41,7 +41,7 @@ pub enum ConfigError {
 /// Main configuration structure
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
-    /// Protocol connection settings (Bitcoin Core, Core Lightning, LND, etc.)
+    /// Protocol connection settings (Bitcoin Core, etc.)
     pub protocol: ProtocolConfig,
     /// Logging configuration
     pub logging: LoggingConfig,
@@ -52,7 +52,7 @@ pub struct Config {
 /// Protocol-specific configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProtocolConfig {
-    /// Protocol type (e.g., "bitcoin_core", "core_lightning", "lnd")
+    /// Protocol type (e.g., "bitcoin_core")
     pub protocol_type: String,
     /// Protocol version (e.g., "v30.0.0", "v25.09.1")
     pub version: Option<String>,
@@ -186,8 +186,8 @@ mod tests {
         let temp_file2 = NamedTempFile::new().expect("Failed to create second temporary file");
         let toml_content2 = r#"
             [protocol]
-            protocol_type = "core_lightning"
-            version = "v25.09.1"
+            protocol_type = "bitcoin_core"
+            version = "v30.2.0"
             network = "testnet"
 
             [logging]
@@ -203,8 +203,8 @@ mod tests {
 
         let loaded_config2 = Config::from_file(&temp_file2)
             .expect("Failed to load second config from temporary file");
-        assert_eq!(loaded_config2.protocol.protocol_type, "core_lightning");
-        assert_eq!(loaded_config2.protocol.version, Some("v25.09.1".to_string()));
+        assert_eq!(loaded_config2.protocol.protocol_type, "bitcoin_core");
+        assert_eq!(loaded_config2.protocol.version, Some("v30.2.0".to_string()));
         assert_eq!(loaded_config2.protocol.network, Some("testnet".to_string()));
         assert_eq!(loaded_config2.logging.level, "debug");
         assert_eq!(loaded_config2.logging.file, Some(PathBuf::from("debug.log")));
