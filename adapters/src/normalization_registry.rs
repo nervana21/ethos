@@ -365,23 +365,25 @@ mod tests {
     #[test]
     fn test_method_mapping() {
         let mut registry = NormalizationRegistry::default();
-        registry.add_method_mapping(AdapterKind::CoreLightning, "ListChannels", "listchannels");
-        registry.add_method_mapping(AdapterKind::CoreLightning, "GetInfo", "getinfo");
-
-        // Test Core Lightning mapping
-        assert_eq!(
-            registry.to_adapter_method(AdapterKind::CoreLightning, "ListChannels"),
-            "listchannels"
+        registry.add_method_mapping(
+            AdapterKind::BitcoinCore,
+            "GetBlockChainInfo",
+            "getblockchaininfo",
         );
-        assert_eq!(registry.to_adapter_method(AdapterKind::CoreLightning, "GetInfo"), "getinfo");
+        registry.add_method_mapping(AdapterKind::BitcoinCore, "GetBlockCount", "getblockcount");
 
-        // Test LND passthrough (no mapping)
-        assert_eq!(registry.to_adapter_method(AdapterKind::Lnd, "ListChannels"), "ListChannels");
-        assert_eq!(registry.to_adapter_method(AdapterKind::Lnd, "GetInfo"), "GetInfo");
+        assert_eq!(
+            registry.to_adapter_method(AdapterKind::BitcoinCore, "GetBlockChainInfo"),
+            "getblockchaininfo"
+        );
+        assert_eq!(
+            registry.to_adapter_method(AdapterKind::BitcoinCore, "GetBlockCount"),
+            "getblockcount"
+        );
 
         // Test unknown method passthrough
         assert_eq!(
-            registry.to_adapter_method(AdapterKind::CoreLightning, "UnknownMethod"),
+            registry.to_adapter_method(AdapterKind::BitcoinCore, "UnknownMethod"),
             "UnknownMethod"
         );
     }
