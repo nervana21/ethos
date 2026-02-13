@@ -1,7 +1,7 @@
 //! Node manager generator for Bitcoin protocol implementations.
 //!
 //! This module generates node manager code that can spawn and manage
-//! Bitcoin protocol nodes (bitcoind, lightningd, etc.) for testing.
+//! Bitcoin protocol nodes (e.g. bitcoind) for testing.
 
 use std::fmt::Write as _;
 

@@ -40,7 +40,7 @@ pub fn create_source_directory_with_templates(
 /// # Arguments
 ///
 /// * `dst_dir` - The destination directory for the template files
-/// * `implementation` - The implementation name (e.g., "bitcoin_core", "core_lightning")
+/// * `implementation` - The implementation name (e.g., "bitcoin_core")
 ///
 /// # Returns
 ///

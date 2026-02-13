@@ -63,7 +63,7 @@ pub fn canonical_from_adapter_method(protocol: &str, rpc_method: &str) -> Result
     }
 
     Err(format!(
-        "Unmapped RPC method '{}' for '{}'. Add it to resources/adapters/normalization/{}.json under method_mappings.{}.",
+        "Unmapped RPC method '{}' for '{}'. Add it to resources/adapters/normalization/bitcoin.json under method_mappings.{}.",
         rpc_method,
         protocol,
         if protocol == "bitcoin_core" { "bitcoin" } else { "lightning" },

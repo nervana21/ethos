@@ -47,7 +47,7 @@ pub fn setup_project_files(
 ///
 /// * `root` - The root directory of the generated crate
 /// * `target_version` - The implementation version being targeted
-/// * `artifact_name` - The artifact name for the generated crate (e.g., "bitcoin-core", "lightning")
+/// * `artifact_name` - The artifact name for the generated crate (e.g., "bitcoin-core")
 ///
 /// # Returns
 ///
@@ -103,7 +103,7 @@ serde-deny-unknown-fields = []
 ///
 /// * `root` - The root directory of the generated crate
 /// * `target_version` - The implementation version being targeted
-/// * `artifact_name` - The artifact name for the generated crate (e.g., "bitcoin-core", "lightning")
+/// * `artifact_name` - The artifact name for the generated crate (e.g., "bitcoin-core")
 ///
 /// # Returns
 ///
@@ -207,7 +207,7 @@ This library launches {protocol_name} daemons for local integration testing. For
 /// # Arguments
 ///
 /// * `root` - The root directory of the generated crate
-/// * `artifact_name` - The artifact name for the generated crate (e.g., "bitcoin-core", "lightning")
+/// * `artifact_name` - The artifact name for the generated crate (e.g., "bitcoin-core")
 ///
 /// # Returns
 ///
