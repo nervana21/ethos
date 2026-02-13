@@ -35,10 +35,6 @@ pub use versioned_generator::VersionedTypeGenerator;
 pub mod bitcoin_core_versioned;
 pub use bitcoin_core_versioned::BitcoinCoreVersionedGenerator;
 
-/// Core Lightning version-specific generator
-pub mod core_lightning_versioned;
-pub use core_lightning_versioned::CoreLightningVersionedGenerator;
-
 /// Registry for version-specific generators
 pub mod versioned_registry;
 pub use versioned_registry::VersionedGeneratorRegistry;

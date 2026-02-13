@@ -18,28 +18,6 @@
           "implementation": "bitcoin_core"
         }
       }
-    },
-    "lightning": {
-      "canonical_interface": "Lightning Protocol",
-      "ir_file": "resources/ir/lightning.ir.json",
-      "dialects": {
-        "core_lightning": {
-          "name": "Core Lightning",
-          "description": "Lightweight Lightning Network implementation",
-          "versions": ["v25.09", "v25.09.1"],
-          "default_version": "v25.09.1",
-          "adapter_class": "RpcAdapter",
-          "implementation": "core_lightning"
-        },
-        "lnd": {
-          "name": "LND",
-          "description": "Lightning Network Daemon",
-          "versions": ["v0.18.0"],
-          "default_version": "v0.18.0",
-          "adapter_class": "RpcAdapter",
-          "implementation": "lnd"
-        }
-      }
     }
   }
 }

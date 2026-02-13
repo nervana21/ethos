@@ -138,42 +138,6 @@ fn test_ir_serialization_roundtrip_bitcoin() {
 }
 
 #[test]
-fn test_ir_serialization_roundtrip_lightning() {
-    // Test that Lightning IR can be saved and loaded without data loss
-    let current_dir =
-        std::env::current_dir().expect("failed to get current_dir for IR roundtrip test");
-    let project_root = current_dir
-        .ancestors()
-        .find(|p| p.join("Cargo.toml").exists() && p.join("resources").exists())
-        .expect("failed to locate project root containing Cargo.toml and resources/");
-    let ir_path = project_root.join("resources/ir/lightning.ir.json");
-
-    let original = ProtocolIR::from_file(&ir_path).expect("load Lightning IR");
-    let temp_path = std::env::temp_dir().join("test_roundtrip_lightning.ir.json");
-
-    // Test roundtrip
-    original.to_file(&temp_path).expect("save Lightning IR");
-    let reloaded = ProtocolIR::from_file(&temp_path).expect("reload Lightning IR");
-
-    // Verify core properties
-    assert_eq!(original.version(), reloaded.version());
-    assert_eq!(original.modules().len(), reloaded.modules().len());
-    assert_eq!(original.definition_count(), reloaded.definition_count());
-    assert_eq!(original.get_rpc_methods().len(), reloaded.get_rpc_methods().len());
-
-    // Verify specific Lightning IR characteristics
-    assert!(original.get_rpc_methods().len() > 50, "Lightning IR should have many RPC methods");
-
-    // Check for known Lightning RPC methods
-    let rpc_names: std::collections::HashSet<String> =
-        original.get_rpc_methods().iter().map(|rpc| rpc.name.clone()).collect();
-    assert!(rpc_names.contains("addgossip"), "Should contain addgossip RPC");
-    assert!(rpc_names.contains("addpsbtoutput"), "Should contain addpsbtoutput RPC");
-
-    std::fs::remove_file(temp_path).ok();
-}
-
-#[test]
 fn test_ir_validation_real_files() {
     // Test that real IR files pass validation
     let current_dir =
@@ -194,13 +158,6 @@ fn test_ir_validation_real_files() {
 
     // Basic sanity checks
     assert!(!bitcoin_ir.get_rpc_methods().is_empty(), "Bitcoin IR should have RPC methods");
-
-    // Test Lightning IR validation
-    let lightning_ir_path = project_root.join("resources/ir/lightning.ir.json");
-    let lightning_ir = ProtocolIR::from_file(&lightning_ir_path).expect("load Lightning IR");
-
-    // Basic sanity checks
-    assert!(!lightning_ir.get_rpc_methods().is_empty(), "Lightning IR should have RPC methods");
 }
 
 #[test]

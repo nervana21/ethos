@@ -12,7 +12,6 @@ classDef feedback fill:#fffbe8,stroke:#b7a24f,color:#000
 subgraph INPUTS["Protocol Sources"]
 direction LR
 bitcoin["Bitcoin Implementation"]:::impl
-lightning["Lightning Implementation"]:::impl
 end
 
 subgraph CORE["Ethos Compiler"]
@@ -34,6 +33,5 @@ refine["Refine Model"]:::feedback
 end
 
 bitcoin --> parse
-lightning --> parse
 parse --> analyze --> generate --> clients
 clients --> fuzz --> refine --> parse

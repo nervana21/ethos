@@ -27,7 +27,7 @@ pub fn fuzz_transport_case(data: &[u8]) {
     let _ = data;
 }
 
-pub fn enumerate_lightning_methods() -> Vec<&'static str> {
+pub fn enumerate_methods() -> Vec<&'static str> {
     [
         "GetInfo", "ListPeers", "ListChannels", "AddInvoice", "ListInvoices",
         "ListPayments", "ConnectPeer", "DisconnectPeer", "OpenChannel",
@@ -50,7 +50,7 @@ pub fn parse_fuzz_input_to_case(data: &[u8]) -> FuzzCase {
         }
     }
 
-    let methods = enumerate_lightning_methods();
+    let methods = enumerate_methods();
     let idx = if data.is_empty() { 0 } else { (data[0] as usize) % methods.len() };
     let method_name = methods[idx].to_string();
 

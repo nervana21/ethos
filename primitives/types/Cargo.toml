@@ -17,7 +17,3 @@ ir = { package = "ethos-ir", version = "0.1.0", path = "../ir" }
 [[test]]
 name = "test_bitcoin_core"
 path = "tests/adapters/test_bitcoin_core.rs"
-
-[[test]]
-name = "test_core_lightning"
-path = "tests/adapters/test_core_lightning.rs"
