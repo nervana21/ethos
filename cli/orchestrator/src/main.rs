@@ -235,8 +235,5 @@ fn compile_with_ir(
 fn get_latest_version_for_implementation(implementation: &Implementation) -> &'static str {
     match implementation {
         Implementation::BitcoinCore => "v30.2.0",
-        Implementation::CoreLightning => "v25.09.1",
-        Implementation::Lnd => "v0.20.0",
-        Implementation::RustLightning => "v0.1.0",
     }
 }

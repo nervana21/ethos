@@ -3,7 +3,7 @@
 //! This adapter is responsible for ingesting an external protocol schema
 //! (as produced in `resources/ir/**`), and converting that schema into Ethos's
 //! internal IR (`ir::ProtocolIR`). In other words: given a protocol-specific
-//! interface (e.g., Bitcoin Core RPC, Core Lightning RPC, LND RPC, Floresta API),
+//! interface (e.g., Bitcoin Core RPC, Floresta API),
 //! this adapter maps the protocol operations into our canonical intermediate
 //! representation so the rest of the pipeline (compiler, codegen, fuzzing, backends)
 //! can operate uniformly.
@@ -26,7 +26,7 @@ use crate::{ProtocolAdapter, ProtocolAdapterResult, CAP_RPC};
 
 /// Unified protocol adapter that can handle multiple Bitcoin ecosystem protocols and frameworks
 pub struct RpcAdapter {
-    /// The specific implementation (e.g., "bitcoin_core", "core_lightning")
+    /// The specific implementation (e.g., "bitcoin_core")
     pub implementation: Implementation,
     /// Version metadata for this adapter (e.g., 30.0.0, 25.09.1).
     pub version: Option<String>,
@@ -82,23 +82,7 @@ pub trait BackendProvider {
 }
 
 /// Registered backends
-pub static REGISTERED_BACKENDS: &[RegisteredBackend] = &[
-    #[cfg(feature = "core-lightning")]
-    RegisteredBackend {
-        implementation: types::Implementation::CoreLightning,
-        build: <crate::core_lightning::rpc_client::CoreLightningRpcClient as crate::rpc_adapter::BackendProvider>::build,
-    },
-    #[cfg(feature = "lnd")]
-    RegisteredBackend {
-        implementation: types::Implementation::Lnd,
-        build: <crate::lnd::rpc_client::LndRpcClient as crate::rpc_adapter::BackendProvider>::build,
-    },
-    #[cfg(feature = "rust-lightning")]
-    RegisteredBackend {
-        implementation: types::Implementation::RustLightning,
-        build: <crate::rust_lightning::RustLightningAdapter as crate::rpc_adapter::BackendProvider>::build,
-    },
-];
+pub static REGISTERED_BACKENDS: &[RegisteredBackend] = &[];
 
 impl RpcAdapter {
     /// Create a new RPC adapter for a specific implementation
@@ -180,7 +164,7 @@ impl fuzz_types::ProtocolAdapter for RpcAdapter {
         let start_time = std::time::Instant::now();
 
         // Translate canonical method name to adapter-specific name
-        let adapter_kind = AdapterKind::from(self.implementation);
+        let adapter_kind = AdapterKind::BitcoinCore;
         let method_name =
             crate::normalization_registry::NormalizationRegistry::for_adapter(adapter_kind)
                 .unwrap_or_default()
@@ -208,7 +192,7 @@ impl fuzz_types::ProtocolAdapter for RpcAdapter {
 
     fn normalize_output(&self, value: &serde_json::Value) -> serde_json::Value {
         // Use unified normalization registry created on demand
-        let adapter_kind = AdapterKind::from(self.implementation);
+        let adapter_kind = AdapterKind::BitcoinCore;
         let registry =
             crate::normalization_registry::NormalizationRegistry::for_adapter(adapter_kind)
                 .unwrap_or_default();
@@ -216,9 +200,3 @@ impl fuzz_types::ProtocolAdapter for RpcAdapter {
         normalized
     }
 }
-
-// Implement LightningProtocolAdapter for RpcAdapter
-impl crate::LightningProtocolAdapter for RpcAdapter {}
-
-// Implement LightningAdapter for RpcAdapter
-impl crate::LightningAdapter for RpcAdapter {}

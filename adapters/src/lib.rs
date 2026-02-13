@@ -22,51 +22,20 @@ pub mod bitcoin_core {
     pub mod types;
 }
 
-/// Core Lightning RPC client and type definitions
-pub mod core_lightning {
-    /// Core Lightning RPC client
-    pub mod rpc_client;
-    /// Core Lightning type definitions
-    pub mod types;
-}
-
-/// LND RPC client and type definitions
-pub mod lnd {
-    /// LND RPC client
-    pub mod rpc_client;
-    /// LND type definitions
-    pub mod types;
-}
-
 pub mod adapter_facade;
 pub mod normalization_registry;
 pub mod protocol_adapter;
 pub mod rpc_adapter;
-pub mod rust_lightning;
 
 // Re-export the main ProtocolAdapter types for convenience
 pub use adapter_facade::*;
 pub use bitcoin_core::types::{BitcoinCoreRpcType, BitcoinCoreTypeRegistry};
-pub use core_lightning::types::CoreLightningTypeRegistry;
-// Re-export fuzz types
-pub use fuzz_types::{
-    FuzzCase, FuzzResult, LightningProtocolAdapter, ProtocolAdapter as FuzzProtocolAdapter,
-};
-pub use lnd::types::LndTypeRegistry;
+pub use fuzz_types::{FuzzCase, FuzzResult, ProtocolAdapter as FuzzProtocolAdapter};
 pub use protocol_adapter::*;
 pub use rpc_adapter::RpcAdapter;
 
 /// Type alias for Bitcoin Core RPC adapter
 pub type BitcoinCoreRpcAdapter = RpcAdapter;
-
-/// Type alias for Core Lightning RPC adapter
-pub type CoreLightningRpcAdapter = RpcAdapter;
-
-/// Type alias for LND RPC adapter
-pub type LndRpcAdapter = RpcAdapter;
-
-/// Trait for Lightning network adapters
-pub trait LightningAdapter: LightningProtocolAdapter {}
 
 /// Protocol-agnostic trait for loading IR from different Bitcoin protocol implementations
 pub trait IrLoader {

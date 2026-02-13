@@ -11,7 +11,6 @@ use std::path::Path;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use thiserror::Error;
-use types::Implementation;
 
 /// Errors that can occur during normalization
 #[derive(Debug, Error)]
@@ -95,23 +94,6 @@ pub struct NormalizationMetadata {
 pub enum AdapterKind {
     /// Bitcoin Core adapter
     BitcoinCore,
-    /// Core Lightning adapter
-    CoreLightning,
-    /// LND adapter
-    Lnd,
-    /// Rust Lightning adapter
-    RustLightning,
-}
-
-impl From<Implementation> for AdapterKind {
-    fn from(impl_: Implementation) -> Self {
-        match impl_ {
-            Implementation::BitcoinCore => AdapterKind::BitcoinCore,
-            Implementation::CoreLightning => AdapterKind::CoreLightning,
-            Implementation::Lnd => AdapterKind::Lnd,
-            Implementation::RustLightning => AdapterKind::RustLightning,
-        }
-    }
 }
 
 /// Registry for normalization rules
@@ -147,9 +129,6 @@ impl NormalizationRegistry {
     pub fn for_adapter(adapter: AdapterKind) -> Result<Self, NormalizationError> {
         let preset = match adapter {
             AdapterKind::BitcoinCore => "bitcoin",
-            AdapterKind::CoreLightning => "lightning",
-            AdapterKind::Lnd => "lightning",
-            AdapterKind::RustLightning => "lightning",
         };
         Self::from_preset(preset)
     }

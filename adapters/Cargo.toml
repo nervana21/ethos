@@ -30,11 +30,8 @@ name = "process_bitcoin_schema"
 path = "src/bitcoin_core/schema.rs"
 
 [features]
-default = ["bitcoin-core", "core-lightning", "lnd", "rust-lightning", "runtime-backend"]
+default = ["bitcoin-core", "runtime-backend"]
 bitcoin-core = []
-core-lightning = []
-lnd = []
-rust-lightning = []
 offline-ir = []
 runtime-backend = []
 inproc-adapter = []
