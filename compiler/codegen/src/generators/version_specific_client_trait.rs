@@ -43,9 +43,6 @@ impl CodeGenerator for VersionSpecificClientTraitGenerator {
 
         // render client_trait.rs
         let template = match self.protocol.as_str() {
-            "core_lightning" => {
-                include_str!("../../templates/core_lightning/client_trait.rs")
-            }
             "bitcoin_core" => {
                 include_str!("../../templates/bitcoin_core/client_trait.rs")
             }
@@ -55,7 +52,6 @@ impl CodeGenerator for VersionSpecificClientTraitGenerator {
 
         // render mod.rs that re-exports the trait
         let client_name = match self.protocol.as_str() {
-            "core_lightning" => "CoreLightningClient",
             "bitcoin_core" => "BitcoinClient",
             _ => panic!("Unsupported protocol: {}", self.protocol),
         };

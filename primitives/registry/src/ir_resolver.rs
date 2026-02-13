@@ -142,21 +142,11 @@ mod tests {
             .expect("Failed to resolve Bitcoin IR path");
         assert!(bitcoin_path.to_string_lossy().contains("bitcoin.ir.json"));
 
-        let lightning_path = resolver
-            .resolve_ir_path(&Protocol::Lightning)
-            .expect("Failed to resolve Lightning IR path");
-        assert!(lightning_path.to_string_lossy().contains("lightning.ir.json"));
-
         // Test implementation resolution
         let bitcoin_core_path = resolver
             .resolve_ir_path_for_implementation(&Implementation::BitcoinCore)
             .expect("Failed to resolve Bitcoin Core IR path");
         assert!(bitcoin_core_path.to_string_lossy().contains("bitcoin.ir.json"));
-
-        let core_lightning_path = resolver
-            .resolve_ir_path_for_implementation(&Implementation::CoreLightning)
-            .expect("Failed to resolve Core Lightning IR path");
-        assert!(core_lightning_path.to_string_lossy().contains("lightning.ir.json"));
     }
 
     #[test]
@@ -164,8 +154,6 @@ mod tests {
         let resolver = IrResolver::new().expect("Failed to create resolver");
         let protocols = resolver.list_available_protocols().expect("Failed to list protocols");
 
-        // Should have at least Bitcoin and Lightning
         assert!(protocols.contains(&Protocol::Bitcoin));
-        assert!(protocols.contains(&Protocol::Lightning));
     }
 }

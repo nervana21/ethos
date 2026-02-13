@@ -452,7 +452,7 @@ impl TransportTrait for DefaultTransport {{
     .expect("Failed to write transport impl");
 }
 
-// Unix socket transport functions for Core Lightning
+// Unix socket transport functions (for implementations using Unix socket RPC)
 fn emit_unix_socket_imports(code: &mut String) {
     writeln!(
         code,
@@ -503,7 +503,7 @@ fn emit_unix_socket_error_impls(code: &mut String) {
 fn emit_unix_socket_transport_struct(code: &mut String) {
     writeln!(
         code,
-        "/// Default Unix socket transport implementation for Core Lightning RPC\n\
+        "/// Default Unix socket transport implementation for RPC\n\
          #[derive(Clone, Debug)]\n\
          pub struct DefaultTransport {{\n\
              /// Path to the Unix socket file\n\
@@ -639,7 +639,7 @@ fn emit_unix_socket_transport_trait_impl(code: &mut String) {
         // For Unix sockets, we return the socket path as a string
         self.socket_path
             .to_str()
-            .expect(\"valid socket path required; set CLN_RPC_SOCKET or CLN_LIGHTNING_DIR\")
+            .expect(\"valid socket path required; set CLN_RPC_SOCKET\")
     }}
 }}"
     )

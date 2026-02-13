@@ -80,8 +80,7 @@ pub fn run_all() -> Result<(), PipelineError> {
             };
 
             // Only process implementations that have working adapters
-            let supported_implementations =
-                [Implementation::BitcoinCore, Implementation::CoreLightning];
+            let supported_implementations = [Implementation::BitcoinCore];
             if !supported_implementations.contains(&implementation) {
                 continue;
             }
@@ -109,7 +108,7 @@ pub fn run_all() -> Result<(), PipelineError> {
 ///
 /// # Arguments
 ///
-/// * `implementation` - Name of the implementation (e.g., "bitcoin_core", "core_lightning").
+/// * `implementation` - Name of the implementation (e.g., "bitcoin_core").
 /// * `version` - Version string for the API (e.g., "v30.0", "v25.09.1").
 /// * `crate_root` - Optional output directory for the generated crate. If None, uses default naming convention.
 ///

@@ -100,4 +100,4 @@ impl<T: ProtocolAdapter> IrLoader for T {
 }
 
 // Re-export types from shared fuzz types crate
-pub use fuzz_types::{FuzzCase, FuzzResult, LightningProtocolAdapter};
+pub use fuzz_types::{FuzzCase, FuzzResult};

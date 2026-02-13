@@ -39,7 +39,7 @@ pub fn find_project_root() -> Result<PathBuf, Box<dyn std::error::Error>> {
 /// # Arguments
 ///
 /// * `project_root` - Path to the project root directory
-/// * `protocol_name` - Name of the protocol (e.g., "bitcoin", "lightning")
+/// * `protocol_name` - Name of the protocol (e.g., "bitcoin")
 ///
 /// # Returns
 ///
@@ -50,10 +50,9 @@ pub fn get_protocol_spec_path(
 ) -> Result<PathBuf, Box<dyn std::error::Error>> {
     let spec_file = match protocol_name {
         "bitcoin" => "bitcoin-api.json",
-        "lightning" => "lightning-api.json",
         _ => {
             return Err(format!(
-                "Unknown protocol '{}'. Supported protocols: bitcoin, lightning",
+                "Unknown protocol '{}'. Supported protocols: bitcoin",
                 protocol_name
             )
             .into());
@@ -158,7 +157,7 @@ pub fn format_version_for_filename(version: &str) -> String {
 /// # Arguments
 ///
 /// * `version` - Version string (e.g., "30.2", "30.2.0", "30.2.1")
-/// * `protocol` - Protocol name (e.g., "bitcoin", "lightning")
+/// * `protocol` - Protocol name (e.g., "bitcoin")
 ///
 /// # Examples
 ///

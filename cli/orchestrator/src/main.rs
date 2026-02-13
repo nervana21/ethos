@@ -28,15 +28,12 @@ async fn main() {
         println!("    --help, -h                    Show this help message");
         println!("FLAGS:");
         println!("    --input <ir_file>             Load ProtocolIR directly from .ir.json file (optional if --implementation is provided)");
-        println!("    --implementation <impl>       Implementation to generate (bitcoin_core, core_lightning, lnd, rust_lightning) [REQUIRED]");
-        println!(
-            "    --version <version>           Override version (e.g., v30.0.0, v25.09.1, v0.20.0)"
-        );
+        println!("    --implementation <impl>       Implementation to generate (bitcoin_core) [REQUIRED]");
+        println!("    --version <version>           Override version (e.g., v30.2.3)");
         println!("    --output <path>               Write generated crate to <path> (e.g. a separate git repo). Preserves .git for easier diff review.");
         println!();
         println!("EXAMPLES:");
-        println!("    ethos-cli pipeline --input resources/ir/bitcoin.ir.json");
-        println!("    ethos-cli pipeline --input resources/ir/lightning.ir.json --implementation core_lightning --version v25.09.1");
+        println!("    ethos-cli pipeline --input resources/ir/bitcoin.ir.json --implementation bitcoin_core");
         println!("    ethos-cli pipeline --implementation bitcoin_core --output ../ethos-bitcoind   # generate into a separate repo");
         return;
     }
@@ -238,8 +235,5 @@ fn compile_with_ir(
 fn get_latest_version_for_implementation(implementation: &Implementation) -> &'static str {
     match implementation {
         Implementation::BitcoinCore => "v30.2.0",
-        Implementation::CoreLightning => "v25.09.1",
-        Implementation::Lnd => "v0.20.0",
-        Implementation::RustLightning => "v0.1.0",
     }
 }

@@ -27,7 +27,7 @@ pub fn camel(s: &str) -> String {
 ///
 /// This function creates a module file that contains the client structs and implementations
 /// for the test node client. The generated file is specific to the given protocol
-/// (e.g. Bitcoin Core, Core Lightning) but uses a protocol-agnostic design via
+/// (e.g. Bitcoin Core) but uses a protocol-agnostic design via
 /// NodeManager dependency injection.
 pub fn generate_mod_rs(implementation_display_name: &str, client_name: &str) -> String {
     format!(

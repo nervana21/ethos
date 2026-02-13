@@ -19,7 +19,6 @@ generate input_file="":
     else \
         cargo run --package ethos-cli --bin ethos-compiler -- pipeline --implementation bitcoin_core; \
     fi
-    cargo run --package ethos-cli --bin ethos-compiler -- pipeline --implementation core_lightning
 
 # Usage: just generate-into-repo /path/to/ethos-bitcoind [version] [impl]
 # First time: mkdir ../ethos-bitcoind && cd ../ethos-bitcoind && git init
