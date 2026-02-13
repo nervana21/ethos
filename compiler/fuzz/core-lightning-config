@@ -1,5 +1,0 @@
-network=regtest
-bitcoin-rpcuser=user
-bitcoin-rpcpassword=pass
-bitcoin-rpcconnect=bitcoind
-bitcoin-rpcport=18443

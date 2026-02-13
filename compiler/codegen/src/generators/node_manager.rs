@@ -30,18 +30,18 @@ impl CodeGenerator for NodeManagerGenerator {
 
         // Generate module header and imports
         generate_module_header(&mut code, display_name);
-        generate_imports(&mut code, &metadata);
+        generate_imports(&mut code);
 
         // Generate common structures
         generate_node_state_struct(&mut code);
         generate_port_selection_enum(&mut code);
 
         // Generate trait
-        generate_node_manager_trait(&mut code, &metadata);
+        generate_node_manager_trait(&mut code);
 
         // Generate implementation
-        generate_node_manager_struct(&mut code, node_manager_name, &metadata);
-        generate_node_manager_impl(&mut code, node_manager_name, &metadata);
+        generate_node_manager_struct(&mut code, node_manager_name);
+        generate_node_manager_impl(&mut code, node_manager_name);
         generate_trait_impl(&mut code, node_manager_name, &metadata);
 
         vec![("node_manager.rs".to_string(), code)]
@@ -59,7 +59,7 @@ fn generate_module_header(code: &mut String, display_name: &str) {
     .expect("Failed to write module header");
 }
 
-fn generate_imports(code: &mut String, metadata: &types::node_metadata::NodeMetadata) {
+fn generate_imports(code: &mut String) {
     writeln!(
         code,
         r#"
@@ -77,34 +77,15 @@ use crate::transport::{{TransportError, core::TransportExt}};"#
     )
     .expect("Failed to write imports");
 
-    // Import tracing macros based on transport kind
-    if metadata.transport == "http" {
-        writeln!(
-            code,
-            r#"
+    writeln!(
+        code,
+        r#"
 use tracing::{{info, debug, error}};
 use tokio::io::AsyncBufReadExt;
 use std::time::Instant;
 use crate::transport::DefaultTransport;"#
-        )
-        .expect("Failed to write HTTP tracing imports");
-    } else {
-        writeln!(
-            code,
-            r#"
-use tracing::info;"#
-        )
-        .expect("Failed to write Unix tracing imports");
-    }
-
-    if metadata.transport == "unix" {
-        writeln!(
-            code,
-            r#"
-use std::path::PathBuf;"#
-        )
-        .expect("Failed to write Unix-specific imports");
-    }
+    )
+    .expect("Failed to write tracing imports");
 }
 
 fn generate_node_state_struct(code: &mut String) {
@@ -139,7 +120,7 @@ pub enum PortSelection {{
     .expect("Failed to write PortSelection enum");
 }
 
-fn generate_node_manager_trait(code: &mut String, metadata: &types::node_metadata::NodeMetadata) {
+fn generate_node_manager_trait(code: &mut String) {
     writeln!(
         code,
         r#"
@@ -152,27 +133,16 @@ pub trait NodeManager: Send + Sync + std::any::Any + std::fmt::Debug {{
     )
     .expect("Failed to write trait start");
 
-    if metadata.transport == "http" {
-        writeln!(
-            code,
-            r#"    /// Return the RPC port this manager was configured with
+    writeln!(
+        code,
+        r#"    /// Return the RPC port this manager was configured with
     fn rpc_port(&self) -> u16;
     /// Return the RPC username this manager was configured with
     fn rpc_username(&self) -> &str;
     /// Return the RPC password this manager was configured with
     fn rpc_password(&self) -> &str;"#
-        )
-        .expect("Failed to write HTTP trait methods");
-    } else {
-        writeln!(
-            code,
-            r#"    /// Return the RPC port this manager was configured with
-    fn rpc_port(&self) -> u16;
-    /// Return the socket path for this node manager
-    fn socket_path(&self) -> PathBuf;"#
-        )
-        .expect("Failed to write Unix trait methods");
-    }
+    )
+    .expect("Failed to write trait methods");
 
     writeln!(
         code,
@@ -182,11 +152,7 @@ pub trait NodeManager: Send + Sync + std::any::Any + std::fmt::Debug {{
     ).expect("Failed to write trait end");
 }
 
-fn generate_node_manager_struct(
-    code: &mut String,
-    node_manager_name: &str,
-    metadata: &types::node_metadata::NodeMetadata,
-) {
+fn generate_node_manager_struct(code: &mut String, node_manager_name: &str) {
     writeln!(
         code,
         r#"
@@ -203,34 +169,19 @@ pub struct {} {{
     )
     .expect("Failed to write struct start");
 
-    if metadata.transport == "unix" {
-        writeln!(
-            code,
-            r#"    /// Test configuration for the node
-    config: TestConfig,
-    /// Temporary directory for node data (cleaned up on drop)
-    datadir: TempDir,"#
-        )
-        .expect("Failed to write Unix struct fields");
-    } else {
-        writeln!(
-            code,
-            r#"    /// Test configuration for the node
+    writeln!(
+        code,
+        r#"    /// Test configuration for the node
     config: TestConfig,
     /// Temporary directory for node data (cleaned up on drop)
     _datadir: Option<TempDir>,"#
-        )
-        .expect("Failed to write HTTP struct fields");
-    }
+    )
+    .expect("Failed to write struct fields");
 
     writeln!(code, r#"}}"#).expect("Failed to write struct end");
 }
 
-fn generate_node_manager_impl(
-    code: &mut String,
-    node_manager_name: &str,
-    metadata: &types::node_metadata::NodeMetadata,
-) {
+fn generate_node_manager_impl(code: &mut String, node_manager_name: &str) {
     writeln!(
         code,
         r#"
@@ -265,23 +216,9 @@ impl {} {{"#,
     )
     .expect("Failed to write constructor start");
 
-    if metadata.transport == "unix" {
-        writeln!(
-            code,
-            r#"
-        Ok(Self {{
-            state: Arc::new(RwLock::new(NodeState::default())),
-            child: Arc::new(Mutex::new(None)),
-            rpc_port,
-            config: config.clone(),
-            datadir,
-        }})"#
-        )
-        .expect("Failed to write Unix constructor");
-    } else {
-        writeln!(
-            code,
-            r#"
+    writeln!(
+        code,
+        r#"
         Ok(Self {{
             state: Arc::new(RwLock::new(NodeState::default())),
             child: Arc::new(Mutex::new(None)),
@@ -289,9 +226,8 @@ impl {} {{"#,
             config: config.clone(),
             _datadir: Some(datadir),
         }})"#
-        )
-        .expect("Failed to write HTTP constructor");
-    }
+    )
+    .expect("Failed to write constructor");
 
     writeln!(
         code,
@@ -306,28 +242,16 @@ impl {} {{"#,
     )
     .expect("Failed to write rpc_port method");
 
-    if metadata.transport == "unix" {
-        writeln!(
-            code,
-            r#"
-    /// Get the socket path for this node manager
-    pub fn socket_path(&self) -> PathBuf {{
-        self.datadir.path().join("regtest").join("lightning-rpc")
-    }}"#
-        )
-        .expect("Failed to write socket_path method");
-    } else {
-        writeln!(
-            code,
-            r#"
+    writeln!(
+        code,
+        r#"
     /// Get the RPC username from the configuration
     pub fn rpc_username(&self) -> &str {{ &self.config.rpc_username }}
 
     /// Get the RPC password from the configuration
     pub fn rpc_password(&self) -> &str {{ &self.config.rpc_password }}"#
-        )
-        .expect("Failed to write auth methods");
-    }
+    )
+    .expect("Failed to write auth methods");
 
     writeln!(
         code,
@@ -367,30 +291,16 @@ impl NodeManager for {} {{"#,
     )
     .expect("Failed to write get_state method");
 
-    // Generate trait methods
-    if metadata.transport == "http" {
-        writeln!(
-            code,
-            r#"
+    writeln!(
+        code,
+        r#"
     fn rpc_port(&self) -> u16 {{ self.rpc_port }}
 
     fn rpc_username(&self) -> &str {{ &self.config.rpc_username }}
 
     fn rpc_password(&self) -> &str {{ &self.config.rpc_password }}"#
-        )
-        .expect("Failed to write HTTP trait methods");
-    } else {
-        writeln!(
-            code,
-            r#"
-    fn rpc_port(&self) -> u16 {{ self.rpc_port }}
-
-    fn socket_path(&self) -> PathBuf {{
-        self.datadir.path().join("regtest").join("lightning-rpc")
-    }}"#
-        )
-        .expect("Failed to write Unix trait methods");
-    }
+    )
+    .expect("Failed to write trait methods");
 
     // Generate create_transport method
     generate_create_transport_method(code, metadata);
@@ -415,11 +325,7 @@ fn generate_start_method(code: &mut String, metadata: &types::node_metadata::Nod
     )
     .expect("Failed to write start method start");
 
-    if metadata.transport == "http" {
-        generate_http_start_logic(code, metadata);
-    } else {
-        generate_unix_start_logic(code, metadata);
-    }
+    generate_http_start_logic(code, metadata);
 
     writeln!(
         code,
@@ -548,134 +454,6 @@ fn generate_http_start_logic(code: &mut String, metadata: &types::node_metadata:
     .expect("Failed to write HTTP start logic");
 }
 
-fn generate_unix_start_logic(code: &mut String, metadata: &types::node_metadata::NodeMetadata) {
-    writeln!(
-        code,
-        r#"
-        let mut child = self.child.lock().await;
-        if child.is_some() {{
-            return Ok(());
-        }}
-
-        // Find available port for lightningd by binding to 127.0.0.1:0
-        // The listener is dropped at the end of the block, freeing the port
-        let port = {{
-            let listener = std::net::TcpListener::bind("127.0.0.1:0")?;
-            listener.local_addr()?.port()
-        }};
-
-        let mut cmd = Command::new("{}");
-        cmd.arg("--network=regtest")
-           .arg("--daemon")
-           .arg(format!("--lightning-dir={{}}", self.datadir.path().display()))
-           .arg(format!("--bind-addr=127.0.0.1:{{}}", port))
-           .arg("--disable-plugin=cln-grpc")
-           .arg("--disable-plugin=clnrest")
-           .arg("--disable-plugin=wss-proxy")
-           .arg("--disable-plugin=cln-lsps-service")
-           .arg("--disable-plugin=cln-lsps-client")
-           .arg("--disable-plugin=cln-bip353")
-           .arg(format!("--log-file={{}}/lightningd.log", self.datadir.path().display()))
-           .stdout(Stdio::piped())
-           .stderr(Stdio::piped());
-
-        // Add extra arguments (bitcoin connection info)
-        for arg in &self.config.extra_args {{
-            cmd.arg(arg);
-        }}
-
-        let child_process = cmd.spawn()
-            .map_err(|e| TransportError::ConnectionError(format!("Failed to start {}: {{}}", e)))?;
-
-        *child = Some(child_process);
-        state.is_running = true;
-
-        // Brief wait for process to initialize
-        tokio::time::sleep(Duration::from_millis(200)).await;
-
-        // Log that lightningd process started
-        let socket_path = self.socket_path();
-        info!("{} process started, waiting for RPC socket at {{:?}}", socket_path);
-
-        // If lightningd exited immediately, surface logs
-        if let Some(ref mut child_process) = child.as_mut() {{
-            if let Ok(Some(status)) = child_process.try_wait() {{
-                let log_path = self.datadir.path().join("lightningd.log");
-                let mut error_msg = format!("{} exited early with status: {{}}", status);
-
-                // Try to read lightningd.log
-                if let Ok(log) = std::fs::read_to_string(&log_path) {{
-                    error_msg.push_str(&format!("\\nlightningd.log:\\n{{}}", log));
-                }}
-
-                // Try to capture stderr
-                if let Some(mut stderr) = child_process.stderr.take() {{
-                    let mut stderr_buf = String::new();
-                    use tokio::io::AsyncReadExt;
-                    let _ = stderr.read_to_string(&mut stderr_buf).await;
-                    if !stderr_buf.is_empty() {{
-                        error_msg.push_str(&format!("\\nstderr:\\n{{}}", stderr_buf));
-                    }}
-                }}
-
-                return Err(TransportError::ConnectionError(error_msg));
-            }}
-        }}
-
-        // Wait for RPC socket to appear
-        let mut attempts = 0u32;
-        let max_attempts = 30u32;
-        let mut delay = 250u64;
-
-        while attempts < max_attempts {{
-            if socket_path.exists() {{
-                break;
-            }}
-            tokio::time::sleep(Duration::from_millis(delay)).await;
-            delay = (delay * 2).min(4000);
-            attempts += 1;
-
-            // Log progress every 10 attempts
-            if attempts % 10 == 0 {{
-                info!("Still waiting for RPC socket... attempt {{}}/{{}}", attempts, max_attempts);
-            }}
-        }}
-
-        if !socket_path.exists() {{
-            let log_path = self.datadir.path().join("lightningd.log");
-            let mut error_msg = format!(
-                "{} RPC socket did not appear at {{:?}} after waiting",
-                socket_path
-            );
-
-            // Try to read lightningd.log for diagnostics
-            if let Ok(log) = std::fs::read_to_string(&log_path) {{
-                error_msg.push_str(&format!("\\nlightningd.log:\\n{{}}", log));
-            }}
-
-            // Check if the child process is still alive
-            if let Some(ref mut child_process) = child.as_mut() {{
-                if let Ok(Some(status)) = child_process.try_wait() {{
-                    error_msg.push_str(&format!("\\n{} process status: {{}}", status));
-                }}
-            }}
-
-            return Err(TransportError::ConnectionError(error_msg));
-        }}
-
-        info!("{} node started on port {{}}", self.rpc_port);
-        Ok(())"#,
-        metadata.executable,
-        metadata.executable,
-        metadata.executable,
-        metadata.executable,
-        metadata.executable,
-        metadata.executable,
-        metadata.executable
-    )
-    .expect("Failed to write Unix start logic");
-}
-
 fn generate_stop_method(code: &mut String, metadata: &types::node_metadata::NodeMetadata) {
     writeln!(
         code,
@@ -705,10 +483,9 @@ fn generate_create_transport_method(
     code: &mut String,
     metadata: &types::node_metadata::NodeMetadata,
 ) {
-    if metadata.transport == "http" {
-        writeln!(
-            code,
-            r#"
+    writeln!(
+        code,
+        r#"
     async fn create_transport(&self) -> Result<std::sync::Arc<crate::transport::DefaultTransport>, TransportError> {{
         use std::sync::Arc;
         use crate::transport::DefaultTransport;
@@ -754,63 +531,7 @@ fn generate_create_transport_method(
 
         Ok(transport)
     }}"#,
-            metadata.readiness_method
-        ).expect("Failed to write HTTP create_transport method");
-    } else {
-        writeln!(
-            code,
-            r#"
-    async fn create_transport(&self) -> Result<std::sync::Arc<crate::transport::DefaultTransport>, TransportError> {{
-        use std::sync::Arc;
-        use crate::transport::DefaultTransport;
-
-        // Create Unix socket transport for Core Lightning
-        let socket_path = self.socket_path();
-        let transport = Arc::new(DefaultTransport::new(socket_path));
-
-        // Simple readiness check for Core Lightning
-        let max_retries = 30;
-        let mut retries = 0;
-
-        loop {{
-            match transport.call::<serde_json::Value>("{}", &[]).await {{
-                Ok(_) => break,
-                Err(TransportError::Rpc(e)) => {{
-                    if retries < max_retries {{
-                        tracing::debug!("Waiting for initialization: {{}} (attempt {{}}/{{}})", e, retries + 1, max_retries);
-                        tokio::time::sleep(std::time::Duration::from_secs(1)).await;
-                        retries += 1;
-                        continue;
-                    }}
-                    return Err(TransportError::Rpc(e));
-                }}
-                Err(TransportError::ConnectionError(e)) => {{
-                    if retries < max_retries {{
-                        retries += 1;
-                        tokio::time::sleep(std::time::Duration::from_secs(1)).await;
-                        continue;
-                    }}
-                    return Err(TransportError::ConnectionError(e));
-                }}
-                Err(TransportError::UnixSocket(e)) => {{
-                    if retries < max_retries {{
-                        retries += 1;
-                        tokio::time::sleep(std::time::Duration::from_secs(1)).await;
-                        continue;
-                    }}
-                    return Err(TransportError::UnixSocket(e));
-                }}
-                Err(e) => return Err(e),
-            }}
-        }}
-
-        if retries > 0 {{
-            tracing::debug!("Node initialization completed after {{}} attempts", retries);
-        }}
-
-        Ok(transport)
-    }}"#,
-            metadata.readiness_method
-        ).expect("Failed to write Unix create_transport method");
-    }
+        metadata.readiness_method
+    )
+    .expect("Failed to write create_transport method");
 }
