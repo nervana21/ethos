@@ -165,17 +165,13 @@ fn test_validate_types() {
         "Vec<serde_json::Map<String, serde_json::Value>>".to_string(),
     );
 
-    // Lightning Network types
+    // Additional protocol types
     map.insert("PublicKey".to_string(), "PublicKey".to_string());
     map.insert("ShortChannelId".to_string(), "ShortChannelId".to_string());
     map.insert("Satoshis".to_string(), "u64".to_string());
     map.insert("MilliSatoshis".to_string(), "u64".to_string());
-
-    // Core Lightning specific types
     map.insert("Amount".to_string(), "u64".to_string());
     map.insert("Msat".to_string(), "u64".to_string());
-
-    // LND specific types
     map.insert("Bytes".to_string(), "Vec<u8>".to_string());
 
     let registry = TypeAliasRegistry::new(map);
