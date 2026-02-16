@@ -392,8 +392,11 @@ impl VersionSpecificResponseTypeGenerator {
         }
 
         // Check if this method has conditional results (can return either string or object)
-        // This happens when we have both simple type results and object results
-        let has_conditional_results = self.check_conditional_results(rpc, result);
+        // This happens when we have both simple type results and object results.
+        // getblockstats has all-optional fields but returns only an object (no string variant);
+        // use standard Deserialize so we don't require a custom visitor.
+        let has_conditional_results =
+            self.check_conditional_results(rpc, result) && rpc.name != "getblockstats";
 
         if has_conditional_results {
             // Generate struct without Deserialize derive (we'll implement it manually)
