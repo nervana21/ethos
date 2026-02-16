@@ -6,8 +6,6 @@ use types::Argument;
 // Embed normalization presets at compile time; missing files will hard-fail build
 const BITCOIN_NORMALIZATION_JSON: &str =
     include_str!("../resources/adapters/normalization/bitcoin.json");
-const LIGHTNING_NORMALIZATION_JSON: &str =
-    include_str!("../resources/adapters/normalization/lightning.json");
 
 /// Strict registry-driven conversion: adapter-specific RPC → canonical → snake_case
 ///
@@ -63,10 +61,9 @@ pub fn canonical_from_adapter_method(protocol: &str, rpc_method: &str) -> Result
     }
 
     Err(format!(
-        "Unmapped RPC method '{}' for '{}'. Add it to resources/adapters/normalization/{}.json under method_mappings.{}.",
+        "Unmapped RPC method '{}' for '{}'. Add it to resources/adapters/normalization/bitcoin.json under method_mappings.{}.",
         rpc_method,
         protocol,
-        if protocol == "bitcoin_core" { "bitcoin" } else { "lightning" },
         impl_key
     ))
 }

@@ -33,11 +33,11 @@ pub enum MethodCategory {
     Zmq,
     /// Signer methods (hardware signing operations)
     Signer,
-    /// Lightning channel operations
+    /// Channel operations
     Channel,
-    /// Lightning payment operations
+    /// Payment operations
     Payment,
-    /// Lightning invoice operations
+    /// Invoice operations
     Invoice,
     /// Query operations (read-only data access)
     Query,
@@ -158,7 +158,7 @@ fn map_protocol_category_label_to_method_category(
         // Map them to a stable bucket for grouping; access level is handled separately.
         "hidden" => MethodCategory::Core,
 
-        // Lightning
+        // Channel / payment / invoice
         "channel" => MethodCategory::Channel,
         "payment" => MethodCategory::Payment,
         "invoice" => MethodCategory::Invoice,

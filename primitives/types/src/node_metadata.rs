@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 /// Metadata for node management configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NodeMetadata {
-    /// Binary executable name (e.g., "bitcoind", "lightningd")
+    /// Binary executable name (e.g., "bitcoind")
     pub executable: String,
     /// Transport protocol ("http" or "unix")
     pub transport: String,
