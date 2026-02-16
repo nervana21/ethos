@@ -394,6 +394,12 @@ impl VersionSpecificResponseTypeGenerator {
             return Ok(Some(self.generate_value_wrapper(rpc, &struct_name)?));
         }
 
+        // help returns a plain string
+        if rpc.name.as_str() == "help" {
+            let struct_name = self.response_struct_name(rpc);
+            return Ok(Some(self.generate_primitive_wrapper(&struct_name, "string", &None)?));
+        }
+
         // Simplified - always generate from IR data since we removed metadata registries
         if let Some(result) = &rpc.result {
             if let Some(fields) = &result.fields {
