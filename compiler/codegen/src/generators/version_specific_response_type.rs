@@ -345,6 +345,22 @@ impl VersionSpecificResponseTypeGenerator {
         Ok(vec![(filename, out)])
     }
 
+    /// RPCs that return a top-level JSON array (schema has Object + single field; bitcoind returns array)
+    const TOP_LEVEL_ARRAY_RPCS: &[&str] = &[
+        "deriveaddresses",
+        "getaddednodeinfo",
+        "getnodeaddresses",
+        "getorphantxs",
+        "getpeerinfo",
+        "getrawmempool",
+        "listbanned",
+        "listlockunspent",
+        "listreceivedbyaddress",
+        "listreceivedbylabel",
+        "listtransactions",
+        "listunspent",
+    ];
+
     /// Fields that bitcoind may omit; force Option<T> for these (rpc_name, field_name)
     fn optional_field_override(rpc_name: &str, field_name: &str) -> bool {
         matches!(
@@ -363,6 +379,12 @@ impl VersionSpecificResponseTypeGenerator {
 
     /// Generate response type for a specific method
     fn generate_method_response(&self, rpc: &RpcDef) -> Result<Option<String>> {
+        // RPCs that return a top-level array: generate array wrapper instead of struct
+        if Self::TOP_LEVEL_ARRAY_RPCS.contains(&rpc.name.as_str()) {
+            let struct_name = self.response_struct_name(rpc);
+            return Ok(Some(self.generate_array_wrapper(rpc, &struct_name)?));
+        }
+
         // Simplified - always generate from IR data since we removed metadata registries
         if let Some(result) = &rpc.result {
             if let Some(fields) = &result.fields {
@@ -1385,8 +1407,7 @@ impl VersionSpecificResponseTypeGenerator {
 
         Ok(buf)
     }
-
-    /// Collect nested types from a field type string
+/// Collect nested types from a field type string
     fn collect_nested_types(
         &self,
         type_name: &str,
