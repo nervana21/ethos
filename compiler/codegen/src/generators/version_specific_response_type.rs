@@ -345,6 +345,11 @@ impl VersionSpecificResponseTypeGenerator {
         Ok(vec![(filename, out)])
     }
 
+    /// Fields that bitcoind may omit; force Option<T> for these (rpc_name, field_name)
+    fn optional_field_override(rpc_name: &str, field_name: &str) -> bool {
+        matches!((rpc_name, field_name), ("analyzepsbt", "fee") | ("decodepsbt", "fee"))
+    }
+
     /// Generate response type for a specific method
     fn generate_method_response(&self, rpc: &RpcDef) -> Result<Option<String>> {
         // Simplified - always generate from IR data since we removed metadata registries
@@ -395,7 +400,7 @@ impl VersionSpecificResponseTypeGenerator {
         // Generate fields from IR data
         if let Some(fields) = &result.fields {
             for field in fields {
-                self.generate_ir_field(&mut buf, field, &struct_name, &rpc.name)?;
+                self.generate_ir_field(&mut buf, field, &struct_name, rpc.name.as_str())?;
             }
         }
 
@@ -415,7 +420,7 @@ impl VersionSpecificResponseTypeGenerator {
         buf: &mut String,
         field: &ir::FieldDef,
         _struct_name: &str,
-        _rpc_name: &str,
+        rpc_name: &str,
     ) -> Result<()> {
         // Generate field documentation
         if !field.description.is_empty() {
@@ -440,10 +445,20 @@ impl VersionSpecificResponseTypeGenerator {
             field_type =
                 format!("Option<{}>", self.map_ir_type_to_rust(&field.field_type, &field.name));
         }
+        // Override: bitcoind omits these fields in some modes/versions
+        if Self::optional_field_override(rpc_name, &field.name) {
+            field_type =
+                format!("Option<{}>", self.map_ir_type_to_rust(&field.field_type, &field.name));
+        }
 
         // Add serde rename attribute if the field name was changed
         if field_name != field.name {
             writeln!(buf, "    #[serde(rename = \"{}\")]", field.name)?;
+        }
+
+        // When we force Option for omitted fields, allow missing key to deserialize as None
+        if Self::optional_field_override(rpc_name, &field.name) {
+            writeln!(buf, "    #[serde(default)]")?;
         }
 
         // Add deserializer attribute for bitcoin::Amount fields
