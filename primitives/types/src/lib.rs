@@ -8,15 +8,15 @@
 //! throughout the Protocol Compiler. It provides comprehensive type definitions
 //! for protocol methods, their metadata, safety classifications, and type mapping utilities.
 //! The system is designed to be protocol-agnostic, supporting multiple communication
-//! patterns (RPC, P2P, Lightning, Stratum, etc.) through the adapter pattern.
+//! patterns (RPC, P2P, Stratum, etc.) through the adapter pattern.
 
 use serde::{Deserialize, Serialize};
 
 /// Type-safe implementation names for Bitcoin protocol implementations.
 ///
 /// This module provides the `Implementation` enum that identifies different
-/// Bitcoin protocol implementations (Bitcoin Core, Core Lightning, LND, etc.)
-/// and the `Protocol` enum that groups them by protocol family (Bitcoin, Lightning).
+/// Bitcoin protocol implementations (e.g. Bitcoin Core)
+/// and the `Protocol` enum that groups them by protocol family.
 pub mod implementation;
 /// Node metadata for implementation-specific node management.
 ///
@@ -137,8 +137,6 @@ impl MethodResult {
 /// the protocol-specific type registries in the `adapters` crate:
 ///
 /// - `BitcoinCoreTypeRegistry` - Bitcoin Core-specific types (e.g., "difficulty" → f64)
-/// - `CoreLightningTypeRegistry` - Core Lightning-specific types (e.g., "msat" → u64)
-/// - `LndTypeRegistry` - LND-specific types
 ///
 /// The adapter pattern (via `TypeAdapter` trait) allows protocol-specific registries
 /// to provide specialized mappings while this `TypeRegistry` serves as a fallback for
@@ -188,8 +186,8 @@ impl TypeRegistry {
     ///
     /// This method bridges the gap between protocol-specific type systems and Rust's
     /// type system by delegating to a protocol adapter that understands the protocol's
-    /// type semantics. Each protocol (Bitcoin Core, Core Lightning, etc.) can define
-    /// its own type mappings for specialized types like "difficulty" → f64 or "msat" → u64.
+    /// type semantics. Each protocol (e.g. Bitcoin Core) can define
+    /// its own type mappings for specialized types like "difficulty" → f64.
     /// The adapter pattern allows the code generation system to remain protocol-agnostic
     /// while supporting protocol-specific optimizations and type safety.
     ///
@@ -213,7 +211,7 @@ impl TypeRegistry {
     ///
     /// This method bridges the gap between protocol-specific parameter types and Rust's
     /// type system by delegating to a protocol adapter that understands the protocol's
-    /// type semantics. Each protocol (Bitcoin Core, Core Lightning, etc.) can define
+    /// type semantics. Each protocol (e.g. Bitcoin Core) can define
     /// its own parameter type mappings for specialized types like "hex" → String.
     /// The adapter pattern allows the code generation system to remain protocol-agnostic
     /// while supporting protocol-specific optimizations and type safety.

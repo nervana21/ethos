@@ -149,10 +149,6 @@ pub trait ProtocolAdapter: Send + Sync {
 #[async_trait]
 pub trait BitcoinProtocolAdapter: ProtocolAdapter {}
 
-/// Trait for Lightning protocol adapters that can be used in differential fuzzing
-#[async_trait]
-pub trait LightningProtocolAdapter: ProtocolAdapter {}
-
 #[cfg(test)]
 mod tests {
     use super::*;

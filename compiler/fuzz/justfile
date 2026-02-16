@@ -71,27 +71,15 @@ docker-fuzz target duration="1h":
 
 # Pipeline generation (orthogonal to fuzzing)
 pipeline-generate:
-    @echo "Generating Lightning client code with pipeline..."
+    @echo "Generating client code with pipeline..."
     docker-compose --profile pipeline up --build pipeline-generate
-
-# Differential fuzzing (uses generated code from pipeline)
-differential-fuzz:
-    @echo "Running differential fuzzing with Docker (uses generated code)..."
-    docker-compose --profile differential up --build differential-fuzz
-
-# Differential fuzzing with custom duration
-differential-fuzz-duration duration="1h":
-    @echo "Running differential fuzzing for {{duration}}..."
-    @export FUZZ_DURATION={{duration}} && \
-     docker-compose --profile differential run --rm differential-fuzz
 
 # Full workflow: generate code, then fuzz
 full-workflow:
-    @echo "🔄 Full workflow: Generate code, then run differential fuzzing..."
-    @echo "Step 1: Generating Lightning client code..."
+    @echo "🔄 Full workflow: Generate code, then fuzz..."
+    @echo "Step 1: Generating client code..."
     docker-compose --profile pipeline up --build pipeline-generate
-    @echo "Step 2: Running differential fuzzing on generated code..."
-    docker-compose --profile differential up --build differential-fuzz
+    @echo "Step 2: Run fuzzing with: just fuzz-duration transport 1h"
 
 # Examples
 examples:
@@ -102,6 +90,4 @@ examples:
     @echo "  just codegen"
     @echo "  just docker-fuzz transport 2h"
     @echo "  just pipeline-generate"
-    @echo "  just differential-fuzz"
-    @echo "  just differential-fuzz-duration 2h"
     @echo "  just full-workflow"

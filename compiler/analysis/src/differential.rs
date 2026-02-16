@@ -3,7 +3,7 @@
 //! Executes identical fuzz inputs through multiple protocol adapters
 //! and analyzes their outputs to detect semantic divergences. This provides the
 //! architectural foundation for plugging in different protocol implementations
-//! (Bitcoin Core, Core Lightning, LND, Rust-Lightning, etc.) without changing the core logic.
+//! (Bitcoin Core, etc.) without changing the core logic.
 
 use std::sync::Arc;
 

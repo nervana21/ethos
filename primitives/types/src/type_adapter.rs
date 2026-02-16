@@ -8,7 +8,7 @@ use ir::RpcDef;
 
 /// Trait for protocol-specific type adapters that handle response type generation.
 ///
-/// Each protocol (Bitcoin Core, Core Lightning, LND, etc.) implements this trait
+/// Each protocol (e.g. Bitcoin Core) implements this trait
 /// to define how it parses response types from IR and maps them to Rust equivalents.
 /// This allows the code generation system to be protocol-agnostic while
 /// supporting protocol-specific optimizations and type mappings.
@@ -39,7 +39,7 @@ use ir::RpcDef;
 pub trait TypeAdapter: Send + Sync {
     /// Protocol name for logging and debugging purposes.
     ///
-    /// Should return a short, descriptive name like "bitcoin_core", "core_lightning", etc.
+    /// Should return a short, descriptive name like "bitcoin_core", etc.
     fn protocol_name(&self) -> &str;
 
     /// Parse protocol-specific response schema into normalized MethodResult format.
@@ -60,7 +60,7 @@ pub trait TypeAdapter: Send + Sync {
     ///
     /// This method handles the conversion from protocol-specific type names
     /// to appropriate Rust types. Each protocol can define its own mappings
-    /// for specialized types (e.g., Bitcoin's "difficulty" → f64, Core Lightning's "msat" → u64).
+    /// for specialized types (e.g., Bitcoin's "difficulty" → f64).
     ///
     /// # Arguments
     /// * `result` - The method result containing type, field name, and description

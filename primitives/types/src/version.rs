@@ -1,8 +1,7 @@
 //! Protocol Version representation for Ethos artifact generation.
 //!
 //! Ethos stores protocol version information for artifact generation.
-//! The canonical protocol schemas (e.g., `bitcoin-api.json`,
-//! `core-lightning-api.json`) are versionless.
+//! The canonical protocol schemas (e.g., `bitcoin-api.json`) may be versionless.
 use std::cmp::Ordering;
 
 use regex::Regex;
@@ -13,7 +12,7 @@ use thiserror::Error;
 ///
 /// Accepts formats like:
 /// - `30.99.0` or `v30.99.0` (Bitcoin Core SemVer - 'v' prefix optional)
-/// - `25.09` or `v25.09` (Core Lightning CalVer - 'v' prefix optional)
+/// - `25.09` or `v25.09` (CalVer - 'v' prefix optional)
 /// - `0.1.0` or `v0.1.0` (ProtocolVersion format - 'v' prefix optional)
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct ProtocolVersion {
@@ -25,7 +24,7 @@ pub struct ProtocolVersion {
     pub minor: u32,
     /// Patch component (e.g., `2` in `v30.1.2`).
     pub patch: u32,
-    /// Protocol name for module naming (e.g., "bitcoin_core", "core_lightning").
+    /// Protocol name for module naming (e.g., "bitcoin_core").
     pub protocol: Option<String>,
 }
 
@@ -115,7 +114,7 @@ impl ProtocolVersion {
         })?;
         let patch = self.patch;
 
-        // For CalVer versions (like Core Lightning), preserve the original minor version format
+        // For CalVer versions, preserve the original minor version format
         // Extract the minor version from the original version string to preserve leading zeros
         let minor_str = if let Some(dot_pos) = self.version_string.find('.') {
             let after_dot = &self.version_string[dot_pos + 1..];

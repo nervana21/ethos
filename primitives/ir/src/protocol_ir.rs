@@ -1,7 +1,7 @@
 //! Ethos Intermediate Representation
 //!
 //! This module defines the core IR structures that represent
-//! Bitcoin protocol dialects. Bitcoin Core, Core Lightning,
+//! Bitcoin protocol dialects (e.g. Bitcoin Core).
 //! LND, etc. are some of these dialects.
 
 use serde::{Deserialize, Serialize};
