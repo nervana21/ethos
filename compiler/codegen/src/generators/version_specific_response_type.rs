@@ -347,7 +347,18 @@ impl VersionSpecificResponseTypeGenerator {
 
     /// Fields that bitcoind may omit; force Option<T> for these (rpc_name, field_name)
     fn optional_field_override(rpc_name: &str, field_name: &str) -> bool {
-        matches!((rpc_name, field_name), ("analyzepsbt", "fee") | ("decodepsbt", "fee"))
+        matches!(
+            (rpc_name, field_name),
+            ("analyzepsbt", "fee")
+                | ("decodepsbt", "fee")
+                | ("getaddrmaninfo", "network")
+                | ("get_block_template", "field_0")
+                | ("getindexinfo", "name")
+                | ("getrawaddrman", "table")
+                | ("gettxout", "field_0")
+                | ("gettxoutsetinfo", "total_unspendable_amount")
+                | ("logging", "category")
+        )
     }
 
     /// Generate response type for a specific method
@@ -397,7 +408,7 @@ impl VersionSpecificResponseTypeGenerator {
         }
         writeln!(&mut buf, "pub struct {} {{", struct_name)?;
 
-        // Generate fields from IR data
+        // Generate fields from IR data (when conditional, all fields must be Option for string|object)
         if let Some(fields) = &result.fields {
             for field in fields {
                 self.generate_ir_field(&mut buf, field, &struct_name, rpc.name.as_str())?;
