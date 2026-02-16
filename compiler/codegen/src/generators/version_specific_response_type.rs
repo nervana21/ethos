@@ -361,6 +361,9 @@ impl VersionSpecificResponseTypeGenerator {
         "listunspent",
     ];
 
+    /// RPCs that return arbitrary JSON (echo/echojson); need Value wrapper with whole-response deserialize
+    const ECHO_JSON_VALUE_RPCS: &[&str] = &["echo", "echojson"];
+
     /// Fields that bitcoind may omit; force Option<T> for these (rpc_name, field_name)
     fn optional_field_override(rpc_name: &str, field_name: &str) -> bool {
         matches!(
@@ -383,6 +386,12 @@ impl VersionSpecificResponseTypeGenerator {
         if Self::TOP_LEVEL_ARRAY_RPCS.contains(&rpc.name.as_str()) {
             let struct_name = self.response_struct_name(rpc);
             return Ok(Some(self.generate_array_wrapper(rpc, &struct_name)?));
+        }
+
+        // RPCs that return arbitrary JSON (echo/echojson)
+        if Self::ECHO_JSON_VALUE_RPCS.contains(&rpc.name.as_str()) {
+            let struct_name = self.response_struct_name(rpc);
+            return Ok(Some(self.generate_value_wrapper(rpc, &struct_name)?));
         }
 
         // Simplified - always generate from IR data since we removed metadata registries
@@ -1407,7 +1416,49 @@ impl VersionSpecificResponseTypeGenerator {
 
         Ok(buf)
     }
-/// Collect nested types from a field type string
+
+    /// Generate wrapper for RPCs that return arbitrary JSON (echo/echojson); whole response is one Value
+    fn generate_value_wrapper(&self, rpc: &RpcDef, struct_name: &str) -> Result<String> {
+        let mut buf = String::new();
+        let canonical_name =
+            crate::utils::canonical_from_adapter_method(&self.implementation, &rpc.name)
+                .unwrap_or_else(|_| struct_name.replace("Response", "").to_string());
+        write_doc_line(&mut buf, &format!("Response for the `{}` RPC method", canonical_name), "")?;
+        writeln!(&mut buf, "///")?;
+        write_doc_line(
+            &mut buf,
+            "This method returns arbitrary JSON (e.g. string, object, array) as a single value.",
+            "",
+        )?;
+
+        writeln!(&mut buf, "#[derive(Debug, Clone, PartialEq, Serialize)]")?;
+        writeln!(&mut buf, "pub struct {} {{", struct_name)?;
+        writeln!(&mut buf, "    /// Wrapped JSON value")?;
+        writeln!(&mut buf, "    pub value: serde_json::Value,")?;
+        writeln!(&mut buf, "}}")?;
+        writeln!(&mut buf)?;
+
+        writeln!(&mut buf, "impl<'de> serde::Deserialize<'de> for {} {{", struct_name)?;
+        writeln!(&mut buf, "    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>")?;
+        writeln!(&mut buf, "    where")?;
+        writeln!(&mut buf, "        D: serde::Deserializer<'de>,")?;
+        writeln!(&mut buf, "    {{")?;
+        writeln!(&mut buf, "        let value = serde_json::Value::deserialize(deserializer)?;")?;
+        writeln!(&mut buf, "        Ok(Self {{ value }})")?;
+        writeln!(&mut buf, "    }}")?;
+        writeln!(&mut buf, "}}")?;
+        writeln!(&mut buf)?;
+
+        writeln!(&mut buf, "impl From<serde_json::Value> for {} {{", struct_name)?;
+        writeln!(&mut buf, "    fn from(value: serde_json::Value) -> Self {{")?;
+        writeln!(&mut buf, "        Self {{ value }}")?;
+        writeln!(&mut buf, "    }}")?;
+        writeln!(&mut buf, "}}")?;
+
+        Ok(buf)
+    }
+
+    /// Collect nested types from a field type string
     fn collect_nested_types(
         &self,
         type_name: &str,
