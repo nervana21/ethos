@@ -6,7 +6,6 @@ use std::fs;
 use std::path::PathBuf;
 
 use codegen::generators::test_node::TestNodeGenerator;
-use codegen::utils::generate_mod_rs;
 use codegen::CodeGenerator;
 
 use super::ModuleGenerator;
@@ -44,10 +43,6 @@ impl ModuleGenerator for TestNodeModuleGenerator {
 
         // Write the generated files
         codegen::write_generated(&clients_dir, &files)?;
-
-        // Generate mod.rs with the clients directory name
-        let clients_dir_name = ctx.implementation.client_dir_name();
-        generate_mod_rs(&clients_dir, clients_dir_name)?;
 
         Ok(())
     }
