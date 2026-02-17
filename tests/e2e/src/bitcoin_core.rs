@@ -91,10 +91,10 @@ pub async fn run_test() -> Result<()> {
 	assert!(_test_changepos < 0);
 
 	// Test nblocks parameter type (i64)
-	let hashps_100 = client.get_network_hash_ps(Some(100i64), None).await?;
+	let hashps_100 = client.get_network_hashps(Some(100i64), None).await?;
 	assert!(hashps_100.value > 0u64);
 
-	let hashps_since_diff = client.get_network_hash_ps(Some(-1i64), None).await?;
+	let hashps_since_diff = client.get_network_hashps(Some(-1i64), None).await?;
 	assert!(hashps_since_diff.value > 0u64);
 
 	if let Err(e) = default_node_manager.stop().await {

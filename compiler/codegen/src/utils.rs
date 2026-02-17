@@ -207,15 +207,6 @@ pub fn reorder_arguments_for_rust_signature(args: &[Argument]) -> (Vec<Argument>
     (args.to_vec(), mapping)
 }
 
-/// Generate mod.rs content
-pub fn generate_mod_rs(
-    _clients_dir: &std::path::PathBuf,
-    _clients_dir_name: &str,
-) -> std::io::Result<()> {
-    // For now, just return Ok
-    Ok(())
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

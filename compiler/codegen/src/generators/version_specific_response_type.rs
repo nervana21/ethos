@@ -345,8 +345,61 @@ impl VersionSpecificResponseTypeGenerator {
         Ok(vec![(filename, out)])
     }
 
+    /// RPCs that return a top-level JSON array (schema has Object + single field; bitcoind returns array)
+    const TOP_LEVEL_ARRAY_RPCS: &[&str] = &[
+        "deriveaddresses",
+        "getaddednodeinfo",
+        "getnodeaddresses",
+        "getorphantxs",
+        "getpeerinfo",
+        "getrawmempool",
+        "listbanned",
+        "listlockunspent",
+        "listreceivedbyaddress",
+        "listreceivedbylabel",
+        "listtransactions",
+        "listunspent",
+    ];
+
+    /// RPCs that return arbitrary JSON (echo/echojson); need Value wrapper with whole-response deserialize
+    const ECHO_JSON_VALUE_RPCS: &[&str] = &["echo", "echojson"];
+
+    /// Fields that bitcoind may omit; force Option<T> for these (rpc_name, field_name)
+    fn optional_field_override(rpc_name: &str, field_name: &str) -> bool {
+        matches!(
+            (rpc_name, field_name),
+            ("analyzepsbt", "fee")
+                | ("decodepsbt", "fee")
+                | ("getaddrmaninfo", "network")
+                | ("get_block_template", "field_0")
+                | ("getindexinfo", "name")
+                | ("getrawaddrman", "table")
+                | ("gettxout", "field_0")
+                | ("gettxoutsetinfo", "total_unspendable_amount")
+                | ("logging", "category")
+        )
+    }
+
     /// Generate response type for a specific method
     fn generate_method_response(&self, rpc: &RpcDef) -> Result<Option<String>> {
+        // RPCs that return a top-level array: generate array wrapper instead of struct
+        if Self::TOP_LEVEL_ARRAY_RPCS.contains(&rpc.name.as_str()) {
+            let struct_name = self.response_struct_name(rpc);
+            return Ok(Some(self.generate_array_wrapper(rpc, &struct_name)?));
+        }
+
+        // RPCs that return arbitrary JSON (echo/echojson)
+        if Self::ECHO_JSON_VALUE_RPCS.contains(&rpc.name.as_str()) {
+            let struct_name = self.response_struct_name(rpc);
+            return Ok(Some(self.generate_value_wrapper(rpc, &struct_name)?));
+        }
+
+        // help returns a plain string
+        if rpc.name.as_str() == "help" {
+            let struct_name = self.response_struct_name(rpc);
+            return Ok(Some(self.generate_primitive_wrapper(&struct_name, "string", &None)?));
+        }
+
         // Simplified - always generate from IR data since we removed metadata registries
         if let Some(result) = &rpc.result {
             if let Some(fields) = &result.fields {
@@ -376,8 +429,12 @@ impl VersionSpecificResponseTypeGenerator {
         }
 
         // Check if this method has conditional results (can return either string or object)
-        // This happens when we have both simple type results and object results
-        let has_conditional_results = self.check_conditional_results(rpc, result);
+        // This happens when we have both simple type results and object results.
+        // getblockstats has all-optional fields but returns only an object (no string variant);
+        // use standard Deserialize so we don't require a custom visitor.
+        let has_conditional_results = (rpc.name == "getrawtransaction"
+            || self.check_conditional_results(rpc, result))
+            && rpc.name != "getblockstats";
 
         if has_conditional_results {
             // Generate struct without Deserialize derive (we'll implement it manually)
@@ -392,10 +449,16 @@ impl VersionSpecificResponseTypeGenerator {
         }
         writeln!(&mut buf, "pub struct {} {{", struct_name)?;
 
-        // Generate fields from IR data
+        // Generate fields from IR data (when conditional, all fields must be Option for string|object)
         if let Some(fields) = &result.fields {
             for field in fields {
-                self.generate_ir_field(&mut buf, field, &struct_name, &rpc.name)?;
+                self.generate_ir_field(
+                    &mut buf,
+                    field,
+                    &struct_name,
+                    rpc.name.as_str(),
+                    has_conditional_results,
+                )?;
             }
         }
 
@@ -415,7 +478,8 @@ impl VersionSpecificResponseTypeGenerator {
         buf: &mut String,
         field: &ir::FieldDef,
         _struct_name: &str,
-        _rpc_name: &str,
+        rpc_name: &str,
+        force_optional_conditional: bool,
     ) -> Result<()> {
         // Generate field documentation
         if !field.description.is_empty() {
@@ -425,11 +489,19 @@ impl VersionSpecificResponseTypeGenerator {
         // Generate field definition
         let base_field_type = self.map_ir_type_to_rust(&field.field_type, &field.name);
         let field_name = self.sanitize_identifier(&field.name);
-        let mut field_type = if field.required {
+        let mut field_type = if field.required && !force_optional_conditional {
             base_field_type.clone()
         } else {
             format!("Option<{}>", base_field_type)
         };
+        // Elision fields are type/documentation placeholders (e.g. getblock verbosity); never present as JSON keys
+        if field.field_type.protocol_type.as_deref() == Some("elision") {
+            field_type = format!("Option<{}>", base_field_type);
+        }
+        // getblock verbosity-dependent arrays (only present for verbosity >= 2 or >= 3)
+        if field.name == "tx_1" || field.name == "tx_2" {
+            field_type = format!("Option<{}>", base_field_type);
+        }
         // Override: some Core fields are absent on certain networks/versions
         if field.name == "blockmintxfee"
             || field.name == "maxdatacarriersize"
@@ -440,10 +512,20 @@ impl VersionSpecificResponseTypeGenerator {
             field_type =
                 format!("Option<{}>", self.map_ir_type_to_rust(&field.field_type, &field.name));
         }
+        // Override: bitcoind omits these fields in some modes/versions
+        if Self::optional_field_override(rpc_name, &field.name) {
+            field_type =
+                format!("Option<{}>", self.map_ir_type_to_rust(&field.field_type, &field.name));
+        }
 
         // Add serde rename attribute if the field name was changed
         if field_name != field.name {
             writeln!(buf, "    #[serde(rename = \"{}\")]", field.name)?;
+        }
+
+        // When we force Option for omitted fields, allow missing key to deserialize as None
+        if Self::optional_field_override(rpc_name, &field.name) {
+            writeln!(buf, "    #[serde(default)]")?;
         }
 
         // Add deserializer attribute for bitcoin::Amount fields
@@ -587,14 +669,14 @@ impl VersionSpecificResponseTypeGenerator {
         writeln!(buf, "                formatter.write_str(\"string or object\")")?;
         writeln!(buf, "            }}")?;
         writeln!(buf)?;
-        // Handle string case (when verbose=false)
-        // Find the txid field (or first field) to populate from string
-        let txid_field = if let Some(fields) = &result.fields {
-            fields.iter().find(|f| f.name == "txid" || f.name.contains("txid"))
+        // Handle string case (when verbose=false, e.g. getrawtransaction returns hex string)
+        // Find the field that receives the string: "data" (hex) or "txid"
+        let string_field = if let Some(fields) = &result.fields {
+            fields.iter().find(|f| f.name == "data" || f.name == "txid" || f.name.contains("txid"))
         } else {
             None
         };
-        let param_name = if txid_field.is_some() { "v" } else { "_v" };
+        let param_name = if string_field.is_some() { "v" } else { "_v" };
         writeln!(
             buf,
             "            fn visit_str<E>(self, {}: &str) -> Result<Self::Value, E>",
@@ -604,14 +686,23 @@ impl VersionSpecificResponseTypeGenerator {
         writeln!(buf, "                E: de::Error,")?;
         writeln!(buf, "            {{")?;
         if let Some(fields) = &result.fields {
-            if let Some(field) = txid_field {
+            if let Some(field) = string_field {
                 let field_name = self.sanitize_identifier(&field.name);
                 let field_type = self.map_ir_type_to_rust(&field.field_type, &field.name);
-                writeln!(
-                    buf,
-                    "                let {} = {}::from_str({}).map_err(de::Error::custom)?;",
-                    field_name, field_type, param_name
-                )?;
+                // "data" is typically a string (hex); use to_string(); others (e.g. txid) use FromStr
+                if field.name == "data" && field_type == "String" {
+                    writeln!(
+                        buf,
+                        "                let {} = {}.to_string();",
+                        field_name, param_name
+                    )?;
+                } else {
+                    writeln!(
+                        buf,
+                        "                let {} = {}::from_str({}).map_err(de::Error::custom)?;",
+                        field_name, field_type, param_name
+                    )?;
+                }
                 writeln!(buf, "                Ok({} {{", struct_name)?;
                 for f in fields {
                     let fn_name = self.sanitize_identifier(&f.name);
@@ -757,9 +848,17 @@ impl VersionSpecificResponseTypeGenerator {
 
     /// Get response struct name for a method
     fn response_struct_name(&self, rpc: &RpcDef) -> String {
-        let snake = crate::utils::protocol_rpc_method_to_rust_name(&self.implementation, &rpc.name)
-            .unwrap_or_else(|_| crate::utils::rpc_method_to_rust_name(&rpc.name));
-        format!("{}Response", crate::utils::snake_to_pascal_case(&snake))
+        let canonical =
+            crate::utils::canonical_from_adapter_method(&self.implementation, &rpc.name);
+        match canonical {
+            Ok(name) => format!("{}Response", name),
+            Err(_) => {
+                let snake =
+                    crate::utils::protocol_rpc_method_to_rust_name(&self.implementation, &rpc.name)
+                        .unwrap_or_else(|_| crate::utils::rpc_method_to_rust_name(&rpc.name));
+                format!("{}Response", crate::utils::snake_to_pascal_case(&snake))
+            }
+        }
     }
 
     /// Sanitize field name for Rust identifier
@@ -1318,6 +1417,47 @@ impl VersionSpecificResponseTypeGenerator {
         writeln!(&mut buf, "impl From<{}> for Vec<serde_json::Value> {{", struct_name)?;
         writeln!(&mut buf, "    fn from(wrapper: {}) -> Self {{", struct_name)?;
         writeln!(&mut buf, "        wrapper.value")?;
+        writeln!(&mut buf, "    }}")?;
+        writeln!(&mut buf, "}}")?;
+
+        Ok(buf)
+    }
+
+    /// Generate wrapper for RPCs that return arbitrary JSON (echo/echojson); whole response is one Value
+    fn generate_value_wrapper(&self, rpc: &RpcDef, struct_name: &str) -> Result<String> {
+        let mut buf = String::new();
+        let canonical_name =
+            crate::utils::canonical_from_adapter_method(&self.implementation, &rpc.name)
+                .unwrap_or_else(|_| struct_name.replace("Response", "").to_string());
+        write_doc_line(&mut buf, &format!("Response for the `{}` RPC method", canonical_name), "")?;
+        writeln!(&mut buf, "///")?;
+        write_doc_line(
+            &mut buf,
+            "This method returns arbitrary JSON (e.g. string, object, array) as a single value.",
+            "",
+        )?;
+
+        writeln!(&mut buf, "#[derive(Debug, Clone, PartialEq, Serialize)]")?;
+        writeln!(&mut buf, "pub struct {} {{", struct_name)?;
+        writeln!(&mut buf, "    /// Wrapped JSON value")?;
+        writeln!(&mut buf, "    pub value: serde_json::Value,")?;
+        writeln!(&mut buf, "}}")?;
+        writeln!(&mut buf)?;
+
+        writeln!(&mut buf, "impl<'de> serde::Deserialize<'de> for {} {{", struct_name)?;
+        writeln!(&mut buf, "    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>")?;
+        writeln!(&mut buf, "    where")?;
+        writeln!(&mut buf, "        D: serde::Deserializer<'de>,")?;
+        writeln!(&mut buf, "    {{")?;
+        writeln!(&mut buf, "        let value = serde_json::Value::deserialize(deserializer)?;")?;
+        writeln!(&mut buf, "        Ok(Self {{ value }})")?;
+        writeln!(&mut buf, "    }}")?;
+        writeln!(&mut buf, "}}")?;
+        writeln!(&mut buf)?;
+
+        writeln!(&mut buf, "impl From<serde_json::Value> for {} {{", struct_name)?;
+        writeln!(&mut buf, "    fn from(value: serde_json::Value) -> Self {{")?;
+        writeln!(&mut buf, "        Self {{ value }}")?;
         writeln!(&mut buf, "    }}")?;
         writeln!(&mut buf, "}}")?;
 
