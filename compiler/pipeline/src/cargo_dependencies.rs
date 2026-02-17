@@ -15,6 +15,6 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0.145", features = ["preserve_order"] }
 tempfile = "3.23.0"
 thiserror = "2.0.17"
-tokio = { version = "1", features = ["full"] }
+tokio = { version = "1.49", features = ["io-util", "macros", "net", "process", "rt", "rt-multi-thread", "sync", "time"] }
 tracing = "0.1.41"
 "#;

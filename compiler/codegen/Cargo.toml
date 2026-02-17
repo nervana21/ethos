@@ -18,4 +18,4 @@ types = { package = "ethos-types", version = "0.1.0", path = "../../primitives/t
 
 [dev-dependencies]
 tempfile = "3.5.0"
-tokio = { version = "1", features = ["full"] }
+tokio = { version = "1.49", features = ["rt", "rt-multi-thread", "macros"] }
