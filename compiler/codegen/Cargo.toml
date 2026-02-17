@@ -9,7 +9,6 @@ adapters = { package = "ethos-adapters", version = "0.1.0", path = "../../adapte
 ir = { package = "ethos-ir", version = "0.1.0", path = "../../primitives/ir" }
 path = { package = "ethos-path", version = "0.1.0", path = "../../primitives/path" }
 semantics = { package = "ethos-semantics", version = "0.1.0", path = "../semantics" }
-lazy_static = "1.4.0"
 regex = "1.10"
 registry = { package = "ethos-registry", version = "0.1.0", path = "../../primitives/registry" }
 serde = { version = "1.0", features = ["derive"] }

@@ -59,7 +59,7 @@ documentation = "https://docs.rs/{}"
     cargo_content.push_str(GENERATED_CRATE_DEPENDENCIES);
     cargo_content.push_str("\n");
 
-    cargo_content.push_str("\n[features]\n");
+    cargo_content.push_str("[features]\n");
 
     // Generate default features based on available categories
     let mut default_categories: Vec<MethodCategory> =

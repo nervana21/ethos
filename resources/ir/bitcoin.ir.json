@@ -38,8 +38,6 @@
             "category": "wallet",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli abandontransaction \"1075db55d416d3ca199f55b6084e2115b9345e16c5cf302fc80e9d5fbf5d48d\"\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"abandontransaction\", \"params\": [\"1075db55d416d3ca199f55b6084e2115b9345e16c5cf302fc80e9d5fbf5d48d\"]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -63,8 +61,6 @@
             "category": "wallet",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "\nImport a private key\n> bitcoin-cli rescanblockchain \n\nAbort the running wallet rescan\n> bitcoin-cli abortrescan \n\nAs a JSON-RPC call\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"abortrescan\", \"params\": []}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -165,8 +161,6 @@
             "category": "hidden",
             "access_level": "Advanced",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "30.2",
             "examples": [
               "> bitcoin-cli addconnection \"192.168.0.6:8333\" \"outbound-full-relay\" true\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"addconnection\", \"params\": [\"192.168.0.6:8333\" \"outbound-full-relay\" true]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -183,7 +177,7 @@
                 "name": "node",
                 "param_type": {
                   "name": "string",
-                  "description": "The IP address/hostname optionally followed by :port of the peer to connect to",
+                  "description": "The address of the peer to connect to",
                   "kind": "Primitive",
                   "fields": null,
                   "variants": null,
@@ -191,7 +185,7 @@
                   "protocol_type": "string"
                 },
                 "required": true,
-                "description": "The IP address/hostname optionally followed by :port of the peer to connect to",
+                "description": "The address of the peer to connect to",
                 "default_value": null
               },
               {
@@ -237,8 +231,6 @@
             "category": "network",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli addnode \"192.168.0.6:8333\" \"onetry\" true\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"addnode\", \"params\": [\"192.168.0.6:8333\", \"onetry\" true]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -339,8 +331,6 @@
             "category": "hidden",
             "access_level": "Advanced",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "30.2",
             "examples": [
               "> bitcoin-cli addpeeraddress \"1.2.3.4\" 8333 true\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"addpeeraddress\", \"params\": [\"1.2.3.4\", 8333, true]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -626,8 +616,6 @@
             "category": "rawtransactions",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.18",
             "examples": [
               "> bitcoin-cli analyzepsbt \"psbt\"\n"
@@ -667,8 +655,6 @@
             "category": "wallet",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli backupwallet \"backup.dat\"\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"backupwallet\", \"params\": [\"backup.dat\"]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -954,8 +940,6 @@
             "category": "wallet",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "\nBump the fee, get the new transaction's txid\n> bitcoin-cli bumpfee <txid>\n"
@@ -979,8 +963,6 @@
             "category": "network",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli clearbanned \n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"clearbanned\", \"params\": []}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -1020,8 +1002,6 @@
             "category": "rawtransactions",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli combinepsbt '[\"mybase64_1\", \"mybase64_2\", \"mybase64_3\"]'\n"
@@ -1061,8 +1041,6 @@
             "category": "rawtransactions",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli combinerawtransaction '[\"myhex1\", \"myhex2\", \"myhex3\"]'\n"
@@ -1132,8 +1110,6 @@
             "category": "rawtransactions",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "\nCreate a transaction\n> bitcoin-cli createrawtransaction \"[{\\\"txid\\\":\\\"myid\\\",\\\"vout\\\":0}]\" \"[{\\\"data\\\":\\\"00010203\\\"}]\"\n\nConvert the transaction to a PSBT\n> bitcoin-cli converttopsbt \"rawtransaction\"\n"
@@ -1264,8 +1240,6 @@
             "category": "util",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "\nCreate a multisig address from 2 public keys\n> bitcoin-cli createmultisig 2 \"[\\\"03789ed0bb717d88f7d321a368d905e7430207ebbd82bd342cf11ae157a7ace5fd\\\",\\\"03dbc6764b8884a92e871274b87583e6d5c2a58819473e17e107ef3f6aa5a61626\\\"]\"\n\nAs a JSON-RPC call\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"createmultisig\", \"params\": [2, [\"03789ed0bb717d88f7d321a368d905e7430207ebbd82bd342cf11ae157a7ace5fd\",\"03dbc6764b8884a92e871274b87583e6d5c2a58819473e17e107ef3f6aa5a61626\"]]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -1522,8 +1496,6 @@
             "category": "rawtransactions",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli createpsbt \"[{\\\"txid\\\":\\\"myid\\\",\\\"vout\\\":0}]\" \"[{\\\"address\\\":0.01}]\"\n"
@@ -1780,8 +1752,6 @@
             "category": "rawtransactions",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli createrawtransaction \"[{\\\"txid\\\":\\\"myid\\\",\\\"vout\\\":0}]\" \"[{\\\"address\\\":0.01}]\"\n> bitcoin-cli createrawtransaction \"[{\\\"txid\\\":\\\"myid\\\",\\\"vout\\\":0}]\" \"[{\\\"data\\\":\\\"00010203\\\"}]\"\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"createrawtransaction\", \"params\": [\"[{\\\"txid\\\":\\\"myid\\\",\\\"vout\\\":0}]\", \"[{\\\"address\\\":0.01}]\"]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"createrawtransaction\", \"params\": [\"[{\\\"txid\\\":\\\"myid\\\",\\\"vout\\\":0}]\", \"[{\\\"data\\\":\\\"00010203\\\"}]\"]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -1957,8 +1927,6 @@
             "category": "wallet",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli createwallet \"testwallet\"\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"createwallet\", \"params\": [\"testwallet\"]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n> bitcoin-cli -named createwallet wallet_name=descriptors avoid_reuse=true load_on_startup=true\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"createwallet\", \"params\": {\"wallet_name\":\"descriptors\",\"avoid_reuse\":true,\"load_on_startup\":true}}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -2060,8 +2028,6 @@
             "category": "wallet",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "28",
             "examples": [
               "> bitcoin-cli createwalletdescriptor bech32m\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"createwalletdescriptor\", \"params\": [bech32m]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -4510,8 +4476,6 @@
             "category": "rawtransactions",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli decodepsbt \"psbt\"\n"
@@ -5010,8 +4974,6 @@
             "category": "rawtransactions",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli decoderawtransaction \"hexstring\"\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"decoderawtransaction\", \"params\": [\"hexstring\"]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -5233,8 +5195,6 @@
             "category": "rawtransactions",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli decodescript \"hexstring\"\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"decodescript\", \"params\": [\"hexstring\"]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -5322,8 +5282,6 @@
             "category": "util",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.18",
             "examples": [
               "First three native segwit receive addresses\n> bitcoin-cli deriveaddresses \"wpkh([d34db33f/84h/0h/0h]xpub6DJ2dNUysrn5Vt36jH2KLBT2i1auw1tTSSomg8PhqNiUtx8QX2SvC9nrHu81fT41fvDUnhMjEzQgXnQjKEu3oaqMSzhSrHMxyyoEAmUHQbY/0/*)#cjjspncu\" \"[0,2]\"\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"deriveaddresses\", \"params\": [\"wpkh([d34db33f/84h/0h/0h]xpub6DJ2dNUysrn5Vt36jH2KLBT2i1auw1tTSSomg8PhqNiUtx8QX2SvC9nrHu81fT41fvDUnhMjEzQgXnQjKEu3oaqMSzhSrHMxyyoEAmUHQbY/0/*)#cjjspncu\", \"[0,2]\"]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -5547,8 +5505,6 @@
             "category": "rawtransactions",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "26",
             "examples": [
               "> bitcoin-cli descriptorprocesspsbt \"psbt\" \"[\\\"descriptor1\\\", \\\"descriptor2\\\"]\"\n> bitcoin-cli descriptorprocesspsbt \"psbt\" \"[{\\\"desc\\\":\\\"mydescriptor\\\", \\\"range\\\":21}]\"\n"
@@ -5603,8 +5559,6 @@
             "category": "network",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli disconnectnode \"192.168.0.6:8333\"\n> bitcoin-cli disconnectnode \"\" 1\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"disconnectnode\", \"params\": [\"192.168.0.6:8333\"]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"disconnectnode\", \"params\": [\"\", 1]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -5781,8 +5735,6 @@
             "category": "blockchain",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "26",
             "examples": [
               "> bitcoin-cli -rpcclienttimeout=0 dumptxoutset utxo.dat latest\n> bitcoin-cli -rpcclienttimeout=0 dumptxoutset utxo.dat rollback\n> bitcoin-cli -rpcclienttimeout=0 -named dumptxoutset utxo.dat rollback=853456\n"
@@ -5957,8 +5909,6 @@
             "category": "hidden",
             "access_level": "Internal",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "30.2",
             "examples": [
               ""
@@ -5999,8 +5949,6 @@
             "category": "hidden",
             "access_level": "Internal",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "30.2",
             "examples": [
               "> bitcoin-cli echo \"Hello world\"\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"echo\", \"params\": [\"Hello world\"]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -6176,8 +6124,6 @@
             "category": "hidden",
             "access_level": "Internal",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "30.2",
             "examples": [
               ""
@@ -6218,8 +6164,6 @@
             "category": "wallet",
             "access_level": "Public",
             "requires_private_keys": true,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "\nEncrypt your wallet\n> bitcoin-cli encryptwallet \"my pass phrase\"\n\nNow set the passphrase to use the wallet, such as for signing or sending bitcoin\n> bitcoin-cli walletpassphrase \"my pass phrase\"\n\nNow we can do something like sign\n> bitcoin-cli signmessage \"address\" \"test message\"\n\nNow lock the wallet again by removing the passphrase\n> bitcoin-cli walletlock \n\nAs a JSON-RPC call\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"encryptwallet\", \"params\": [\"my pass phrase\"]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -6322,8 +6266,6 @@
             "category": "signer",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "22",
             "examples": [
               "> bitcoin-cli enumeratesigners \n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"enumeratesigners\", \"params\": []}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -6654,8 +6596,6 @@
             "category": "hidden",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "30.2",
             "examples": [
               "> bitcoin-cli estimaterawfee 6 0.9\n"
@@ -6757,8 +6697,6 @@
             "category": "util",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli estimatesmartfee 6\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"estimatesmartfee\", \"params\": [6]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -6859,8 +6797,6 @@
             "category": "rawtransactions",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli finalizepsbt \"psbt\"\n"
@@ -7371,8 +7307,6 @@
             "category": "rawtransactions",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "\nCreate a transaction with no inputs\n> bitcoin-cli createrawtransaction \"[]\" \"{\\\"myaddress\\\":0.01}\"\n\nAdd sufficient unsigned inputs to meet the output value\n> bitcoin-cli fundrawtransaction \"rawtransactionhex\"\n\nSign the transaction\n> bitcoin-cli signrawtransactionwithwallet \"fundedtransactionhex\"\n\nSend the transaction\n> bitcoin-cli sendrawtransaction \"signedtransactionhex\"\n"
@@ -7388,8 +7322,6 @@
             "category": "hidden",
             "access_level": "Testing",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               ""
@@ -7491,8 +7423,6 @@
             "category": "hidden",
             "access_level": "Testing",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.21",
             "examples": [
               "\nGenerate a block to myaddress, with txs rawtx and mempool_txid\n> bitcoin-cli generateblock \"myaddress\" '[\"rawtx\", \"mempool_txid\"]'\n"
@@ -7563,8 +7493,6 @@
             "category": "hidden",
             "access_level": "Testing",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "\nGenerate 11 blocks to myaddress\n> bitcoin-cli generatetoaddress 11 \"myaddress\"\nIf you are using the Bitcoin Core wallet, you can get a new address to send the newly generated bitcoin to with:\n> bitcoin-cli getnewaddress \n"
@@ -7635,8 +7563,6 @@
             "category": "hidden",
             "access_level": "Testing",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.20",
             "examples": [
               "\nGenerate 11 blocks to mydesc\n> bitcoin-cli generatetodescriptor 11 \"mydesc\"\n"
@@ -7818,8 +7744,6 @@
             "category": "network",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli getaddednodeinfo \"192.168.0.201\"\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"getaddednodeinfo\", \"params\": [\"192.168.0.201\"]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -7891,8 +7815,6 @@
             "category": "wallet",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli getaddressesbylabel \"tabby\"\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"getaddressesbylabel\", \"params\": [\"tabby\"]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -8309,8 +8231,6 @@
             "category": "wallet",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli getaddressinfo \"bc1q09vm5lfy0j5reeulh4x5752q25uqqvz34hufdl\"\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"getaddressinfo\", \"params\": [\"bc1q09vm5lfy0j5reeulh4x5752q25uqqvz34hufdl\"]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -8396,8 +8316,6 @@
             "category": "network",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "26",
             "examples": [
               "> bitcoin-cli getaddrmaninfo \n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"getaddrmaninfo\", \"params\": []}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -8482,8 +8400,6 @@
             "category": "wallet",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "\nThe total amount in the wallet with 0 or more confirmations\n> bitcoin-cli getbalance \n\nThe total amount in the wallet with at least 6 confirmations\n> bitcoin-cli getbalance \"*\" 6\n\nAs a JSON-RPC call\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"getbalance\", \"params\": [\"*\", 6]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -8630,8 +8546,6 @@
             "category": "wallet",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.19",
             "examples": [
               "> bitcoin-cli getbalances \n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"getbalances\", \"params\": []}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -8655,8 +8569,6 @@
             "category": "blockchain",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli getbestblockhash \n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"getbestblockhash\", \"params\": []}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -9383,8 +9295,6 @@
             "category": "blockchain",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli getblock \"00000000c937983704a73af28acdec37b049d214adbda81d7e2a3dd146f6ed09\"\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"getblock\", \"params\": [\"00000000c937983704a73af28acdec37b049d214adbda81d7e2a3dd146f6ed09\"]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -9694,8 +9604,6 @@
             "category": "blockchain",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli getblockchaininfo \n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"getblockchaininfo\", \"params\": []}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -9719,8 +9627,6 @@
             "category": "blockchain",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli getblockcount \n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"getblockcount\", \"params\": []}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -9806,8 +9712,6 @@
             "category": "blockchain",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.19",
             "examples": [
               "> bitcoin-cli getblockfilter \"00000000c937983704a73af28acdec37b049d214adbda81d7e2a3dd146f6ed09\" \"basic\"\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"getblockfilter\", \"params\": [\"00000000c937983704a73af28acdec37b049d214adbda81d7e2a3dd146f6ed09\", \"basic\"]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -9862,8 +9766,6 @@
             "category": "blockchain",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "23",
             "examples": [
               "> bitcoin-cli getblockfrompeer \"00000000c937983704a73af28acdec37b049d214adbda81d7e2a3dd146f6ed09\" 0\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"getblockfrompeer\", \"params\": [\"00000000c937983704a73af28acdec37b049d214adbda81d7e2a3dd146f6ed09\" 0]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -9903,8 +9805,6 @@
             "category": "blockchain",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli getblockhash 1000\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"getblockhash\", \"params\": [1000]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -10200,8 +10100,6 @@
             "category": "blockchain",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli getblockheader \"00000000c937983704a73af28acdec37b049d214adbda81d7e2a3dd146f6ed09\"\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"getblockheader\", \"params\": [\"00000000c937983704a73af28acdec37b049d214adbda81d7e2a3dd146f6ed09\"]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -10798,8 +10696,6 @@
             "category": "blockchain",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli getblockstats '\"00000000c937983704a73af28acdec37b049d214adbda81d7e2a3dd146f6ed09\"' '[\"minfeerate\",\"avgfeerate\"]'\n> bitcoin-cli getblockstats 1000 '[\"minfeerate\",\"avgfeerate\"]'\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"getblockstats\", \"params\": [\"00000000c937983704a73af28acdec37b049d214adbda81d7e2a3dd146f6ed09\", [\"minfeerate\",\"avgfeerate\"]]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"getblockstats\", \"params\": [1000, [\"minfeerate\",\"avgfeerate\"]]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -11432,8 +11328,6 @@
             "category": "mining",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli getblocktemplate '{\"rules\": [\"segwit\"]}'\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"getblocktemplate\", \"params\": [{\"rules\": [\"segwit\"]}]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -11671,8 +11565,6 @@
             "category": "blockchain",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "26",
             "examples": [
               "> bitcoin-cli getchainstates \n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"getchainstates\", \"params\": []}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -11789,8 +11681,6 @@
             "category": "blockchain",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli getchaintips \n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"getchaintips\", \"params\": []}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -11966,8 +11856,6 @@
             "category": "blockchain",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli getchaintxstats \n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"getchaintxstats\", \"params\": [2016]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -11991,8 +11879,6 @@
             "category": "network",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli getconnectioncount \n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"getconnectioncount\", \"params\": []}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -12358,21 +12244,6 @@
                   "required": true,
                   "description": "requested block height (or tip)",
                   "default_value": null
-                },
-                {
-                  "name": "script_flags",
-                  "field_type": {
-                    "name": "array",
-                    "description": "script verify flags for the block",
-                    "kind": "Array",
-                    "fields": null,
-                    "variants": null,
-                    "base_type": null,
-                    "protocol_type": "array"
-                  },
-                  "required": true,
-                  "description": "script verify flags for the block",
-                  "default_value": null
                 }
               ],
               "variants": null,
@@ -12382,8 +12253,6 @@
             "category": "blockchain",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "23",
             "examples": [
               "> bitcoin-cli getdeploymentinfo \n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"getdeploymentinfo\", \"params\": []}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -12424,21 +12293,6 @@
                         "description": "",
                         "kind": "Object",
                         "fields": [
-                          {
-                            "name": "descriptor",
-                            "field_type": {
-                              "name": "string",
-                              "description": "An output descriptor",
-                              "kind": "Primitive",
-                              "fields": null,
-                              "variants": null,
-                              "base_type": null,
-                              "protocol_type": "string"
-                            },
-                            "required": false,
-                            "description": "An output descriptor",
-                            "default_value": null
-                          },
                           {
                             "name": "",
                             "field_type": {
@@ -12483,6 +12337,21 @@
                             },
                             "required": false,
                             "description": "An object with output descriptor and metadata",
+                            "default_value": null
+                          },
+                          {
+                            "name": "descriptor",
+                            "field_type": {
+                              "name": "string",
+                              "description": "An output descriptor",
+                              "kind": "Primitive",
+                              "fields": null,
+                              "variants": null,
+                              "base_type": null,
+                              "protocol_type": "string"
+                            },
+                            "required": false,
+                            "description": "An output descriptor",
                             "default_value": null
                           }
                         ],
@@ -12988,8 +12857,6 @@
             "category": "blockchain",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "29",
             "examples": [
               "> bitcoin-cli getdescriptoractivity '[\"000000000000000000001347062c12fded7c528943c8ce133987e2e2f5a840ee\"]' '[\"addr(bc1qzl6nsgqzu89a66l50cvwapnkw5shh23zarqkw9)\"]'\n"
@@ -13120,8 +12987,6 @@
             "category": "util",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.18",
             "examples": [
               "Analyse a descriptor\n> bitcoin-cli getdescriptorinfo \"wpkh([d34db33f/84h/0h/0h]0279be667ef9dcbbac55a06295Ce870b07029Bfcdb2dce28d959f2815b16f81798)\"\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"getdescriptorinfo\", \"params\": [\"wpkh([d34db33f/84h/0h/0h]0279be667ef9dcbbac55a06295Ce870b07029Bfcdb2dce28d959f2815b16f81798)\"]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -13145,8 +13010,6 @@
             "category": "blockchain",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli getdifficulty \n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"getdifficulty\", \"params\": []}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -13373,8 +13236,6 @@
             "category": "wallet",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "28",
             "examples": [
               "> bitcoin-cli gethdkeys \n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"gethdkeys\", \"params\": []}' -H 'content-type: application/json' http://127.0.0.1:8332/\n> bitcoin-cli -named gethdkeys active_only=true private=true\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"gethdkeys\", \"params\": {\"active_only\":\"true\",\"private\":\"true\"}}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -13461,8 +13322,6 @@
             "category": "util",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.21",
             "examples": [
               "> bitcoin-cli getindexinfo \n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"getindexinfo\", \"params\": []}' -H 'content-type: application/json' http://127.0.0.1:8332/\n> bitcoin-cli getindexinfo txindex\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"getindexinfo\", \"params\": [txindex]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -13609,8 +13468,6 @@
             "category": "control",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli getmemoryinfo \n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"getmemoryinfo\", \"params\": []}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -13727,21 +13584,6 @@
                         "default_value": null
                       },
                       {
-                        "name": "chunkweight",
-                        "field_type": {
-                          "name": "number",
-                          "description": "sigops-adjusted weight (as defined in BIP 141 and modified by '-bytespersigop') of this transaction's chunk",
-                          "kind": "Primitive",
-                          "fields": null,
-                          "variants": null,
-                          "base_type": null,
-                          "protocol_type": "number"
-                        },
-                        "required": true,
-                        "description": "sigops-adjusted weight (as defined in BIP 141 and modified by '-bytespersigop') of this transaction's chunk",
-                        "default_value": null
-                      },
-                      {
                         "name": "depends",
                         "field_type": {
                           "name": "array",
@@ -13821,21 +13663,6 @@
                               },
                               "required": true,
                               "description": "transaction fee, denominated in BTC",
-                              "default_value": null
-                            },
-                            {
-                              "name": "chunk",
-                              "field_type": {
-                                "name": "amount",
-                                "description": "transaction fees of chunk, denominated in BTC",
-                                "kind": "Primitive",
-                                "fields": null,
-                                "variants": null,
-                                "base_type": null,
-                                "protocol_type": "amount"
-                              },
-                              "required": true,
-                              "description": "transaction fees of chunk, denominated in BTC",
                               "default_value": null
                             },
                             {
@@ -13999,175 +13826,9 @@
             "category": "blockchain",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli getmempoolancestors \"mytxid\"\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"getmempoolancestors\", \"params\": [\"mytxid\"]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
-            ]
-          }
-        },
-        {
-          "RpcMethod": {
-            "name": "getmempoolcluster",
-            "description": "Returns mempool data for given cluster\n",
-            "params": [
-              {
-                "name": "txid",
-                "param_type": {
-                  "name": "hex",
-                  "description": "The txid of a transaction in the cluster",
-                  "kind": "Primitive",
-                  "fields": null,
-                  "variants": null,
-                  "base_type": null,
-                  "protocol_type": "hex"
-                },
-                "required": true,
-                "description": "The txid of a transaction in the cluster",
-                "default_value": null
-              }
-            ],
-            "result": {
-              "name": "object",
-              "description": "",
-              "kind": "Object",
-              "fields": [
-                {
-                  "name": "chunks",
-                  "field_type": {
-                    "name": "array",
-                    "description": "chunks in this cluster (in mining order)",
-                    "kind": "Object",
-                    "fields": [
-                      {
-                        "name": "field",
-                        "field_type": {
-                          "name": "object",
-                          "description": "",
-                          "kind": "Object",
-                          "fields": [
-                            {
-                              "name": "chunk",
-                              "field_type": {
-                                "name": "object",
-                                "description": "",
-                                "kind": "Object",
-                                "fields": [
-                                  {
-                                    "name": "chunkfee",
-                                    "field_type": {
-                                      "name": "number",
-                                      "description": "fees of the transactions in this chunk",
-                                      "kind": "Primitive",
-                                      "fields": null,
-                                      "variants": null,
-                                      "base_type": null,
-                                      "protocol_type": "number"
-                                    },
-                                    "required": true,
-                                    "description": "fees of the transactions in this chunk",
-                                    "default_value": null
-                                  },
-                                  {
-                                    "name": "chunkweight",
-                                    "field_type": {
-                                      "name": "number",
-                                      "description": "sigops-adjusted weight of all transactions in this chunk",
-                                      "kind": "Primitive",
-                                      "fields": null,
-                                      "variants": null,
-                                      "base_type": null,
-                                      "protocol_type": "number"
-                                    },
-                                    "required": true,
-                                    "description": "sigops-adjusted weight of all transactions in this chunk",
-                                    "default_value": null
-                                  },
-                                  {
-                                    "name": "txs",
-                                    "field_type": {
-                                      "name": "array",
-                                      "description": "transactions in this chunk in mining order",
-                                      "kind": "Array",
-                                      "fields": null,
-                                      "variants": null,
-                                      "base_type": null,
-                                      "protocol_type": "array"
-                                    },
-                                    "required": true,
-                                    "description": "transactions in this chunk in mining order",
-                                    "default_value": null
-                                  }
-                                ],
-                                "variants": null,
-                                "base_type": null,
-                                "protocol_type": "object"
-                              },
-                              "required": true,
-                              "description": "",
-                              "default_value": null
-                            }
-                          ],
-                          "variants": null,
-                          "base_type": null,
-                          "protocol_type": "object"
-                        },
-                        "required": true,
-                        "description": "",
-                        "default_value": null
-                      }
-                    ],
-                    "variants": null,
-                    "base_type": null,
-                    "protocol_type": "array"
-                  },
-                  "required": true,
-                  "description": "chunks in this cluster (in mining order)",
-                  "default_value": null
-                },
-                {
-                  "name": "clusterweight",
-                  "field_type": {
-                    "name": "number",
-                    "description": "total sigops-adjusted weight (as defined in BIP 141 and modified by '-bytespersigop')",
-                    "kind": "Primitive",
-                    "fields": null,
-                    "variants": null,
-                    "base_type": null,
-                    "protocol_type": "number"
-                  },
-                  "required": true,
-                  "description": "total sigops-adjusted weight (as defined in BIP 141 and modified by '-bytespersigop')",
-                  "default_value": null
-                },
-                {
-                  "name": "txcount",
-                  "field_type": {
-                    "name": "number",
-                    "description": "number of transactions",
-                    "kind": "Primitive",
-                    "fields": null,
-                    "variants": null,
-                    "base_type": null,
-                    "protocol_type": "number"
-                  },
-                  "required": true,
-                  "description": "number of transactions",
-                  "default_value": null
-                }
-              ],
-              "variants": null,
-              "base_type": null,
-              "protocol_type": "object"
-            },
-            "category": "blockchain",
-            "access_level": "Public",
-            "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
-            "examples": [
-              "> bitcoin-cli getmempoolcluster txid\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"getmempoolcluster\", \"params\": [txid]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
             ]
           }
         },
@@ -14281,21 +13942,6 @@
                         "default_value": null
                       },
                       {
-                        "name": "chunkweight",
-                        "field_type": {
-                          "name": "number",
-                          "description": "sigops-adjusted weight (as defined in BIP 141 and modified by '-bytespersigop') of this transaction's chunk",
-                          "kind": "Primitive",
-                          "fields": null,
-                          "variants": null,
-                          "base_type": null,
-                          "protocol_type": "number"
-                        },
-                        "required": true,
-                        "description": "sigops-adjusted weight (as defined in BIP 141 and modified by '-bytespersigop') of this transaction's chunk",
-                        "default_value": null
-                      },
-                      {
                         "name": "depends",
                         "field_type": {
                           "name": "array",
@@ -14375,21 +14021,6 @@
                               },
                               "required": true,
                               "description": "transaction fee, denominated in BTC",
-                              "default_value": null
-                            },
-                            {
-                              "name": "chunk",
-                              "field_type": {
-                                "name": "amount",
-                                "description": "transaction fees of chunk, denominated in BTC",
-                                "kind": "Primitive",
-                                "fields": null,
-                                "variants": null,
-                                "base_type": null,
-                                "protocol_type": "amount"
-                              },
-                              "required": true,
-                              "description": "transaction fees of chunk, denominated in BTC",
                               "default_value": null
                             },
                             {
@@ -14553,8 +14184,6 @@
             "category": "blockchain",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli getmempooldescendants \"mytxid\"\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"getmempooldescendants\", \"params\": [\"mytxid\"]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -14630,21 +14259,6 @@
                   },
                   "required": true,
                   "description": "Whether this transaction signals BIP125 replaceability or has an unconfirmed ancestor signaling BIP125 replaceability. (DEPRECATED)\n",
-                  "default_value": null
-                },
-                {
-                  "name": "chunkweight",
-                  "field_type": {
-                    "name": "number",
-                    "description": "sigops-adjusted weight (as defined in BIP 141 and modified by '-bytespersigop') of this transaction's chunk",
-                    "kind": "Primitive",
-                    "fields": null,
-                    "variants": null,
-                    "base_type": null,
-                    "protocol_type": "number"
-                  },
-                  "required": true,
-                  "description": "sigops-adjusted weight (as defined in BIP 141 and modified by '-bytespersigop') of this transaction's chunk",
                   "default_value": null
                 },
                 {
@@ -14727,21 +14341,6 @@
                         },
                         "required": true,
                         "description": "transaction fee, denominated in BTC",
-                        "default_value": null
-                      },
-                      {
-                        "name": "chunk",
-                        "field_type": {
-                          "name": "amount",
-                          "description": "transaction fees of chunk, denominated in BTC",
-                          "kind": "Primitive",
-                          "fields": null,
-                          "variants": null,
-                          "base_type": null,
-                          "protocol_type": "amount"
-                        },
-                        "required": true,
-                        "description": "transaction fees of chunk, denominated in BTC",
                         "default_value": null
                       },
                       {
@@ -14896,101 +14495,10 @@
             "category": "blockchain",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli getmempoolentry \"mytxid\"\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"getmempoolentry\", \"params\": [\"mytxid\"]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
             ]
-          }
-        },
-        {
-          "RpcMethod": {
-            "name": "getmempoolfeeratediagram",
-            "description": "Returns the feerate diagram for the whole mempool.",
-            "params": [],
-            "result": {
-              "name": "array",
-              "description": "",
-              "kind": "Object",
-              "fields": [
-                {
-                  "name": "field",
-                  "field_type": {
-                    "name": "object",
-                    "description": "",
-                    "kind": "Object",
-                    "fields": [
-                      {
-                        "name": "",
-                        "field_type": {
-                          "name": "object",
-                          "description": "",
-                          "kind": "Object",
-                          "fields": [
-                            {
-                              "name": "fee",
-                              "field_type": {
-                                "name": "number",
-                                "description": "cumulative fee",
-                                "kind": "Primitive",
-                                "fields": null,
-                                "variants": null,
-                                "base_type": null,
-                                "protocol_type": "number"
-                              },
-                              "required": true,
-                              "description": "cumulative fee",
-                              "default_value": null
-                            },
-                            {
-                              "name": "weight",
-                              "field_type": {
-                                "name": "number",
-                                "description": "cumulative sigops-adjusted weight",
-                                "kind": "Primitive",
-                                "fields": null,
-                                "variants": null,
-                                "base_type": null,
-                                "protocol_type": "number"
-                              },
-                              "required": true,
-                              "description": "cumulative sigops-adjusted weight",
-                              "default_value": null
-                            }
-                          ],
-                          "variants": null,
-                          "base_type": null,
-                          "protocol_type": "object"
-                        },
-                        "required": true,
-                        "description": "",
-                        "default_value": null
-                      }
-                    ],
-                    "variants": null,
-                    "base_type": null,
-                    "protocol_type": "object"
-                  },
-                  "required": true,
-                  "description": "",
-                  "default_value": null
-                }
-              ],
-              "variants": null,
-              "base_type": null,
-              "protocol_type": "array",
-              "condition": "mempool chunks"
-            },
-            "category": "hidden",
-            "access_level": "Public",
-            "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
-            "examples": [
-              "> bitcoin-cli getmempoolfeeratediagram \n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"getmempoolfeeratediagram\", \"params\": []}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
-            ],
-            "hidden": true
           }
         },
         {
@@ -15046,36 +14554,6 @@
                   },
                   "required": true,
                   "description": "minimum fee rate increment for mempool limiting or replacement in BTC/kvB",
-                  "default_value": null
-                },
-                {
-                  "name": "limitclustercount",
-                  "field_type": {
-                    "name": "number",
-                    "description": "Maximum number of transactions that can be in a cluster (configured by -limitclustercount)",
-                    "kind": "Primitive",
-                    "fields": null,
-                    "variants": null,
-                    "base_type": null,
-                    "protocol_type": "number"
-                  },
-                  "required": true,
-                  "description": "Maximum number of transactions that can be in a cluster (configured by -limitclustercount)",
-                  "default_value": null
-                },
-                {
-                  "name": "limitclustersize",
-                  "field_type": {
-                    "name": "number",
-                    "description": "Maximum size of a cluster in virtual bytes (configured by -limitclustersize)",
-                    "kind": "Primitive",
-                    "fields": null,
-                    "variants": null,
-                    "base_type": null,
-                    "protocol_type": "number"
-                  },
-                  "required": true,
-                  "description": "Maximum size of a cluster in virtual bytes (configured by -limitclustersize)",
                   "default_value": null
                 },
                 {
@@ -15236,8 +14714,6 @@
             "category": "blockchain",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli getmempoolinfo \n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"getmempoolinfo\", \"params\": []}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -15518,8 +14994,6 @@
             "category": "mining",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli getmininginfo \n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"getmininginfo\", \"params\": []}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -15695,8 +15169,6 @@
             "category": "network",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli getnettotals \n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"getnettotals\", \"params\": []}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -15751,8 +15223,6 @@
             "category": "mining",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli getnetworkhashps \n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"getnetworkhashps\", \"params\": []}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -16203,8 +15673,6 @@
             "category": "network",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli getnetworkinfo \n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"getnetworkinfo\", \"params\": []}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -16259,8 +15727,6 @@
             "category": "wallet",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli getnewaddress \n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"getnewaddress\", \"params\": []}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -16423,8 +15889,6 @@
             "category": "network",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.18",
             "examples": [
               "> bitcoin-cli getnodeaddresses 8\n> bitcoin-cli getnodeaddresses 4 \"i2p\"\n> bitcoin-cli -named getnodeaddresses network=onion count=12\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"getnodeaddresses\", \"params\": [8]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"getnodeaddresses\", \"params\": [4, \"i2p\"]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -16774,8 +16238,6 @@
             "category": "hidden",
             "access_level": "Internal",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "30.2",
             "examples": [
               "> bitcoin-cli getorphantxs 2\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"getorphantxs\", \"params\": [2]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -16811,7 +16273,7 @@
                               "name": "addr",
                               "field_type": {
                                 "name": "string",
-                                "description": "(host:port) The IP address/hostname optionally followed by :port of the peer",
+                                "description": "(host:port) The IP address and port of the peer",
                                 "kind": "Primitive",
                                 "fields": null,
                                 "variants": null,
@@ -16819,7 +16281,7 @@
                                 "protocol_type": "string"
                               },
                               "required": true,
-                              "description": "(host:port) The IP address/hostname optionally followed by :port of the peer",
+                              "description": "(host:port) The IP address and port of the peer",
                               "default_value": null
                             },
                             {
@@ -17023,7 +16485,7 @@
                               "name": "connection_type",
                               "field_type": {
                                 "name": "string",
-                                "description": "Type of connection: \noutbound-full-relay (default automatic connections),\nblock-relay-only (does not relay transactions or addresses),\ninbound (initiated by the peer),\nmanual (added via addnode RPC or -addnode/-connect configuration options),\naddr-fetch (short-lived automatic connection for soliciting addresses),\nfeeler (short-lived automatic connection for testing addresses),\nprivate-broadcast (short-lived automatic connection for broadcasting privacy-sensitive transactions).\nPlease note this output is unlikely to be stable in upcoming releases as we iterate to\nbest capture connection behaviors.",
+                                "description": "Type of connection: \noutbound-full-relay (default automatic connections),\nblock-relay-only (does not relay transactions or addresses),\ninbound (initiated by the peer),\nmanual (added via addnode RPC or -addnode/-connect configuration options),\naddr-fetch (short-lived automatic connection for soliciting addresses),\nfeeler (short-lived automatic connection for testing addresses).\nPlease note this output is unlikely to be stable in upcoming releases as we iterate to\nbest capture connection behaviors.",
                                 "kind": "Primitive",
                                 "fields": null,
                                 "variants": null,
@@ -17031,7 +16493,7 @@
                                 "protocol_type": "string"
                               },
                               "required": true,
-                              "description": "Type of connection: \noutbound-full-relay (default automatic connections),\nblock-relay-only (does not relay transactions or addresses),\ninbound (initiated by the peer),\nmanual (added via addnode RPC or -addnode/-connect configuration options),\naddr-fetch (short-lived automatic connection for soliciting addresses),\nfeeler (short-lived automatic connection for testing addresses),\nprivate-broadcast (short-lived automatic connection for broadcasting privacy-sensitive transactions).\nPlease note this output is unlikely to be stable in upcoming releases as we iterate to\nbest capture connection behaviors.",
+                              "description": "Type of connection: \noutbound-full-relay (default automatic connections),\nblock-relay-only (does not relay transactions or addresses),\ninbound (initiated by the peer),\nmanual (added via addnode RPC or -addnode/-connect configuration options),\naddr-fetch (short-lived automatic connection for soliciting addresses),\nfeeler (short-lived automatic connection for testing addresses).\nPlease note this output is unlikely to be stable in upcoming releases as we iterate to\nbest capture connection behaviors.",
                               "default_value": null
                             },
                             {
@@ -17095,21 +16557,6 @@
                               "default_value": null
                             },
                             {
-                              "name": "inv_to_send",
-                              "field_type": {
-                                "name": "number",
-                                "description": "How many txs we have queued to announce to this peer",
-                                "kind": "Primitive",
-                                "fields": null,
-                                "variants": null,
-                                "base_type": null,
-                                "protocol_type": "number"
-                              },
-                              "required": true,
-                              "description": "How many txs we have queued to announce to this peer",
-                              "default_value": null
-                            },
-                            {
                               "name": "last_block",
                               "field_type": {
                                 "name": "timestamp",
@@ -17122,21 +16569,6 @@
                               },
                               "required": true,
                               "description": "The UNIX epoch time of the last block received from this peer",
-                              "default_value": null
-                            },
-                            {
-                              "name": "last_inv_sequence",
-                              "field_type": {
-                                "name": "number",
-                                "description": "Mempool sequence number of this peer's last INV",
-                                "kind": "Primitive",
-                                "fields": null,
-                                "variants": null,
-                                "base_type": null,
-                                "protocol_type": "number"
-                              },
-                              "required": true,
-                              "description": "Mempool sequence number of this peer's last INV",
                               "default_value": null
                             },
                             {
@@ -17368,15 +16800,15 @@
                               "name": "startingheight",
                               "field_type": {
                                 "name": "number",
-                                "description": "(DEPRECATED, returned only if config option -deprecatedrpc=startingheight is passed) The starting height (block) of the peer",
+                                "description": "The starting height (block) of the peer",
                                 "kind": "Primitive",
                                 "fields": null,
                                 "variants": null,
                                 "base_type": null,
                                 "protocol_type": "number"
                               },
-                              "required": false,
-                              "description": "(DEPRECATED, returned only if config option -deprecatedrpc=startingheight is passed) The starting height (block) of the peer",
+                              "required": true,
+                              "description": "The starting height (block) of the peer",
                               "default_value": null
                             },
                             {
@@ -17495,8 +16927,6 @@
             "category": "network",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli getpeerinfo \n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"getpeerinfo\", \"params\": []}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -17582,8 +17012,6 @@
             "category": "mining",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "26",
             "examples": [
               "> bitcoin-cli getprioritisedtransactions \n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"getprioritisedtransactions\", \"params\": []}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -17775,8 +17203,6 @@
             "category": "hidden",
             "access_level": "Internal",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "30.2",
             "examples": [
               "> bitcoin-cli getrawaddrman \n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"getrawaddrman\", \"params\": []}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -17817,8 +17243,6 @@
             "category": "wallet",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli getrawchangeaddress \n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"getrawchangeaddress\", \"params\": []}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -17950,21 +17374,6 @@
                         "default_value": null
                       },
                       {
-                        "name": "chunkweight",
-                        "field_type": {
-                          "name": "number",
-                          "description": "sigops-adjusted weight (as defined in BIP 141 and modified by '-bytespersigop') of this transaction's chunk",
-                          "kind": "Primitive",
-                          "fields": null,
-                          "variants": null,
-                          "base_type": null,
-                          "protocol_type": "number"
-                        },
-                        "required": true,
-                        "description": "sigops-adjusted weight (as defined in BIP 141 and modified by '-bytespersigop') of this transaction's chunk",
-                        "default_value": null
-                      },
-                      {
                         "name": "depends",
                         "field_type": {
                           "name": "array",
@@ -18044,21 +17453,6 @@
                               },
                               "required": true,
                               "description": "transaction fee, denominated in BTC",
-                              "default_value": null
-                            },
-                            {
-                              "name": "chunk",
-                              "field_type": {
-                                "name": "amount",
-                                "description": "transaction fees of chunk, denominated in BTC",
-                                "kind": "Primitive",
-                                "fields": null,
-                                "variants": null,
-                                "base_type": null,
-                                "protocol_type": "amount"
-                              },
-                              "required": true,
-                              "description": "transaction fees of chunk, denominated in BTC",
                               "default_value": null
                             },
                             {
@@ -18237,8 +17631,6 @@
             "category": "blockchain",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli getrawmempool true\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"getrawmempool\", \"params\": [true]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -19103,8 +18495,6 @@
             "category": "rawtransactions",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli getrawtransaction \"mytxid\"\n> bitcoin-cli getrawtransaction \"mytxid\" 1\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"getrawtransaction\", \"params\": [\"mytxid\", 1]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n> bitcoin-cli getrawtransaction \"mytxid\" 0 \"myblockhash\"\n> bitcoin-cli getrawtransaction \"mytxid\" 1 \"myblockhash\"\n> bitcoin-cli getrawtransaction \"mytxid\" 2 \"myblockhash\"\n"
@@ -19174,8 +18564,6 @@
             "category": "wallet",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "\nThe amount from transactions with at least 1 confirmation\n> bitcoin-cli getreceivedbyaddress \"bc1q09vm5lfy0j5reeulh4x5752q25uqqvz34hufdl\"\n\nThe amount including unconfirmed transactions, zero confirmations\n> bitcoin-cli getreceivedbyaddress \"bc1q09vm5lfy0j5reeulh4x5752q25uqqvz34hufdl\" 0\n\nThe amount with at least 6 confirmations\n> bitcoin-cli getreceivedbyaddress \"bc1q09vm5lfy0j5reeulh4x5752q25uqqvz34hufdl\" 6\n\nThe amount with at least 6 confirmations including immature coinbase outputs\n> bitcoin-cli getreceivedbyaddress \"bc1q09vm5lfy0j5reeulh4x5752q25uqqvz34hufdl\" 6 true\n\nAs a JSON-RPC call\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"getreceivedbyaddress\", \"params\": [\"bc1q09vm5lfy0j5reeulh4x5752q25uqqvz34hufdl\", 6]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -19245,8 +18633,6 @@
             "category": "wallet",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.18",
             "examples": [
               "\nAmount received by the default label with at least 1 confirmation\n> bitcoin-cli getreceivedbylabel \"\"\n\nAmount received at the tabby label including unconfirmed amounts with zero confirmations\n> bitcoin-cli getreceivedbylabel \"tabby\" 0\n\nThe amount with at least 6 confirmations\n> bitcoin-cli getreceivedbylabel \"tabby\" 6\n\nThe amount with at least 6 confirmations including immature coinbase outputs\n> bitcoin-cli getreceivedbylabel \"tabby\" 6 true\n\nAs a JSON-RPC call\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"getreceivedbylabel\", \"params\": [\"tabby\", 6, true]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -19364,8 +18750,6 @@
             "category": "control",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.18",
             "examples": [
               "> bitcoin-cli getrpcinfo \n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"getrpcinfo\", \"params\": []}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -19556,461 +18940,18 @@
                     "kind": "Object",
                     "fields": [
                       {
-                        "name": "hash",
+                        "name": "",
                         "field_type": {
-                          "name": "hex",
-                          "description": "The transaction hash (differs from txid for witness transactions)",
+                          "name": "elision",
+                          "description": "Equivalent to the RPC decoderawtransaction method, or the RPC getrawtransaction method when `verbose` is passed.",
                           "kind": "Primitive",
                           "fields": null,
                           "variants": null,
                           "base_type": null,
-                          "protocol_type": "hex"
+                          "protocol_type": "elision"
                         },
                         "required": true,
-                        "description": "The transaction hash (differs from txid for witness transactions)",
-                        "default_value": null
-                      },
-                      {
-                        "name": "locktime",
-                        "field_type": {
-                          "name": "timestamp",
-                          "description": "The lock time",
-                          "kind": "Primitive",
-                          "fields": null,
-                          "variants": null,
-                          "base_type": null,
-                          "protocol_type": "timestamp"
-                        },
-                        "required": true,
-                        "description": "The lock time",
-                        "default_value": null
-                      },
-                      {
-                        "name": "size",
-                        "field_type": {
-                          "name": "number",
-                          "description": "The serialized transaction size",
-                          "kind": "Primitive",
-                          "fields": null,
-                          "variants": null,
-                          "base_type": null,
-                          "protocol_type": "number"
-                        },
-                        "required": true,
-                        "description": "The serialized transaction size",
-                        "default_value": null
-                      },
-                      {
-                        "name": "txid",
-                        "field_type": {
-                          "name": "hex",
-                          "description": "The transaction id",
-                          "kind": "Primitive",
-                          "fields": null,
-                          "variants": null,
-                          "base_type": null,
-                          "protocol_type": "hex"
-                        },
-                        "required": true,
-                        "description": "The transaction id",
-                        "default_value": null
-                      },
-                      {
-                        "name": "version",
-                        "field_type": {
-                          "name": "number",
-                          "description": "The version",
-                          "kind": "Primitive",
-                          "fields": null,
-                          "variants": null,
-                          "base_type": null,
-                          "protocol_type": "number"
-                        },
-                        "required": true,
-                        "description": "The version",
-                        "default_value": null
-                      },
-                      {
-                        "name": "vin",
-                        "field_type": {
-                          "name": "array",
-                          "description": "",
-                          "kind": "Object",
-                          "fields": [
-                            {
-                              "name": "field",
-                              "field_type": {
-                                "name": "object",
-                                "description": "",
-                                "kind": "Object",
-                                "fields": [
-                                  {
-                                    "name": "",
-                                    "field_type": {
-                                      "name": "object",
-                                      "description": "",
-                                      "kind": "Object",
-                                      "fields": [
-                                        {
-                                          "name": "coinbase",
-                                          "field_type": {
-                                            "name": "hex",
-                                            "description": "The coinbase value (only if coinbase transaction)",
-                                            "kind": "Primitive",
-                                            "fields": null,
-                                            "variants": null,
-                                            "base_type": null,
-                                            "protocol_type": "hex"
-                                          },
-                                          "required": false,
-                                          "description": "The coinbase value (only if coinbase transaction)",
-                                          "default_value": null
-                                        },
-                                        {
-                                          "name": "scriptSig",
-                                          "field_type": {
-                                            "name": "object",
-                                            "description": "The script (if not coinbase transaction)",
-                                            "kind": "Object",
-                                            "fields": [
-                                              {
-                                                "name": "asm",
-                                                "field_type": {
-                                                  "name": "string",
-                                                  "description": "Disassembly of the signature script",
-                                                  "kind": "Primitive",
-                                                  "fields": null,
-                                                  "variants": null,
-                                                  "base_type": null,
-                                                  "protocol_type": "string"
-                                                },
-                                                "required": true,
-                                                "description": "Disassembly of the signature script",
-                                                "default_value": null
-                                              },
-                                              {
-                                                "name": "hex",
-                                                "field_type": {
-                                                  "name": "hex",
-                                                  "description": "The raw signature script bytes, hex-encoded",
-                                                  "kind": "Primitive",
-                                                  "fields": null,
-                                                  "variants": null,
-                                                  "base_type": null,
-                                                  "protocol_type": "hex"
-                                                },
-                                                "required": true,
-                                                "description": "The raw signature script bytes, hex-encoded",
-                                                "default_value": null
-                                              }
-                                            ],
-                                            "variants": null,
-                                            "base_type": null,
-                                            "protocol_type": "object"
-                                          },
-                                          "required": false,
-                                          "description": "The script (if not coinbase transaction)",
-                                          "default_value": null
-                                        },
-                                        {
-                                          "name": "sequence",
-                                          "field_type": {
-                                            "name": "number",
-                                            "description": "The script sequence number",
-                                            "kind": "Primitive",
-                                            "fields": null,
-                                            "variants": null,
-                                            "base_type": null,
-                                            "protocol_type": "number"
-                                          },
-                                          "required": true,
-                                          "description": "The script sequence number",
-                                          "default_value": null
-                                        },
-                                        {
-                                          "name": "txid",
-                                          "field_type": {
-                                            "name": "hex",
-                                            "description": "The transaction id (if not coinbase transaction)",
-                                            "kind": "Primitive",
-                                            "fields": null,
-                                            "variants": null,
-                                            "base_type": null,
-                                            "protocol_type": "hex"
-                                          },
-                                          "required": false,
-                                          "description": "The transaction id (if not coinbase transaction)",
-                                          "default_value": null
-                                        },
-                                        {
-                                          "name": "txinwitness",
-                                          "field_type": {
-                                            "name": "array",
-                                            "description": "",
-                                            "kind": "Array",
-                                            "fields": null,
-                                            "variants": null,
-                                            "base_type": null,
-                                            "protocol_type": "array"
-                                          },
-                                          "required": false,
-                                          "description": "",
-                                          "default_value": null
-                                        },
-                                        {
-                                          "name": "vout",
-                                          "field_type": {
-                                            "name": "number",
-                                            "description": "The output number (if not coinbase transaction)",
-                                            "kind": "Primitive",
-                                            "fields": null,
-                                            "variants": null,
-                                            "base_type": null,
-                                            "protocol_type": "number"
-                                          },
-                                          "required": false,
-                                          "description": "The output number (if not coinbase transaction)",
-                                          "default_value": null
-                                        }
-                                      ],
-                                      "variants": null,
-                                      "base_type": null,
-                                      "protocol_type": "object"
-                                    },
-                                    "required": true,
-                                    "description": "",
-                                    "default_value": null
-                                  }
-                                ],
-                                "variants": null,
-                                "base_type": null,
-                                "protocol_type": "object"
-                              },
-                              "required": true,
-                              "description": "",
-                              "default_value": null
-                            }
-                          ],
-                          "variants": null,
-                          "base_type": null,
-                          "protocol_type": "array"
-                        },
-                        "required": true,
-                        "description": "",
-                        "default_value": null
-                      },
-                      {
-                        "name": "vout",
-                        "field_type": {
-                          "name": "array",
-                          "description": "",
-                          "kind": "Object",
-                          "fields": [
-                            {
-                              "name": "field",
-                              "field_type": {
-                                "name": "object",
-                                "description": "",
-                                "kind": "Object",
-                                "fields": [
-                                  {
-                                    "name": "",
-                                    "field_type": {
-                                      "name": "object",
-                                      "description": "",
-                                      "kind": "Object",
-                                      "fields": [
-                                        {
-                                          "name": "ischange",
-                                          "field_type": {
-                                            "name": "boolean",
-                                            "description": "Output script is change (only present if true)",
-                                            "kind": "Primitive",
-                                            "fields": null,
-                                            "variants": null,
-                                            "base_type": null,
-                                            "protocol_type": "boolean"
-                                          },
-                                          "required": false,
-                                          "description": "Output script is change (only present if true)",
-                                          "default_value": null
-                                        },
-                                        {
-                                          "name": "n",
-                                          "field_type": {
-                                            "name": "number",
-                                            "description": "index",
-                                            "kind": "Primitive",
-                                            "fields": null,
-                                            "variants": null,
-                                            "base_type": null,
-                                            "protocol_type": "number"
-                                          },
-                                          "required": true,
-                                          "description": "index",
-                                          "default_value": null
-                                        },
-                                        {
-                                          "name": "scriptPubKey",
-                                          "field_type": {
-                                            "name": "object",
-                                            "description": "",
-                                            "kind": "Object",
-                                            "fields": [
-                                              {
-                                                "name": "address",
-                                                "field_type": {
-                                                  "name": "string",
-                                                  "description": "The Bitcoin address (only if a well-defined address exists)",
-                                                  "kind": "Primitive",
-                                                  "fields": null,
-                                                  "variants": null,
-                                                  "base_type": null,
-                                                  "protocol_type": "string"
-                                                },
-                                                "required": false,
-                                                "description": "The Bitcoin address (only if a well-defined address exists)",
-                                                "default_value": null
-                                              },
-                                              {
-                                                "name": "asm",
-                                                "field_type": {
-                                                  "name": "string",
-                                                  "description": "Disassembly of the output script",
-                                                  "kind": "Primitive",
-                                                  "fields": null,
-                                                  "variants": null,
-                                                  "base_type": null,
-                                                  "protocol_type": "string"
-                                                },
-                                                "required": true,
-                                                "description": "Disassembly of the output script",
-                                                "default_value": null
-                                              },
-                                              {
-                                                "name": "desc",
-                                                "field_type": {
-                                                  "name": "string",
-                                                  "description": "Inferred descriptor for the output",
-                                                  "kind": "Primitive",
-                                                  "fields": null,
-                                                  "variants": null,
-                                                  "base_type": null,
-                                                  "protocol_type": "string"
-                                                },
-                                                "required": true,
-                                                "description": "Inferred descriptor for the output",
-                                                "default_value": null
-                                              },
-                                              {
-                                                "name": "hex",
-                                                "field_type": {
-                                                  "name": "hex",
-                                                  "description": "The raw output script bytes, hex-encoded",
-                                                  "kind": "Primitive",
-                                                  "fields": null,
-                                                  "variants": null,
-                                                  "base_type": null,
-                                                  "protocol_type": "hex"
-                                                },
-                                                "required": true,
-                                                "description": "The raw output script bytes, hex-encoded",
-                                                "default_value": null
-                                              },
-                                              {
-                                                "name": "type",
-                                                "field_type": {
-                                                  "name": "string",
-                                                  "description": "The type (one of: nonstandard, anchor, pubkey, pubkeyhash, scripthash, multisig, nulldata, witness_v0_scripthash, witness_v0_keyhash, witness_v1_taproot, witness_unknown)",
-                                                  "kind": "Primitive",
-                                                  "fields": null,
-                                                  "variants": null,
-                                                  "base_type": null,
-                                                  "protocol_type": "string"
-                                                },
-                                                "required": true,
-                                                "description": "The type (one of: nonstandard, anchor, pubkey, pubkeyhash, scripthash, multisig, nulldata, witness_v0_scripthash, witness_v0_keyhash, witness_v1_taproot, witness_unknown)",
-                                                "default_value": null
-                                              }
-                                            ],
-                                            "variants": null,
-                                            "base_type": null,
-                                            "protocol_type": "object"
-                                          },
-                                          "required": true,
-                                          "description": "",
-                                          "default_value": null
-                                        },
-                                        {
-                                          "name": "value",
-                                          "field_type": {
-                                            "name": "amount",
-                                            "description": "The value in BTC",
-                                            "kind": "Primitive",
-                                            "fields": null,
-                                            "variants": null,
-                                            "base_type": null,
-                                            "protocol_type": "amount"
-                                          },
-                                          "required": true,
-                                          "description": "The value in BTC",
-                                          "default_value": null
-                                        }
-                                      ],
-                                      "variants": null,
-                                      "base_type": null,
-                                      "protocol_type": "object"
-                                    },
-                                    "required": true,
-                                    "description": "",
-                                    "default_value": null
-                                  }
-                                ],
-                                "variants": null,
-                                "base_type": null,
-                                "protocol_type": "object"
-                              },
-                              "required": true,
-                              "description": "",
-                              "default_value": null
-                            }
-                          ],
-                          "variants": null,
-                          "base_type": null,
-                          "protocol_type": "array"
-                        },
-                        "required": true,
-                        "description": "",
-                        "default_value": null
-                      },
-                      {
-                        "name": "vsize",
-                        "field_type": {
-                          "name": "number",
-                          "description": "The virtual transaction size (differs from size for witness transactions)",
-                          "kind": "Primitive",
-                          "fields": null,
-                          "variants": null,
-                          "base_type": null,
-                          "protocol_type": "number"
-                        },
-                        "required": true,
-                        "description": "The virtual transaction size (differs from size for witness transactions)",
-                        "default_value": null
-                      },
-                      {
-                        "name": "weight",
-                        "field_type": {
-                          "name": "number",
-                          "description": "The transaction's weight (between vsize*4-3 and vsize*4)",
-                          "kind": "Primitive",
-                          "fields": null,
-                          "variants": null,
-                          "base_type": null,
-                          "protocol_type": "number"
-                        },
-                        "required": true,
-                        "description": "The transaction's weight (between vsize*4-3 and vsize*4)",
+                        "description": "Equivalent to the RPC decoderawtransaction method, or the RPC getrawtransaction method when `verbose` is passed.",
                         "default_value": null
                       }
                     ],
@@ -20454,8 +19395,6 @@
             "category": "wallet",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli gettransaction \"1075db55d416d3ca199f55b6084e2115b9345e16c5cf302fc80e9d5fbf5d48d\"\n> bitcoin-cli gettransaction \"1075db55d416d3ca199f55b6084e2115b9345e16c5cf302fc80e9d5fbf5d48d\" true\n> bitcoin-cli gettransaction \"1075db55d416d3ca199f55b6084e2115b9345e16c5cf302fc80e9d5fbf5d48d\" false true\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"gettransaction\", \"params\": [\"1075db55d416d3ca199f55b6084e2115b9345e16c5cf302fc80e9d5fbf5d48d\"]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -20693,8 +19632,6 @@
             "category": "blockchain",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "\nGet unspent transactions\n> bitcoin-cli listunspent \n\nView the details\n> bitcoin-cli gettxout \"txid\" 1\n\nAs a JSON-RPC call\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"gettxout\", \"params\": [\"txid\", 1]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -20749,8 +19686,6 @@
             "category": "blockchain",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               ""
@@ -21123,8 +20058,6 @@
             "category": "blockchain",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli gettxoutsetinfo \n> bitcoin-cli gettxoutsetinfo \"none\"\n> bitcoin-cli gettxoutsetinfo \"none\" 1000\n> bitcoin-cli gettxoutsetinfo \"none\" '\"00000000c937983704a73af28acdec37b049d214adbda81d7e2a3dd146f6ed09\"'\n> bitcoin-cli -named gettxoutsetinfo hash_type='muhash' use_index='false'\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"gettxoutsetinfo\", \"params\": []}' -H 'content-type: application/json' http://127.0.0.1:8332/\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"gettxoutsetinfo\", \"params\": [\"none\"]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"gettxoutsetinfo\", \"params\": [\"none\", 1000]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"gettxoutsetinfo\", \"params\": [\"none\", \"00000000c937983704a73af28acdec37b049d214adbda81d7e2a3dd146f6ed09\"]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -21305,8 +20238,6 @@
             "category": "blockchain",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "24",
             "examples": [
               "> bitcoin-cli gettxspendingprevout \"[{\\\"txid\\\":\\\"a08e6907dbbd3d809776dbfc5d82e371b764ed838b5655e72f463568df1aadf0\\\",\\\"vout\\\":3}]\"\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"gettxspendingprevout\", \"params\": [\"[{\\\"txid\\\":\\\"a08e6907dbbd3d809776dbfc5d82e371b764ed838b5655e72f463568df1aadf0\\\",\\\"vout\\\":3}]\"]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -21648,8 +20579,6 @@
             "category": "wallet",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli getwalletinfo \n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"getwalletinfo\", \"params\": []}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -21720,8 +20649,6 @@
             "category": "control",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               ""
@@ -21993,8 +20920,6 @@
             "category": "wallet",
             "access_level": "Public",
             "requires_private_keys": true,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.21",
             "examples": [
               "> bitcoin-cli importdescriptors '[{ \"desc\": \"<my descriptor>\", \"timestamp\":1455191478, \"internal\": true }, { \"desc\": \"<my descriptor 2>\", \"label\": \"example 2\", \"timestamp\": 1455191480 }]'\n> bitcoin-cli importdescriptors '[{ \"desc\": \"<my descriptor>\", \"timestamp\":1455191478, \"active\": true, \"range\": [0,100], \"label\": \"<my bech32 wallet>\" }]'\n"
@@ -22095,8 +21020,6 @@
             "category": "blockchain",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "26",
             "examples": [
               "> bitcoin-cli importmempool /path/to/mempool.dat\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"importmempool\", \"params\": [/path/to/mempool.dat]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -22151,8 +21074,6 @@
             "category": "wallet",
             "access_level": "Public",
             "requires_private_keys": true,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               ""
@@ -22192,8 +21113,6 @@
             "category": "hidden",
             "access_level": "Advanced",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "30.2",
             "examples": [
               "> bitcoin-cli invalidateblock \"blockhash\"\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"invalidateblock\", \"params\": [\"blockhash\"]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -22234,8 +21153,6 @@
             "category": "rawtransactions",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.18",
             "examples": [
               "> bitcoin-cli joinpsbts \"psbt\"\n"
@@ -22275,8 +21192,6 @@
             "category": "wallet",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli keypoolrefill \n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"keypoolrefill\", \"params\": []}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -22300,8 +21215,6 @@
             "category": "wallet",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli listaddressgroupings \n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"listaddressgroupings\", \"params\": []}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -22433,8 +21346,6 @@
             "category": "network",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli listbanned \n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"listbanned\", \"params\": []}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -22674,8 +21585,6 @@
             "category": "wallet",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "22",
             "examples": [
               "> bitcoin-cli listdescriptors \n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"listdescriptors\", \"params\": []}' -H 'content-type: application/json' http://127.0.0.1:8332/\n> bitcoin-cli listdescriptors true\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"listdescriptors\", \"params\": [true]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -22715,8 +21624,6 @@
             "category": "wallet",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "\nList all labels\n> bitcoin-cli listlabels \n\nList labels that have receiving addresses\n> bitcoin-cli listlabels receive\n\nList labels that have sending addresses\n> bitcoin-cli listlabels send\n\nAs a JSON-RPC call\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"listlabels\", \"params\": [receive]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -22803,8 +21710,6 @@
             "category": "wallet",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "\nList the unspent transactions\n> bitcoin-cli listunspent \n\nLock an unspent transaction\n> bitcoin-cli lockunspent false \"[{\\\"txid\\\":\\\"a08e6907dbbd3d809776dbfc5d82e371b764ed838b5655e72f463568df1aadf0\\\",\\\"vout\\\":1}]\"\n\nList the locked transactions\n> bitcoin-cli listlockunspent \n\nUnlock the transaction again\n> bitcoin-cli lockunspent true \"[{\\\"txid\\\":\\\"a08e6907dbbd3d809776dbfc5d82e371b764ed838b5655e72f463568df1aadf0\\\",\\\"vout\\\":1}]\"\n\nAs a JSON-RPC call\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"listlockunspent\", \"params\": []}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -23012,8 +21917,6 @@
             "category": "wallet",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli listreceivedbyaddress \n> bitcoin-cli listreceivedbyaddress 6 true\n> bitcoin-cli listreceivedbyaddress 6 true true \"\" true\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"listreceivedbyaddress\", \"params\": [6, true, true]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"listreceivedbyaddress\", \"params\": [6, true, true, \"bc1q09vm5lfy0j5reeulh4x5752q25uqqvz34hufdl\", true]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -23176,8 +22079,6 @@
             "category": "wallet",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.18",
             "examples": [
               "> bitcoin-cli listreceivedbylabel \n> bitcoin-cli listreceivedbylabel 6 true\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"listreceivedbylabel\", \"params\": [6, true, true, true]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -23761,8 +22662,6 @@
             "category": "wallet",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli listsinceblock \n> bitcoin-cli listsinceblock \"000000000000000bacf66f7497b7dc45ef753ee9a7d38571037cdb1a57f663ad\" 6\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"listsinceblock\", \"params\": [\"000000000000000bacf66f7497b7dc45ef753ee9a7d38571037cdb1a57f663ad\", 6]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -23772,7 +22671,7 @@
         {
           "RpcMethod": {
             "name": "listtransactions",
-            "description": "If a label name is provided, this will return only incoming transactions paying to addresses with the specified label.\nReturns up to 'count' most recent transactions ordered from oldest to newest while skipping the first number of \ntransactions specified in the 'skip' argument. A transaction can have multiple entries in this RPC response. \nFor instance, a wallet transaction that pays three addresses — one wallet-owned and two external — will produce \nfour entries. The payment to the wallet-owned address appears both as a send entry and as a receive entry. \nAs a result, the RPC response will contain one entry in the receive category and three entries in the send category.\n",
+            "description": "If a label name is provided, this will return only incoming transactions paying to addresses with the specified label.\n\nReturns up to 'count' most recent transactions skipping the first 'from' transactions.\n",
             "params": [
               {
                 "name": "label",
@@ -24270,8 +23169,6 @@
             "category": "wallet",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "\nList the most recent 10 transactions in the systems\n> bitcoin-cli listtransactions \n\nList transactions 100 to 120\n> bitcoin-cli listtransactions \"*\" 20 100\n\nAs a JSON-RPC call\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"listtransactions\", \"params\": [\"*\", 20, 100]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -24750,8 +23647,6 @@
             "category": "wallet",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli listunspent \n> bitcoin-cli listunspent 6 9999999 \"[\\\"bc1q09vm5lfy0j5reeulh4x5752q25uqqvz34hufdl\\\",\\\"bc1q02ad21edsxd23d32dfgqqsz4vv4nmtfzuklhy3\\\"]\"\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"listunspent\", \"params\": [6, 9999999 \"[\\\"bc1q09vm5lfy0j5reeulh4x5752q25uqqvz34hufdl\\\",\\\"bc1q02ad21edsxd23d32dfgqqsz4vv4nmtfzuklhy3\\\"]\"]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n> bitcoin-cli listunspent 6 9999999 '[]' true '{ \"minimumAmount\": 0.005 }'\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"listunspent\", \"params\": [6, 9999999, [] , true, { \"minimumAmount\": 0.005 } ]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -24854,8 +23749,6 @@
             "category": "wallet",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.18",
             "examples": [
               "> bitcoin-cli listwalletdir \n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"listwalletdir\", \"params\": []}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -24879,8 +23772,6 @@
             "category": "wallet",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli listwallets \n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"listwallets\", \"params\": []}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -24981,8 +23872,6 @@
             "category": "blockchain",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "26",
             "examples": [
               "> bitcoin-cli -rpcclienttimeout=0 loadtxoutset utxo.dat\n"
@@ -25068,8 +23957,6 @@
             "category": "wallet",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "\nLoad wallet from the wallet dir:\n> bitcoin-cli loadwallet \"walletname\"\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"loadwallet\", \"params\": [\"walletname\"]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n\nLoad wallet using absolute path (Unix):\n> bitcoin-cli loadwallet \"/path/to/walletname/\"\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"loadwallet\", \"params\": [\"/path/to/walletname/\"]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n\nLoad wallet using absolute path (Windows):\n> bitcoin-cli loadwallet \"DriveLetter:\\path\\to\\walletname\\\"\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"loadwallet\", \"params\": [\"DriveLetter:\\path\\to\\walletname\\\"]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -25202,8 +24089,6 @@
             "category": "wallet",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "\nList the unspent transactions\n> bitcoin-cli listunspent \n\nLock an unspent transaction\n> bitcoin-cli lockunspent false \"[{\\\"txid\\\":\\\"a08e6907dbbd3d809776dbfc5d82e371b764ed838b5655e72f463568df1aadf0\\\",\\\"vout\\\":1}]\"\n\nList the locked transactions\n> bitcoin-cli listlockunspent \n\nUnlock the transaction again\n> bitcoin-cli lockunspent true \"[{\\\"txid\\\":\\\"a08e6907dbbd3d809776dbfc5d82e371b764ed838b5655e72f463568df1aadf0\\\",\\\"vout\\\":1}]\"\n\nLock the transaction persistently in the wallet database\n> bitcoin-cli lockunspent false \"[{\\\"txid\\\":\\\"a08e6907dbbd3d809776dbfc5d82e371b764ed838b5655e72f463568df1aadf0\\\",\\\"vout\\\":1}]\" true\n\nAs a JSON-RPC call\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"lockunspent\", \"params\": [false, \"[{\\\"txid\\\":\\\"a08e6907dbbd3d809776dbfc5d82e371b764ed838b5655e72f463568df1aadf0\\\",\\\"vout\\\":1}]\"]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -25213,7 +24098,7 @@
         {
           "RpcMethod": {
             "name": "logging",
-            "description": "Gets and sets the logging configuration.\nWhen called without an argument, returns the list of categories with status that are currently being debug logged or not.\nWhen called with arguments, adds or removes categories from debug logging and return the lists above.\nThe arguments are evaluated in order \"include\", \"exclude\".\nIf an item is both included and excluded, it will thus end up being excluded.\nThe valid logging categories are: addrman, bench, blockstorage, cmpctblock, coindb, estimatefee, http, i2p, ipc, kernel, leveldb, libevent, mempool, mempoolrej, net, privatebroadcast, proxy, prune, qt, rand, reindex, rpc, scan, selectcoins, tor, txpackages, txreconciliation, validation, walletdb, zmq\nIn addition, the following are available as category names with special meanings:\n  - \"all\",  \"1\" : represent all logging categories.\n",
+            "description": "Gets and sets the logging configuration.\nWhen called without an argument, returns the list of categories with status that are currently being debug logged or not.\nWhen called with arguments, adds or removes categories from debug logging and return the lists above.\nThe arguments are evaluated in order \"include\", \"exclude\".\nIf an item is both included and excluded, it will thus end up being excluded.\nThe valid logging categories are: addrman, bench, blockstorage, cmpctblock, coindb, estimatefee, http, i2p, ipc, leveldb, libevent, mempool, mempoolrej, net, proxy, prune, qt, rand, reindex, rpc, scan, selectcoins, tor, txpackages, txreconciliation, validation, walletdb, zmq\nIn addition, the following are available as category names with special meanings:\n  - \"all\",  \"1\" : represent all logging categories.\n",
             "params": [
               {
                 "name": "include",
@@ -25274,8 +24159,6 @@
             "category": "control",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli logging \"[\\\"all\\\"]\" \"[\\\"http\\\"]\"\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"logging\", \"params\": [[\"all\"], [\"libevent\"]]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -25391,8 +24274,6 @@
             "category": "wallet",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "24",
             "examples": [
               "> bitcoin-cli migratewallet \n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"migratewallet\", \"params\": []}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -25432,8 +24313,6 @@
             "category": "hidden",
             "access_level": "Testing",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "30.2",
             "examples": [
               ""
@@ -25458,8 +24337,6 @@
             "category": "network",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli ping \n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"ping\", \"params\": []}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -25499,8 +24376,6 @@
             "category": "blockchain",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli preciousblock \"blockhash\"\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"preciousblock\", \"params\": [\"blockhash\"]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -25570,8 +24445,6 @@
             "category": "mining",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli prioritisetransaction \"txid\" 0.0 10000\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"prioritisetransaction\", \"params\": [\"txid\", 0.0, 10000]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -25611,8 +24484,6 @@
             "category": "blockchain",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli pruneblockchain 1000\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"pruneblockchain\", \"params\": [1000]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -25898,8 +24769,6 @@
             "category": "wallet",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.21",
             "examples": [
               "\nBump the fee, get the new transaction's psbt\n> bitcoin-cli psbtbumpfee <txid>\n"
@@ -25939,8 +24808,6 @@
             "category": "hidden",
             "access_level": "Advanced",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "30.2",
             "examples": [
               "> bitcoin-cli reconsiderblock \"blockhash\"\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"reconsiderblock\", \"params\": [\"blockhash\"]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -25981,8 +24848,6 @@
             "category": "wallet",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli removeprunedfunds \"a8d0c0184dde994a09ec054286f1ce581bebf46446a512166eae7628734ea0a5\"\n\nAs a JSON-RPC call\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"removeprunedfunds\", \"params\": [\"a8d0c0184dde994a09ec054286f1ce581bebf46446a512166eae7628734ea0a5\"]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -26068,8 +24933,6 @@
             "category": "wallet",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli rescanblockchain 100000 120000\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"rescanblockchain\", \"params\": [100000, 120000]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -26170,8 +25033,6 @@
             "category": "wallet",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "23",
             "examples": [
               "> bitcoin-cli restorewallet \"testwallet\" \"home\\backups\\backup-file.bak\"\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"restorewallet\", \"params\": [\"testwallet\" \"home\\backups\\backup-file.bak\"]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n> bitcoin-cli -named restorewallet wallet_name=testwallet backup_file='home\\backups\\backup-file.bak\"' load_on_startup=true\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"restorewallet\", \"params\": {\"wallet_name\":\"testwallet\",\"backup_file\":\"home\\\\backups\\\\backup-file.bak\\\"\",\"load_on_startup\":true}}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -26211,8 +25072,6 @@
             "category": "blockchain",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli savemempool \n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"savemempool\", \"params\": []}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -26253,21 +25112,6 @@
                         "description": "",
                         "kind": "Object",
                         "fields": [
-                          {
-                            "name": "descriptor",
-                            "field_type": {
-                              "name": "string",
-                              "description": "An output descriptor",
-                              "kind": "Primitive",
-                              "fields": null,
-                              "variants": null,
-                              "base_type": null,
-                              "protocol_type": "string"
-                            },
-                            "required": false,
-                            "description": "An output descriptor",
-                            "default_value": null
-                          },
                           {
                             "name": "",
                             "field_type": {
@@ -26312,6 +25156,21 @@
                             },
                             "required": false,
                             "description": "An object with output descriptor and metadata",
+                            "default_value": null
+                          },
+                          {
+                            "name": "descriptor",
+                            "field_type": {
+                              "name": "string",
+                              "description": "An output descriptor",
+                              "kind": "Primitive",
+                              "fields": null,
+                              "variants": null,
+                              "base_type": null,
+                              "protocol_type": "string"
+                            },
+                            "required": false,
+                            "description": "An output descriptor",
                             "default_value": null
                           }
                         ],
@@ -26544,8 +25403,6 @@
             "category": "blockchain",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "25",
             "examples": [
               "> bitcoin-cli scanblocks start '[\"addr(bcrt1q4u4nsgk6ug0sqz7r3rj9tykjxrsl0yy4d0wwte)\"]' 300000\n> bitcoin-cli scanblocks start '[\"addr(bcrt1q4u4nsgk6ug0sqz7r3rj9tykjxrsl0yy4d0wwte)\"]' 100 150 basic\n> bitcoin-cli scanblocks status\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"scanblocks\", \"params\": [\"start\", [\"addr(bcrt1q4u4nsgk6ug0sqz7r3rj9tykjxrsl0yy4d0wwte)\"], 300000]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"scanblocks\", \"params\": [\"start\", [\"addr(bcrt1q4u4nsgk6ug0sqz7r3rj9tykjxrsl0yy4d0wwte)\"], 100, 150, \"basic\"]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"scanblocks\", \"params\": [\"status\"]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -26586,21 +25443,6 @@
                         "description": "",
                         "kind": "Object",
                         "fields": [
-                          {
-                            "name": "descriptor",
-                            "field_type": {
-                              "name": "string",
-                              "description": "An output descriptor",
-                              "kind": "Primitive",
-                              "fields": null,
-                              "variants": null,
-                              "base_type": null,
-                              "protocol_type": "string"
-                            },
-                            "required": false,
-                            "description": "An output descriptor",
-                            "default_value": null
-                          },
                           {
                             "name": "",
                             "field_type": {
@@ -26645,6 +25487,21 @@
                             },
                             "required": false,
                             "description": "An object with output descriptor and metadata",
+                            "default_value": null
+                          },
+                          {
+                            "name": "descriptor",
+                            "field_type": {
+                              "name": "string",
+                              "description": "An output descriptor",
+                              "kind": "Primitive",
+                              "fields": null,
+                              "variants": null,
+                              "base_type": null,
+                              "protocol_type": "string"
+                            },
+                            "required": false,
+                            "description": "An output descriptor",
                             "default_value": null
                           }
                         ],
@@ -26984,8 +25841,6 @@
             "category": "blockchain",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli scantxoutset start '[\"raw(76a91411b366edfc0a8b66feebae5c2e25a7b6a5d1cf3188ac)#fm24fxxy\"]'\n> bitcoin-cli scantxoutset status\n> bitcoin-cli scantxoutset abort\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"scantxoutset\", \"params\": [\"start\", [\"raw(76a91411b366edfc0a8b66feebae5c2e25a7b6a5d1cf3188ac)#fm24fxxy\"]]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"scantxoutset\", \"params\": [\"status\"]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"scantxoutset\", \"params\": [\"abort\"]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -27009,8 +25864,6 @@
             "category": "control",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "30.2",
             "examples": [
               ""
@@ -27705,8 +26558,6 @@
             "category": "wallet",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.21",
             "examples": [
               "\nSend 0.1 BTC with a confirmation target of 6 blocks in economical fee estimate mode\n> bitcoin-cli send '{\"bc1q09vm5lfy0j5reeulh4x5752q25uqqvz34hufdl\": 0.1}' 6 economical\n\nSend 0.2 BTC with a fee rate of 1.1 sat/vB using positional arguments\n> bitcoin-cli send '{\"bc1q09vm5lfy0j5reeulh4x5752q25uqqvz34hufdl\": 0.2}' null \"unset\" 1.1\n\nSend 0.2 BTC with a fee rate of 1 sat/vB using the options argument\n> bitcoin-cli send '{\"bc1q09vm5lfy0j5reeulh4x5752q25uqqvz34hufdl\": 0.2}' null \"unset\" null '{\"fee_rate\": 1}'\n\nSend 0.3 BTC with a fee rate of 25 sat/vB using named arguments\n> bitcoin-cli -named send outputs='{\"bc1q09vm5lfy0j5reeulh4x5752q25uqqvz34hufdl\": 0.3}' fee_rate=25\n\nCreate a transaction that should confirm the next block, with a specific input, and return result without adding to wallet or broadcasting to the network\n> bitcoin-cli send '{\"bc1q09vm5lfy0j5reeulh4x5752q25uqqvz34hufdl\": 0.1}' 1 economical '{\"add_to_wallet\": false, \"inputs\": [{\"txid\":\"a08e6907dbbd3d809776dbfc5d82e371b764ed838b5655e72f463568df1aadf0\", \"vout\":1}]}'\n"
@@ -27732,21 +26583,6 @@
                         "description": "",
                         "kind": "Object",
                         "fields": [
-                          {
-                            "name": "address",
-                            "field_type": {
-                              "name": "string",
-                              "description": "A bitcoin address which receives an equal share of the unspecified amount.",
-                              "kind": "Primitive",
-                              "fields": null,
-                              "variants": null,
-                              "base_type": null,
-                              "protocol_type": "string"
-                            },
-                            "required": true,
-                            "description": "A bitcoin address which receives an equal share of the unspecified amount.",
-                            "default_value": null
-                          },
                           {
                             "name": "",
                             "field_type": {
@@ -27776,6 +26612,21 @@
                             },
                             "required": false,
                             "description": "",
+                            "default_value": null
+                          },
+                          {
+                            "name": "address",
+                            "field_type": {
+                              "name": "string",
+                              "description": "A bitcoin address which receives an equal share of the unspecified amount.",
+                              "kind": "Primitive",
+                              "fields": null,
+                              "variants": null,
+                              "base_type": null,
+                              "protocol_type": "string"
+                            },
+                            "required": true,
+                            "description": "A bitcoin address which receives an equal share of the unspecified amount.",
                             "default_value": null
                           }
                         ],
@@ -28280,8 +27131,6 @@
             "category": "wallet",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "24",
             "examples": [
               "\nSpend all UTXOs from the wallet with a fee rate of 1 sat/vB using named arguments\n> bitcoin-cli -named sendall recipients='[\"bc1q09vm5lfy0j5reeulh4x5752q25uqqvz34hufdl\"]' fee_rate=1\n\nSpend all UTXOs with a fee rate of 1.1 sat/vB using positional arguments\n> bitcoin-cli sendall '[\"bc1q09vm5lfy0j5reeulh4x5752q25uqqvz34hufdl\"]' null \"unset\" 1.1\n\nSpend all UTXOs split into equal amounts to two addresses with a fee rate of 1.5 sat/vB using the options argument\n> bitcoin-cli sendall '[\"bc1q09vm5lfy0j5reeulh4x5752q25uqqvz34hufdl\", \"bc1q02ad21edsxd23d32dfgqqsz4vv4nmtfzuklhy3\"]' null \"unset\" null '{\"fee_rate\": 1.5}'\n\nLeave dust UTXOs in wallet, spend only UTXOs with positive effective value with a fee rate of 10 sat/vB using the options argument\n> bitcoin-cli sendall '[\"bc1q09vm5lfy0j5reeulh4x5752q25uqqvz34hufdl\"]' null \"unset\" null '{\"fee_rate\": 10, \"send_max\": true}'\n\nSpend all UTXOs with a fee rate of 1.3 sat/vB using named arguments and sending a 0.25 BTC to another recipient\n> bitcoin-cli -named sendall recipients='[{\"bc1q02ad21edsxd23d32dfgqqsz4vv4nmtfzuklhy3\": 0.25}, \"bc1q09vm5lfy0j5reeulh4x5752q25uqqvz34hufdl\"]' fee_rate=1.3\n\n"
@@ -28503,8 +27352,6 @@
             "category": "wallet",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "\nSend two amounts to two different addresses:\n> bitcoin-cli sendmany \"\" \"{\\\"bc1q09vm5lfy0j5reeulh4x5752q25uqqvz34hufdl\\\":0.01,\\\"bc1q02ad21edsxd23d32dfgqqsz4vv4nmtfzuklhy3\\\":0.02}\"\n\nSend two amounts to two different addresses setting the confirmation and comment:\n> bitcoin-cli sendmany \"\" \"{\\\"bc1q09vm5lfy0j5reeulh4x5752q25uqqvz34hufdl\\\":0.01,\\\"bc1q02ad21edsxd23d32dfgqqsz4vv4nmtfzuklhy3\\\":0.02}\" 6 \"testing\"\n\nSend two amounts to two different addresses, subtract fee from amount:\n> bitcoin-cli sendmany \"\" \"{\\\"bc1q09vm5lfy0j5reeulh4x5752q25uqqvz34hufdl\\\":0.01,\\\"bc1q02ad21edsxd23d32dfgqqsz4vv4nmtfzuklhy3\\\":0.02}\" 1 \"\" \"[\\\"bc1q09vm5lfy0j5reeulh4x5752q25uqqvz34hufdl\\\",\\\"bc1q02ad21edsxd23d32dfgqqsz4vv4nmtfzuklhy3\\\"]\"\n\nAs a JSON-RPC call\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"sendmany\", \"params\": [\"\", {\"bc1q09vm5lfy0j5reeulh4x5752q25uqqvz34hufdl\":0.01,\"bc1q02ad21edsxd23d32dfgqqsz4vv4nmtfzuklhy3\":0.02}, 6, \"testing\"]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -28574,8 +27421,6 @@
             "category": "hidden",
             "access_level": "Internal",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "30.2",
             "examples": [
               "> bitcoin-cli sendmsgtopeer 0 \"addr\" \"ffffff\"\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"sendmsgtopeer\", \"params\": [0 \"addr\" \"ffffff\"]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -28586,7 +27431,7 @@
         {
           "RpcMethod": {
             "name": "sendrawtransaction",
-            "description": "Submit a raw transaction (serialized, hex-encoded) to the network.\n\nIf -privatebroadcast is disabled, then the transaction will be put into the\nlocal mempool of the node and will be sent unconditionally to all currently\nconnected peers, so using sendrawtransaction for manual rebroadcast will degrade\nprivacy by leaking the transaction's origin, as nodes will normally not\nrebroadcast non-wallet transactions already in their mempool.\n\nIf -privatebroadcast is enabled, then the transaction will be sent only via\ndedicated, short-lived connections to Tor or I2P peers or IPv4/IPv6 peers\nvia the Tor network. This conceals the transaction's origin. The transaction\nwill only enter the local mempool when it is received back from the network.\n\nA specific exception, RPC_TRANSACTION_ALREADY_IN_UTXO_SET, may throw if the transaction cannot be added to the mempool.\n\nRelated RPCs: createrawtransaction, signrawtransactionwithkey\n",
+            "description": "Submit a raw transaction (serialized, hex-encoded) to local node and network.\n\nThe transaction will be sent unconditionally to all peers, so using sendrawtransaction\nfor manual rebroadcast may degrade privacy by leaking the transaction's origin, as\nnodes will normally not rebroadcast non-wallet transactions already in their mempool.\n\nA specific exception, RPC_TRANSACTION_ALREADY_IN_UTXO_SET, may throw if the transaction cannot be added to the mempool.\n\nRelated RPCs: createrawtransaction, signrawtransactionwithkey\n",
             "params": [
               {
                 "name": "hexstring",
@@ -28646,8 +27491,6 @@
             "category": "rawtransactions",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "\nCreate a transaction\n> bitcoin-cli createrawtransaction \"[{\\\"txid\\\" : \\\"mytxid\\\",\\\"vout\\\":0}]\" \"{\\\"myaddress\\\":0.01}\"\nSign the transaction, and get back the hex\n> bitcoin-cli signrawtransactionwithwallet \"myhex\"\n\nSend the transaction (signed hex)\n> bitcoin-cli sendrawtransaction \"signedhex\"\n\nAs a JSON-RPC call\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"sendrawtransaction\", \"params\": [\"signedhex\"]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -28868,8 +27711,6 @@
             "category": "wallet",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "\nSend 0.1 BTC\n> bitcoin-cli sendtoaddress \"bc1q09vm5lfy0j5reeulh4x5752q25uqqvz34hufdl\" 0.1\n\nSend 0.1 BTC with a confirmation target of 6 blocks in economical fee estimate mode using positional arguments\n> bitcoin-cli sendtoaddress \"bc1q09vm5lfy0j5reeulh4x5752q25uqqvz34hufdl\" 0.1 \"donation\" \"sean's outpost\" false true 6 economical\n\nSend 0.1 BTC with a fee rate of 1.1 sat/vB, subtract fee from amount, BIP125-replaceable, using positional arguments\n> bitcoin-cli sendtoaddress \"bc1q09vm5lfy0j5reeulh4x5752q25uqqvz34hufdl\" 0.1 \"drinks\" \"room77\" true true null \"unset\" null 1.1\n\nSend 0.2 BTC with a confirmation target of 6 blocks in economical fee estimate mode using named arguments\n> bitcoin-cli -named sendtoaddress address=\"bc1q09vm5lfy0j5reeulh4x5752q25uqqvz34hufdl\" amount=0.2 conf_target=6 estimate_mode=\"economical\"\n\nSend 0.5 BTC with a fee rate of 25 sat/vB using named arguments\n> bitcoin-cli -named sendtoaddress address=\"bc1q09vm5lfy0j5reeulh4x5752q25uqqvz34hufdl\" amount=0.5 fee_rate=25\n> bitcoin-cli -named sendtoaddress address=\"bc1q09vm5lfy0j5reeulh4x5752q25uqqvz34hufdl\" amount=0.5 fee_rate=25 subtractfeefromamount=false replaceable=true avoid_reuse=true comment=\"2 pizzas\" comment_to=\"jeremy\" verbose=true\n"
@@ -28954,8 +27795,6 @@
             "category": "network",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli setban \"192.168.0.6\" \"add\" 86400\n> bitcoin-cli setban \"192.168.0.0/24\" \"add\"\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"setban\", \"params\": [\"192.168.0.6\", \"add\", 86400]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -29010,8 +27849,6 @@
             "category": "wallet",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.18",
             "examples": [
               "> bitcoin-cli setlabel \"bc1q09vm5lfy0j5reeulh4x5752q25uqqvz34hufdl\" \"tabby\"\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"setlabel\", \"params\": [\"bc1q09vm5lfy0j5reeulh4x5752q25uqqvz34hufdl\", \"tabby\"]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -29051,8 +27888,6 @@
             "category": "hidden",
             "access_level": "Testing",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "30.2",
             "examples": [
               ""
@@ -29093,8 +27928,6 @@
             "category": "network",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               ""
@@ -29134,8 +27967,6 @@
             "category": "wallet",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli settxfee 0.00001\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"settxfee\", \"params\": [0.00001]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -29236,8 +28067,6 @@
             "category": "wallet",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.19",
             "examples": [
               "> bitcoin-cli setwalletflag avoid_reuse\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"setwalletflag\", \"params\": [\"avoid_reuse\"]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -29292,8 +28121,6 @@
             "category": "wallet",
             "access_level": "Public",
             "requires_private_keys": true,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "\nUnlock the wallet for 30 seconds\n> bitcoin-cli walletpassphrase \"mypassphrase\" 30\n\nCreate the signature\n> bitcoin-cli signmessage \"1D1ZrZNe3JUo7ZycKEYQQiQAWd9y54F4XX\" \"my message\"\n\nVerify the signature\n> bitcoin-cli verifymessage \"1D1ZrZNe3JUo7ZycKEYQQiQAWd9y54F4XX\" \"signature\" \"my message\"\n\nAs a JSON-RPC call\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"signmessage\", \"params\": [\"1D1ZrZNe3JUo7ZycKEYQQiQAWd9y54F4XX\", \"my message\"]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -29348,8 +28175,6 @@
             "category": "util",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "\nCreate the signature\n> bitcoin-cli signmessagewithprivkey \"privkey\" \"my message\"\n\nVerify the signature\n> bitcoin-cli verifymessage \"1D1ZrZNe3JUo7ZycKEYQQiQAWd9y54F4XX\" \"signature\" \"my message\"\n\nAs a JSON-RPC call\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"signmessagewithprivkey\", \"params\": [\"privkey\", \"my message\"]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -29726,8 +28551,6 @@
             "category": "rawtransactions",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli signrawtransactionwithkey \"myhex\" \"[\\\"key1\\\",\\\"key2\\\"]\"\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"signrawtransactionwithkey\", \"params\": [\"myhex\", \"[\\\"key1\\\",\\\"key2\\\"]\"]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -30089,8 +28912,6 @@
             "category": "wallet",
             "access_level": "Public",
             "requires_private_keys": true,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli signrawtransactionwithwallet \"myhex\"\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"signrawtransactionwithwallet\", \"params\": [\"myhex\"]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -30177,8 +28998,6 @@
             "category": "wallet",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "24",
             "examples": [
               "> bitcoin-cli simulaterawtransaction [\"myhex\"]\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"simulaterawtransaction\", \"params\": [[\"myhex\"]]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -30218,8 +29037,6 @@
             "category": "control",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               ""
@@ -30307,8 +29124,6 @@
             "category": "mining",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli submitblock \"mydata\"\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"submitblock\", \"params\": [\"mydata\"]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -30348,8 +29163,6 @@
             "category": "mining",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.18",
             "examples": [
               "> bitcoin-cli submitheader \"aabbcc\"\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"submitheader\", \"params\": [\"aabbcc\"]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -30446,7 +29259,7 @@
                   "name": "tx-results",
                   "field_type": {
                     "name": "object",
-                    "description": "The transaction results keyed by wtxid. An entry is returned for every submitted wtxid.",
+                    "description": "transaction results keyed by wtxid",
                     "kind": "Object",
                     "fields": [
                       {
@@ -30460,7 +29273,7 @@
                               "name": "error",
                               "field_type": {
                                 "name": "string",
-                                "description": "Error string if rejected from mempool, or \"package-not-validated\" when the package aborts before any per-tx processing.",
+                                "description": "The transaction error string, if it was rejected by the mempool",
                                 "kind": "Primitive",
                                 "fields": null,
                                 "variants": null,
@@ -30468,7 +29281,7 @@
                                 "protocol_type": "string"
                               },
                               "required": false,
-                              "description": "Error string if rejected from mempool, or \"package-not-validated\" when the package aborts before any per-tx processing.",
+                              "description": "The transaction error string, if it was rejected by the mempool",
                               "default_value": null
                             },
                             {
@@ -30592,7 +29405,7 @@
                     "protocol_type": "object"
                   },
                   "required": true,
-                  "description": "The transaction results keyed by wtxid. An entry is returned for every submitted wtxid.",
+                  "description": "transaction results keyed by wtxid",
                   "default_value": null
                 }
               ],
@@ -30603,8 +29416,6 @@
             "category": "rawtransactions",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "26",
             "examples": [
               "> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"submitpackage\", \"params\": [[\"raw-parent-tx-1\", \"raw-parent-tx-2\", \"raw-child-tx\"]]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n> bitcoin-cli submitpackage '[\"raw-tx-without-unconfirmed-parents\"]'\n"
@@ -30628,8 +29439,6 @@
             "category": "hidden",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "30.2",
             "examples": [
               "> bitcoin-cli syncwithvalidationinterfacequeue \n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"syncwithvalidationinterfacequeue\", \"params\": []}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -30884,8 +29693,6 @@
             "category": "rawtransactions",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "\nCreate a transaction\n> bitcoin-cli createrawtransaction \"[{\\\"txid\\\" : \\\"mytxid\\\",\\\"vout\\\":0}]\" \"{\\\"myaddress\\\":0.01}\"\nSign the transaction, and get back the hex\n> bitcoin-cli signrawtransactionwithwallet \"myhex\"\n\nTest acceptance of the transaction (signed hex)\n> bitcoin-cli testmempoolaccept '[\"signedhex\"]'\n\nAs a JSON-RPC call\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"testmempoolaccept\", \"params\": [[\"signedhex\"]]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -30956,8 +29763,6 @@
             "category": "wallet",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli unloadwallet wallet_name\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"unloadwallet\", \"params\": [wallet_name]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -30981,8 +29786,6 @@
             "category": "control",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli uptime \n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"uptime\", \"params\": []}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -31115,8 +29918,6 @@
             "category": "rawtransactions",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.18",
             "examples": [
               "> bitcoin-cli utxoupdatepsbt \"psbt\"\n"
@@ -31292,8 +30093,6 @@
             "category": "util",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli validateaddress \"bc1q09vm5lfy0j5reeulh4x5752q25uqqvz34hufdl\"\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"validateaddress\", \"params\": [\"bc1q09vm5lfy0j5reeulh4x5752q25uqqvz34hufdl\"]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -31348,8 +30147,6 @@
             "category": "blockchain",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli verifychain \n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"verifychain\", \"params\": []}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -31419,8 +30216,6 @@
             "category": "util",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "\nUnlock the wallet for 30 seconds\n> bitcoin-cli walletpassphrase \"mypassphrase\" 30\n\nCreate the signature\n> bitcoin-cli signmessage \"1D1ZrZNe3JUo7ZycKEYQQiQAWd9y54F4XX\" \"my message\"\n\nVerify the signature\n> bitcoin-cli verifymessage \"1D1ZrZNe3JUo7ZycKEYQQiQAWd9y54F4XX\" \"signature\" \"my message\"\n\nAs a JSON-RPC call\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"verifymessage\", \"params\": [\"1D1ZrZNe3JUo7ZycKEYQQiQAWd9y54F4XX\", \"signature\", \"my message\"]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -31460,8 +30255,6 @@
             "category": "blockchain",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               ""
@@ -31547,8 +30340,6 @@
             "category": "blockchain",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "30",
             "examples": [
               "> bitcoin-cli waitforblock \"0000000000079f8ef3d2c688c244eb7a4570b24c9ed7b4a8c619eb02596f8862\" 1000\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"waitforblock\", \"params\": [\"0000000000079f8ef3d2c688c244eb7a4570b24c9ed7b4a8c619eb02596f8862\", 1000]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -31634,8 +30425,6 @@
             "category": "blockchain",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "30",
             "examples": [
               "> bitcoin-cli waitforblockheight 100 1000\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"waitforblockheight\", \"params\": [100, 1000]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -31721,8 +30510,6 @@
             "category": "blockchain",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "30",
             "examples": [
               "> bitcoin-cli waitfornewblock 1000\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"waitfornewblock\", \"params\": [1000]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -32357,8 +31144,6 @@
             "category": "wallet",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "\nCreate a PSBT with automatically picked inputs that sends 0.5 BTC to an address and has a fee rate of 2 sat/vB:\n> bitcoin-cli walletcreatefundedpsbt \"[]\" \"[{\\\"bc1q09vm5lfy0j5reeulh4x5752q25uqqvz34hufdl\\\":0.5}]\" 0 \"{\\\"add_inputs\\\":true,\\\"fee_rate\\\":2}\"\n\nCreate the same PSBT as the above one instead using named arguments:\n> bitcoin-cli -named walletcreatefundedpsbt outputs=\"[{\\\"bc1q09vm5lfy0j5reeulh4x5752q25uqqvz34hufdl\\\":0.5}]\" add_inputs=true fee_rate=2\n"
@@ -32414,8 +31199,6 @@
             "category": "wallet",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "22",
             "examples": [
               ""
@@ -32439,8 +31222,6 @@
             "category": "wallet",
             "access_level": "Public",
             "requires_private_keys": true,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "\nSet the passphrase for 2 minutes to perform a transaction\n> bitcoin-cli walletpassphrase \"my pass phrase\" 120\n\nPerform a send (requires passphrase set)\n> bitcoin-cli sendtoaddress \"bc1q09vm5lfy0j5reeulh4x5752q25uqqvz34hufdl\" 1.0\n\nClear the passphrase since we are done before 2 minutes is up\n> bitcoin-cli walletlock \n\nAs a JSON-RPC call\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"walletlock\", \"params\": []}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -32495,8 +31276,6 @@
             "category": "wallet",
             "access_level": "Public",
             "requires_private_keys": true,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "\nUnlock the wallet for 60 seconds\n> bitcoin-cli walletpassphrase \"my pass phrase\" 60\n\nLock the wallet again (before 60 seconds)\n> bitcoin-cli walletlock \n\nAs a JSON-RPC call\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"walletpassphrase\", \"params\": [\"my pass phrase\", 60]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -32551,8 +31330,6 @@
             "category": "wallet",
             "access_level": "Public",
             "requires_private_keys": true,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli walletpassphrasechange \"old one\" \"new one\"\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"walletpassphrasechange\", \"params\": [\"old one\", \"new one\"]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
@@ -32698,8 +31475,6 @@
             "category": "wallet",
             "access_level": "Public",
             "requires_private_keys": false,
-            "deprecated": false,
-            "version": "unknown",
             "version_added": "0.17",
             "examples": [
               "> bitcoin-cli walletprocesspsbt \"psbt\"\n"

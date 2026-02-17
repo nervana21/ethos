@@ -344,8 +344,6 @@ impl CodeGenerator for MethodWrapperGenerator {
                 let method_wrapper = format!(
                     r#"{docs}
 /// Calls the `{rpc}` RPC method.
-///
-/// Generated transport wrapper for JSON-RPC.
 {clippy_allow}pub async fn {fn_name}({fn_args}) -> Result<{ok_ty}, TransportError> {{
     let params = {params_vec};
     let raw = transport.send_request("{rpc}", &params).await?;
