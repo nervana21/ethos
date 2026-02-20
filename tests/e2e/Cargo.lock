@@ -160,7 +160,7 @@ dependencies = [
 
 [[package]]
 name = "ethos-bitcoind"
-version = "30.2.0"
+version = "30.2.4"
 dependencies = [
  "async-trait",
  "base64",
