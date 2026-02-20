@@ -8,12 +8,12 @@ use bitcoin::Network;
 use crate::config::Config;
 
 /// TestConfig represents the configuration needed to run a Bitcoin node in a test environment.
-/// This struct is the single source of truth for test‑node settings: RPC port, username, and password.
+/// This struct encapsulates test‑node settings: network, RPC port, username, password, and extra args.
 /// Defaults are:
+/// - `network = Network::Regtest`
 /// - `rpc_port = 0` (auto‑select a free port)
 /// - `rpc_username = "rpcuser"`
 /// - `rpc_password = "rpcpassword"`
-/// - `network = Network::Regtest` (for isolation and testability)
 /// - `extra_args = ["-prune=0", "-txindex"]` (for full blockchain history and transaction lookup)
 ///
 /// To override any of these, simply modify fields on `TestConfig::default()`
@@ -24,16 +24,18 @@ use crate::config::Config;
 ///
 /// ```rust,ignore
 /// let mut cfg = TestConfig::default();
+/// cfg.network = Network::Testnet;
 /// cfg.rpc_port = 18545;
 /// cfg.rpc_username = "alice".into();
-/// cfg.network = Network::Testnet;
 /// ```
 ///
 /// # Environment Overrides
 ///
-/// Reads `RPC_PORT`, `RPC_USER`, `RPC_PASS`, and `RPC_NETWORK` environment variables to override defaults.
+/// Reads `RPC_NETWORK`, `RPC_PORT`, `RPC_USER`, and `RPC_PASS` to override defaults.
 #[derive(Debug, Clone)]
 pub struct TestConfig {
+    /// Which Bitcoin network to run against.
+    pub network: Network,
     /// The port number for RPC communication with the Bitcoin node.
     /// A value of 0 indicates that an available port should be automatically selected.
     pub rpc_port: u16,
@@ -43,8 +45,6 @@ pub struct TestConfig {
     /// The password for RPC authentication.
     /// Can be customized to match your `bitcoin.conf` `rpcpassword` setting.
     pub rpc_password: String,
-    /// Which Bitcoin network to run against.
-    pub network: Network,
     /// Extra command-line arguments to pass to bitcoind
     pub extra_args: Vec<String>,
 }
@@ -77,13 +77,18 @@ impl TestConfig {
     }
 
     /// Create a `TestConfig`, overriding defaults with environment variables:
+    /// - `RPC_NETWORK`: overrides `network`; one of `regtest`, `testnet|test`, `signet`, `mainnet|main|bitcoin`, `testnet4`
     /// - `RPC_PORT`: overrides `rpc_port`
     /// - `RPC_USER`: overrides `rpc_username`
     /// - `RPC_PASS`: overrides `rpc_password`
-    /// - `RPC_NETWORK`: one of `regtest`, `testnet|test`, `signet`, `mainnet|main|bitcoin`, `testnet4`
     #[allow(clippy::field_reassign_with_default)]
     pub fn from_env() -> Self {
         let mut cfg = Self::default();
+        if let Ok(net) = env::var("RPC_NETWORK") {
+            if let Some(n) = Self::network_from_str(&net) {
+                cfg.network = n;
+            }
+        }
         if let Ok(port_str) = env::var("RPC_PORT") {
             if let Ok(port) = port_str.parse() {
                 cfg.rpc_port = port;
@@ -94,11 +99,6 @@ impl TestConfig {
         }
         if let Ok(pass) = env::var("RPC_PASS") {
             cfg.rpc_password = pass;
-        }
-        if let Ok(net) = env::var("RPC_NETWORK") {
-            if let Some(n) = Self::network_from_str(&net) {
-                cfg.network = n;
-            }
         }
         cfg
     }
@@ -122,10 +122,10 @@ impl TestConfig {
             .unwrap_or(0);
 
         Self {
+            network: Network::Regtest, // Default to regtest for test environments
             rpc_port,
             rpc_username: config.rpc_user.clone(),
             rpc_password: config.rpc_password.clone(),
-            network: Network::Regtest, // Default to regtest for test environments
             extra_args: vec!["-prune=0".to_string(), "-txindex".to_string()], // For full blockchain history and transaction lookup
         }
     }
@@ -134,10 +134,10 @@ impl TestConfig {
 impl Default for TestConfig {
     fn default() -> Self {
         Self {
+            network: Network::Regtest,
             rpc_port: 0,
             rpc_username: "rpcuser".to_string(),
             rpc_password: "rpcpassword".to_string(),
-            network: Network::Regtest,
             extra_args: vec!["-prune=0".to_string(), "-txindex".to_string()], // For full blockchain history and transaction lookup
         }
     }
