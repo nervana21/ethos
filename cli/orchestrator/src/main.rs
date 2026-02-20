@@ -239,6 +239,6 @@ fn compile_with_ir(
 /// Fallback when registry has no default_version for the implementation
 fn get_latest_version_fallback(implementation: &Implementation) -> &'static str {
     match implementation {
-        Implementation::BitcoinCore => "v30.2.4",
+        Implementation::BitcoinCore => "v30.2",
     }
 }
