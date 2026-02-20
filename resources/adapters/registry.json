@@ -12,7 +12,6 @@
         "bitcoin_core": {
           "name": "Bitcoin Core",
           "description": "Reference implementation of Bitcoin RPC",
-          "versions": ["v30.2.0"],
           "default_version": "v30.2.0",
           "adapter_class": "RpcAdapter",
           "implementation": "bitcoin_core"
