@@ -338,7 +338,7 @@ fn generate_start_method(code: &mut String, metadata: &types::node_metadata::Nod
 fn generate_http_start_logic(code: &mut String, metadata: &types::node_metadata::NodeMetadata) {
     writeln!(
         code,
-        r#"
+        r##"
         let datadir = self._datadir.as_ref().unwrap().path();
         let exe = self.config.bitcoind_path.as_deref().unwrap_or_else(|| std::path::Path::new("{}"));
         let mut cmd = Command::new(exe);
@@ -412,6 +412,7 @@ fn generate_http_start_logic(code: &mut String, metadata: &types::node_metadata:
         // Wait for node to be ready
         let deadline = Instant::now() + Duration::from_secs(10);
         let mut attempts = 0;
+        let mut last_error: Option<String> = None;
         while Instant::now() < deadline {{
             if let Some(child) = child_guard.as_mut() {{
                 if let Ok(Some(status)) = child.try_wait() {{
@@ -429,6 +430,7 @@ fn generate_http_start_logic(code: &mut String, metadata: &types::node_metadata:
                     return Ok(());
                 }}
                 Err(e) => {{
+                    last_error = Some(e.to_string());
                     debug!("Failed to connect to RPC (attempt {{}}): {{}}", attempts, e);
                 }}
             }}
@@ -437,19 +439,24 @@ fn generate_http_start_logic(code: &mut String, metadata: &types::node_metadata:
             tokio::time::sleep(Duration::from_millis(200)).await;
         }}
 
-        let error = format!(
-            "Timed out waiting for {} node to start on port {{}} after {{}} attempts",
-            self.rpc_port, attempts
-        );
+        let error = match last_error {{
+            Some(e) => format!(
+                "Timed out waiting for node to start on port {{}} after {{}} attempts. Last RPC error: {{}}",
+                self.rpc_port, attempts, e
+            ),
+            None => format!(
+                "Timed out waiting for node to start on port {{}} after {{}} attempts",
+                self.rpc_port, attempts
+            ),
+        }};
         error!("{{}}", error);
-        return Err(TransportError::Rpc(error));"#,
+        return Err(TransportError::Rpc(error));"##,
         metadata.executable,
         metadata.executable,
         metadata.executable,
         metadata.executable,
         metadata.executable,
         metadata.readiness_method,
-        metadata.executable,
         metadata.executable
     )
     .expect("Failed to write HTTP start logic");
