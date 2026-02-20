@@ -1,20 +1,18 @@
 [![License: CC0-1.0](https://img.shields.io/badge/license-CC0--1.0-blue)](LICENSE)
 
-# Ethos: A Meta-Compiler for The Bitcoin Protocol
+# Ethos
 
-Ethos is a meta-compiler for The Bitcoin Protocol.
+A formal RPC description for type-safe Rust clients
+
+## Why Ethos?
+
+Recent [discussion](https://delvingbitcoin.org/t/the-future-of-the-bitcoin-core-gui/2253/17) has suggested a renewed interest in a formal description of the [RPC API](https://github.com/bitcoin/bitcoin/issues/29912) surface. The Bitcoin Core RPC surface is the predominant means through which external clients query the blockchain. As tooling continues to depend on RPC behavior, the need for and benefits from a behavioral specification are likely to increase.
+
+Ethos is a PoC for the capabilities of such a [specification](resources/ir/schema.json). [Other](https://github.com/willcl-ark/bitcoin-rpc-web/blob/master/assets/openrpc.json) comprehensive specifications may be adapted to.
 
 ## Architecture
 
-See [docs/architecture.mmd](docs/architecture.mmd) for a full system diagram.
-
-The compiler pipeline:
-1. **Schema Input**: Projects produce `schema.json` files in the expected format
-2. **IR Generation**: Convert `schema.json` to `XXX_XXX.ir.json`
-3. **Analysis** normalizes IR and validates consistency
-4. **Codegen** generates Rust client libraries, traits, and types
-
-Deep Dive: [docs/semantic-convergence.md](docs/semantic-convergence.md)
+[Schema](resources/ir/schema.json) → [IR](resources/ir/bitcoin.ir.json) → [codegen](https://crates.io/crates/ethos-bitcoind)
 
 ## Getting Started
 
@@ -32,8 +30,8 @@ just ethos
 ```
 
 This will:
-1. Generate client libraries from IR files (`resources/ir/`)
-2. Run end-to-end tests against spawned protocol nodes
+1. Generate a Bitcoin Core client library from the IR file (`resources/ir/bitcoin.ir.json`)
+2. Run end-to-end tests against a spawned node
 
 ## Contributing
 

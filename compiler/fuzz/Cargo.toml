@@ -17,7 +17,7 @@ serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.149"
 sha2 = "0.10"
 thiserror = "2.0.17"
-tokio = { version = "1.49.0", features = ["rt", "rt-multi-thread", "macros"] }
+tokio = { version = "1.49", features = ["rt", "rt-multi-thread", "macros"] }
 types = { package = "ethos-types", path = "../../primitives/types" }
 
 
