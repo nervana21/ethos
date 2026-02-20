@@ -177,7 +177,7 @@
                 "name": "node",
                 "param_type": {
                   "name": "string",
-                  "description": "The address of the peer to connect to",
+                  "description": "The IP address/hostname optionally followed by :port of the peer to connect to",
                   "kind": "Primitive",
                   "fields": null,
                   "variants": null,
@@ -185,7 +185,7 @@
                   "protocol_type": "string"
                 },
                 "required": true,
-                "description": "The address of the peer to connect to",
+                "description": "The IP address/hostname optionally followed by :port of the peer to connect to",
                 "default_value": null
               },
               {
@@ -12244,6 +12244,21 @@
                   "required": true,
                   "description": "requested block height (or tip)",
                   "default_value": null
+                },
+                {
+                  "name": "script_flags",
+                  "field_type": {
+                    "name": "array",
+                    "description": "script verify flags for the block",
+                    "kind": "Array",
+                    "fields": null,
+                    "variants": null,
+                    "base_type": null,
+                    "protocol_type": "array"
+                  },
+                  "required": true,
+                  "description": "script verify flags for the block",
+                  "default_value": null
                 }
               ],
               "variants": null,
@@ -13584,6 +13599,21 @@
                         "default_value": null
                       },
                       {
+                        "name": "chunkweight",
+                        "field_type": {
+                          "name": "number",
+                          "description": "sigops-adjusted weight (as defined in BIP 141 and modified by '-bytespersigop') of this transaction's chunk",
+                          "kind": "Primitive",
+                          "fields": null,
+                          "variants": null,
+                          "base_type": null,
+                          "protocol_type": "number"
+                        },
+                        "required": true,
+                        "description": "sigops-adjusted weight (as defined in BIP 141 and modified by '-bytespersigop') of this transaction's chunk",
+                        "default_value": null
+                      },
+                      {
                         "name": "depends",
                         "field_type": {
                           "name": "array",
@@ -13663,6 +13693,21 @@
                               },
                               "required": true,
                               "description": "transaction fee, denominated in BTC",
+                              "default_value": null
+                            },
+                            {
+                              "name": "chunk",
+                              "field_type": {
+                                "name": "amount",
+                                "description": "transaction fees of chunk, denominated in BTC",
+                                "kind": "Primitive",
+                                "fields": null,
+                                "variants": null,
+                                "base_type": null,
+                                "protocol_type": "amount"
+                              },
+                              "required": true,
+                              "description": "transaction fees of chunk, denominated in BTC",
                               "default_value": null
                             },
                             {
@@ -13834,6 +13879,169 @@
         },
         {
           "RpcMethod": {
+            "name": "getmempoolcluster",
+            "description": "Returns mempool data for given cluster\n",
+            "params": [
+              {
+                "name": "txid",
+                "param_type": {
+                  "name": "hex",
+                  "description": "The txid of a transaction in the cluster",
+                  "kind": "Primitive",
+                  "fields": null,
+                  "variants": null,
+                  "base_type": null,
+                  "protocol_type": "hex"
+                },
+                "required": true,
+                "description": "The txid of a transaction in the cluster",
+                "default_value": null
+              }
+            ],
+            "result": {
+              "name": "object",
+              "description": "",
+              "kind": "Object",
+              "fields": [
+                {
+                  "name": "chunks",
+                  "field_type": {
+                    "name": "array",
+                    "description": "chunks in this cluster (in mining order)",
+                    "kind": "Object",
+                    "fields": [
+                      {
+                        "name": "field",
+                        "field_type": {
+                          "name": "object",
+                          "description": "",
+                          "kind": "Object",
+                          "fields": [
+                            {
+                              "name": "chunk",
+                              "field_type": {
+                                "name": "object",
+                                "description": "",
+                                "kind": "Object",
+                                "fields": [
+                                  {
+                                    "name": "chunkfee",
+                                    "field_type": {
+                                      "name": "number",
+                                      "description": "fees of the transactions in this chunk",
+                                      "kind": "Primitive",
+                                      "fields": null,
+                                      "variants": null,
+                                      "base_type": null,
+                                      "protocol_type": "number"
+                                    },
+                                    "required": true,
+                                    "description": "fees of the transactions in this chunk",
+                                    "default_value": null
+                                  },
+                                  {
+                                    "name": "chunkweight",
+                                    "field_type": {
+                                      "name": "number",
+                                      "description": "sigops-adjusted weight of all transactions in this chunk",
+                                      "kind": "Primitive",
+                                      "fields": null,
+                                      "variants": null,
+                                      "base_type": null,
+                                      "protocol_type": "number"
+                                    },
+                                    "required": true,
+                                    "description": "sigops-adjusted weight of all transactions in this chunk",
+                                    "default_value": null
+                                  },
+                                  {
+                                    "name": "txs",
+                                    "field_type": {
+                                      "name": "array",
+                                      "description": "transactions in this chunk in mining order",
+                                      "kind": "Array",
+                                      "fields": null,
+                                      "variants": null,
+                                      "base_type": null,
+                                      "protocol_type": "array"
+                                    },
+                                    "required": true,
+                                    "description": "transactions in this chunk in mining order",
+                                    "default_value": null
+                                  }
+                                ],
+                                "variants": null,
+                                "base_type": null,
+                                "protocol_type": "object"
+                              },
+                              "required": true,
+                              "description": "",
+                              "default_value": null
+                            }
+                          ],
+                          "variants": null,
+                          "base_type": null,
+                          "protocol_type": "object"
+                        },
+                        "required": true,
+                        "description": "",
+                        "default_value": null
+                      }
+                    ],
+                    "variants": null,
+                    "base_type": null,
+                    "protocol_type": "array"
+                  },
+                  "required": true,
+                  "description": "chunks in this cluster (in mining order)",
+                  "default_value": null
+                },
+                {
+                  "name": "clusterweight",
+                  "field_type": {
+                    "name": "number",
+                    "description": "total sigops-adjusted weight (as defined in BIP 141 and modified by '-bytespersigop')",
+                    "kind": "Primitive",
+                    "fields": null,
+                    "variants": null,
+                    "base_type": null,
+                    "protocol_type": "number"
+                  },
+                  "required": true,
+                  "description": "total sigops-adjusted weight (as defined in BIP 141 and modified by '-bytespersigop')",
+                  "default_value": null
+                },
+                {
+                  "name": "txcount",
+                  "field_type": {
+                    "name": "number",
+                    "description": "number of transactions",
+                    "kind": "Primitive",
+                    "fields": null,
+                    "variants": null,
+                    "base_type": null,
+                    "protocol_type": "number"
+                  },
+                  "required": true,
+                  "description": "number of transactions",
+                  "default_value": null
+                }
+              ],
+              "variants": null,
+              "base_type": null,
+              "protocol_type": "object"
+            },
+            "category": "blockchain",
+            "access_level": "Public",
+            "requires_private_keys": false,
+            "version_added": "30.99.0-d3272fa0aa9b",
+            "examples": [
+              "> bitcoin-cli getmempoolcluster txid\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"getmempoolcluster\", \"params\": [txid]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
+            ]
+          }
+        },
+        {
+          "RpcMethod": {
             "name": "getmempooldescendants",
             "description": "If txid is in the mempool, returns all in-mempool descendants.\n",
             "params": [
@@ -13942,6 +14150,21 @@
                         "default_value": null
                       },
                       {
+                        "name": "chunkweight",
+                        "field_type": {
+                          "name": "number",
+                          "description": "sigops-adjusted weight (as defined in BIP 141 and modified by '-bytespersigop') of this transaction's chunk",
+                          "kind": "Primitive",
+                          "fields": null,
+                          "variants": null,
+                          "base_type": null,
+                          "protocol_type": "number"
+                        },
+                        "required": true,
+                        "description": "sigops-adjusted weight (as defined in BIP 141 and modified by '-bytespersigop') of this transaction's chunk",
+                        "default_value": null
+                      },
+                      {
                         "name": "depends",
                         "field_type": {
                           "name": "array",
@@ -14021,6 +14244,21 @@
                               },
                               "required": true,
                               "description": "transaction fee, denominated in BTC",
+                              "default_value": null
+                            },
+                            {
+                              "name": "chunk",
+                              "field_type": {
+                                "name": "amount",
+                                "description": "transaction fees of chunk, denominated in BTC",
+                                "kind": "Primitive",
+                                "fields": null,
+                                "variants": null,
+                                "base_type": null,
+                                "protocol_type": "amount"
+                              },
+                              "required": true,
+                              "description": "transaction fees of chunk, denominated in BTC",
                               "default_value": null
                             },
                             {
@@ -14262,6 +14500,21 @@
                   "default_value": null
                 },
                 {
+                  "name": "chunkweight",
+                  "field_type": {
+                    "name": "number",
+                    "description": "sigops-adjusted weight (as defined in BIP 141 and modified by '-bytespersigop') of this transaction's chunk",
+                    "kind": "Primitive",
+                    "fields": null,
+                    "variants": null,
+                    "base_type": null,
+                    "protocol_type": "number"
+                  },
+                  "required": true,
+                  "description": "sigops-adjusted weight (as defined in BIP 141 and modified by '-bytespersigop') of this transaction's chunk",
+                  "default_value": null
+                },
+                {
                   "name": "depends",
                   "field_type": {
                     "name": "array",
@@ -14341,6 +14594,21 @@
                         },
                         "required": true,
                         "description": "transaction fee, denominated in BTC",
+                        "default_value": null
+                      },
+                      {
+                        "name": "chunk",
+                        "field_type": {
+                          "name": "amount",
+                          "description": "transaction fees of chunk, denominated in BTC",
+                          "kind": "Primitive",
+                          "fields": null,
+                          "variants": null,
+                          "base_type": null,
+                          "protocol_type": "amount"
+                        },
+                        "required": true,
+                        "description": "transaction fees of chunk, denominated in BTC",
                         "default_value": null
                       },
                       {
@@ -14503,6 +14771,94 @@
         },
         {
           "RpcMethod": {
+            "name": "getmempoolfeeratediagram",
+            "description": "Returns the feerate diagram for the whole mempool.",
+            "params": [],
+            "result": {
+              "name": "array",
+              "description": "",
+              "kind": "Object",
+              "fields": [
+                {
+                  "name": "field",
+                  "field_type": {
+                    "name": "object",
+                    "description": "",
+                    "kind": "Object",
+                    "fields": [
+                      {
+                        "name": "",
+                        "field_type": {
+                          "name": "object",
+                          "description": "",
+                          "kind": "Object",
+                          "fields": [
+                            {
+                              "name": "fee",
+                              "field_type": {
+                                "name": "number",
+                                "description": "cumulative fee",
+                                "kind": "Primitive",
+                                "fields": null,
+                                "variants": null,
+                                "base_type": null,
+                                "protocol_type": "number"
+                              },
+                              "required": true,
+                              "description": "cumulative fee",
+                              "default_value": null
+                            },
+                            {
+                              "name": "weight",
+                              "field_type": {
+                                "name": "number",
+                                "description": "cumulative sigops-adjusted weight",
+                                "kind": "Primitive",
+                                "fields": null,
+                                "variants": null,
+                                "base_type": null,
+                                "protocol_type": "number"
+                              },
+                              "required": true,
+                              "description": "cumulative sigops-adjusted weight",
+                              "default_value": null
+                            }
+                          ],
+                          "variants": null,
+                          "base_type": null,
+                          "protocol_type": "object"
+                        },
+                        "required": true,
+                        "description": "",
+                        "default_value": null
+                      }
+                    ],
+                    "variants": null,
+                    "base_type": null,
+                    "protocol_type": "object"
+                  },
+                  "required": true,
+                  "description": "",
+                  "default_value": null
+                }
+              ],
+              "variants": null,
+              "base_type": null,
+              "protocol_type": "array",
+              "condition": "mempool chunks"
+            },
+            "category": "hidden",
+            "access_level": "Public",
+            "requires_private_keys": false,
+            "version_added": "30.99.0-d3272fa0aa9b",
+            "examples": [
+              "> bitcoin-cli getmempoolfeeratediagram \n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"getmempoolfeeratediagram\", \"params\": []}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
+            ],
+            "hidden": true
+          }
+        },
+        {
+          "RpcMethod": {
             "name": "getmempoolinfo",
             "description": "Returns details on the active state of the TX memory pool.",
             "params": [],
@@ -14554,6 +14910,36 @@
                   },
                   "required": true,
                   "description": "minimum fee rate increment for mempool limiting or replacement in BTC/kvB",
+                  "default_value": null
+                },
+                {
+                  "name": "limitclustercount",
+                  "field_type": {
+                    "name": "number",
+                    "description": "Maximum number of transactions that can be in a cluster (configured by -limitclustercount)",
+                    "kind": "Primitive",
+                    "fields": null,
+                    "variants": null,
+                    "base_type": null,
+                    "protocol_type": "number"
+                  },
+                  "required": true,
+                  "description": "Maximum number of transactions that can be in a cluster (configured by -limitclustercount)",
+                  "default_value": null
+                },
+                {
+                  "name": "limitclustersize",
+                  "field_type": {
+                    "name": "number",
+                    "description": "Maximum size of a cluster in virtual bytes (configured by -limitclustersize)",
+                    "kind": "Primitive",
+                    "fields": null,
+                    "variants": null,
+                    "base_type": null,
+                    "protocol_type": "number"
+                  },
+                  "required": true,
+                  "description": "Maximum size of a cluster in virtual bytes (configured by -limitclustersize)",
                   "default_value": null
                 },
                 {
@@ -16273,7 +16659,7 @@
                               "name": "addr",
                               "field_type": {
                                 "name": "string",
-                                "description": "(host:port) The IP address and port of the peer",
+                                "description": "(host:port) The IP address/hostname optionally followed by :port of the peer",
                                 "kind": "Primitive",
                                 "fields": null,
                                 "variants": null,
@@ -16281,7 +16667,7 @@
                                 "protocol_type": "string"
                               },
                               "required": true,
-                              "description": "(host:port) The IP address and port of the peer",
+                              "description": "(host:port) The IP address/hostname optionally followed by :port of the peer",
                               "default_value": null
                             },
                             {
@@ -16485,7 +16871,7 @@
                               "name": "connection_type",
                               "field_type": {
                                 "name": "string",
-                                "description": "Type of connection: \noutbound-full-relay (default automatic connections),\nblock-relay-only (does not relay transactions or addresses),\ninbound (initiated by the peer),\nmanual (added via addnode RPC or -addnode/-connect configuration options),\naddr-fetch (short-lived automatic connection for soliciting addresses),\nfeeler (short-lived automatic connection for testing addresses).\nPlease note this output is unlikely to be stable in upcoming releases as we iterate to\nbest capture connection behaviors.",
+                                "description": "Type of connection: \noutbound-full-relay (default automatic connections),\nblock-relay-only (does not relay transactions or addresses),\ninbound (initiated by the peer),\nmanual (added via addnode RPC or -addnode/-connect configuration options),\naddr-fetch (short-lived automatic connection for soliciting addresses),\nfeeler (short-lived automatic connection for testing addresses),\nprivate-broadcast (short-lived automatic connection for broadcasting privacy-sensitive transactions).\nPlease note this output is unlikely to be stable in upcoming releases as we iterate to\nbest capture connection behaviors.",
                                 "kind": "Primitive",
                                 "fields": null,
                                 "variants": null,
@@ -16493,7 +16879,7 @@
                                 "protocol_type": "string"
                               },
                               "required": true,
-                              "description": "Type of connection: \noutbound-full-relay (default automatic connections),\nblock-relay-only (does not relay transactions or addresses),\ninbound (initiated by the peer),\nmanual (added via addnode RPC or -addnode/-connect configuration options),\naddr-fetch (short-lived automatic connection for soliciting addresses),\nfeeler (short-lived automatic connection for testing addresses).\nPlease note this output is unlikely to be stable in upcoming releases as we iterate to\nbest capture connection behaviors.",
+                              "description": "Type of connection: \noutbound-full-relay (default automatic connections),\nblock-relay-only (does not relay transactions or addresses),\ninbound (initiated by the peer),\nmanual (added via addnode RPC or -addnode/-connect configuration options),\naddr-fetch (short-lived automatic connection for soliciting addresses),\nfeeler (short-lived automatic connection for testing addresses),\nprivate-broadcast (short-lived automatic connection for broadcasting privacy-sensitive transactions).\nPlease note this output is unlikely to be stable in upcoming releases as we iterate to\nbest capture connection behaviors.",
                               "default_value": null
                             },
                             {
@@ -16557,6 +16943,21 @@
                               "default_value": null
                             },
                             {
+                              "name": "inv_to_send",
+                              "field_type": {
+                                "name": "number",
+                                "description": "How many txs we have queued to announce to this peer",
+                                "kind": "Primitive",
+                                "fields": null,
+                                "variants": null,
+                                "base_type": null,
+                                "protocol_type": "number"
+                              },
+                              "required": true,
+                              "description": "How many txs we have queued to announce to this peer",
+                              "default_value": null
+                            },
+                            {
                               "name": "last_block",
                               "field_type": {
                                 "name": "timestamp",
@@ -16569,6 +16970,21 @@
                               },
                               "required": true,
                               "description": "The UNIX epoch time of the last block received from this peer",
+                              "default_value": null
+                            },
+                            {
+                              "name": "last_inv_sequence",
+                              "field_type": {
+                                "name": "number",
+                                "description": "Mempool sequence number of this peer's last INV",
+                                "kind": "Primitive",
+                                "fields": null,
+                                "variants": null,
+                                "base_type": null,
+                                "protocol_type": "number"
+                              },
+                              "required": true,
+                              "description": "Mempool sequence number of this peer's last INV",
                               "default_value": null
                             },
                             {
@@ -16800,15 +17216,15 @@
                               "name": "startingheight",
                               "field_type": {
                                 "name": "number",
-                                "description": "The starting height (block) of the peer",
+                                "description": "(DEPRECATED, returned only if config option -deprecatedrpc=startingheight is passed) The starting height (block) of the peer",
                                 "kind": "Primitive",
                                 "fields": null,
                                 "variants": null,
                                 "base_type": null,
                                 "protocol_type": "number"
                               },
-                              "required": true,
-                              "description": "The starting height (block) of the peer",
+                              "required": false,
+                              "description": "(DEPRECATED, returned only if config option -deprecatedrpc=startingheight is passed) The starting height (block) of the peer",
                               "default_value": null
                             },
                             {
@@ -17374,6 +17790,21 @@
                         "default_value": null
                       },
                       {
+                        "name": "chunkweight",
+                        "field_type": {
+                          "name": "number",
+                          "description": "sigops-adjusted weight (as defined in BIP 141 and modified by '-bytespersigop') of this transaction's chunk",
+                          "kind": "Primitive",
+                          "fields": null,
+                          "variants": null,
+                          "base_type": null,
+                          "protocol_type": "number"
+                        },
+                        "required": true,
+                        "description": "sigops-adjusted weight (as defined in BIP 141 and modified by '-bytespersigop') of this transaction's chunk",
+                        "default_value": null
+                      },
+                      {
                         "name": "depends",
                         "field_type": {
                           "name": "array",
@@ -17453,6 +17884,21 @@
                               },
                               "required": true,
                               "description": "transaction fee, denominated in BTC",
+                              "default_value": null
+                            },
+                            {
+                              "name": "chunk",
+                              "field_type": {
+                                "name": "amount",
+                                "description": "transaction fees of chunk, denominated in BTC",
+                                "kind": "Primitive",
+                                "fields": null,
+                                "variants": null,
+                                "base_type": null,
+                                "protocol_type": "amount"
+                              },
+                              "required": true,
+                              "description": "transaction fees of chunk, denominated in BTC",
                               "default_value": null
                             },
                             {
@@ -18940,18 +19386,461 @@
                     "kind": "Object",
                     "fields": [
                       {
-                        "name": "",
+                        "name": "hash",
                         "field_type": {
-                          "name": "elision",
-                          "description": "Equivalent to the RPC decoderawtransaction method, or the RPC getrawtransaction method when `verbose` is passed.",
+                          "name": "hex",
+                          "description": "The transaction hash (differs from txid for witness transactions)",
                           "kind": "Primitive",
                           "fields": null,
                           "variants": null,
                           "base_type": null,
-                          "protocol_type": "elision"
+                          "protocol_type": "hex"
                         },
                         "required": true,
-                        "description": "Equivalent to the RPC decoderawtransaction method, or the RPC getrawtransaction method when `verbose` is passed.",
+                        "description": "The transaction hash (differs from txid for witness transactions)",
+                        "default_value": null
+                      },
+                      {
+                        "name": "locktime",
+                        "field_type": {
+                          "name": "timestamp",
+                          "description": "The lock time",
+                          "kind": "Primitive",
+                          "fields": null,
+                          "variants": null,
+                          "base_type": null,
+                          "protocol_type": "timestamp"
+                        },
+                        "required": true,
+                        "description": "The lock time",
+                        "default_value": null
+                      },
+                      {
+                        "name": "size",
+                        "field_type": {
+                          "name": "number",
+                          "description": "The serialized transaction size",
+                          "kind": "Primitive",
+                          "fields": null,
+                          "variants": null,
+                          "base_type": null,
+                          "protocol_type": "number"
+                        },
+                        "required": true,
+                        "description": "The serialized transaction size",
+                        "default_value": null
+                      },
+                      {
+                        "name": "txid",
+                        "field_type": {
+                          "name": "hex",
+                          "description": "The transaction id",
+                          "kind": "Primitive",
+                          "fields": null,
+                          "variants": null,
+                          "base_type": null,
+                          "protocol_type": "hex"
+                        },
+                        "required": true,
+                        "description": "The transaction id",
+                        "default_value": null
+                      },
+                      {
+                        "name": "version",
+                        "field_type": {
+                          "name": "number",
+                          "description": "The version",
+                          "kind": "Primitive",
+                          "fields": null,
+                          "variants": null,
+                          "base_type": null,
+                          "protocol_type": "number"
+                        },
+                        "required": true,
+                        "description": "The version",
+                        "default_value": null
+                      },
+                      {
+                        "name": "vin",
+                        "field_type": {
+                          "name": "array",
+                          "description": "",
+                          "kind": "Object",
+                          "fields": [
+                            {
+                              "name": "field",
+                              "field_type": {
+                                "name": "object",
+                                "description": "",
+                                "kind": "Object",
+                                "fields": [
+                                  {
+                                    "name": "",
+                                    "field_type": {
+                                      "name": "object",
+                                      "description": "",
+                                      "kind": "Object",
+                                      "fields": [
+                                        {
+                                          "name": "coinbase",
+                                          "field_type": {
+                                            "name": "hex",
+                                            "description": "The coinbase value (only if coinbase transaction)",
+                                            "kind": "Primitive",
+                                            "fields": null,
+                                            "variants": null,
+                                            "base_type": null,
+                                            "protocol_type": "hex"
+                                          },
+                                          "required": false,
+                                          "description": "The coinbase value (only if coinbase transaction)",
+                                          "default_value": null
+                                        },
+                                        {
+                                          "name": "scriptSig",
+                                          "field_type": {
+                                            "name": "object",
+                                            "description": "The script (if not coinbase transaction)",
+                                            "kind": "Object",
+                                            "fields": [
+                                              {
+                                                "name": "asm",
+                                                "field_type": {
+                                                  "name": "string",
+                                                  "description": "Disassembly of the signature script",
+                                                  "kind": "Primitive",
+                                                  "fields": null,
+                                                  "variants": null,
+                                                  "base_type": null,
+                                                  "protocol_type": "string"
+                                                },
+                                                "required": true,
+                                                "description": "Disassembly of the signature script",
+                                                "default_value": null
+                                              },
+                                              {
+                                                "name": "hex",
+                                                "field_type": {
+                                                  "name": "hex",
+                                                  "description": "The raw signature script bytes, hex-encoded",
+                                                  "kind": "Primitive",
+                                                  "fields": null,
+                                                  "variants": null,
+                                                  "base_type": null,
+                                                  "protocol_type": "hex"
+                                                },
+                                                "required": true,
+                                                "description": "The raw signature script bytes, hex-encoded",
+                                                "default_value": null
+                                              }
+                                            ],
+                                            "variants": null,
+                                            "base_type": null,
+                                            "protocol_type": "object"
+                                          },
+                                          "required": false,
+                                          "description": "The script (if not coinbase transaction)",
+                                          "default_value": null
+                                        },
+                                        {
+                                          "name": "sequence",
+                                          "field_type": {
+                                            "name": "number",
+                                            "description": "The script sequence number",
+                                            "kind": "Primitive",
+                                            "fields": null,
+                                            "variants": null,
+                                            "base_type": null,
+                                            "protocol_type": "number"
+                                          },
+                                          "required": true,
+                                          "description": "The script sequence number",
+                                          "default_value": null
+                                        },
+                                        {
+                                          "name": "txid",
+                                          "field_type": {
+                                            "name": "hex",
+                                            "description": "The transaction id (if not coinbase transaction)",
+                                            "kind": "Primitive",
+                                            "fields": null,
+                                            "variants": null,
+                                            "base_type": null,
+                                            "protocol_type": "hex"
+                                          },
+                                          "required": false,
+                                          "description": "The transaction id (if not coinbase transaction)",
+                                          "default_value": null
+                                        },
+                                        {
+                                          "name": "txinwitness",
+                                          "field_type": {
+                                            "name": "array",
+                                            "description": "",
+                                            "kind": "Array",
+                                            "fields": null,
+                                            "variants": null,
+                                            "base_type": null,
+                                            "protocol_type": "array"
+                                          },
+                                          "required": false,
+                                          "description": "",
+                                          "default_value": null
+                                        },
+                                        {
+                                          "name": "vout",
+                                          "field_type": {
+                                            "name": "number",
+                                            "description": "The output number (if not coinbase transaction)",
+                                            "kind": "Primitive",
+                                            "fields": null,
+                                            "variants": null,
+                                            "base_type": null,
+                                            "protocol_type": "number"
+                                          },
+                                          "required": false,
+                                          "description": "The output number (if not coinbase transaction)",
+                                          "default_value": null
+                                        }
+                                      ],
+                                      "variants": null,
+                                      "base_type": null,
+                                      "protocol_type": "object"
+                                    },
+                                    "required": true,
+                                    "description": "",
+                                    "default_value": null
+                                  }
+                                ],
+                                "variants": null,
+                                "base_type": null,
+                                "protocol_type": "object"
+                              },
+                              "required": true,
+                              "description": "",
+                              "default_value": null
+                            }
+                          ],
+                          "variants": null,
+                          "base_type": null,
+                          "protocol_type": "array"
+                        },
+                        "required": true,
+                        "description": "",
+                        "default_value": null
+                      },
+                      {
+                        "name": "vout",
+                        "field_type": {
+                          "name": "array",
+                          "description": "",
+                          "kind": "Object",
+                          "fields": [
+                            {
+                              "name": "field",
+                              "field_type": {
+                                "name": "object",
+                                "description": "",
+                                "kind": "Object",
+                                "fields": [
+                                  {
+                                    "name": "",
+                                    "field_type": {
+                                      "name": "object",
+                                      "description": "",
+                                      "kind": "Object",
+                                      "fields": [
+                                        {
+                                          "name": "ischange",
+                                          "field_type": {
+                                            "name": "boolean",
+                                            "description": "Output script is change (only present if true)",
+                                            "kind": "Primitive",
+                                            "fields": null,
+                                            "variants": null,
+                                            "base_type": null,
+                                            "protocol_type": "boolean"
+                                          },
+                                          "required": false,
+                                          "description": "Output script is change (only present if true)",
+                                          "default_value": null
+                                        },
+                                        {
+                                          "name": "n",
+                                          "field_type": {
+                                            "name": "number",
+                                            "description": "index",
+                                            "kind": "Primitive",
+                                            "fields": null,
+                                            "variants": null,
+                                            "base_type": null,
+                                            "protocol_type": "number"
+                                          },
+                                          "required": true,
+                                          "description": "index",
+                                          "default_value": null
+                                        },
+                                        {
+                                          "name": "scriptPubKey",
+                                          "field_type": {
+                                            "name": "object",
+                                            "description": "",
+                                            "kind": "Object",
+                                            "fields": [
+                                              {
+                                                "name": "address",
+                                                "field_type": {
+                                                  "name": "string",
+                                                  "description": "The Bitcoin address (only if a well-defined address exists)",
+                                                  "kind": "Primitive",
+                                                  "fields": null,
+                                                  "variants": null,
+                                                  "base_type": null,
+                                                  "protocol_type": "string"
+                                                },
+                                                "required": false,
+                                                "description": "The Bitcoin address (only if a well-defined address exists)",
+                                                "default_value": null
+                                              },
+                                              {
+                                                "name": "asm",
+                                                "field_type": {
+                                                  "name": "string",
+                                                  "description": "Disassembly of the output script",
+                                                  "kind": "Primitive",
+                                                  "fields": null,
+                                                  "variants": null,
+                                                  "base_type": null,
+                                                  "protocol_type": "string"
+                                                },
+                                                "required": true,
+                                                "description": "Disassembly of the output script",
+                                                "default_value": null
+                                              },
+                                              {
+                                                "name": "desc",
+                                                "field_type": {
+                                                  "name": "string",
+                                                  "description": "Inferred descriptor for the output",
+                                                  "kind": "Primitive",
+                                                  "fields": null,
+                                                  "variants": null,
+                                                  "base_type": null,
+                                                  "protocol_type": "string"
+                                                },
+                                                "required": true,
+                                                "description": "Inferred descriptor for the output",
+                                                "default_value": null
+                                              },
+                                              {
+                                                "name": "hex",
+                                                "field_type": {
+                                                  "name": "hex",
+                                                  "description": "The raw output script bytes, hex-encoded",
+                                                  "kind": "Primitive",
+                                                  "fields": null,
+                                                  "variants": null,
+                                                  "base_type": null,
+                                                  "protocol_type": "hex"
+                                                },
+                                                "required": true,
+                                                "description": "The raw output script bytes, hex-encoded",
+                                                "default_value": null
+                                              },
+                                              {
+                                                "name": "type",
+                                                "field_type": {
+                                                  "name": "string",
+                                                  "description": "The type (one of: nonstandard, anchor, pubkey, pubkeyhash, scripthash, multisig, nulldata, witness_v0_scripthash, witness_v0_keyhash, witness_v1_taproot, witness_unknown)",
+                                                  "kind": "Primitive",
+                                                  "fields": null,
+                                                  "variants": null,
+                                                  "base_type": null,
+                                                  "protocol_type": "string"
+                                                },
+                                                "required": true,
+                                                "description": "The type (one of: nonstandard, anchor, pubkey, pubkeyhash, scripthash, multisig, nulldata, witness_v0_scripthash, witness_v0_keyhash, witness_v1_taproot, witness_unknown)",
+                                                "default_value": null
+                                              }
+                                            ],
+                                            "variants": null,
+                                            "base_type": null,
+                                            "protocol_type": "object"
+                                          },
+                                          "required": true,
+                                          "description": "",
+                                          "default_value": null
+                                        },
+                                        {
+                                          "name": "value",
+                                          "field_type": {
+                                            "name": "amount",
+                                            "description": "The value in BTC",
+                                            "kind": "Primitive",
+                                            "fields": null,
+                                            "variants": null,
+                                            "base_type": null,
+                                            "protocol_type": "amount"
+                                          },
+                                          "required": true,
+                                          "description": "The value in BTC",
+                                          "default_value": null
+                                        }
+                                      ],
+                                      "variants": null,
+                                      "base_type": null,
+                                      "protocol_type": "object"
+                                    },
+                                    "required": true,
+                                    "description": "",
+                                    "default_value": null
+                                  }
+                                ],
+                                "variants": null,
+                                "base_type": null,
+                                "protocol_type": "object"
+                              },
+                              "required": true,
+                              "description": "",
+                              "default_value": null
+                            }
+                          ],
+                          "variants": null,
+                          "base_type": null,
+                          "protocol_type": "array"
+                        },
+                        "required": true,
+                        "description": "",
+                        "default_value": null
+                      },
+                      {
+                        "name": "vsize",
+                        "field_type": {
+                          "name": "number",
+                          "description": "The virtual transaction size (differs from size for witness transactions)",
+                          "kind": "Primitive",
+                          "fields": null,
+                          "variants": null,
+                          "base_type": null,
+                          "protocol_type": "number"
+                        },
+                        "required": true,
+                        "description": "The virtual transaction size (differs from size for witness transactions)",
+                        "default_value": null
+                      },
+                      {
+                        "name": "weight",
+                        "field_type": {
+                          "name": "number",
+                          "description": "The transaction's weight (between vsize*4-3 and vsize*4)",
+                          "kind": "Primitive",
+                          "fields": null,
+                          "variants": null,
+                          "base_type": null,
+                          "protocol_type": "number"
+                        },
+                        "required": true,
+                        "description": "The transaction's weight (between vsize*4-3 and vsize*4)",
                         "default_value": null
                       }
                     ],
@@ -20433,21 +21322,6 @@
                   },
                   "required": true,
                   "description": "hash and height of the block this information was generated on",
-                  "default_value": null
-                },
-                {
-                  "name": "paytxfee",
-                  "field_type": {
-                    "name": "amount",
-                    "description": "the transaction fee configuration, set in BTC/kvB",
-                    "kind": "Primitive",
-                    "fields": null,
-                    "variants": null,
-                    "base_type": null,
-                    "protocol_type": "amount"
-                  },
-                  "required": true,
-                  "description": "the transaction fee configuration, set in BTC/kvB",
                   "default_value": null
                 },
                 {
@@ -22671,7 +23545,7 @@
         {
           "RpcMethod": {
             "name": "listtransactions",
-            "description": "If a label name is provided, this will return only incoming transactions paying to addresses with the specified label.\n\nReturns up to 'count' most recent transactions skipping the first 'from' transactions.\n",
+            "description": "If a label name is provided, this will return only incoming transactions paying to addresses with the specified label.\nReturns up to 'count' most recent transactions ordered from oldest to newest while skipping the first number of \ntransactions specified in the 'skip' argument. A transaction can have multiple entries in this RPC response. \nFor instance, a wallet transaction that pays three addresses — one wallet-owned and two external — will produce \nfour entries. The payment to the wallet-owned address appears both as a send entry and as a receive entry. \nAs a result, the RPC response will contain one entry in the receive category and three entries in the send category.\n",
             "params": [
               {
                 "name": "label",
@@ -24098,7 +24972,7 @@
         {
           "RpcMethod": {
             "name": "logging",
-            "description": "Gets and sets the logging configuration.\nWhen called without an argument, returns the list of categories with status that are currently being debug logged or not.\nWhen called with arguments, adds or removes categories from debug logging and return the lists above.\nThe arguments are evaluated in order \"include\", \"exclude\".\nIf an item is both included and excluded, it will thus end up being excluded.\nThe valid logging categories are: addrman, bench, blockstorage, cmpctblock, coindb, estimatefee, http, i2p, ipc, leveldb, libevent, mempool, mempoolrej, net, proxy, prune, qt, rand, reindex, rpc, scan, selectcoins, tor, txpackages, txreconciliation, validation, walletdb, zmq\nIn addition, the following are available as category names with special meanings:\n  - \"all\",  \"1\" : represent all logging categories.\n",
+            "description": "Gets and sets the logging configuration.\nWhen called without an argument, returns the list of categories with status that are currently being debug logged or not.\nWhen called with arguments, adds or removes categories from debug logging and return the lists above.\nThe arguments are evaluated in order \"include\", \"exclude\".\nIf an item is both included and excluded, it will thus end up being excluded.\nThe valid logging categories are: addrman, bench, blockstorage, cmpctblock, coindb, estimatefee, http, i2p, ipc, kernel, leveldb, libevent, mempool, mempoolrej, net, privatebroadcast, proxy, prune, qt, rand, reindex, rpc, scan, selectcoins, tor, txpackages, txreconciliation, validation, walletdb, zmq\nIn addition, the following are available as category names with special meanings:\n  - \"all\",  \"1\" : represent all logging categories.\n",
             "params": [
               {
                 "name": "include",
@@ -27431,7 +28305,7 @@
         {
           "RpcMethod": {
             "name": "sendrawtransaction",
-            "description": "Submit a raw transaction (serialized, hex-encoded) to local node and network.\n\nThe transaction will be sent unconditionally to all peers, so using sendrawtransaction\nfor manual rebroadcast may degrade privacy by leaking the transaction's origin, as\nnodes will normally not rebroadcast non-wallet transactions already in their mempool.\n\nA specific exception, RPC_TRANSACTION_ALREADY_IN_UTXO_SET, may throw if the transaction cannot be added to the mempool.\n\nRelated RPCs: createrawtransaction, signrawtransactionwithkey\n",
+            "description": "Submit a raw transaction (serialized, hex-encoded) to the network.\n\nIf -privatebroadcast is disabled, then the transaction will be put into the\nlocal mempool of the node and will be sent unconditionally to all currently\nconnected peers, so using sendrawtransaction for manual rebroadcast will degrade\nprivacy by leaking the transaction's origin, as nodes will normally not\nrebroadcast non-wallet transactions already in their mempool.\n\nIf -privatebroadcast is enabled, then the transaction will be sent only via\ndedicated, short-lived connections to Tor or I2P peers or IPv4/IPv6 peers\nvia the Tor network. This conceals the transaction's origin. The transaction\nwill only enter the local mempool when it is received back from the network.\n\nA specific exception, RPC_TRANSACTION_ALREADY_IN_UTXO_SET, may throw if the transaction cannot be added to the mempool.\n\nRelated RPCs: createrawtransaction, signrawtransactionwithkey\n",
             "params": [
               {
                 "name": "hexstring",
@@ -27931,45 +28805,6 @@
             "version_added": "0.17",
             "examples": [
               ""
-            ]
-          }
-        },
-        {
-          "RpcMethod": {
-            "name": "settxfee",
-            "description": "(DEPRECATED) Set the transaction fee rate in BTC/kvB for this wallet. Overrides the global -paytxfee command line parameter.\nCan be deactivated by passing 0 as the fee. In that case automatic fee selection will be used by default.\n",
-            "params": [
-              {
-                "name": "amount",
-                "param_type": {
-                  "name": "amount",
-                  "description": "The transaction fee rate in BTC/kvB",
-                  "kind": "Primitive",
-                  "fields": null,
-                  "variants": null,
-                  "base_type": null,
-                  "protocol_type": "amount"
-                },
-                "required": true,
-                "description": "The transaction fee rate in BTC/kvB",
-                "default_value": null
-              }
-            ],
-            "result": {
-              "name": "boolean",
-              "description": "Returns true if successful",
-              "kind": "Primitive",
-              "fields": null,
-              "variants": null,
-              "base_type": null,
-              "protocol_type": "boolean"
-            },
-            "category": "wallet",
-            "access_level": "Public",
-            "requires_private_keys": false,
-            "version_added": "0.17",
-            "examples": [
-              "> bitcoin-cli settxfee 0.00001\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"settxfee\", \"params\": [0.00001]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
             ]
           }
         },
@@ -29259,7 +30094,7 @@
                   "name": "tx-results",
                   "field_type": {
                     "name": "object",
-                    "description": "transaction results keyed by wtxid",
+                    "description": "The transaction results keyed by wtxid. An entry is returned for every submitted wtxid.",
                     "kind": "Object",
                     "fields": [
                       {
@@ -29273,7 +30108,7 @@
                               "name": "error",
                               "field_type": {
                                 "name": "string",
-                                "description": "The transaction error string, if it was rejected by the mempool",
+                                "description": "Error string if rejected from mempool, or \"package-not-validated\" when the package aborts before any per-tx processing.",
                                 "kind": "Primitive",
                                 "fields": null,
                                 "variants": null,
@@ -29281,7 +30116,7 @@
                                 "protocol_type": "string"
                               },
                               "required": false,
-                              "description": "The transaction error string, if it was rejected by the mempool",
+                              "description": "Error string if rejected from mempool, or \"package-not-validated\" when the package aborts before any per-tx processing.",
                               "default_value": null
                             },
                             {
@@ -29405,7 +30240,7 @@
                     "protocol_type": "object"
                   },
                   "required": true,
-                  "description": "transaction results keyed by wtxid",
+                  "description": "The transaction results keyed by wtxid. An entry is returned for every submitted wtxid.",
                   "default_value": null
                 }
               ],
