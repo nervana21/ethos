@@ -122,12 +122,20 @@ async fn main() {
             }
         };
 
-        let version_str = args
-            .iter()
-            .position(|a| a == "--version")
-            .and_then(|i| args.get(i + 1))
-            .map(|s| s.as_str())
-            .unwrap_or_else(|| get_latest_version_for_implementation(&implementation));
+        let version_from_arg =
+            args.iter().position(|a| a == "--version").and_then(|i| args.get(i + 1)).cloned();
+        let default_version: Option<String> = version_from_arg
+            .is_none()
+            .then(|| {
+                registry::ir_resolver::IrResolver::new()
+                    .and_then(|r| r.default_version_for_implementation(&implementation))
+                    .ok()
+            })
+            .flatten();
+        let version_str: &str = version_from_arg
+            .as_deref()
+            .or(default_version.as_deref())
+            .unwrap_or_else(|| get_latest_version_fallback(&implementation));
 
         let protocol_version = match ProtocolVersion::from_string_with_protocol(
             version_str,
@@ -228,12 +236,9 @@ fn compile_with_ir(
     Ok(())
 }
 
-/// Get the latest known version for a given implementation
-///
-/// Returns the most recent stable version for each implementation.
-/// These versions should be updated as new stable releases become available.
-fn get_latest_version_for_implementation(implementation: &Implementation) -> &'static str {
+/// Fallback when registry has no default_version for the implementation
+fn get_latest_version_fallback(implementation: &Implementation) -> &'static str {
     match implementation {
-        Implementation::BitcoinCore => "v30.2.0",
+        Implementation::BitcoinCore => "v30.2.4",
     }
 }
