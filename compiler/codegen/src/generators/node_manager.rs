@@ -340,7 +340,8 @@ fn generate_http_start_logic(code: &mut String, metadata: &types::node_metadata:
         code,
         r#"
         let datadir = self._datadir.as_ref().unwrap().path();
-        let mut cmd = Command::new("{}");
+        let exe = self.config.bitcoind_path.as_deref().unwrap_or_else(|| std::path::Path::new("{}"));
+        let mut cmd = Command::new(exe);
 
         let chain = format!("-chain={{}}", self.config.as_chain_str());
         let data_dir = format!("-datadir={{}}", datadir.display());

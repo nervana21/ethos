@@ -1,4 +1,5 @@
 use anyhow::Result;
+use std::env;
 use std::str::FromStr;
 use ethos_bitcoind::{
 	Address, Amount, BitcoinClient, DefaultTransport, Network, TestConfig,
@@ -6,12 +7,18 @@ use ethos_bitcoind::{
 use ethos_bitcoind::node::NodeManager;
 
 pub async fn run_test() -> Result<()> {
-	let default_config = TestConfig::default();
-	let mut default_node_manager =
-		ethos_bitcoind::BitcoinNodeManager::new_with_config(&default_config)?;
+	let config = TestConfig::from_env();
+	if env::var("BITCOIND_PATH").is_ok() {
+		assert!(
+			config.bitcoind_path.is_some(),
+			"BITCOIND_PATH is set but TestConfig::from_env() did not set bitcoind_path"
+		);
+	}
+	let mut node_manager =
+		ethos_bitcoind::BitcoinNodeManager::new_with_config(&config)?;
 
-	default_node_manager.start().await?;
-	let client: std::sync::Arc<DefaultTransport> = default_node_manager.create_transport().await?;
+	node_manager.start().await?;
+	let client: std::sync::Arc<DefaultTransport> = node_manager.create_transport().await?;
 
 	client
 		.create_wallet(
@@ -97,7 +104,7 @@ pub async fn run_test() -> Result<()> {
 	let hashps_since_diff = client.get_network_hashps(Some(-1i64), None).await?;
 	assert!(hashps_since_diff.value > 0u64);
 
-	if let Err(e) = default_node_manager.stop().await {
+	if let Err(e) = node_manager.stop().await {
 		eprintln!("Warning: Failed to stop Bitcoin node: {}", e);
 	}
 
