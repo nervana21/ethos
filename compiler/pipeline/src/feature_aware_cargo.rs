@@ -54,8 +54,6 @@ documentation = "https://docs.rs/{}"
         crate_name
     ));
 
-    cargo_content.push_str("[workspace]\n\n");
-
     cargo_content.push_str(GENERATED_CRATE_DEPENDENCIES);
     cargo_content.push_str("\n");
 
