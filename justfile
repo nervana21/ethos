@@ -22,9 +22,7 @@ generate input_file="":
 
 # Usage: just generate-into-repo /path/to/ethos-bitcoind [version] [impl]
 # First time: mkdir ../ethos-bitcoind && cd ../ethos-bitcoind && git init
-# Then from ethos: just generate-into-repo ../ethos-bitcoind
-#   or with version: just generate-into-repo ../ethos-bitcoind v30.2.1
-#   or with both:    just generate-into-repo ../ethos-bitcoind v30.2.1 bitcoin_core
+#   or with version override: just generate-into-repo ../ethos-bitcoind v30.2.4
 generate-into-repo output_path version="" impl="bitcoin_core":
     @if [ -n "{{version}}" ]; then \
         cargo run --package ethos-cli --bin ethos-compiler -- pipeline --implementation {{impl}} --version {{version}} --output {{output_path}}; \
