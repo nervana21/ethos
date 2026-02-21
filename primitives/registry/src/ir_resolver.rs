@@ -79,6 +79,33 @@ impl IrResolver {
         self.resolve_ir_path(&protocol)
     }
 
+    /// Returns the default version string for this implementation, as defined in the registry.
+    ///
+    /// This reads `registry["adapters"][protocol]["dialects"][implementation]["default_version"]`
+    /// (e.g. for Bitcoin Core this might be `"v30.2"`). The string is defined per adapter and may
+    /// mean a protocol version, a crate version, or a release tag—callers treat it as an opaque
+    /// version identifier.
+    ///
+    /// Call this when the user did not pass `--version`: use the returned value as the version to
+    /// run.
+    pub fn default_version_for_implementation(
+        &self,
+        implementation: &Implementation,
+    ) -> IrResolverResult<String> {
+        let protocol_name = implementation.protocol_name();
+        let dialect_key = implementation.as_str();
+        let version = self.registry["adapters"][protocol_name]["dialects"][dialect_key]
+            ["default_version"]
+            .as_str()
+            .ok_or_else(|| {
+                IrResolverError::Registry(format!(
+                    "No default_version for implementation '{}' in registry",
+                    dialect_key
+                ))
+            })?;
+        Ok(version.to_string())
+    }
+
     /// Get the protocol name for a given implementation
     pub fn get_protocol_for_implementation(
         &self,

@@ -231,11 +231,14 @@ pub fn generate_example_docs(method: &RpcDef) -> String {
     let rust_method_name = rpc_method_to_rust_name(&method.name);
 
     // Add a simple usage note without executable code
-    docs.push_str("\n/// # Usage\n");
+    docs.push_str("\n///\n/// # Usage\n");
     docs.push_str("/// This method can be called using the high-level client interface:\n");
     docs.push_str(&format!("/// - `client.{}(...).await`\n", rust_method_name));
     docs.push_str("/// Or directly via the transport layer for advanced use cases:\n");
-    docs.push_str(&format!("/// - `transport::{}(&transport, ...).await`\n", rust_method_name));
+    docs.push_str(&format!(
+        "/// - `transport::{}(&transport, ...).await`\n///\n",
+        rust_method_name
+    ));
 
     docs.trim_end().to_string()
 }
