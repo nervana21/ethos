@@ -63,9 +63,7 @@ pub fn write_cargo_toml(
     // Use hardcoded published crate name
     let crate_name = artifact_name.published_crate_name();
     let toml = format!(
-        r#"[workspace]
-
-[package]
+        r#"[package]
 publish = true
 
 name = "{}"
