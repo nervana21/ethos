@@ -27,7 +27,7 @@ serial_test = "^3.1"
 
 [[bin]]
 name = "process_bitcoin_schema"
-path = "src/bitcoin_core/schema.rs"
+path = "src/bin/process_bitcoin_schema.rs"
 
 [features]
 default = ["bitcoin-core", "runtime-backend"]

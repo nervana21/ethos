@@ -817,10 +817,9 @@ pub fn convert_to_protocol_ir_with_version(raw: RawSchema, version: Option<Strin
 /// Usage patterns:
 /// 1. Convert schema to IR: process_bitcoin_schema <schema_file> [output_file]
 /// 2. Extract version-specific IR: process_bitcoin_schema <version> [output_file]
-#[allow(dead_code)] // False positive: main is used as binary entry point
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let args: Vec<String> = std::env::args().collect();
-
+///
+/// Library entry point for the `process_bitcoin_schema` binary.
+pub fn run(args: &[String]) -> Result<(), Box<dyn std::error::Error>> {
     if args.len() < 2 {
         eprintln!("Usage:");
         eprintln!(
