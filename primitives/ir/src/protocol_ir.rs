@@ -184,16 +184,16 @@ pub enum TypeKind {
     Primitive,
     /// Object type (struct)
     Object,
-    /// Enum type
-    Enum,
     /// Array type
     Array,
+    /// Enum type
+    Enum,
     /// Optional type
     Optional,
-    /// Dialect-specific or adapter-defined type with concrete implementation (e.g. HashOrHeight enum)
-    Custom,
     /// Type alias
     Alias,
+    /// Dialect-specific or adapter-defined type with concrete implementation (e.g. HashOrHeight enum)
+    Custom,
 }
 
 /// Message types
