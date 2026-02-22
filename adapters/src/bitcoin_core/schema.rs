@@ -35,6 +35,8 @@ use path::{find_project_root, get_ir_dir, parse_version_components, version_ir_f
 use semantics::method_categorization;
 use serde::Deserialize;
 
+use crate::conversion_helpers::{determine_requires_private_keys, sort_definitions_by_name};
+
 /// Raw schema structure from Bitcoin Core's schema.cpp
 #[derive(Debug, Clone, Deserialize)]
 pub struct RawSchema {
@@ -293,30 +295,6 @@ fn build_array_of_objects_wrapper(inner_fields: Vec<FieldDef>) -> Vec<FieldDef> 
     }]
 }
 
-/// Determine if method requires private key access
-/// Wallet methods that involve signing or key operations typically require private keys
-fn determine_requires_private_keys(category: &str, method_name: &str) -> bool {
-    // Only wallet category methods can require private keys
-    if category.to_lowercase() != "wallet" {
-        return false;
-    }
-
-    let name_lower = method_name.to_lowercase();
-
-    // Methods that clearly require private keys (signing, key management)
-    name_lower.contains("sign")
-        || name_lower.contains("privkey")
-        || name_lower == "dumpprivkey"
-        || name_lower == "importprivkey"
-        || name_lower == "walletpassphrase"
-        || name_lower == "walletlock"
-        || name_lower == "encryptwallet"
-        || name_lower == "walletpassphrasechange"
-        || name_lower.starts_with("sign")
-        || name_lower.starts_with("dump")
-        || name_lower.starts_with("import")
-}
-
 /// Format: "major.minor" or "major.minor.build" -> major * 10000 + minor * 100 + build
 /// Examples: "30.2" -> 300200, "30.2.1" -> 300201, "0.17" -> 1700
 pub fn calculate_version_order(version: &str) -> u32 {
@@ -412,24 +390,6 @@ fn normalize_rpc_method_fields(rpc: &mut RpcDef) {
     if let Some(ref mut result) = rpc.result {
         normalize_type_def_fields(result);
     }
-}
-
-/// Sort protocol definitions by RPC method name for deterministic output
-///
-/// This ensures consistent ordering of definitions across different code paths.
-/// Non-RPC definitions maintain their relative order.
-fn sort_definitions_by_name(definitions: &mut Vec<ProtocolDef>) {
-    definitions.sort_by(|a, b| {
-        let name_a = match a {
-            ProtocolDef::RpcMethod(ref rpc) => &rpc.name,
-            _ => return std::cmp::Ordering::Equal,
-        };
-        let name_b = match b {
-            ProtocolDef::RpcMethod(ref rpc) => &rpc.name,
-            _ => return std::cmp::Ordering::Equal,
-        };
-        name_a.cmp(name_b)
-    });
 }
 
 /// Extract version-specific IR from canonical IR
