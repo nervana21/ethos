@@ -8,6 +8,7 @@ name = "ethos_ir"
 path = "src/lib.rs"
 
 [features]
+default = ["test-utils"]
 test-utils = []
 
 [dependencies]

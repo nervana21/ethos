@@ -2,52 +2,8 @@ use ethos_semantics::{
     SemanticAnalyzer, SemanticEntity, SemanticGraph, SemanticInvariant, SemanticKind,
     SemanticRelation,
 };
-use ir::{
-    AccessLevel, ParamDef, ProtocolDef, ProtocolIR, ProtocolModule, RpcDef, TypeDef, TypeKind,
-};
-
-/// Helper function to create a test TypeDef
-fn create_test_type(name: &str, kind: TypeKind) -> TypeDef {
-    TypeDef {
-        name: name.into(),
-        description: String::new(),
-        kind,
-        fields: None,
-        variants: None,
-        base_type: None,
-        protocol_type: None,
-        canonical_name: None,
-        condition: None,
-    }
-}
-
-/// Helper function to create a test RpcDef
-fn create_test_rpc(name: &str, params: Vec<ParamDef>, result: Option<TypeDef>) -> RpcDef {
-    RpcDef {
-        name: name.into(),
-        description: String::new(),
-        params,
-        result,
-        category: "test".into(),
-        access_level: AccessLevel::default(),
-        requires_private_keys: false,
-        examples: None,
-        hidden: None,
-        version_added: None,
-        version_removed: None,
-    }
-}
-
-/// Helper function to create a test ParamDef
-fn create_test_param(name: &str, param_type: TypeDef) -> ParamDef {
-    ParamDef {
-        name: name.into(),
-        param_type,
-        required: true,
-        description: String::new(),
-        default_value: None,
-    }
-}
+use ir::test_utils::{minimal_module, param, rpc, type_def};
+use ir::{ProtocolDef, ProtocolIR, TypeKind};
 
 #[test]
 fn test_from_ir() {
@@ -57,20 +13,17 @@ fn test_from_ir() {
     assert!(empty_graph.entities.is_empty());
     assert!(empty_graph.relations.is_empty());
 
-    let foo_type = create_test_type("Foo", TypeKind::Object);
-    let bar_type = create_test_type("Bar", TypeKind::Object);
-    let string_type = create_test_type("String", TypeKind::Primitive);
-    let rpc_method = create_test_rpc(
+    let foo_type = type_def("Foo", TypeKind::Object);
+    let bar_type = type_def("Bar", TypeKind::Object);
+    let string_type = type_def("String", TypeKind::Primitive);
+    let rpc_method = rpc(
         "test_method",
-        vec![
-            create_test_param("param1", foo_type.clone()),
-            create_test_param("param2", string_type.clone()),
-        ],
+        vec![param("param1", foo_type.clone(), true), param("param2", string_type.clone(), true)],
         Some(bar_type.clone()),
+        "test",
     );
-    let module = ProtocolModule::new(
-        "test_module".into(),
-        "Test module".into(),
+    let module = minimal_module(
+        "test_module",
         vec![
             ProtocolDef::Type(foo_type.clone()),
             ProtocolDef::Type(bar_type.clone()),
@@ -92,9 +45,8 @@ fn test_from_ir() {
     // No relation should exist for the primitive String type
     assert!(!graph.relations.iter().any(|r| r.from == "test_method" && r.to == "String"));
 
-    let duplicate_module = ProtocolModule::new(
-        "duplicate_module".into(),
-        "Duplicate module".into(),
+    let duplicate_module = minimal_module(
+        "duplicate_module",
         vec![ProtocolDef::Type(foo_type.clone()), ProtocolDef::RpcMethod(rpc_method.clone())],
     );
     let ir_with_duplicates = ProtocolIR::new(vec![module.clone(), duplicate_module]);

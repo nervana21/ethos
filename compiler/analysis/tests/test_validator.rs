@@ -1,45 +1,12 @@
 use ethos_analysis::IrValidator;
-use ir::{
-    AccessLevel, ParamDef, ProtocolDef, ProtocolIR, ProtocolModule, RpcDef, TypeDef, TypeKind,
-};
+use ir::test_utils::{minimal_module, param, primitive_type, rpc, type_def};
+use ir::{ProtocolDef, ProtocolIR, ProtocolModule, TypeKind};
 
 #[test]
 fn allows_hashorheight_as_primitive() {
-    let bad = TypeDef {
-        name: "HashOrHeight".into(),
-        description: "".into(),
-        kind: TypeKind::Primitive,
-        fields: None,
-        variants: None,
-        base_type: None,
-        protocol_type: None,
-        canonical_name: None,
-        condition: None,
-    };
-    let rpc = RpcDef {
-        name: "getblockstats".into(),
-        description: "".into(),
-        params: vec![ParamDef {
-            name: "hash_or_height".into(),
-            param_type: bad,
-            required: true,
-            description: "".into(),
-            default_value: None,
-        }],
-        result: None,
-        category: "core".into(),
-        access_level: AccessLevel::default(),
-        requires_private_keys: false,
-        examples: None,
-        hidden: None,
-        version_added: None,
-        version_removed: None,
-    };
-    let ir = ProtocolIR::new(vec![ProtocolModule::new(
-        "core".into(),
-        "".into(),
-        vec![ProtocolDef::RpcMethod(rpc)],
-    )]);
+    let bad = primitive_type("HashOrHeight", None);
+    let rpc = rpc("getblockstats", vec![param("hash_or_height", bad, true)], None, "core");
+    let ir = ProtocolIR::new(vec![minimal_module("core", vec![ProtocolDef::RpcMethod(rpc)])]);
 
     let validator = IrValidator::new();
     let errors = validator.validate(&ir);
@@ -52,35 +19,10 @@ fn allows_hashorheight_as_primitive() {
 
 #[test]
 fn fails_on_duplicate_rpc_names() {
-    let rpc1 = RpcDef {
-        name: "getblock".into(),
-        description: "".into(),
-        params: vec![],
-        result: None,
-        category: "core".into(),
-        access_level: AccessLevel::default(),
-        requires_private_keys: false,
-        examples: None,
-        hidden: None,
-        version_added: None,
-        version_removed: None,
-    };
-    let rpc2 = RpcDef {
-        name: "getblock".into(), // Same name
-        description: "".into(),
-        params: vec![],
-        result: None,
-        category: "core".into(),
-        access_level: AccessLevel::default(),
-        requires_private_keys: false,
-        examples: None,
-        hidden: None,
-        version_added: None,
-        version_removed: None,
-    };
-    let ir = ProtocolIR::new(vec![ProtocolModule::new(
-        "core".into(),
-        "".into(),
+    let rpc1 = rpc("getblock", vec![], None, "core");
+    let rpc2 = rpc("getblock", vec![], None, "core"); // Same name
+    let ir = ProtocolIR::new(vec![minimal_module(
+        "core",
         vec![ProtocolDef::RpcMethod(rpc1), ProtocolDef::RpcMethod(rpc2)],
     )]);
 
@@ -96,40 +38,13 @@ fn fails_on_duplicate_rpc_names() {
 
 #[test]
 fn fails_on_empty_param_name() {
-    let rpc = RpcDef {
-        name: "test".into(),
-        description: "".into(),
-        params: vec![ParamDef {
-            name: "".into(), // Empty name
-            param_type: TypeDef {
-                name: "String".into(),
-                description: "".into(),
-                kind: TypeKind::Primitive,
-                fields: None,
-                variants: None,
-                base_type: None,
-                protocol_type: None,
-                canonical_name: None,
-                condition: None,
-            },
-            required: true,
-            description: "".into(),
-            default_value: None,
-        }],
-        result: None,
-        category: "core".into(),
-        access_level: AccessLevel::default(),
-        requires_private_keys: false,
-        examples: None,
-        hidden: None,
-        version_added: None,
-        version_removed: None,
-    };
-    let ir = ProtocolIR::new(vec![ProtocolModule::new(
-        "core".into(),
-        "".into(),
-        vec![ProtocolDef::RpcMethod(rpc)],
-    )]);
+    let rpc = rpc(
+        "test",
+        vec![param("", primitive_type("String", None), true)], // Empty name
+        None,
+        "core",
+    );
+    let ir = ProtocolIR::new(vec![minimal_module("core", vec![ProtocolDef::RpcMethod(rpc)])]);
 
     let validator = IrValidator::new();
     let errors = validator.validate(&ir);
@@ -143,59 +58,17 @@ fn fails_on_empty_param_name() {
 
 #[test]
 fn fails_on_duplicate_param_names() {
-    let rpc = RpcDef {
-        name: "test".into(),
-        description: "".into(),
-        params: vec![
-            ParamDef {
-                name: "param1".into(),
-                param_type: TypeDef {
-                    name: "String".into(),
-                    description: "".into(),
-                    kind: TypeKind::Primitive,
-                    fields: None,
-                    variants: None,
-                    base_type: None,
-                    protocol_type: None,
-                    canonical_name: None,
-                    condition: None,
-                },
-                required: true,
-                description: "".into(),
-                default_value: None,
-            },
-            ParamDef {
-                name: "param1".into(), // Same name
-                param_type: TypeDef {
-                    name: "String".into(),
-                    description: "".into(),
-                    kind: TypeKind::Primitive,
-                    fields: None,
-                    variants: None,
-                    base_type: None,
-                    protocol_type: None,
-                    canonical_name: None,
-                    condition: None,
-                },
-                required: true,
-                description: "".into(),
-                default_value: None,
-            },
+    let string_type = primitive_type("String", None);
+    let rpc = rpc(
+        "test",
+        vec![
+            param("param1", string_type.clone(), true),
+            param("param1", string_type, true), // Same name
         ],
-        result: None,
-        category: "core".into(),
-        access_level: AccessLevel::default(),
-        requires_private_keys: false,
-        examples: None,
-        hidden: None,
-        version_added: None,
-        version_removed: None,
-    };
-    let ir = ProtocolIR::new(vec![ProtocolModule::new(
-        "core".into(),
-        "".into(),
-        vec![ProtocolDef::RpcMethod(rpc)],
-    )]);
+        None,
+        "core",
+    );
+    let ir = ProtocolIR::new(vec![minimal_module("core", vec![ProtocolDef::RpcMethod(rpc)])]);
 
     let validator = IrValidator::new();
     let errors = validator.validate(&ir);
@@ -209,40 +82,17 @@ fn fails_on_duplicate_param_names() {
 
 #[test]
 fn fails_on_optional_kind_with_required_true() {
-    let rpc = RpcDef {
-        name: "test".into(),
-        description: "".into(),
-        params: vec![ParamDef {
-            name: "param1".into(),
-            param_type: TypeDef {
-                name: "String".into(),
-                description: "".into(),
-                kind: TypeKind::Optional, // Optional kind
-                fields: None,
-                variants: None,
-                base_type: None,
-                protocol_type: None,
-                canonical_name: None,
-                condition: None,
-            },
-            required: true, // But required=true
-            description: "".into(),
-            default_value: None,
-        }],
-        result: None,
-        category: "core".into(),
-        access_level: AccessLevel::default(),
-        requires_private_keys: false,
-        examples: None,
-        hidden: None,
-        version_added: None,
-        version_removed: None,
-    };
-    let ir = ProtocolIR::new(vec![ProtocolModule::new(
-        "core".into(),
-        "".into(),
-        vec![ProtocolDef::RpcMethod(rpc)],
-    )]);
+    let rpc = rpc(
+        "test",
+        vec![param(
+            "param1",
+            type_def("String", TypeKind::Optional), // Optional kind
+            true,                                   // But required=true
+        )],
+        None,
+        "core",
+    );
+    let ir = ProtocolIR::new(vec![minimal_module("core", vec![ProtocolDef::RpcMethod(rpc)])]);
 
     let validator = IrValidator::new();
     let errors = validator.validate(&ir);
@@ -256,40 +106,17 @@ fn fails_on_optional_kind_with_required_true() {
 
 #[test]
 fn fails_on_custom_type_without_base_type() {
-    let rpc = RpcDef {
-        name: "test".into(),
-        description: "".into(),
-        params: vec![ParamDef {
-            name: "param1".into(),
-            param_type: TypeDef {
-                name: "CustomType".into(),
-                description: "".into(),
-                kind: TypeKind::Custom, // Custom kind
-                fields: None,
-                variants: None,
-                base_type: None, // But no base_type
-                protocol_type: None,
-                canonical_name: None,
-                condition: None,
-            },
-            required: true,
-            description: "".into(),
-            default_value: None,
-        }],
-        result: None,
-        category: "core".into(),
-        access_level: AccessLevel::default(),
-        requires_private_keys: false,
-        examples: None,
-        hidden: None,
-        version_added: None,
-        version_removed: None,
-    };
-    let ir = ProtocolIR::new(vec![ProtocolModule::new(
-        "core".into(),
-        "".into(),
-        vec![ProtocolDef::RpcMethod(rpc)],
-    )]);
+    let rpc = rpc(
+        "test",
+        vec![param(
+            "param1",
+            type_def("CustomType", TypeKind::Custom), // Custom kind, no base_type
+            true,
+        )],
+        None,
+        "core",
+    );
+    let ir = ProtocolIR::new(vec![minimal_module("core", vec![ProtocolDef::RpcMethod(rpc)])]);
 
     let validator = IrValidator::new();
     let errors = validator.validate(&ir);
@@ -303,50 +130,19 @@ fn fails_on_custom_type_without_base_type() {
 
 #[test]
 fn passes_with_valid_ir() {
-    let rpc = RpcDef {
-        name: "getblock".into(),
-        description: "Get block information".into(),
-        params: vec![ParamDef {
-            name: "hash".into(),
-            param_type: TypeDef {
-                name: "String".into(),
-                description: "Block hash".into(),
-                kind: TypeKind::Primitive,
-                fields: None,
-                variants: None,
-                base_type: None,
-                protocol_type: None,
-                canonical_name: None,
-                condition: None,
-            },
-            required: true,
-            description: "Block hash".into(),
-            default_value: None,
-        }],
-        result: Some(TypeDef {
-            name: "BlockInfo".into(),
-            description: "Block information".into(),
-            kind: TypeKind::Object,
-            fields: None,
-            variants: None,
-            base_type: None,
-            protocol_type: None,
-            canonical_name: None,
-            condition: None,
-        }),
-        category: "core".into(),
-        access_level: AccessLevel::default(),
-        requires_private_keys: false,
-        examples: None,
-        hidden: None,
-        version_added: None,
-        version_removed: None,
-    };
-    let ir = ProtocolIR::new(vec![ProtocolModule::new(
+    let mut rpc = rpc(
+        "getblock",
+        vec![param("hash", primitive_type("String", None), true)],
+        Some(type_def("BlockInfo", TypeKind::Object)),
+        "core",
+    );
+    rpc.description = "Get block information".into();
+    let module = ProtocolModule::new(
         "core".into(),
         "Core RPC methods".into(),
         vec![ProtocolDef::RpcMethod(rpc)],
-    )]);
+    );
+    let ir = ProtocolIR::new(vec![module]);
 
     let validator = IrValidator::new();
     let errors = validator.validate(&ir);
