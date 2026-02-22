@@ -23,6 +23,7 @@ pub mod bitcoin_core {
 }
 
 pub mod adapter_facade;
+pub mod conversion_helpers;
 pub mod normalization_registry;
 pub mod protocol_adapter;
 pub mod rpc_adapter;
