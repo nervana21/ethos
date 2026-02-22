@@ -1,68 +1,21 @@
-use ir::{AccessLevel, ParamDef, RpcDef, TypeDef, TypeKind};
+use ir::test_utils::{param, primitive_type, rpc, type_def};
+use ir::{RpcDef, TypeKind};
 use registry::{ProtocolRegistry, ProtocolRegistryReader};
 
 /// Helper function to create a test RPC definition with basic information
 fn create_test_rpc_def(name: &str, description: &str) -> RpcDef {
-    RpcDef {
-        name: name.to_string(),
-        description: description.to_string(),
-        params: vec![],
-        result: None,
-        category: "test".to_string(),
-        access_level: AccessLevel::default(),
-        requires_private_keys: false,
-        examples: None,
-        hidden: None,
-        version_added: None,
-        version_removed: None,
-    }
+    let mut r = rpc(name, vec![], None, "test");
+    r.description = description.to_string();
+    r
 }
 
 /// Helper function to create a test RPC definition with parameters and result
 fn create_complex_rpc_def(name: &str, description: &str) -> RpcDef {
-    let param = ParamDef {
-        name: "block_hash".to_string(),
-        param_type: TypeDef {
-            name: "string".to_string(),
-            description: "The block hash to query".to_string(),
-            kind: TypeKind::Primitive,
-            fields: None,
-            variants: None,
-            base_type: None,
-            protocol_type: None,
-            canonical_name: None,
-            condition: None,
-        },
-        required: true,
-        description: "The block hash to query".to_string(),
-        default_value: None,
-    };
-
-    let result = TypeDef {
-        name: "object".to_string(),
-        description: "Information about the block".to_string(),
-        kind: TypeKind::Object,
-        fields: None,
-        variants: None,
-        base_type: None,
-        protocol_type: None,
-        canonical_name: None,
-        condition: None,
-    };
-
-    RpcDef {
-        name: name.to_string(),
-        description: description.to_string(),
-        params: vec![param],
-        result: Some(result),
-        category: "test".to_string(),
-        access_level: AccessLevel::default(),
-        requires_private_keys: false,
-        examples: None,
-        hidden: None,
-        version_added: None,
-        version_removed: None,
-    }
+    let param = param("block_hash", primitive_type("string", None), true);
+    let result = type_def("object", TypeKind::Object);
+    let mut r = rpc(name, vec![param], Some(result), "test");
+    r.description = description.to_string();
+    r
 }
 
 #[test]

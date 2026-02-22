@@ -4,5 +4,5 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-ir = { package = "ethos-ir", version = "0.1.0", path = "../../primitives/ir" }
+ir = { package = "ethos-ir", version = "0.1.0", path = "../../primitives/ir", features = ["test-utils"] }
 thiserror = "2.0.17"
