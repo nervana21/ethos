@@ -10,7 +10,7 @@ use codegen::format_with_rustfmt;
 use codegen::utils::{protocol_rpc_method_to_rust_name, rpc_method_to_rust_name};
 use types::{Implementation, ProtocolVersion};
 
-use crate::cargo_dependencies::GENERATED_CRATE_DEPENDENCIES;
+use crate::cargo_dependencies::{format_package_section, GENERATED_CRATE_DEPENDENCIES};
 use crate::PipelineError;
 
 /// Setup project files (Cargo.toml, README, license, .gitignore)
@@ -62,35 +62,19 @@ pub fn write_cargo_toml(
 
     // Use hardcoded published crate name
     let crate_name = artifact_name.published_crate_name();
+    let package_section = format_package_section(
+        &crate_name,
+        &version,
+        &format!("Generated client for {} v{}.", artifact_name.as_str(), protocol_version),
+        "Ethos Core Developers",
+    );
     let toml = format!(
-        r#"[workspace]
+        r#"{}{}
 
-[package]
-publish = true
-
-name = "{}"
-version = "{}"
-edition = "2021"
-authors = ["Ethos Core Developers"]
-license = "CC0-1.0"
-description = "Generated client for {} v{}."
-readme = "README.md"
-keywords = ["bitcoin", "protocol", "compiler", "integration-testing"]
-categories = ["cryptography", "data-structures", "api-bindings"]
-repository = "https://github.com/nervana21/ethos"
-homepage = "https://github.com/nervana21/ethos"
-documentation = "https://docs.rs/{}"
-
-{}
 [features]
 serde-deny-unknown-fields = []
 "#,
-        crate_name,
-        version,
-        artifact_name.as_str(),
-        protocol_version,
-        crate_name,
-        GENERATED_CRATE_DEPENDENCIES,
+        package_section, GENERATED_CRATE_DEPENDENCIES,
     );
 
     fs::write(root.join("Cargo.toml"), toml)?;

@@ -8,7 +8,7 @@ use ir::RpcDef;
 use semantics::method_categorization::{group_methods_by_category, MethodCategory};
 use types::ProtocolVersion;
 
-use crate::cargo_dependencies::GENERATED_CRATE_DEPENDENCIES;
+use crate::cargo_dependencies::{format_package_section, GENERATED_CRATE_DEPENDENCIES};
 use crate::PipelineError;
 
 /// Generate Cargo.toml with feature flags
@@ -30,31 +30,12 @@ pub fn generate_cargo_toml(
     let mut cargo_content = String::new();
 
     // Basic package info
-    cargo_content.push_str(&format!(
-        r#"[package]
-publish = true
-
-name = "{}"
-version = "{}"
-edition = "2021"
-authors = ["Ethos Developers"]
-license = "CC0-1.0"
-description = "Generated client for {}."
-readme = "README.md"
-keywords = ["bitcoin", "protocol", "compiler", "integration-testing"]
-categories = ["cryptography", "data-structures", "api-bindings"]
-repository = "https://github.com/nervana21/ethos"
-homepage = "https://github.com/nervana21/ethos"
-documentation = "https://docs.rs/{}"
-
-"#,
+    cargo_content.push_str(&format_package_section(
         crate_name,
-        version.crate_version(),
-        crate_name,
-        crate_name
+        &version.crate_version(),
+        &format!("Generated client for {}.", crate_name),
+        "Ethos Developers",
     ));
-
-    cargo_content.push_str("[workspace]\n\n");
 
     cargo_content.push_str(GENERATED_CRATE_DEPENDENCIES);
     cargo_content.push_str("\n");
