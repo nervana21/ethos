@@ -10,5 +10,8 @@
 
 pub mod protocol_ir;
 
+#[cfg(feature = "test-utils")]
+pub mod test_utils;
+
 // Re-export the main ProtocolIR types for convenience
 pub use protocol_ir::*;

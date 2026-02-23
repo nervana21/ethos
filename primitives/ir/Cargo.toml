@@ -7,6 +7,9 @@ edition = "2021"
 name = "ethos_ir"
 path = "src/lib.rs"
 
+[features]
+test-utils = []
+
 [dependencies]
 chrono = { version = "0.4", features = ["clock", "serde"] }
 serde = { version = "1.0", features = ["derive"] }
