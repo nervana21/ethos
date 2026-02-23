@@ -3,9 +3,9 @@
 use serde_json::{self, Value};
 use types::Argument;
 
-// Embed normalization presets at compile time; missing files will hard-fail build
+// Embed normalization from workspace
 const BITCOIN_NORMALIZATION_JSON: &str =
-    include_str!("../resources/adapters/normalization/bitcoin.json");
+    include_str!("../../../resources/adapters/normalization/bitcoin.json");
 
 /// Strict registry-driven conversion: adapter-specific RPC → canonical → snake_case
 ///
