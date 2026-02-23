@@ -1,4 +1,4 @@
-// codegen/src/utils.rs
+// SPDX-License-Identifier: CC0-1.0
 
 use serde_json::{self, Value};
 use types::Argument;
