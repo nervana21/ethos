@@ -109,7 +109,7 @@ corpus-pull:
   cargo audit
 
 # CI
-# Quick sanity check.
+# Full sanity check.
 [group('ci')]
 @sane: lint
   cargo test --quiet --all-targets --no-default-features
@@ -118,6 +118,7 @@ corpus-pull:
 # Examples
 examples:
     @echo "Examples:"
+    @echo "  just sane                # Full check before push (lint + tests)"
     @echo "  just generate           # Generate from IR files"
     @echo "  just generate-into-repo ../ethos-bitcoind   # Generate into a separate git repo for diff review"
     @echo "  just e2e                # Run e2e tests"
