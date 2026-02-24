@@ -371,7 +371,7 @@ impl VersionSpecificResponseTypeGenerator {
             ("analyzepsbt", "fee")
                 | ("decodepsbt", "fee")
                 | ("getaddrmaninfo", "network")
-                | ("get_block_template", "field_0")
+                | ("getblocktemplate", "field_0")
                 | ("getindexinfo", "name")
                 | ("getrawaddrman", "table")
                 | ("gettxout", "field_0")
