@@ -99,9 +99,9 @@ pub use transport::{{
     RpcClient,
 }};
 "#,
-            ctx.implementation.as_str(),
-            ctx.implementation.as_str(),
-            ctx.implementation.as_str(),
+            ctx.implementation.display_name(),
+            ctx.implementation.display_name(),
+            ctx.implementation.display_name(),
             clients_dir_name,
             client_name,
             node_reexports,

@@ -7,11 +7,6 @@ NIGHTLY_VERSION := trim(read(justfile_directory() / "nightly-version"))
 _default:
     @just --list
 
-# Generate + e2e tests
-ethos input_file="":
-    @just generate {{input_file}}
-    @just e2e
-
 # Generate client artifacts from IR files
 generate input_file="":
     @if [ -n "{{input_file}}" ]; then \
@@ -50,8 +45,6 @@ extract-version-ir version output_file="":
         cargo run -p ethos-adapters --bin process_bitcoin_schema -- {{version}} {{output_file}}; \
     fi
 
-e2e:
-    cd tests/e2e && cargo run
 
 # Code quality
 # Format workspace.
@@ -109,7 +102,7 @@ corpus-pull:
   cargo audit
 
 # CI
-# Quick sanity check.
+# Full sanity check.
 [group('ci')]
 @sane: lint
   cargo test --quiet --all-targets --no-default-features
@@ -118,8 +111,7 @@ corpus-pull:
 # Examples
 examples:
     @echo "Examples:"
-    @echo "  just generate           # Generate from IR files"
+    @echo "  just sane                # Full check before push (lint + tests)"
+    @echo "  just generate            # Generate client from IR"
     @echo "  just generate-into-repo ../ethos-bitcoind   # Generate into a separate git repo for diff review"
-    @echo "  just e2e                # Run e2e tests"
-    @echo "  just ethos               # Complete code generation workflow"
     @echo "  just corpus-pull         # Pull all corpus repositories"

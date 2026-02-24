@@ -1,10 +1,11 @@
 //! Comprehensive unit tests for the Ethos IR module
 
+use ethos_ir::test_utils::{minimal_module, rpc, type_def};
 use ethos_ir::*;
 
 #[test]
 fn test_protocol_ir_new() {
-    let modules = vec![ProtocolModule::new("rpc".to_string(), "RPC module".to_string(), vec![])];
+    let modules = vec![minimal_module("rpc", vec![])];
     let version = "0.1.0".to_string();
 
     let protocol_ir = ProtocolIR::new(modules);
@@ -18,10 +19,7 @@ fn test_protocol_ir_new() {
 
 #[test]
 fn test_protocol_ir_get_module() {
-    let modules = vec![
-        ProtocolModule::new("rpc".to_string(), "RPC module".to_string(), vec![]),
-        ProtocolModule::new("p2p".to_string(), "P2P module".to_string(), vec![]),
-    ];
+    let modules = vec![minimal_module("rpc", vec![]), minimal_module("p2p", vec![])];
     let protocol_ir = ProtocolIR::new(modules);
 
     let rpc_module = protocol_ir.get_module("rpc");
@@ -38,25 +36,9 @@ fn test_protocol_ir_get_module() {
 
 #[test]
 fn test_protocol_ir_get_rpc_methods() {
-    let rpc_def = RpcDef {
-        name: "getblock".to_string(),
-        description: "Get block".to_string(),
-        params: vec![],
-        result: None,
-        category: "blockchain".to_string(),
-        access_level: AccessLevel::default(),
-        requires_private_keys: false,
-        examples: None,
-        hidden: None,
-        version_added: None,
-        version_removed: None,
-    };
+    let rpc_def = rpc("getblock", vec![], None, "blockchain");
 
-    let modules = vec![ProtocolModule::new(
-        "rpc".to_string(),
-        "RPC module".to_string(),
-        vec![ProtocolDef::RpcMethod(rpc_def.clone())],
-    )];
+    let modules = vec![minimal_module("rpc", vec![ProtocolDef::RpcMethod(rpc_def.clone())])];
     let protocol_ir = ProtocolIR::new(modules);
 
     let rpc_methods = protocol_ir.get_rpc_methods();
@@ -67,23 +49,9 @@ fn test_protocol_ir_get_rpc_methods() {
 /// Test for ProtocolIR::get_type_definitions function
 #[test]
 fn test_protocol_ir_get_type_definitions() {
-    let type_def = TypeDef {
-        name: "Block".to_string(),
-        description: "Block type".to_string(),
-        kind: TypeKind::Object,
-        fields: None,
-        variants: None,
-        base_type: None,
-        protocol_type: None,
-        canonical_name: None,
-        condition: None,
-    };
+    let type_def = type_def("Block", TypeKind::Object);
 
-    let modules = vec![ProtocolModule::new(
-        "types".to_string(),
-        "Types module".to_string(),
-        vec![ProtocolDef::Type(type_def.clone())],
-    )];
+    let modules = vec![minimal_module("types", vec![ProtocolDef::Type(type_def.clone())])];
     let protocol_ir = ProtocolIR::new(modules);
 
     let type_definitions = protocol_ir.get_type_definitions();
@@ -103,10 +71,7 @@ fn test_protocol_ir_version() {
 /// Test for ProtocolIR::modules function
 #[test]
 fn test_protocol_ir_modules() {
-    let modules = vec![
-        ProtocolModule::new("rpc".to_string(), "RPC".to_string(), vec![]),
-        ProtocolModule::new("p2p".to_string(), "P2P".to_string(), vec![]),
-    ];
+    let modules = vec![minimal_module("rpc", vec![]), minimal_module("p2p", vec![])];
     let protocol_ir = ProtocolIR::new(modules.clone());
 
     let retrieved_modules = protocol_ir.modules();
@@ -118,14 +83,14 @@ fn test_protocol_ir_modules() {
 /// Test for ProtocolIR::modules_mut function
 #[test]
 fn test_protocol_ir_modules_mut() {
-    let modules = vec![ProtocolModule::new("rpc".to_string(), "RPC".to_string(), vec![])];
+    let modules = vec![minimal_module("rpc", vec![])];
     let mut protocol_ir = ProtocolIR::new(modules);
 
     let modules_mut = protocol_ir.modules_mut();
     assert_eq!(modules_mut.len(), 1);
 
     // Test that we can modify the modules
-    modules_mut.push(ProtocolModule::new("p2p".to_string(), "P2P".to_string(), vec![]));
+    modules_mut.push(minimal_module("p2p", vec![]));
     assert_eq!(protocol_ir.modules().len(), 2);
 }
 
@@ -150,43 +115,12 @@ fn test_protocol_ir_description() {
 /// Test for ProtocolIR::definition_count function
 #[test]
 fn test_protocol_ir_definition_count() {
-    let rpc_def = RpcDef {
-        name: "getblock".to_string(),
-        description: "Get block".to_string(),
-        params: vec![],
-        result: None,
-        category: "blockchain".to_string(),
-        access_level: AccessLevel::default(),
-        requires_private_keys: false,
-        examples: None,
-        hidden: None,
-        version_added: None,
-        version_removed: None,
-    };
-
-    let type_def = TypeDef {
-        name: "Block".to_string(),
-        description: "Block type".to_string(),
-        kind: TypeKind::Object,
-        fields: None,
-        variants: None,
-        base_type: None,
-        protocol_type: None,
-        canonical_name: None,
-        condition: None,
-    };
+    let rpc_def = rpc("getblock", vec![], None, "blockchain");
+    let type_def = type_def("Block", TypeKind::Object);
 
     let modules = vec![
-        ProtocolModule::new(
-            "rpc".to_string(),
-            "RPC module".to_string(),
-            vec![ProtocolDef::RpcMethod(rpc_def)],
-        ),
-        ProtocolModule::new(
-            "types".to_string(),
-            "Types module".to_string(),
-            vec![ProtocolDef::Type(type_def)],
-        ),
+        minimal_module("rpc", vec![ProtocolDef::RpcMethod(rpc_def)]),
+        minimal_module("types", vec![ProtocolDef::Type(type_def)]),
     ];
     let protocol_ir = ProtocolIR::new(modules);
 
@@ -196,69 +130,21 @@ fn test_protocol_ir_definition_count() {
 /// Test for ProtocolIR::source_implementations function
 #[test]
 fn test_protocol_ir_source_implementations() {
-    let rpc_def = RpcDef {
-        name: "getblock".to_string(),
-        description: "Get block".to_string(),
-        params: vec![],
-        result: None,
-        category: "blockchain".to_string(),
-        access_level: AccessLevel::default(),
-        requires_private_keys: false,
-        examples: None,
-        hidden: None,
-        version_added: None,
-        version_removed: None,
-    };
+    let rpc_def = rpc("getblock", vec![], None, "blockchain");
 
-    let modules = vec![ProtocolModule::new(
-        "rpc".to_string(),
-        "RPC module".to_string(),
-        vec![ProtocolDef::RpcMethod(rpc_def)],
-    )];
+    let modules = vec![minimal_module("rpc", vec![ProtocolDef::RpcMethod(rpc_def)])];
     let _protocol_ir = ProtocolIR::new(modules);
 }
 
 /// Test for ProtocolIR::merge function
 #[test]
 fn test_protocol_ir_merge() {
-    let rpc_def1 = RpcDef {
-        name: "getblock".to_string(),
-        description: "Get block".to_string(),
-        params: vec![],
-        result: None,
-        category: "blockchain".to_string(),
-        access_level: AccessLevel::default(),
-        requires_private_keys: false,
-        examples: None,
-        hidden: None,
-        version_added: None,
-        version_removed: None,
-    };
+    let rpc_def1 = rpc("getblock", vec![], None, "blockchain");
+    let mut rpc_def2 = rpc("getblock", vec![], None, "blockchain");
+    rpc_def2.description = "Get block (duplicate)".to_string();
 
-    let rpc_def2 = RpcDef {
-        name: "getblock".to_string(),
-        description: "Get block (duplicate)".to_string(),
-        params: vec![],
-        result: None,
-        category: "blockchain".to_string(),
-        access_level: AccessLevel::default(),
-        requires_private_keys: false,
-        examples: None,
-        hidden: None,
-        version_added: None,
-        version_removed: None,
-    };
-
-    let ir1 = ProtocolIR::new(vec![ProtocolModule::new(
-        "rpc".to_string(),
-        "RPC".to_string(),
-        vec![ProtocolDef::RpcMethod(rpc_def1)],
-    )]);
-    let ir2 = ProtocolIR::new(vec![ProtocolModule::new(
-        "rpc".to_string(),
-        "RPC".to_string(),
-        vec![ProtocolDef::RpcMethod(rpc_def2)],
-    )]);
+    let ir1 = ProtocolIR::new(vec![minimal_module("rpc", vec![ProtocolDef::RpcMethod(rpc_def1)])]);
+    let ir2 = ProtocolIR::new(vec![minimal_module("rpc", vec![ProtocolDef::RpcMethod(rpc_def2)])]);
 
     let merged = ProtocolIR::merge(vec![ir1, ir2]);
 
@@ -277,19 +163,7 @@ fn test_protocol_ir_merge() {
 
 #[test]
 fn test_protocol_module_new() {
-    let definitions = vec![ProtocolDef::RpcMethod(RpcDef {
-        name: "test".to_string(),
-        description: "Test method".to_string(),
-        params: vec![],
-        result: None,
-        category: "test".to_string(),
-        access_level: AccessLevel::default(),
-        requires_private_keys: false,
-        examples: None,
-        hidden: None,
-        version_added: None,
-        version_removed: None,
-    })];
+    let definitions = vec![ProtocolDef::RpcMethod(rpc("test", vec![], None, "test"))];
 
     let module = ProtocolModule::new(
         "test_module".to_string(),
@@ -305,36 +179,14 @@ fn test_protocol_module_new() {
 
 #[test]
 fn test_protocol_module_get_rpc_methods() {
-    let rpc_def = RpcDef {
-        name: "getblock".to_string(),
-        description: "Get block".to_string(),
-        params: vec![],
-        result: None,
-        category: "blockchain".to_string(),
-        access_level: AccessLevel::default(),
-        requires_private_keys: false,
-        examples: None,
-        hidden: None,
-        version_added: None,
-        version_removed: None,
-    };
+    let rpc_def = rpc("getblock", vec![], None, "blockchain");
 
     let definitions = vec![
         ProtocolDef::RpcMethod(rpc_def.clone()),
-        ProtocolDef::Type(TypeDef {
-            name: "Block".to_string(),
-            description: "Block type".to_string(),
-            kind: TypeKind::Object,
-            fields: None,
-            variants: None,
-            base_type: None,
-            protocol_type: None,
-            canonical_name: None,
-            condition: None,
-        }),
+        ProtocolDef::Type(type_def("Block", TypeKind::Object)),
     ];
 
-    let module = ProtocolModule::new("rpc".to_string(), "RPC module".to_string(), definitions);
+    let module = minimal_module("rpc", definitions);
 
     let rpc_methods = module.get_rpc_methods();
     assert_eq!(rpc_methods.len(), 1);
@@ -343,36 +195,14 @@ fn test_protocol_module_get_rpc_methods() {
 
 #[test]
 fn test_protocol_module_get_type_definitions() {
-    let type_def = TypeDef {
-        name: "Transaction".to_string(),
-        description: "Transaction type".to_string(),
-        kind: TypeKind::Object,
-        fields: None,
-        variants: None,
-        base_type: None,
-        protocol_type: None,
-        canonical_name: None,
-        condition: None,
-    };
+    let type_def = type_def("Transaction", TypeKind::Object);
 
     let definitions = vec![
         ProtocolDef::Type(type_def.clone()),
-        ProtocolDef::RpcMethod(RpcDef {
-            name: "sendrawtransaction".to_string(),
-            description: "Send raw transaction".to_string(),
-            params: vec![],
-            result: None,
-            category: "transactions".to_string(),
-            access_level: AccessLevel::default(),
-            requires_private_keys: false,
-            examples: None,
-            hidden: None,
-            version_added: None,
-            version_removed: None,
-        }),
+        ProtocolDef::RpcMethod(rpc("sendrawtransaction", vec![], None, "transactions")),
     ];
 
-    let module = ProtocolModule::new("types".to_string(), "Types module".to_string(), definitions);
+    let module = minimal_module("types", definitions);
 
     let type_definitions = module.get_type_definitions();
     assert_eq!(type_definitions.len(), 1);
@@ -381,7 +211,7 @@ fn test_protocol_module_get_type_definitions() {
 
 #[test]
 fn test_protocol_module_metadata() {
-    let _module = ProtocolModule::new("test".to_string(), "Test module".to_string(), vec![]);
+    let _module = minimal_module("test", vec![]);
 
     // metadata() method was removed as part of metadata cleanup
     // This test is no longer relevant since we removed metadata entirely
@@ -389,7 +219,7 @@ fn test_protocol_module_metadata() {
 
 #[test]
 fn test_protocol_module_name() {
-    let module = ProtocolModule::new("wallet".to_string(), "Wallet module".to_string(), vec![]);
+    let module = minimal_module("wallet", vec![]);
 
     assert_eq!(module.name(), "wallet");
 }
@@ -405,34 +235,11 @@ fn test_protocol_module_description() {
 #[test]
 fn test_protocol_module_definitions() {
     let definitions = vec![
-        ProtocolDef::RpcMethod(RpcDef {
-            name: "getbalance".to_string(),
-            description: "Get balance".to_string(),
-            params: vec![],
-            result: None,
-            category: "wallet".to_string(),
-            access_level: AccessLevel::default(),
-            requires_private_keys: false,
-            examples: None,
-            hidden: None,
-            version_added: None,
-            version_removed: None,
-        }),
-        ProtocolDef::Type(TypeDef {
-            name: "Balance".to_string(),
-            description: "Balance type".to_string(),
-            kind: TypeKind::Object,
-            fields: None,
-            variants: None,
-            base_type: None,
-            protocol_type: None,
-            canonical_name: None,
-            condition: None,
-        }),
+        ProtocolDef::RpcMethod(rpc("getbalance", vec![], None, "wallet")),
+        ProtocolDef::Type(type_def("Balance", TypeKind::Object)),
     ];
 
-    let module =
-        ProtocolModule::new("wallet".to_string(), "Wallet module".to_string(), definitions.clone());
+    let module = minimal_module("wallet", definitions.clone());
 
     let retrieved_definitions = module.definitions();
     assert_eq!(retrieved_definitions.len(), 2);
@@ -449,43 +256,19 @@ fn test_protocol_module_definitions() {
 
 #[test]
 fn test_protocol_module_definitions_mut() {
-    let mut module = ProtocolModule::new("test".to_string(), "Test module".to_string(), vec![]);
+    let mut module = minimal_module("test", vec![]);
 
     let definitions_mut = module.definitions_mut();
     assert_eq!(definitions_mut.len(), 0);
 
-    definitions_mut.push(ProtocolDef::RpcMethod(RpcDef {
-        name: "test_method".to_string(),
-        description: "Test method".to_string(),
-        params: vec![],
-        result: None,
-        category: "test".to_string(),
-        access_level: AccessLevel::default(),
-        requires_private_keys: false,
-        examples: None,
-        hidden: None,
-        version_added: None,
-        version_removed: None,
-    }));
+    definitions_mut.push(ProtocolDef::RpcMethod(rpc("test_method", vec![], None, "test")));
 
     assert_eq!(module.definitions().len(), 1);
 }
 
 #[test]
 fn test_protocol_module_from_source() {
-    let definitions = vec![ProtocolDef::RpcMethod(RpcDef {
-        name: "getinfo".to_string(),
-        description: "Get info".to_string(),
-        params: vec![],
-        result: None,
-        category: "info".to_string(),
-        access_level: AccessLevel::default(),
-        requires_private_keys: false,
-        examples: None,
-        hidden: None,
-        version_added: None,
-        version_removed: None,
-    })];
+    let definitions = vec![ProtocolDef::RpcMethod(rpc("getinfo", vec![], None, "info"))];
 
     let module = ProtocolModule::new(
         "bitcoin_core".to_string(),

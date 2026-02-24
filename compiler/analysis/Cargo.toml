@@ -10,7 +10,7 @@ codegen = { package = "ethos-codegen", version = "0.1.0", path = "../codegen" }
 semantics = { package = "ethos-semantics", version = "0.1.0", path = "../semantics" }
 fuzz-types = { package = "ethos-fuzz-types", version = "0.1.0", path = "../../primitives/fuzz" }
 futures = "0.3"
-ir = { package = "ethos-ir", version = "0.1.0", path = "../../primitives/ir" }
+ir = { package = "ethos-ir", version = "0.1.0", path = "../../primitives/ir", features = ["test-utils"] }
 registry = { package = "ethos-registry", version = "0.1.0", path = "../../primitives/registry" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0.145"
