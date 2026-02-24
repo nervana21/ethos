@@ -839,13 +839,23 @@ impl VersionSpecificResponseTypeGenerator {
                     );
                 rust_type.to_string()
             }
-            ir::TypeKind::Object => {
-                // For structured types, use the type name, but handle special cases
-                if type_def.name == "object" || type_def.name == "array" {
-                    "serde_json::Value".to_string()
-                } else {
-                    type_def.name.clone()
-                }
+            ir::TypeKind::Array => {
+                // Array fields must map to Vec<...>, not a single element type.
+                // Otherwise serde may deserialize into [T; 32] (e.g. hash) and fail with
+                // "invalid length N, expected fewer elements in array" when N > 32.
+                let method_result = types::MethodResult {
+                    type_: "array".to_string(),
+                    optional: false,
+                    description: type_def.description.clone(),
+                    key_name: field_name.to_string(),
+                    condition: String::new(),
+                    inner: Vec::new(),
+                };
+                let (rust_type, _) =
+                    adapters::bitcoin_core::types::BitcoinCoreTypeRegistry::map_result_type(
+                        &method_result,
+                    );
+                rust_type.to_string()
             }
             _ => "serde_json::Value".to_string(),
         };

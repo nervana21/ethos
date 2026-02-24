@@ -807,6 +807,11 @@ const CATEGORY_RULES: &[CategoryRule] = &[
     },
     CategoryRule {
         rpc_type: RpcJsonType::Array,
+        field_name: Some("tx"),
+        category: BitcoinCoreRpcType::TxidArray,
+    },
+    CategoryRule {
+        rpc_type: RpcJsonType::Array,
         field_name: Some("txids"),
         category: BitcoinCoreRpcType::TxidArray,
     },
