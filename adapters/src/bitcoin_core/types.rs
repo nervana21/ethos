@@ -787,17 +787,12 @@ const CATEGORY_RULES: &[CategoryRule] = &[
     // Array types
     CategoryRule {
         rpc_type: RpcJsonType::Array,
-        field_name: Some("keys"),
-        category: BitcoinCoreRpcType::StringArray,
-    },
-    CategoryRule {
-        rpc_type: RpcJsonType::Array,
         field_name: Some("addresses"),
         category: BitcoinCoreRpcType::StringArray,
     },
     CategoryRule {
         rpc_type: RpcJsonType::Array,
-        field_name: Some("wallets"),
+        field_name: Some("keys"),
         category: BitcoinCoreRpcType::StringArray,
     },
     CategoryRule {
@@ -814,6 +809,11 @@ const CATEGORY_RULES: &[CategoryRule] = &[
         rpc_type: RpcJsonType::Array,
         field_name: Some("txids"),
         category: BitcoinCoreRpcType::TxidArray,
+    },
+    CategoryRule {
+        rpc_type: RpcJsonType::Array,
+        field_name: Some("wallets"),
+        category: BitcoinCoreRpcType::StringArray,
     },
     // Default rule for generic arrays that don't match specific patterns
     CategoryRule {
