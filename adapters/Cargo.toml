@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 async-trait = "0.1.89"
 bitcoin = { version = "0.32.8", features = ["serde"] }
+bytes = "1.11.1"  # RUSTSEC-2026-0007: force >=1.11.1 (reqwest/tower-http transitive)
 chrono = { version = "0.4", features = ["serde"] }
 futures = "0.3"
 fuzz-types = { package = "ethos-fuzz-types", version = "0.1.0", path = "../primitives/fuzz" }
