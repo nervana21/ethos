@@ -213,6 +213,11 @@ impl VersionSpecificClientTraitGenerator {
         for line in formatted_desc.lines() {
             writeln!(buf, "    {}", line).expect("Failed to write method documentation");
         }
+        if rpc.requires_private_keys {
+            writeln!(buf, "    ///").expect("write");
+            writeln!(buf, "    /// Requires wallet private keys to be available (e.g. unlocked).")
+                .expect("write");
+        }
 
         // Generate method signature (trait definition)
         writeln!(
@@ -285,6 +290,11 @@ impl VersionSpecificClientTraitGenerator {
         let formatted_desc = format_doc_comment(&rpc.description);
         for line in formatted_desc.lines() {
             writeln!(buf, "    {}", line).expect("Failed to write method documentation");
+        }
+        if rpc.requires_private_keys {
+            writeln!(buf, "    ///").expect("write");
+            writeln!(buf, "    /// Requires wallet private keys to be available (e.g. unlocked).")
+                .expect("write");
         }
 
         // Generate method implementation

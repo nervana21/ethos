@@ -1,57 +1,17 @@
 use ethos_analysis::TypeCanonicalizer;
-use ir::{ProtocolDef, ProtocolIR, ProtocolModule, TypeDef, TypeKind};
+use ir::test_utils::{minimal_module, primitive_type, type_def};
+use ir::{ProtocolDef, ProtocolIR, TypeKind};
 
 #[test]
 fn test_canonicalize() {
     // Create a ProtocolIR with multiple type definitions
-    let mut ir = ProtocolIR::new(vec![ProtocolModule::new(
-        "rpc".to_string(),
-        "RPC Module".to_string(),
+    let mut ir = ProtocolIR::new(vec![minimal_module(
+        "rpc",
         vec![
-            ProtocolDef::Type(TypeDef {
-                name: "Address".to_string(),
-                description: "Bitcoin address".to_string(),
-                kind: TypeKind::Primitive,
-                fields: None,
-                variants: None,
-                base_type: None,
-                protocol_type: None,
-                canonical_name: None,
-                condition: None,
-            }),
-            ProtocolDef::Type(TypeDef {
-                name: "BitcoinAddress".to_string(),
-                description: "Bitcoin address type".to_string(),
-                kind: TypeKind::Primitive,
-                fields: None,
-                variants: None,
-                base_type: None,
-                protocol_type: None,
-                canonical_name: None,
-                condition: None,
-            }),
-            ProtocolDef::Type(TypeDef {
-                name: "WalletAddress".to_string(),
-                description: "Wallet address".to_string(),
-                kind: TypeKind::Primitive,
-                fields: None,
-                variants: None,
-                base_type: None,
-                protocol_type: None,
-                canonical_name: None,
-                condition: None,
-            }),
-            ProtocolDef::Type(TypeDef {
-                name: "BlockHash".to_string(),
-                description: "Block hash".to_string(),
-                kind: TypeKind::Object,
-                fields: None,
-                variants: None,
-                base_type: None,
-                protocol_type: None,
-                canonical_name: None,
-                condition: None,
-            }),
+            ProtocolDef::Type(primitive_type("Address", None)),
+            ProtocolDef::Type(primitive_type("BitcoinAddress", None)),
+            ProtocolDef::Type(primitive_type("WalletAddress", None)),
+            ProtocolDef::Type(type_def("BlockHash", TypeKind::Object)),
         ],
     )]);
 

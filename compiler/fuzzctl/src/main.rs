@@ -18,6 +18,7 @@ use clap::{Parser, Subcommand};
 enum FuzzctlError {
     Io(std::io::Error),
     Json(serde_json::Error),
+    #[cfg(feature = "signals")]
     CtrlC(ctrlc::Error),
     Custom(String),
 }
@@ -28,6 +29,7 @@ impl std::fmt::Display for FuzzctlError {
         match self {
             FuzzctlError::Io(e) => write!(f, "IO error: {}", e),
             FuzzctlError::Json(e) => write!(f, "JSON error: {}", e),
+            #[cfg(feature = "signals")]
             FuzzctlError::CtrlC(e) => write!(f, "CtrlC error: {}", e),
             FuzzctlError::Custom(msg) => write!(f, "{}", msg),
         }
@@ -48,6 +50,7 @@ impl From<serde_json::Error> for FuzzctlError {
 }
 
 /// Convert from ctrlc::Error to FuzzctlError.
+#[cfg(feature = "signals")]
 impl From<ctrlc::Error> for FuzzctlError {
     fn from(e: ctrlc::Error) -> Self { FuzzctlError::CtrlC(e) }
 }
