@@ -26,12 +26,10 @@ Ethos is a PoC for the capabilities of such a [specification](resources/ir/schem
 
 Run the complete code generation workflow:
 ```bash
-just ethos
+just generate
 ```
 
-This will:
-1. Generate a Bitcoin Core client library from the IR file (`resources/ir/bitcoin.ir.json`)
-2. Run end-to-end tests against a spawned node
+This will generate a Bitcoin Core client library from the IR file (`resources/ir/bitcoin.ir.json`).
 
 ## Contributing
 
