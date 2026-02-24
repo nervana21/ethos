@@ -21793,7 +21793,7 @@
             },
             "category": "wallet",
             "access_level": "Public",
-            "requires_private_keys": true,
+            "requires_private_keys": false,
             "version_added": "0.21",
             "examples": [
               "> bitcoin-cli importdescriptors '[{ \"desc\": \"<my descriptor>\", \"timestamp\":1455191478, \"internal\": true }, { \"desc\": \"<my descriptor 2>\", \"label\": \"example 2\", \"timestamp\": 1455191480 }]'\n> bitcoin-cli importdescriptors '[{ \"desc\": \"<my descriptor>\", \"timestamp\":1455191478, \"active\": true, \"range\": [0,100], \"label\": \"<my bech32 wallet>\" }]'\n"
@@ -21947,7 +21947,7 @@
             },
             "category": "wallet",
             "access_level": "Public",
-            "requires_private_keys": true,
+            "requires_private_keys": false,
             "version_added": "0.17",
             "examples": [
               ""
