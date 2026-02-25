@@ -1,30 +1,9 @@
-use ethos_ir::{AccessLevel, ProtocolDef, ProtocolIR, ProtocolModule, RpcDef, TypeDef, TypeKind};
+use ethos_ir::test_utils::{rpc, type_def};
+use ethos_ir::{ProtocolDef, ProtocolIR, ProtocolModule, TypeKind};
 
 #[test]
 fn test_ir_roundtrip_simple() {
-    let rpc = RpcDef {
-        name: "getblock".to_string(),
-        description: "Get block by hash".to_string(),
-        params: vec![],
-        result: Some(TypeDef {
-            name: "GetBlockResponse".to_string(),
-            description: "".to_string(),
-            kind: TypeKind::Object,
-            fields: None,
-            variants: None,
-            base_type: None,
-            protocol_type: None,
-            canonical_name: None,
-            condition: None,
-        }),
-        category: "node".to_string(),
-        access_level: AccessLevel::default(),
-        requires_private_keys: false,
-        examples: None,
-        hidden: None,
-        version_added: None,
-        version_removed: None,
-    };
+    let rpc = rpc("getblock", vec![], Some(type_def("GetBlockResponse", TypeKind::Object)), "node");
 
     let module = ProtocolModule::from_source(
         "rpc",
@@ -50,31 +29,10 @@ fn test_ir_roundtrip_simple() {
 #[test]
 fn test_ir_roundtrip_deterministic() {
     // Build a small IR with a couple of items
-    let type_def = TypeDef {
-        name: "Amount".to_string(),
-        description: "alias".to_string(),
-        kind: TypeKind::Alias,
-        fields: None,
-        variants: None,
-        base_type: Some("u64".to_string()),
-        protocol_type: None,
-        canonical_name: None,
-        condition: None,
-    };
+    let mut type_def = type_def("Amount", TypeKind::Alias);
+    type_def.base_type = Some("u64".to_string());
 
-    let rpc = RpcDef {
-        name: "getbalance".to_string(),
-        description: "Get wallet balance".to_string(),
-        params: vec![],
-        result: Some(type_def.clone()),
-        category: "wallet".to_string(),
-        access_level: AccessLevel::default(),
-        requires_private_keys: false,
-        examples: None,
-        hidden: None,
-        version_added: None,
-        version_removed: None,
-    };
+    let rpc = rpc("getbalance", vec![], Some(type_def.clone()), "wallet");
 
     let module = ProtocolModule::from_source(
         "rpc",
