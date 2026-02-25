@@ -1,3 +1,7 @@
+// SPDX-License-Identifier: CC0-1.0
+
+//! IR roundtrip tests (serialize → deserialize).
+
 use ethos_ir::test_utils::{rpc, type_def};
 use ethos_ir::{ProtocolDef, ProtocolIR, ProtocolModule, TypeKind};
 
