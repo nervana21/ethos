@@ -695,7 +695,7 @@ impl VersionSpecificResponseTypeGenerator {
         // getblockstats has all-optional fields but returns only an object (no string variant);
         // use standard Deserialize so we don't require a custom visitor.
         let has_conditional_results = (rpc.name == "getrawtransaction"
-            || self.check_conditional_results(rpc, result))
+            || self.check_conditional_results(result))
             && rpc.name != "getblockstats";
 
         if has_conditional_results {
@@ -728,7 +728,7 @@ impl VersionSpecificResponseTypeGenerator {
 
         // Generate custom Deserialize implementation if needed
         if has_conditional_results {
-            self.generate_conditional_deserialize_impl(&mut buf, rpc, result, &struct_name)?;
+            self.generate_conditional_deserialize_impl(&mut buf, result, &struct_name)?;
         }
 
         Ok(buf)
@@ -913,7 +913,7 @@ impl VersionSpecificResponseTypeGenerator {
     }
 
     /// Check if a method has conditional results (can return different types based on conditions)
-    fn check_conditional_results(&self, _rpc: &RpcDef, result: &ir::TypeDef) -> bool {
+    fn check_conditional_results(&self, result: &ir::TypeDef) -> bool {
         // Check if all fields are optional (indicating conditional results)
         if let Some(fields) = &result.fields {
             let fields: Vec<&ir::FieldDef> =
@@ -932,7 +932,6 @@ impl VersionSpecificResponseTypeGenerator {
     fn generate_conditional_deserialize_impl(
         &self,
         buf: &mut String,
-        _rpc: &RpcDef,
         result: &ir::TypeDef,
         struct_name: &str,
     ) -> Result<()> {
