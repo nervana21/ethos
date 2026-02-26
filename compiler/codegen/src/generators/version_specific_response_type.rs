@@ -504,10 +504,6 @@ impl VersionSpecificResponseTypeGenerator {
         if field.field_type.protocol_type.as_deref() == Some("elision") {
             field_type = format!("Option<{}>", base_field_type);
         }
-        // getblock verbosity-dependent arrays (only present for verbosity >= 2 or >= 3)
-        if field.name == "tx_1" || field.name == "tx_2" {
-            field_type = format!("Option<{}>", base_field_type);
-        }
         // Override: some Core fields are absent on certain networks/versions
         if field.name == "blockmintxfee"
             || field.name == "maxdatacarriersize"
