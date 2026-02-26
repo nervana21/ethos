@@ -380,6 +380,12 @@ impl VersionSpecificResponseTypeGenerator {
         )
     }
 
+    /// Returns true iff the IR field has protocol_type "elision". These are documentation/type placeholders,
+    /// not real JSON keys.
+    fn is_elision_field(field: &ir::FieldDef) -> bool {
+        field.field_type.protocol_type.as_deref() == Some("elision")
+    }
+
     /// Generate response type for a specific method
     fn generate_method_response(&self, rpc: &RpcDef) -> Result<Option<String>> {
         // RPCs that return a top-level array: generate array wrapper instead of struct
@@ -451,7 +457,7 @@ impl VersionSpecificResponseTypeGenerator {
 
         // Generate fields from IR data (when conditional, all fields must be Option for string|object)
         if let Some(fields) = &result.fields {
-            for field in fields {
+            for field in fields.iter().filter(|f| !Self::is_elision_field(f)) {
                 self.generate_ir_field(
                     &mut buf,
                     field,
@@ -630,6 +636,8 @@ impl VersionSpecificResponseTypeGenerator {
     fn check_conditional_results(&self, _rpc: &RpcDef, result: &ir::TypeDef) -> bool {
         // Check if all fields are optional (indicating conditional results)
         if let Some(fields) = &result.fields {
+            let fields: Vec<&ir::FieldDef> =
+                fields.iter().filter(|f| !Self::is_elision_field(f)).collect();
             if fields.is_empty() {
                 return false;
             }
@@ -671,11 +679,13 @@ impl VersionSpecificResponseTypeGenerator {
         writeln!(buf)?;
         // Handle string case (when verbose=false, e.g. getrawtransaction returns hex string)
         // Find the field that receives the string: "data" (hex) or "txid"
-        let string_field = if let Some(fields) = &result.fields {
-            fields.iter().find(|f| f.name == "data" || f.name == "txid" || f.name.contains("txid"))
-        } else {
-            None
-        };
+        let fields: Vec<&ir::FieldDef> = result
+            .fields
+            .as_ref()
+            .map(|fs| fs.iter().filter(|f| !Self::is_elision_field(f)).collect())
+            .unwrap_or_default();
+        let string_field =
+            fields.iter().find(|f| f.name == "data" || f.name == "txid" || f.name.contains("txid"));
         let param_name = if string_field.is_some() { "v" } else { "_v" };
         writeln!(
             buf,
@@ -685,7 +695,7 @@ impl VersionSpecificResponseTypeGenerator {
         writeln!(buf, "            where")?;
         writeln!(buf, "                E: de::Error,")?;
         writeln!(buf, "            {{")?;
-        if let Some(fields) = &result.fields {
+        if !fields.is_empty() {
             if let Some(field) = string_field {
                 let field_name = self.sanitize_identifier(&field.name);
                 let field_type = self.map_ir_type_to_rust(&field.field_type, &field.name);
@@ -704,7 +714,7 @@ impl VersionSpecificResponseTypeGenerator {
                     )?;
                 }
                 writeln!(buf, "                Ok({} {{", struct_name)?;
-                for f in fields {
+                for f in &fields {
                     let fn_name = self.sanitize_identifier(&f.name);
                     if f.name == field.name {
                         writeln!(buf, "                    {}: Some({}),", fn_name, fn_name)?;
@@ -716,7 +726,7 @@ impl VersionSpecificResponseTypeGenerator {
             } else {
                 // Fallback: create struct with all fields as None
                 writeln!(buf, "                Ok({} {{", struct_name)?;
-                for f in fields {
+                for f in &fields {
                     let fn_name = self.sanitize_identifier(&f.name);
                     writeln!(buf, "                    {}: None,", fn_name)?;
                 }
@@ -733,13 +743,13 @@ impl VersionSpecificResponseTypeGenerator {
         writeln!(buf, "            where")?;
         writeln!(buf, "                M: de::MapAccess<'de>,")?;
         writeln!(buf, "            {{")?;
-        if let Some(fields) = &result.fields {
-            for f in fields {
+        if !fields.is_empty() {
+            for f in &fields {
                 let fn_name = self.sanitize_identifier(&f.name);
                 writeln!(buf, "                let mut {} = None;", fn_name)?;
             }
             writeln!(buf, "                while let Some(key) = map.next_key::<String>()? {{")?;
-            for f in fields {
+            for f in &fields {
                 let fn_name = self.sanitize_identifier(&f.name);
                 writeln!(buf, "                    if key == \"{}\" {{", f.name)?;
                 writeln!(buf, "                        if {}.is_some() {{", fn_name)?;
@@ -829,7 +839,7 @@ impl VersionSpecificResponseTypeGenerator {
             writeln!(buf, "                    }}")?;
             writeln!(buf, "                }}")?;
             writeln!(buf, "                Ok({} {{", struct_name)?;
-            for f in fields {
+            for f in &fields {
                 let fn_name = self.sanitize_identifier(&f.name);
                 writeln!(buf, "                    {},", fn_name)?;
             }
