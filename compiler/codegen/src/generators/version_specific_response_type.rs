@@ -390,7 +390,7 @@ impl VersionSpecificResponseTypeGenerator {
     }
 
     /// RPCs that return a top-level JSON array (schema has Object + single field; bitcoind returns array)
-    const TOP_LEVEL_ARRAY_RPCS: &[&str] = &[
+    const TOP_LEVEL_ARRAY_METHODS: &[&str] = &[
         "deriveaddresses",
         "getaddednodeinfo",
         "getnodeaddresses",
@@ -643,46 +643,46 @@ impl VersionSpecificResponseTypeGenerator {
     }
 
     /// Generate response type for a specific method
-    fn generate_method_response(&self, rpc: &RpcDef) -> Result<Option<String>> {
+    fn generate_method_response(&self, method: &RpcDef) -> Result<Option<String>> {
         // RPCs that return a top-level array: generate array wrapper instead of struct
-        if Self::TOP_LEVEL_ARRAY_RPCS.contains(&rpc.name.as_str()) {
-            let struct_name = self.response_struct_name(rpc);
-            return Ok(Some(self.generate_array_wrapper(rpc, &struct_name)?));
+        if Self::TOP_LEVEL_ARRAY_METHODS.contains(&method.name.as_str()) {
+            let struct_name = self.response_struct_name(method);
+            return Ok(Some(self.generate_array_wrapper(method, &struct_name)?));
         }
 
         // RPCs that return arbitrary JSON (echo/echojson)
-        if Self::ECHO_JSON_VALUE_RPCS.contains(&rpc.name.as_str()) {
-            let struct_name = self.response_struct_name(rpc);
-            return Ok(Some(self.generate_value_wrapper(rpc, &struct_name)?));
+        if Self::ECHO_JSON_VALUE_RPCS.contains(&method.name.as_str()) {
+            let struct_name = self.response_struct_name(method);
+            return Ok(Some(self.generate_value_wrapper(method, &struct_name)?));
         }
 
         // help returns a plain string
-        if rpc.name.as_str() == "help" {
-            let struct_name = self.response_struct_name(rpc);
+        if method.name.as_str() == "help" {
+            let struct_name = self.response_struct_name(method);
             return Ok(Some(self.generate_primitive_wrapper(&struct_name, "string", &None)?));
         }
 
         // Simplified - always generate from IR data since we removed metadata registries
-        if let Some(result) = &rpc.result {
+        if let Some(result) = &method.result {
             if let Some(fields) = &result.fields {
                 if !fields.is_empty() {
-                    return Ok(Some(self.generate_from_ir_data(rpc, result)?));
+                    return Ok(Some(self.generate_from_ir_data(method, result)?));
                 }
             }
         }
 
         // For methods without result types, generate unit structs
-        self.generate_unit_response(rpc)
+        self.generate_unit_response(method)
     }
 
     /// Generate response type from IR data (TypeDef.fields)
-    fn generate_from_ir_data(&self, rpc: &RpcDef, result: &ir::TypeDef) -> Result<String> {
-        let struct_name = self.response_struct_name(rpc);
+    fn generate_from_ir_data(&self, method: &RpcDef, result: &ir::TypeDef) -> Result<String> {
+        let struct_name = self.response_struct_name(method);
         let mut buf = String::new();
 
         // Generate struct documentation using PascalCase canonical method name
         let canonical_name =
-            crate::utils::canonical_from_adapter_method(&self.implementation, &rpc.name)
+            crate::utils::canonical_from_adapter_method(&self.implementation, &method.name)
                 .unwrap_or_else(|_| struct_name.replace("Response", ""));
         write_doc_line(&mut buf, &format!("Response for the `{}` RPC method", canonical_name), "")?;
         writeln!(&mut buf, "///")?;
@@ -694,9 +694,9 @@ impl VersionSpecificResponseTypeGenerator {
         // This happens when we have both simple type results and object results.
         // getblockstats has all-optional fields but returns only an object (no string variant);
         // use standard Deserialize so we don't require a custom visitor.
-        let has_conditional_results = (rpc.name == "getrawtransaction"
+        let has_conditional_results = (method.name == "getrawtransaction"
             || self.check_conditional_results(result))
-            && rpc.name != "getblockstats";
+            && method.name != "getblockstats";
 
         if has_conditional_results {
             // Generate struct without Deserialize derive (we'll implement it manually)
@@ -718,7 +718,7 @@ impl VersionSpecificResponseTypeGenerator {
                     &mut buf,
                     field,
                     &struct_name,
-                    rpc.name.as_str(),
+                    method.name.as_str(),
                     has_conditional_results,
                 )?;
             }
@@ -872,16 +872,16 @@ impl VersionSpecificResponseTypeGenerator {
     // Removed generate_fallback_response - no more transparent wrappers
 
     /// Generate unit response for methods that return "none" or have no meaningful return value
-    fn generate_unit_response(&self, rpc: &RpcDef) -> Result<Option<String>> {
-        let struct_name = self.response_struct_name(rpc);
+    fn generate_unit_response(&self, method: &RpcDef) -> Result<Option<String>> {
+        let struct_name = self.response_struct_name(method);
         let mut buf = String::new();
 
         // Check if the method has a return type defined in the IR
-        if let Some(result) = &rpc.result {
+        if let Some(result) = &method.result {
             match &result.kind {
                 ir::TypeKind::Array => {
                     // Generate array wrapper for methods that return arrays
-                    return Ok(Some(self.generate_array_wrapper(rpc, &struct_name)?));
+                    return Ok(Some(self.generate_array_wrapper(method, &struct_name)?));
                 }
                 ir::TypeKind::Primitive => {
                     // Generate primitive wrapper for methods that return primitives
@@ -899,7 +899,7 @@ impl VersionSpecificResponseTypeGenerator {
 
         // Generate struct documentation using PascalCase canonical method name
         let canonical_name =
-            crate::utils::canonical_from_adapter_method(&self.implementation, &rpc.name)
+            crate::utils::canonical_from_adapter_method(&self.implementation, &method.name)
                 .unwrap_or_else(|_| struct_name.replace("Response", ""));
         write_doc_line(&mut buf, &format!("Response for the `{}` RPC method", canonical_name), "")?;
         writeln!(&mut buf, "///")?;
@@ -1136,15 +1136,17 @@ impl VersionSpecificResponseTypeGenerator {
     }
 
     /// Get response struct name for a method
-    fn response_struct_name(&self, rpc: &RpcDef) -> String {
+    fn response_struct_name(&self, method: &RpcDef) -> String {
         let canonical =
-            crate::utils::canonical_from_adapter_method(&self.implementation, &rpc.name);
+            crate::utils::canonical_from_adapter_method(&self.implementation, &method.name);
         match canonical {
             Ok(name) => format!("{}Response", name),
             Err(_) => {
-                let snake =
-                    crate::utils::protocol_rpc_method_to_rust_name(&self.implementation, &rpc.name)
-                        .unwrap_or_else(|_| crate::utils::rpc_method_to_rust_name(&rpc.name));
+                let snake = crate::utils::protocol_rpc_method_to_rust_name(
+                    &self.implementation,
+                    &method.name,
+                )
+                .unwrap_or_else(|_| crate::utils::rpc_method_to_rust_name(&method.name));
                 format!("{}Response", crate::utils::snake_to_pascal_case(&snake))
             }
         }
@@ -1657,12 +1659,12 @@ impl VersionSpecificResponseTypeGenerator {
     }
 
     /// Generate array wrapper for methods that return arrays
-    fn generate_array_wrapper(&self, rpc: &RpcDef, struct_name: &str) -> Result<String> {
+    fn generate_array_wrapper(&self, method: &RpcDef, struct_name: &str) -> Result<String> {
         let mut buf = String::new();
 
         // Generate struct documentation using PascalCase canonical method name
         let canonical_name =
-            crate::utils::canonical_from_adapter_method(&self.implementation, &rpc.name)
+            crate::utils::canonical_from_adapter_method(&self.implementation, &method.name)
                 .unwrap_or_else(|_| struct_name.replace("Response", "").to_string());
         write_doc_line(&mut buf, &format!("Response for the `{}` RPC method", canonical_name), "")?;
         writeln!(&mut buf, "///")?;
@@ -1713,10 +1715,10 @@ impl VersionSpecificResponseTypeGenerator {
     }
 
     /// Generate wrapper for RPCs that return arbitrary JSON (echo/echojson); whole response is one Value
-    fn generate_value_wrapper(&self, rpc: &RpcDef, struct_name: &str) -> Result<String> {
+    fn generate_value_wrapper(&self, method: &RpcDef, struct_name: &str) -> Result<String> {
         let mut buf = String::new();
         let canonical_name =
-            crate::utils::canonical_from_adapter_method(&self.implementation, &rpc.name)
+            crate::utils::canonical_from_adapter_method(&self.implementation, &method.name)
                 .unwrap_or_else(|_| struct_name.replace("Response", "").to_string());
         write_doc_line(&mut buf, &format!("Response for the `{}` RPC method", canonical_name), "")?;
         writeln!(&mut buf, "///")?;
