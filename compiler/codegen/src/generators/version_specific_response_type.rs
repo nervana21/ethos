@@ -1317,7 +1317,7 @@ impl VersionSpecificResponseTypeGenerator {
         // Generate transparent wrapper struct with custom deserializer
         writeln!(&mut buf, "#[derive(Debug, Clone, PartialEq, Serialize)]")?;
         writeln!(&mut buf, "pub struct {} {{", struct_name)?;
-        writeln!(&mut buf, "    /// Wrapped primitive value")?;
+        write_doc_line(&mut buf, "Wrapped primitive value", "    ")?;
         writeln!(&mut buf, "    pub value: {},", inner_type)?;
         writeln!(&mut buf, "}}")?;
         writeln!(&mut buf)?;
@@ -1676,7 +1676,7 @@ impl VersionSpecificResponseTypeGenerator {
         // Generate transparent wrapper struct
         writeln!(&mut buf, "#[derive(Debug, Clone, PartialEq, Serialize)]")?;
         writeln!(&mut buf, "pub struct {} {{", struct_name)?;
-        writeln!(&mut buf, "    /// Wrapped array value")?;
+        write_doc_line(&mut buf, "Wrapped array value", "    ")?;
         writeln!(&mut buf, "    pub value: Vec<serde_json::Value>,")?;
         writeln!(&mut buf, "}}")?;
         writeln!(&mut buf)?;
@@ -1729,7 +1729,7 @@ impl VersionSpecificResponseTypeGenerator {
 
         writeln!(&mut buf, "#[derive(Debug, Clone, PartialEq, Serialize)]")?;
         writeln!(&mut buf, "pub struct {} {{", struct_name)?;
-        writeln!(&mut buf, "    /// Wrapped JSON value")?;
+        write_doc_line(&mut buf, "Wrapped JSON value", "    ")?;
         writeln!(&mut buf, "    pub value: serde_json::Value,")?;
         writeln!(&mut buf, "}}")?;
         writeln!(&mut buf)?;
@@ -1834,7 +1834,7 @@ impl VersionSpecificResponseTypeGenerator {
         };
 
         let mut output = String::new();
-        writeln!(output, "/// Type alias for {}", type_name)?;
+        write_doc_line(&mut output, &format!("Type alias for {}", type_name), "")?;
         writeln!(output, "pub type {} = {};", type_name, rust_type)?;
         Ok(output)
     }
