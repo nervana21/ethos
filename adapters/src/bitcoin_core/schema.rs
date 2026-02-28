@@ -251,9 +251,7 @@ fn build_fields_from_inner<F>(inner: &[RawArgument], field_builder: F) -> Vec<Fi
 where
     F: Fn(&RawArgument) -> FieldDef,
 {
-    let mut fields: Vec<FieldDef> = inner.iter().map(field_builder).collect();
-    fields.sort_by(|a, b| a.name.cmp(&b.name));
-    fields
+    inner.iter().map(field_builder).collect()
 }
 
 /// Generate a field name from a description, using common patterns
@@ -363,35 +361,6 @@ fn get_method_version_added(method_name: &str) -> Option<String> {
     }
 }
 
-/// Recursively normalize field ordering in a TypeDef to match schema conversion output
-///
-/// This ensures that fields are sorted by name at all levels, matching the behavior
-/// of convert_to_protocol_ir_with_version which sorts fields during conversion.
-fn normalize_type_def_fields(type_def: &mut TypeDef) {
-    if let Some(ref mut fields) = type_def.fields {
-        // Sort fields by name
-        fields.sort_by(|a, b| a.name.cmp(&b.name));
-        // Recursively normalize nested fields
-        for field in fields.iter_mut() {
-            normalize_type_def_fields(&mut field.field_type);
-        }
-    }
-}
-
-/// Normalize field ordering in an RPC method definition
-///
-/// This ensures that all fields (in params and results) are sorted consistently.
-fn normalize_rpc_method_fields(rpc: &mut RpcDef) {
-    // Normalize param fields
-    for param in rpc.params.iter_mut() {
-        normalize_type_def_fields(&mut param.param_type);
-    }
-    // Normalize result fields
-    if let Some(ref mut result) = rpc.result {
-        normalize_type_def_fields(result);
-    }
-}
-
 /// Extract version-specific IR from canonical IR
 ///
 /// Filters the canonical IR to only include methods available in the target version.
@@ -432,10 +401,7 @@ pub fn extract_version_ir(canonical_ir: ProtocolIR, target_version: &str) -> Pro
                     };
 
                     if was_available && not_removed {
-                        let mut rpc_clone = rpc.clone();
-                        // Normalize field ordering to match schema conversion output
-                        normalize_rpc_method_fields(&mut rpc_clone);
-                        definitions.push(ProtocolDef::RpcMethod(rpc_clone));
+                        definitions.push(ProtocolDef::RpcMethod(rpc.clone()));
                     }
                 }
                 other => definitions.push(other.clone()),
@@ -527,7 +493,7 @@ fn convert_result(raw: &RawResult) -> TypeDef {
 
     // Handle nested structures
     if matches!(kind, TypeKind::Object) && !raw.inner.is_empty() {
-        let mut fields: Vec<FieldDef> = raw
+        let fields: Vec<FieldDef> = raw
             .inner
             .iter()
             .map(|inner| FieldDef {
@@ -538,7 +504,6 @@ fn convert_result(raw: &RawResult) -> TypeDef {
                 default_value: inner.default_value(),
             })
             .collect();
-        fields.sort_by(|a, b| a.name.cmp(&b.name));
 
         type_def.fields = Some(if raw.r#type == "array" {
             build_array_of_objects_wrapper(fields)
@@ -668,9 +633,6 @@ fn merge_results_to_object(results: &[RawResult]) -> TypeDef {
             });
         }
     }
-
-    // Sort fields by name for deterministic output
-    fields.sort_by(|a, b| a.name.cmp(&b.name));
 
     TypeDef {
         name: "object".to_string(),
