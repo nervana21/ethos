@@ -90,6 +90,12 @@ impl VersionSpecificResponseTypeGenerator {
             }
         }
 
+        // Collect TypeDefs for the six decoded-tx types so we can emit full structs (they are
+        // referenced by name but must be defined in this module; we skip emitting type aliases
+        // for them in generate_nested_type to avoid duplicates).
+        let decoded_typedefs =
+            Self::collect_decoded_tx_typedefs(methods);
+
         // Add imports
         out.push_str("use serde::{Deserialize, Serialize};\n");
         out.push_str("use std::str::FromStr;\n");
@@ -178,9 +184,29 @@ impl VersionSpecificResponseTypeGenerator {
 
         out.push('\n');
 
+        // Emit full structs for the six decoded-tx types when present in the IR, so they are
+        // defined in this module (they are referenced by gettxout, decodepsbt, getblock, etc.).
+        const DECODED_TX_TYPE_ORDER: &[&str] = &[
+            "DecodedScriptPubKey",
+            "DecodedScriptSig",
+            "DecodedPrevout",
+            "DecodedVin",
+            "DecodedVout",
+            "DecodedTxDetails",
+        ];
+        let mut processed_types = std::collections::HashSet::new();
+        for &name in DECODED_TX_TYPE_ORDER {
+            if let Some(type_def) = decoded_typedefs.get(name) {
+                if let Ok(s) = self.generate_standalone_struct_from_typedef(type_def) {
+                    out.push_str(&s);
+                    out.push('\n');
+                }
+                processed_types.insert(name.to_string());
+            }
+        }
+
         // Generate nested types first, recursively collecting more nested types
         let mut all_nested_types = nested_types.clone();
-        let mut processed_types = std::collections::HashSet::new();
 
         while !all_nested_types.is_empty() {
             let current_types: Vec<String> = all_nested_types.drain().collect();
@@ -1495,8 +1521,80 @@ impl VersionSpecificResponseTypeGenerator {
         }
     }
 
+    /// Names of decoded-tx types that we emit as full structs from IR (not as type aliases).
+    const DECODED_TX_TYPE_NAMES: &[&str] = &[
+        "DecodedScriptPubKey",
+        "DecodedScriptSig",
+        "DecodedPrevout",
+        "DecodedVin",
+        "DecodedVout",
+        "DecodedTxDetails",
+    ];
+
+    /// Recursively walk a TypeDef and collect any decoded-tx type definitions (by name).
+    fn collect_decoded_typedefs_walk(
+        type_def: &ir::TypeDef,
+        map: &mut std::collections::HashMap<String, ir::TypeDef>,
+    ) {
+        if matches!(type_def.kind, ir::TypeKind::Object)
+            && type_def.fields.as_ref().map_or(false, |f| !f.is_empty())
+            && Self::DECODED_TX_TYPE_NAMES.contains(&type_def.name.as_str())
+        {
+            map.entry(type_def.name.clone()).or_insert_with(|| type_def.clone());
+        }
+        if let Some(fields) = &type_def.fields {
+            for f in fields {
+                Self::collect_decoded_typedefs_walk(&f.field_type, map);
+            }
+        }
+    }
+
+    /// Collect TypeDefs for the six decoded-tx types by walking all method result types.
+    fn collect_decoded_tx_typedefs(
+        methods: &[RpcDef],
+    ) -> std::collections::HashMap<String, ir::TypeDef> {
+        let mut map = std::collections::HashMap::new();
+        for method in methods {
+            if let Some(result) = &method.result {
+                Self::collect_decoded_typedefs_walk(result, &mut map);
+            }
+        }
+        map
+    }
+
+    /// Emit a standalone struct from a TypeDef (used for decoded-tx types).
+    fn generate_standalone_struct_from_typedef(&self, type_def: &ir::TypeDef) -> Result<String> {
+        let mut buf = String::new();
+        writeln!(
+            &mut buf,
+            "#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]"
+        )?;
+        writeln!(
+            &mut buf,
+            "#[cfg_attr(feature = \"serde-deny-unknown-fields\", serde(deny_unknown_fields))]"
+        )?;
+        writeln!(&mut buf, "pub struct {} {{", type_def.name)?;
+        if let Some(fields) = &type_def.fields {
+            for field in fields.iter().filter(|f| !Self::is_elision_field(f)) {
+                self.generate_ir_field(
+                    &mut buf,
+                    field,
+                    &type_def.name,
+                    "",  // no RPC-specific overrides for standalone structs
+                    false,
+                )?;
+            }
+        }
+        writeln!(&mut buf, "}}")?;
+        Ok(buf)
+    }
+
     /// Generate a placeholder struct for an undefined nested type
     fn generate_nested_type(&self, type_name: &str) -> Result<Option<String>> {
+        // Skip types that we emit as full structs from IR (see generate_standalone_struct_from_typedef).
+        if Self::DECODED_TX_TYPE_NAMES.contains(&type_name) {
+            return Ok(None);
+        }
         // Simplified - generate type alias since IR doesn't track per-type versions
         let type_alias = self.generate_type_alias(type_name)?;
         Ok(Some(type_alias))

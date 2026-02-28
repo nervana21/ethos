@@ -512,6 +512,11 @@ fn convert_result(raw: &RawResult) -> TypeDef {
         });
     }
 
+    // Canonical name for scriptPubKey object so codegen emits a single shared type
+    if raw.key_name == "scriptPubKey" && matches!(kind, TypeKind::Object) && !raw.inner.is_empty() {
+        type_def.name = "DecodedScriptPubKey".to_string();
+    }
+
     type_def
 }
 
