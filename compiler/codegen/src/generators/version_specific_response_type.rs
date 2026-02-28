@@ -82,11 +82,7 @@ impl VersionSpecificResponseTypeGenerator {
         let mut nested_types = std::collections::HashSet::new();
         for method in methods {
             if let Some(result) = &method.result {
-                if let Some(fields) = &result.fields {
-                    for field in fields {
-                        self.collect_nested_types(&field.field_type.name, &mut nested_types);
-                    }
-                }
+                self.collect_nested_types_from_type_def(result, &mut nested_types);
             }
         }
 
@@ -1494,6 +1490,20 @@ impl VersionSpecificResponseTypeGenerator {
         writeln!(&mut buf, "}}")?;
 
         Ok(buf)
+    }
+
+    /// Recursively collect nested type names from a TypeDef (so nested scriptPubKey is seen).
+    fn collect_nested_types_from_type_def(
+        &self,
+        type_def: &ir::TypeDef,
+        nested_types: &mut std::collections::HashSet<String>,
+    ) {
+        self.collect_nested_types(&type_def.name, nested_types);
+        if let Some(ref fields) = type_def.fields {
+            for field in fields {
+                self.collect_nested_types_from_type_def(&field.field_type, nested_types);
+            }
+        }
     }
 
     /// Collect nested types from a field type string
