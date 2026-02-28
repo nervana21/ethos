@@ -4,11 +4,12 @@
 //! type metadata extracted from corepc to generate accurate types for each
 //! Bitcoin Core version.
 
+use std::collections::HashMap;
 use std::fmt::Write as _;
 use std::str::FromStr;
 use std::sync::{Mutex, OnceLock};
 
-use ir::{ProtocolIR, RpcDef};
+use ir::{ProtocolIR, RpcDef, TypeDef, TypeKind};
 use types::{Implementation, ProtocolVersion};
 
 use super::doc_comment::{write_doc_comment, write_doc_line};
@@ -85,12 +86,6 @@ impl VersionSpecificResponseTypeGenerator {
                 self.collect_nested_types_from_type_def(result, &mut nested_types);
             }
         }
-
-        // Collect TypeDefs for the six decoded-tx types so we can emit full structs (they are
-        // referenced by name but must be defined in this module; we skip emitting type aliases
-        // for them in generate_nested_type to avoid duplicates).
-        let decoded_typedefs =
-            Self::collect_decoded_tx_typedefs(methods);
 
         // Add imports
         out.push_str("use serde::{Deserialize, Serialize};\n");
@@ -180,25 +175,13 @@ impl VersionSpecificResponseTypeGenerator {
 
         out.push('\n');
 
-        // Emit full structs for the six decoded-tx types when present in the IR, so they are
-        // defined in this module (they are referenced by gettxout, decodepsbt, getblock, etc.).
-        const DECODED_TX_TYPE_ORDER: &[&str] = &[
-            "DecodedScriptPubKey",
-            "DecodedScriptSig",
-            "DecodedPrevout",
-            "DecodedVin",
-            "DecodedVout",
-            "DecodedTxDetails",
-        ];
+        let type_registry = Self::build_type_registry(methods);
+
+        // Decoded-tx types (DecodedScriptSig, etc.) are emitted by emit_decoded_tx_types below.
+        // DecodedScriptPubKey is generated from the type registry when present in IR.
         let mut processed_types = std::collections::HashSet::new();
-        for &name in DECODED_TX_TYPE_ORDER {
-            if let Some(type_def) = decoded_typedefs.get(name) {
-                if let Ok(s) = self.generate_standalone_struct_from_typedef(type_def) {
-                    out.push_str(&s);
-                    out.push('\n');
-                }
-                processed_types.insert(name.to_string());
-            }
+        for name in Self::DECODED_TX_TYPE_NAMES {
+            processed_types.insert((*name).to_string());
         }
 
         // Generate nested types first, recursively collecting more nested types
@@ -212,9 +195,9 @@ impl VersionSpecificResponseTypeGenerator {
                     continue;
                 }
 
-                println!("[NESTED_TYPES] Generating type: {}", nested_type);
-                if let Some(nested_struct) = self.generate_nested_type(nested_type)? {
-                    println!("[NESTED_TYPES] Generated struct for: {}", nested_type);
+                if let Some(nested_struct) =
+                    self.generate_nested_type(nested_type, &type_registry)?
+                {
                     out.push_str(&nested_struct);
                     out.push('\n');
                     processed_types.insert(nested_type.clone());
@@ -222,10 +205,27 @@ impl VersionSpecificResponseTypeGenerator {
                     // Collect nested types - simplified since IR doesn't track per-type versions
                     // Nested types will be discovered when generating from IR result types
                 } else {
-                    println!("[NESTED_TYPES] Skipped generation for: {}", nested_type);
                     processed_types.insert(nested_type.clone());
                 }
             }
+        }
+
+        // Emit decoded tx types once so they are defined before any method response that references them.
+        let mut decoded_tx_buf = String::new();
+        let fee_required = methods
+            .iter()
+            .find(|m| m.name == "getblock")
+            .and_then(|method| Self::get_getblock_decoded_tx_element_type(method))
+            .and_then(|ty| Self::find_field_in_type(ty, "fee"))
+            .map(|f| f.required);
+        self.emit_decoded_tx_types(
+            &mut decoded_tx_buf,
+            fee_required,
+            type_registry.contains_key("DecodedScriptPubKey"),
+        )?;
+        if !decoded_tx_buf.is_empty() {
+            out.push_str(&decoded_tx_buf);
+            out.push_str("\n\n");
         }
 
         // Generate response structs for each method
@@ -367,6 +367,28 @@ impl VersionSpecificResponseTypeGenerator {
         Ok(vec![(filename, out)])
     }
 
+    /// Build a registry of named object types by walking all method result types recursively.
+    /// First occurrence of each type name wins. Used to generate structs from IR (e.g. DecodedScriptPubKey).
+    fn build_type_registry(methods: &[RpcDef]) -> HashMap<String, TypeDef> {
+        let mut reg = HashMap::new();
+        fn visit(ty: &TypeDef, reg: &mut HashMap<String, TypeDef>) {
+            if matches!(ty.kind, TypeKind::Object) && ty.name != "object" && ty.name != "array" {
+                reg.entry(ty.name.clone()).or_insert_with(|| ty.clone());
+            }
+            if let Some(fields) = &ty.fields {
+                for f in fields {
+                    visit(&f.field_type, reg);
+                }
+            }
+        }
+        for method in methods {
+            if let Some(ref result) = method.result {
+                visit(result, &mut reg);
+            }
+        }
+        reg
+    }
+
     /// RPCs that return a top-level JSON array (schema has Object + single field; bitcoind returns array)
     const TOP_LEVEL_ARRAY_RPCS: &[&str] = &[
         "deriveaddresses",
@@ -406,6 +428,218 @@ impl VersionSpecificResponseTypeGenerator {
     /// not real JSON keys.
     fn is_elision_field(field: &ir::FieldDef) -> bool {
         field.field_type.protocol_type.as_deref() == Some("elision")
+    }
+
+    /// Returns the TypeDef for one element of the getblock decoded-tx array (verbosity 2/3).
+    /// That type's fields include the elision placeholder and explicit fields like `fee`.
+    /// Used with [`Self::find_field_in_type`] to drive optionality from the IR without hardcoding paths in the emitter.
+    fn get_getblock_decoded_tx_element_type(method: &RpcDef) -> Option<&ir::TypeDef> {
+        let result = method.result.as_ref()?;
+        let top_fields = result.fields.as_ref()?;
+        let tx1 = top_fields.iter().find(|f| f.name == "tx_1")?;
+        let array_wrapper = tx1.field_type.fields.as_ref()?;
+        let first = array_wrapper.first()?;
+        let inner_fields = first.field_type.fields.as_ref()?;
+        let inner_first = inner_fields.first()?;
+        Some(&inner_first.field_type)
+    }
+
+    /// Returns the field with the given name in the type's direct fields, if any.
+    fn find_field_in_type<'a>(
+        type_def: &'a ir::TypeDef,
+        field_name: &str,
+    ) -> Option<&'a ir::FieldDef> {
+        type_def.fields.as_ref()?.iter().find(|f| f.name == field_name)
+    }
+
+    /// Emits Rust structs for decoded transaction details (getblock verbosity 2/3, getrawtransaction verbose).
+    /// Does not use deny_unknown_fields on inner structs so new Core fields do not break deserialization.
+    /// When `skip_decoded_script_pub_key` is true, DecodedScriptPubKey is already emitted from the IR type registry.
+    /// `fee_required`: when `Some(true)` emit `fee: f64`, otherwise `fee: Option<f64>`; caller derives this from the IR.
+    fn emit_decoded_tx_types(
+        &self,
+        buf: &mut String,
+        fee_required: Option<bool>,
+        skip_decoded_script_pub_key: bool,
+    ) -> Result<()> {
+        if !skip_decoded_script_pub_key {
+            write_doc_line(buf, "Script pubkey in decoded tx output.", "")?;
+            write_doc_line(
+                buf,
+                "See: <https://github.com/bitcoin/bitcoin/blob/744d47fcee0d32a71154292699bfdecf954a6065/src/core_io.cpp#L409-L427>",
+                "",
+            )?;
+            writeln!(buf, "#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]")?;
+            writeln!(buf, "pub struct DecodedScriptPubKey {{")?;
+            write_doc_comment(buf, "Script in human-readable assembly form.", "    ")?;
+            writeln!(buf, "    pub asm: String,")?;
+            write_doc_comment(
+                buf,
+                "Output script descriptor; present only when address/descriptor info was requested (include_address).",
+                "    ",
+            )?;
+            writeln!(buf, "    #[serde(default, skip_serializing_if = \"Option::is_none\")]")?;
+            writeln!(buf, "    pub desc: Option<String>,")?;
+            write_doc_comment(
+                buf,
+                "Output script serialized as hex; present only when hex was requested (include_hex).",
+                "    ",
+            )?;
+            writeln!(buf, "    #[serde(default, skip_serializing_if = \"Option::is_none\")]")?;
+            writeln!(buf, "    pub hex: Option<String>,")?;
+            write_doc_comment(
+                buf,
+                "Categorized script type (for example, \"pubkeyhash\").",
+                "    ",
+            )?;
+            writeln!(buf, "    #[serde(rename = \"type\")]")?;
+            writeln!(buf, "    pub type_: String,")?;
+            write_doc_comment(
+                buf,
+                "Decoded destination address for this script, when available.",
+                "    ",
+            )?;
+            writeln!(buf, "    #[serde(default, skip_serializing_if = \"Option::is_none\")]")?;
+            writeln!(buf, "    pub address: Option<String>,")?;
+            writeln!(buf, "}}")?;
+            writeln!(buf)?;
+        }
+
+        write_doc_line(buf, "Script sig in decoded tx input.", "")?;
+        write_doc_line(
+            buf,
+            "See: <https://github.com/bitcoin/bitcoin/blob/744d47fcee0d32a71154292699bfdecf954a6065/src/core_io.cpp#L458-L461>",
+            "",
+        )?;
+        writeln!(buf, "#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]")?;
+        writeln!(buf, "pub struct DecodedScriptSig {{")?;
+        write_doc_comment(buf, "scriptSig in human-readable assembly form.", "    ")?;
+        writeln!(buf, "    pub asm: String,")?;
+        write_doc_comment(buf, "scriptSig serialized as hex.", "    ")?;
+        writeln!(buf, "    pub hex: String,")?;
+        writeln!(buf, "}}")?;
+        writeln!(buf)?;
+
+        write_doc_line(
+            buf,
+            "Previous output (prevout) in decoded tx input; present for getblock verbosity 3.",
+            "",
+        )?;
+        writeln!(buf, "#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]")?;
+        writeln!(buf, "pub struct DecodedPrevout {{")?;
+        write_doc_comment(
+            buf,
+            "True if the prevout was created by a coinbase transaction.",
+            "    ",
+        )?;
+        writeln!(buf, "    pub generated: bool,")?;
+        write_doc_comment(buf, "Block height where the prevout was created.", "    ")?;
+        writeln!(buf, "    pub height: i64,")?;
+        write_doc_comment(buf, "Decoded script pubkey of the prevout output.", "    ")?;
+        writeln!(buf, "    #[serde(rename = \"scriptPubKey\")]")?;
+        writeln!(buf, "    pub script_pub_key: DecodedScriptPubKey,")?;
+        write_doc_comment(buf, "Value of the prevout output in BTC.", "    ")?;
+        writeln!(buf, "    pub value: f64,")?;
+        writeln!(buf, "}}")?;
+        writeln!(buf)?;
+
+        write_doc_line(
+            buf,
+            "Transaction input in decoded tx; prevout is None for getblock verbosity 2, Some for verbosity 3.",
+            "",
+        )?;
+        writeln!(buf, "#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]")?;
+        writeln!(buf, "pub struct DecodedVin {{")?;
+        write_doc_comment(buf, "Transaction id of the previous output being spent.", "    ")?;
+        writeln!(buf, "    pub txid: String,")?;
+        write_doc_comment(buf, "Index of the previous output being spent.", "    ")?;
+        writeln!(buf, "    pub vout: u32,")?;
+        write_doc_comment(buf, "Decoded scriptSig for this input, when present.", "    ")?;
+        writeln!(
+            buf,
+            "    #[serde(rename = \"scriptSig\", default, skip_serializing_if = \"Option::is_none\")]"
+        )?;
+        writeln!(buf, "    pub script_sig: Option<DecodedScriptSig>,")?;
+        write_doc_comment(buf, "Input sequence number.", "    ")?;
+        writeln!(buf, "    pub sequence: u64,")?;
+        write_doc_comment(buf, "Witness stack items for this input (if any).", "    ")?;
+        writeln!(buf, "    #[serde(default, skip_serializing_if = \"Option::is_none\")]")?;
+        writeln!(buf, "    pub txinwitness: Option<Vec<String>>,")?;
+        write_doc_comment(
+            buf,
+            "Decoded details of the previous output when verbosity includes prevout.",
+            "    ",
+        )?;
+        writeln!(buf, "    #[serde(default, skip_serializing_if = \"Option::is_none\")]")?;
+        writeln!(buf, "    pub prevout: Option<DecodedPrevout>,")?;
+        writeln!(buf, "}}")?;
+        writeln!(buf)?;
+
+        write_doc_line(buf, "Transaction output in decoded tx; mirrors Core vout object.", "")?;
+        write_doc_line(
+            buf,
+            "See: <https://github.com/bitcoin/bitcoin/blob/744d47fcee0d32a71154292699bfdecf954a6065/src/core_io.cpp#L495-L519>",
+            "",
+        )?;
+        writeln!(buf, "#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]")?;
+        writeln!(buf, "pub struct DecodedVout {{")?;
+        write_doc_comment(buf, "Value in BTC of this output.", "    ")?;
+        writeln!(buf, "    pub value: f64,")?;
+        write_doc_comment(buf, "Index of this output within the transaction.", "    ")?;
+        writeln!(buf, "    pub n: u32,")?;
+        write_doc_comment(buf, "Decoded script pubkey of this output.", "    ")?;
+        writeln!(buf, "    #[serde(rename = \"scriptPubKey\")]")?;
+        writeln!(buf, "    pub script_pub_key: DecodedScriptPubKey,")?;
+        writeln!(buf, "}}")?;
+        writeln!(buf)?;
+
+        write_doc_line(
+            buf,
+            "Decoded transaction details (getblock verbosity 2/3 and getrawtransaction verbose).",
+            "",
+        )?;
+        writeln!(buf, "#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]")?;
+        writeln!(buf, "pub struct DecodedTxDetails {{")?;
+        write_doc_comment(buf, "Transaction id.", "    ")?;
+        writeln!(buf, "    pub txid: String,")?;
+        write_doc_comment(buf, "Witness transaction id (wtxid).", "    ")?;
+        writeln!(buf, "    pub hash: String,")?;
+        write_doc_comment(buf, "Transaction version.", "    ")?;
+        writeln!(buf, "    pub version: i32,")?;
+        write_doc_comment(buf, "Total serialized size of the transaction in bytes.", "    ")?;
+        writeln!(buf, "    pub size: u32,")?;
+        write_doc_comment(buf, "Virtual transaction size (vsize) as defined in BIP 141.", "    ")?;
+        writeln!(buf, "    pub vsize: u32,")?;
+        write_doc_comment(buf, "Transaction weight as defined in BIP 141.", "    ")?;
+        writeln!(buf, "    pub weight: u32,")?;
+        write_doc_comment(buf, "Transaction locktime.", "    ")?;
+        writeln!(buf, "    pub locktime: u32,")?;
+        write_doc_comment(buf, "List of transaction inputs.", "    ")?;
+        writeln!(buf, "    pub vin: Vec<DecodedVin>,")?;
+        write_doc_comment(buf, "List of transaction outputs.", "    ")?;
+        writeln!(buf, "    pub vout: Vec<DecodedVout>,")?;
+        write_doc_comment(
+            buf,
+            "Fee paid by the transaction, when undo data is available.",
+            "    ",
+        )?;
+        if fee_required == Some(true) {
+            writeln!(buf, "    pub fee: f64,")?;
+        } else {
+            // Optional when IR says required=false, or when IR path is missing (e.g. older IR)
+            writeln!(buf, "    #[serde(default, skip_serializing_if = \"Option::is_none\")]")?;
+            writeln!(buf, "    pub fee: Option<f64>,")?;
+        }
+        write_doc_comment(
+            buf,
+            "Raw transaction serialized as hex (consistent with getrawtransaction verbose output).",
+            "    ",
+        )?;
+        writeln!(buf, "    pub hex: String,")?;
+        writeln!(buf, "}}")?;
+        writeln!(buf)?;
+
+        Ok(())
     }
 
     /// Generate response type for a specific method
@@ -498,6 +732,24 @@ impl VersionSpecificResponseTypeGenerator {
         }
 
         Ok(buf)
+    }
+
+    /// Emit a single struct from an IR TypeDef (for nested/named types from the type registry).
+    /// Uses the same field logic as method responses; no deny_unknown_fields on inner structs.
+    fn generate_struct_from_type_def(&self, type_def: &TypeDef, buf: &mut String) -> Result<()> {
+        if !type_def.description.is_empty() {
+            write_doc_comment(buf, &type_def.description, "")?;
+        }
+        writeln!(buf, "#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]")?;
+        writeln!(buf, "pub struct {} {{", type_def.name)?;
+        if let Some(fields) = &type_def.fields {
+            for field in fields.iter().filter(|f| !Self::is_elision_field(f)) {
+                self.generate_ir_field(buf, field, &type_def.name, "", false)?;
+            }
+        }
+        writeln!(buf, "}}")?;
+        writeln!(buf)?;
+        Ok(())
     }
 
     /// Generate a field from IR FieldDef
@@ -1531,81 +1783,28 @@ impl VersionSpecificResponseTypeGenerator {
         }
     }
 
-    /// Names of decoded-tx types that we emit as full structs from IR (not as type aliases).
-    const DECODED_TX_TYPE_NAMES: &[&str] = &[
-        "DecodedScriptPubKey",
-        "DecodedScriptSig",
-        "DecodedPrevout",
-        "DecodedVin",
-        "DecodedVout",
-        "DecodedTxDetails",
-    ];
+    /// Names of decoded-tx types that we emit as full structs in emit_decoded_tx_types (not from IR).
+    /// DecodedScriptPubKey is no longer here; it is generated from the type registry when present in IR.
+    const DECODED_TX_TYPE_NAMES: &[&str] =
+        &["DecodedScriptSig", "DecodedPrevout", "DecodedVin", "DecodedVout", "DecodedTxDetails"];
 
-    /// Recursively walk a TypeDef and collect any decoded-tx type definitions (by name).
-    fn collect_decoded_typedefs_walk(
-        type_def: &ir::TypeDef,
-        map: &mut std::collections::HashMap<String, ir::TypeDef>,
-    ) {
-        if matches!(type_def.kind, ir::TypeKind::Object)
-            && type_def.fields.as_ref().map_or(false, |f| !f.is_empty())
-            && Self::DECODED_TX_TYPE_NAMES.contains(&type_def.name.as_str())
-        {
-            map.entry(type_def.name.clone()).or_insert_with(|| type_def.clone());
-        }
-        if let Some(fields) = &type_def.fields {
-            for f in fields {
-                Self::collect_decoded_typedefs_walk(&f.field_type, map);
+    /// Generate a nested type: from type registry when present, else skip (decoded-tx) or type alias.
+    fn generate_nested_type(
+        &self,
+        type_name: &str,
+        type_registry: &HashMap<String, TypeDef>,
+    ) -> Result<Option<String>> {
+        if let Some(type_def) = type_registry.get(type_name) {
+            if matches!(type_def.kind, TypeKind::Object) && type_def.fields.is_some() {
+                let mut buf = String::new();
+                self.generate_struct_from_type_def(type_def, &mut buf)?;
+                return Ok(Some(buf));
             }
         }
-    }
-
-    /// Collect TypeDefs for the six decoded-tx types by walking all method result types.
-    fn collect_decoded_tx_typedefs(
-        methods: &[RpcDef],
-    ) -> std::collections::HashMap<String, ir::TypeDef> {
-        let mut map = std::collections::HashMap::new();
-        for method in methods {
-            if let Some(result) = &method.result {
-                Self::collect_decoded_typedefs_walk(result, &mut map);
-            }
-        }
-        map
-    }
-
-    /// Emit a standalone struct from a TypeDef (used for decoded-tx types).
-    fn generate_standalone_struct_from_typedef(&self, type_def: &ir::TypeDef) -> Result<String> {
-        let mut buf = String::new();
-        writeln!(
-            &mut buf,
-            "#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]"
-        )?;
-        writeln!(
-            &mut buf,
-            "#[cfg_attr(feature = \"serde-deny-unknown-fields\", serde(deny_unknown_fields))]"
-        )?;
-        writeln!(&mut buf, "pub struct {} {{", type_def.name)?;
-        if let Some(fields) = &type_def.fields {
-            for field in fields.iter().filter(|f| !Self::is_elision_field(f)) {
-                self.generate_ir_field(
-                    &mut buf,
-                    field,
-                    &type_def.name,
-                    "",  // no RPC-specific overrides for standalone structs
-                    false,
-                )?;
-            }
-        }
-        writeln!(&mut buf, "}}")?;
-        Ok(buf)
-    }
-
-    /// Generate a placeholder struct for an undefined nested type
-    fn generate_nested_type(&self, type_name: &str) -> Result<Option<String>> {
-        // Skip types that we emit as full structs from IR (see generate_standalone_struct_from_typedef).
+        // Skip types that we emit as full structs in emit_decoded_tx_types.
         if Self::DECODED_TX_TYPE_NAMES.contains(&type_name) {
             return Ok(None);
         }
-        // Simplified - generate type alias since IR doesn't track per-type versions
         let type_alias = self.generate_type_alias(type_name)?;
         Ok(Some(type_alias))
     }
