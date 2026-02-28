@@ -2465,21 +2465,6 @@
                                                 "default_value": null
                                               },
                                               {
-                                                "name": "type",
-                                                "field_type": {
-                                                  "name": "string",
-                                                  "description": "The type, eg 'pubkeyhash'",
-                                                  "kind": "Primitive",
-                                                  "fields": null,
-                                                  "variants": null,
-                                                  "base_type": null,
-                                                  "protocol_type": "string"
-                                                },
-                                                "required": true,
-                                                "description": "The type, eg 'pubkeyhash'",
-                                                "default_value": null
-                                              },
-                                              {
                                                 "name": "address",
                                                 "field_type": {
                                                   "name": "string",
@@ -2492,6 +2477,21 @@
                                                 },
                                                 "required": false,
                                                 "description": "The Bitcoin address (only if a well-defined address exists)",
+                                                "default_value": null
+                                              },
+                                              {
+                                                "name": "type",
+                                                "field_type": {
+                                                  "name": "string",
+                                                  "description": "The type (one of: nonstandard, anchor, pubkey, pubkeyhash, scripthash, multisig, nulldata, witness_v0_scripthash, witness_v0_keyhash, witness_v1_taproot, witness_unknown)",
+                                                  "kind": "Primitive",
+                                                  "fields": null,
+                                                  "variants": null,
+                                                  "base_type": null,
+                                                  "protocol_type": "string"
+                                                },
+                                                "required": true,
+                                                "description": "The type (one of: nonstandard, anchor, pubkey, pubkeyhash, scripthash, multisig, nulldata, witness_v0_scripthash, witness_v0_keyhash, witness_v1_taproot, witness_unknown)",
                                                 "default_value": null
                                               }
                                             ],
@@ -4645,7 +4645,7 @@
                             {
                               "name": "",
                               "field_type": {
-                                "name": "object",
+                                "name": "DecodedVin",
                                 "description": "",
                                 "kind": "Object",
                                 "fields": [
@@ -4697,7 +4697,7 @@
                                   {
                                     "name": "scriptSig",
                                     "field_type": {
-                                      "name": "object",
+                                      "name": "DecodedVin",
                                       "description": "The script (if not coinbase transaction)",
                                       "kind": "Object",
                                       "fields": [
@@ -4814,7 +4814,7 @@
                             {
                               "name": "",
                               "field_type": {
-                                "name": "object",
+                                "name": "DecodedVout",
                                 "description": "",
                                 "kind": "Object",
                                 "fields": [
@@ -4851,7 +4851,7 @@
                                   {
                                     "name": "scriptPubKey",
                                     "field_type": {
-                                      "name": "DecodedScriptPubKey",
+                                      "name": "DecodedVout",
                                       "description": "",
                                       "kind": "Object",
                                       "fields": [
@@ -9062,7 +9062,7 @@
                                               {
                                                 "name": "",
                                                 "field_type": {
-                                                  "name": "object",
+                                                  "name": "DecodedVin",
                                                   "description": "",
                                                   "kind": "Object",
                                                   "fields": [
@@ -9084,7 +9084,7 @@
                                                     {
                                                       "name": "prevout",
                                                       "field_type": {
-                                                        "name": "object",
+                                                        "name": "DecodedVin",
                                                         "description": "(Only if undo information is available)",
                                                         "kind": "Object",
                                                         "fields": [
@@ -18367,7 +18367,7 @@
                             {
                               "name": "",
                               "field_type": {
-                                "name": "object",
+                                "name": "DecodedVin",
                                 "description": "",
                                 "kind": "Object",
                                 "fields": [
@@ -18419,7 +18419,7 @@
                                   {
                                     "name": "scriptSig",
                                     "field_type": {
-                                      "name": "object",
+                                      "name": "DecodedVin",
                                       "description": "The script (if not coinbase transaction)",
                                       "kind": "Object",
                                       "fields": [
@@ -18536,7 +18536,7 @@
                             {
                               "name": "",
                               "field_type": {
-                                "name": "object",
+                                "name": "DecodedVout",
                                 "description": "",
                                 "kind": "Object",
                                 "fields": [
@@ -18573,7 +18573,7 @@
                                   {
                                     "name": "scriptPubKey",
                                     "field_type": {
-                                      "name": "DecodedScriptPubKey",
+                                      "name": "DecodedVout",
                                       "description": "",
                                       "kind": "Object",
                                       "fields": [
@@ -18735,7 +18735,7 @@
                             {
                               "name": "",
                               "field_type": {
-                                "name": "object",
+                                "name": "DecodedVin",
                                 "description": "utxo being spent",
                                 "kind": "Object",
                                 "fields": [
@@ -18757,7 +18757,7 @@
                                   {
                                     "name": "prevout",
                                     "field_type": {
-                                      "name": "object",
+                                      "name": "DecodedVin",
                                       "description": "The previous output, omitted if block undo data is not available",
                                       "kind": "Object",
                                       "fields": [
@@ -19885,7 +19885,7 @@
                                   {
                                     "name": "",
                                     "field_type": {
-                                      "name": "object",
+                                      "name": "DecodedVin",
                                       "description": "",
                                       "kind": "Object",
                                       "fields": [
@@ -19937,7 +19937,7 @@
                                         {
                                           "name": "scriptSig",
                                           "field_type": {
-                                            "name": "object",
+                                            "name": "DecodedVin",
                                             "description": "The script (if not coinbase transaction)",
                                             "kind": "Object",
                                             "fields": [
@@ -20054,7 +20054,7 @@
                                   {
                                     "name": "",
                                     "field_type": {
-                                      "name": "object",
+                                      "name": "DecodedVout",
                                       "description": "",
                                       "kind": "Object",
                                       "fields": [
@@ -20091,7 +20091,7 @@
                                         {
                                           "name": "scriptPubKey",
                                           "field_type": {
-                                            "name": "DecodedScriptPubKey",
+                                            "name": "DecodedVout",
                                             "description": "",
                                             "kind": "Object",
                                             "fields": [
@@ -20460,21 +20460,6 @@
                         "default_value": null
                       },
                       {
-                        "name": "type",
-                        "field_type": {
-                          "name": "string",
-                          "description": "The type, eg pubkeyhash",
-                          "kind": "Primitive",
-                          "fields": null,
-                          "variants": null,
-                          "base_type": null,
-                          "protocol_type": "string"
-                        },
-                        "required": true,
-                        "description": "The type, eg pubkeyhash",
-                        "default_value": null
-                      },
-                      {
                         "name": "address",
                         "field_type": {
                           "name": "string",
@@ -20487,6 +20472,21 @@
                         },
                         "required": false,
                         "description": "The Bitcoin address (only if a well-defined address exists)",
+                        "default_value": null
+                      },
+                      {
+                        "name": "type",
+                        "field_type": {
+                          "name": "string",
+                          "description": "The type (one of: nonstandard, anchor, pubkey, pubkeyhash, scripthash, multisig, nulldata, witness_v0_scripthash, witness_v0_keyhash, witness_v1_taproot, witness_unknown)",
+                          "kind": "Primitive",
+                          "fields": null,
+                          "variants": null,
+                          "base_type": null,
+                          "protocol_type": "string"
+                        },
+                        "required": true,
+                        "description": "The type (one of: nonstandard, anchor, pubkey, pubkeyhash, scripthash, multisig, nulldata, witness_v0_scripthash, witness_v0_keyhash, witness_v1_taproot, witness_unknown)",
                         "default_value": null
                       }
                     ],

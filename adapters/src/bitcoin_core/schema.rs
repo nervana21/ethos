@@ -474,8 +474,9 @@ fn convert_argument_to_type_def(raw: &RawArgument) -> TypeDef {
     type_def
 }
 
-/// Convert a raw result to TypeDef
-fn convert_result(raw: &RawResult) -> TypeDef {
+/// Convert a raw result to TypeDef.
+/// `parent_key`: when recursing, the key of the parent field (e.g. "vin") so we can name array element types.
+fn convert_result(raw: &RawResult, parent_key: Option<&str>) -> TypeDef {
     let (type_name, protocol_type) = build_base_type_def(&raw.r#type);
     let kind = determine_type_kind(&raw.r#type, &raw.inner);
 
@@ -493,12 +494,13 @@ fn convert_result(raw: &RawResult) -> TypeDef {
 
     // Handle nested structures
     if matches!(kind, TypeKind::Object) && !raw.inner.is_empty() {
+        let parent = if raw.key_name.is_empty() { parent_key } else { Some(raw.key_name.as_str()) };
         let fields: Vec<FieldDef> = raw
             .inner
             .iter()
             .map(|inner| FieldDef {
                 name: inner.field_name(),
-                field_type: convert_result(inner),
+                field_type: convert_result(inner, parent),
                 required: inner.is_required(),
                 description: inner.description.clone(),
                 default_value: inner.default_value(),
@@ -512,9 +514,22 @@ fn convert_result(raw: &RawResult) -> TypeDef {
         });
     }
 
-    // Canonical name for scriptPubKey object so codegen emits a single shared type
-    if raw.key_name == "scriptPubKey" && matches!(kind, TypeKind::Object) && !raw.inner.is_empty() {
-        type_def.name = "DecodedScriptPubKey".to_string();
+    // Canonical names for decoded-tx nested types so codegen emits shared types from IR
+    if matches!(kind, TypeKind::Object) && !raw.inner.is_empty() {
+        match raw.key_name.as_str() {
+            "scriptPubKey" => type_def.name = "DecodedScriptPubKey".to_string(),
+            "scriptSig" => type_def.name = "DecodedScriptSig".to_string(),
+            "prevout" => type_def.name = "DecodedPrevout".to_string(),
+            _ => {}
+        }
+        // Name array element types when we're the element of vin/vout
+        if let Some(p) = parent_key {
+            match p {
+                "vin" => type_def.name = "DecodedVin".to_string(),
+                "vout" => type_def.name = "DecodedVout".to_string(),
+                _ => {}
+            }
+        }
     }
 
     type_def
@@ -587,9 +602,11 @@ fn merge_results_to_object(results: &[RawResult]) -> TypeDef {
                     !inner.optional
                 };
 
+                let parent =
+                    if result.key_name.is_empty() { None } else { Some(result.key_name.as_str()) };
                 fields.push(FieldDef {
                     name: field_name,
-                    field_type: convert_result(inner),
+                    field_type: convert_result(inner, parent),
                     required: is_required,
                     description: inner.description.clone(),
                     default_value: None,
@@ -631,7 +648,7 @@ fn merge_results_to_object(results: &[RawResult]) -> TypeDef {
 
             fields.push(FieldDef {
                 name: field_name,
-                field_type: convert_result(result),
+                field_type: convert_result(result, None),
                 required: !result.optional,
                 description: result.description.clone(),
                 default_value: None,
@@ -675,7 +692,7 @@ fn convert_rpc_method(raw: RawRpcMethod, version_added: Option<String>) -> RpcDe
     let result = if raw.results.is_empty() {
         None
     } else if raw.results.len() == 1 {
-        Some(convert_result(&raw.results[0]))
+        Some(convert_result(&raw.results[0], None))
     } else {
         // Multiple results - merge into object
         Some(merge_results_to_object(&raw.results))
