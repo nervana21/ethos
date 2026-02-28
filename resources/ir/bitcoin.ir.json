@@ -2415,7 +2415,7 @@
                                         {
                                           "name": "scriptPubKey",
                                           "field_type": {
-                                            "name": "object",
+                                            "name": "DecodedScriptPubKey",
                                             "description": "",
                                             "kind": "Object",
                                             "fields": [
@@ -4851,7 +4851,7 @@
                                   {
                                     "name": "scriptPubKey",
                                     "field_type": {
-                                      "name": "object",
+                                      "name": "DecodedScriptPubKey",
                                       "description": "",
                                       "kind": "Object",
                                       "fields": [
@@ -9136,7 +9136,7 @@
                                                           {
                                                             "name": "scriptPubKey",
                                                             "field_type": {
-                                                              "name": "object",
+                                                              "name": "DecodedScriptPubKey",
                                                               "description": "",
                                                               "kind": "Object",
                                                               "fields": [
@@ -18573,7 +18573,7 @@
                                   {
                                     "name": "scriptPubKey",
                                     "field_type": {
-                                      "name": "object",
+                                      "name": "DecodedScriptPubKey",
                                       "description": "",
                                       "kind": "Object",
                                       "fields": [
@@ -18809,7 +18809,7 @@
                                         {
                                           "name": "scriptPubKey",
                                           "field_type": {
-                                            "name": "object",
+                                            "name": "DecodedScriptPubKey",
                                             "description": "",
                                             "kind": "Object",
                                             "fields": [
@@ -20091,7 +20091,7 @@
                                         {
                                           "name": "scriptPubKey",
                                           "field_type": {
-                                            "name": "object",
+                                            "name": "DecodedScriptPubKey",
                                             "description": "",
                                             "kind": "Object",
                                             "fields": [
@@ -20410,7 +20410,7 @@
                 {
                   "name": "scriptPubKey",
                   "field_type": {
-                    "name": "object",
+                    "name": "DecodedScriptPubKey",
                     "description": "",
                     "kind": "Object",
                     "fields": [
