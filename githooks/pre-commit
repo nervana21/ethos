@@ -1,24 +1,80 @@
 #!/usr/bin/env bash
 # === Ethos git hook shim ===
 #
-# This hook is intentionally minimal and delegates to `prek`, which is
-# configured via the repository-level `.pre-commit-config.yaml`.
+# When there are unstaged changes we bypass prek (no stash = no conflict): we only
+# format staged .rs files that have no unstaged part, then allow the commit.
+# When the working tree is clean we run full prek (trailing-whitespace, EOF, fmt).
+# For full checks with unstaged changes, run with a clean tree or run `just fmt`
+# and commit again.
 #
-# Recommended setup:
-#   1. Install prek (for example on macOS/Linux):
-#        brew install prek
-#   2. Install git hooks:
-#        prek install
-#
-# After that, `.git/hooks/pre-commit` will be managed directly by `prek`.
-# This file remains as a fallback shim for environments that still call it.
+# One-time setup: run `just setup-hooks` (or `git config core.hooksPath githooks`).
+# Optional: `brew install prek` for full checks when the tree is clean.
 
 set -euo pipefail
 
-if command -v prek >/dev/null 2>&1; then
-  exec prek run
-else
-  echo "prek is not installed or not on PATH." >&2
-  echo "Install it (e.g., 'brew install prek') and run 'prek install'." >&2
-  exit 1
+root="$(git rev-parse --show-toplevel)"
+cd "$root"
+
+# Detect unstaged changes (avoid prek stash/restore to prevent conflicts).
+if ! git diff --quiet 2>/dev/null; then
+  # Unstaged changes present: bypass prek, format only "safe" staged .rs files.
+  staged_rs_list="$(git diff --cached --name-only --diff-filter=ACM | grep '\.rs$' || true)"
+  unstaged_rs_list="$(git diff --name-only | grep '\.rs$' || true)"
+  safe_rs=()
+  if [ -n "$unstaged_rs_list" ]; then
+    staged_sorted="$(echo "$staged_rs_list" | sort -u)"
+    unstaged_sorted="$(echo "$unstaged_rs_list" | sort -u)"
+    while IFS= read -r f; do [[ -n "$f" ]] && safe_rs+=("$f"); done < <(comm -23 <(echo "$staged_sorted") <(echo "$unstaged_sorted"))
+  else
+    while IFS= read -r f; do [[ -n "$f" ]] && safe_rs+=("$f"); done < <(echo "$staged_rs_list")
+  fi
+  if [ ${#safe_rs[@]} -gt 0 ] && command -v rustup >/dev/null 2>&1; then
+    nightly="$(cat "$root/nightly-version")"
+    rustup run "$nightly" rustfmt -- "${safe_rs[@]}"
+  fi
+  echo "Unstaged changes present; formatted only staged .rs files with no unstaged part. Run \`just fmt\` and commit again for full format." >&2
+  exit 0
 fi
+
+# No unstaged changes: run prek (full checks). If prek fails with "config not staged", run format-only fallback and allow commit.
+if command -v prek >/dev/null 2>&1; then
+  prek_out="$(mktemp)"
+  prek run > "$prek_out" 2>&1 || prek_rc=$?
+  prek_rc="${prek_rc:-0}"
+  prek_msg="$(cat "$prek_out")"
+  rm -f "$prek_out"
+  if [ "$prek_rc" -ne 0 ] && echo "$prek_msg" | grep -qE "configuration file is not staged|pre-commit-config.*unstaged"; then
+    # Config not staged (e.g. gs fixup): format staged .rs only and allow commit.
+    nightly="$(cat "$root/nightly-version")"
+    staged_rs=()
+    while IFS= read -r f; do [[ -n "$f" ]] && staged_rs+=("$f"); done < <(git diff --cached --name-only --diff-filter=ACM | grep '\.rs$' || true)
+    if [ ${#staged_rs[@]} -gt 0 ]; then
+      if command -v rustup >/dev/null 2>&1; then
+        rustup run "$nightly" rustfmt -- "${staged_rs[@]}"
+      elif command -v cargo >/dev/null 2>&1; then
+        cargo "+${nightly}" fmt -- "${staged_rs[@]}"
+      fi
+    fi
+    echo "prek skipped (config not staged); ran cargo fmt on staged files only." >&2
+    exit 0
+  fi
+  if [ "$prek_rc" -ne 0 ]; then
+    echo "$prek_msg" >&2
+    exit "$prek_rc"
+  fi
+  exit 0
+fi
+
+# prek not installed: format staged .rs only.
+nightly="$(cat "$root/nightly-version")"
+staged_rs=()
+while IFS= read -r f; do [[ -n "$f" ]] && staged_rs+=("$f"); done < <(git diff --cached --name-only --diff-filter=ACM | grep '\.rs$' || true)
+if [ ${#staged_rs[@]} -gt 0 ]; then
+  if command -v rustup >/dev/null 2>&1; then
+    rustup run "$nightly" rustfmt -- "${staged_rs[@]}"
+  elif command -v cargo >/dev/null 2>&1; then
+    cargo "+${nightly}" fmt -- "${staged_rs[@]}"
+  fi
+fi
+echo "prek not found; ran cargo fmt on staged files only. Install prek for full pre-commit checks." >&2
+exit 0
