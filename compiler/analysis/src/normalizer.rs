@@ -13,7 +13,6 @@ use sha2::{Digest, Sha256};
 ///
 /// Responsibilities:
 /// - Normalize casing and whitespace for parameter names
-/// - Enforce deterministic field ordering
 /// - Compute a SHA256 checksum of the entire normalized IR
 pub struct IRNormalizer;
 

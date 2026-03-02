@@ -251,9 +251,7 @@ fn build_fields_from_inner<F>(inner: &[RawArgument], field_builder: F) -> Vec<Fi
 where
     F: Fn(&RawArgument) -> FieldDef,
 {
-    let mut fields: Vec<FieldDef> = inner.iter().map(field_builder).collect();
-    fields.sort_by(|a, b| a.name.cmp(&b.name));
-    fields
+    inner.iter().map(field_builder).collect()
 }
 
 /// Generate a field name from a description, using common patterns
@@ -363,35 +361,6 @@ fn get_method_version_added(method_name: &str) -> Option<String> {
     }
 }
 
-/// Recursively normalize field ordering in a TypeDef to match schema conversion output
-///
-/// This ensures that fields are sorted by name at all levels, matching the behavior
-/// of convert_to_protocol_ir_with_version which sorts fields during conversion.
-fn normalize_type_def_fields(type_def: &mut TypeDef) {
-    if let Some(ref mut fields) = type_def.fields {
-        // Sort fields by name
-        fields.sort_by(|a, b| a.name.cmp(&b.name));
-        // Recursively normalize nested fields
-        for field in fields.iter_mut() {
-            normalize_type_def_fields(&mut field.field_type);
-        }
-    }
-}
-
-/// Normalize field ordering in an RPC method definition
-///
-/// This ensures that all fields (in params and results) are sorted consistently.
-fn normalize_rpc_method_fields(rpc: &mut RpcDef) {
-    // Normalize param fields
-    for param in rpc.params.iter_mut() {
-        normalize_type_def_fields(&mut param.param_type);
-    }
-    // Normalize result fields
-    if let Some(ref mut result) = rpc.result {
-        normalize_type_def_fields(result);
-    }
-}
-
 /// Extract version-specific IR from canonical IR
 ///
 /// Filters the canonical IR to only include methods available in the target version.
@@ -432,10 +401,7 @@ pub fn extract_version_ir(canonical_ir: ProtocolIR, target_version: &str) -> Pro
                     };
 
                     if was_available && not_removed {
-                        let mut rpc_clone = rpc.clone();
-                        // Normalize field ordering to match schema conversion output
-                        normalize_rpc_method_fields(&mut rpc_clone);
-                        definitions.push(ProtocolDef::RpcMethod(rpc_clone));
+                        definitions.push(ProtocolDef::RpcMethod(rpc.clone()));
                     }
                 }
                 other => definitions.push(other.clone()),
@@ -508,8 +474,9 @@ fn convert_argument_to_type_def(raw: &RawArgument) -> TypeDef {
     type_def
 }
 
-/// Convert a raw result to TypeDef
-fn convert_result(raw: &RawResult) -> TypeDef {
+/// Convert a raw result to TypeDef.
+/// `parent_key`: when recursing, the key of the parent field (e.g. "vin") so we can name array element types.
+fn convert_result(raw: &RawResult, parent_key: Option<&str>) -> TypeDef {
     let (type_name, protocol_type) = build_base_type_def(&raw.r#type);
     let kind = determine_type_kind(&raw.r#type, &raw.inner);
 
@@ -527,24 +494,42 @@ fn convert_result(raw: &RawResult) -> TypeDef {
 
     // Handle nested structures
     if matches!(kind, TypeKind::Object) && !raw.inner.is_empty() {
-        let mut fields: Vec<FieldDef> = raw
+        let parent = if raw.key_name.is_empty() { parent_key } else { Some(raw.key_name.as_str()) };
+        let fields: Vec<FieldDef> = raw
             .inner
             .iter()
             .map(|inner| FieldDef {
                 name: inner.field_name(),
-                field_type: convert_result(inner),
+                field_type: convert_result(inner, parent),
                 required: inner.is_required(),
                 description: inner.description.clone(),
                 default_value: inner.default_value(),
             })
             .collect();
-        fields.sort_by(|a, b| a.name.cmp(&b.name));
 
         type_def.fields = Some(if raw.r#type == "array" {
             build_array_of_objects_wrapper(fields)
         } else {
             fields
         });
+    }
+
+    // Canonical names for decoded-tx nested types so codegen emits shared types from IR
+    if matches!(kind, TypeKind::Object) && !raw.inner.is_empty() {
+        match raw.key_name.as_str() {
+            "scriptPubKey" => type_def.name = "DecodedScriptPubKey".to_string(),
+            "scriptSig" => type_def.name = "DecodedScriptSig".to_string(),
+            "prevout" => type_def.name = "DecodedPrevout".to_string(),
+            _ => {}
+        }
+        // Name array element types when we're the element of vin/vout
+        if let Some(p) = parent_key {
+            match p {
+                "vin" => type_def.name = "DecodedVin".to_string(),
+                "vout" => type_def.name = "DecodedVout".to_string(),
+                _ => {}
+            }
+        }
     }
 
     type_def
@@ -617,9 +602,11 @@ fn merge_results_to_object(results: &[RawResult]) -> TypeDef {
                     !inner.optional
                 };
 
+                let parent =
+                    if result.key_name.is_empty() { None } else { Some(result.key_name.as_str()) };
                 fields.push(FieldDef {
                     name: field_name,
-                    field_type: convert_result(inner),
+                    field_type: convert_result(inner, parent),
                     required: is_required,
                     description: inner.description.clone(),
                     default_value: None,
@@ -661,16 +648,13 @@ fn merge_results_to_object(results: &[RawResult]) -> TypeDef {
 
             fields.push(FieldDef {
                 name: field_name,
-                field_type: convert_result(result),
+                field_type: convert_result(result, None),
                 required: !result.optional,
                 description: result.description.clone(),
                 default_value: None,
             });
         }
     }
-
-    // Sort fields by name for deterministic output
-    fields.sort_by(|a, b| a.name.cmp(&b.name));
 
     TypeDef {
         name: "object".to_string(),
@@ -708,7 +692,7 @@ fn convert_rpc_method(raw: RawRpcMethod, version_added: Option<String>) -> RpcDe
     let result = if raw.results.is_empty() {
         None
     } else if raw.results.len() == 1 {
-        Some(convert_result(&raw.results[0]))
+        Some(convert_result(&raw.results[0], None))
     } else {
         // Multiple results - merge into object
         Some(merge_results_to_object(&raw.results))

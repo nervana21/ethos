@@ -8,12 +8,11 @@ repos:
       - id: trailing-whitespace
       - id: end-of-file-fixer
 
-  # Rust formatting (requires nightly for unstable rustfmt options)
+  # Rust formatting: same as scripts/cargo_fmt_precommit.sh (nightly-version if present, then fmt --all)
   - repo: local
     hooks:
       - id: cargo-fmt
         name: cargo +nightly fmt
-        entry: cargo +nightly fmt --all --
+        entry: bash -c 'n=nightly; [ -f nightly-version ] && n=$(cat nightly-version); cargo +"$n" fmt --all'
         language: system
         types: [rust]
-        pass_filenames: false
