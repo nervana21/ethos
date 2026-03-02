@@ -4,11 +4,12 @@
 //! type metadata extracted from corepc to generate accurate types for each
 //! Bitcoin Core version.
 
+use std::collections::HashMap;
 use std::fmt::Write as _;
 use std::str::FromStr;
 use std::sync::{Mutex, OnceLock};
 
-use ir::{ProtocolIR, RpcDef};
+use ir::{ProtocolIR, RpcDef, TypeDef, TypeKind};
 use types::{Implementation, ProtocolVersion};
 
 use super::doc_comment::{write_doc_comment, write_doc_line};
@@ -82,11 +83,7 @@ impl VersionSpecificResponseTypeGenerator {
         let mut nested_types = std::collections::HashSet::new();
         for method in methods {
             if let Some(result) = &method.result {
-                if let Some(fields) = &result.fields {
-                    for field in fields {
-                        self.collect_nested_types(&field.field_type.name, &mut nested_types);
-                    }
-                }
+                self.collect_nested_types_from_type_def(result, &mut nested_types);
             }
         }
 
@@ -178,9 +175,17 @@ impl VersionSpecificResponseTypeGenerator {
 
         out.push('\n');
 
+        let type_registry = Self::build_type_registry(methods);
+
+        // Decoded-tx types (DecodedScriptSig, etc.) are emitted by emit_decoded_tx_types below.
+        // DecodedScriptPubKey is generated from the type registry when present in IR.
+        let mut processed_types = std::collections::HashSet::new();
+        for name in Self::DECODED_TX_TYPE_NAMES {
+            processed_types.insert((*name).to_string());
+        }
+
         // Generate nested types first, recursively collecting more nested types
         let mut all_nested_types = nested_types.clone();
-        let mut processed_types = std::collections::HashSet::new();
 
         while !all_nested_types.is_empty() {
             let current_types: Vec<String> = all_nested_types.drain().collect();
@@ -190,9 +195,9 @@ impl VersionSpecificResponseTypeGenerator {
                     continue;
                 }
 
-                println!("[NESTED_TYPES] Generating type: {}", nested_type);
-                if let Some(nested_struct) = self.generate_nested_type(nested_type)? {
-                    println!("[NESTED_TYPES] Generated struct for: {}", nested_type);
+                if let Some(nested_struct) =
+                    self.generate_nested_type(nested_type, &type_registry)?
+                {
                     out.push_str(&nested_struct);
                     out.push('\n');
                     processed_types.insert(nested_type.clone());
@@ -200,10 +205,27 @@ impl VersionSpecificResponseTypeGenerator {
                     // Collect nested types - simplified since IR doesn't track per-type versions
                     // Nested types will be discovered when generating from IR result types
                 } else {
-                    println!("[NESTED_TYPES] Skipped generation for: {}", nested_type);
                     processed_types.insert(nested_type.clone());
                 }
             }
+        }
+
+        // Emit decoded tx types once so they are defined before any method response that references them.
+        let mut decoded_tx_buf = String::new();
+        let fee_required = methods
+            .iter()
+            .find(|m| m.name == "getblock")
+            .and_then(|method| Self::get_getblock_decoded_tx_element_type(method))
+            .and_then(|ty| Self::find_field_in_type(ty, "fee"))
+            .map(|f| f.required);
+        self.emit_decoded_tx_types(
+            &mut decoded_tx_buf,
+            fee_required,
+            type_registry.contains_key("DecodedScriptPubKey"),
+        )?;
+        if !decoded_tx_buf.is_empty() {
+            out.push_str(&decoded_tx_buf);
+            out.push_str("\n\n");
         }
 
         // Generate response structs for each method
@@ -345,8 +367,30 @@ impl VersionSpecificResponseTypeGenerator {
         Ok(vec![(filename, out)])
     }
 
+    /// Build a registry of named object types by walking all method result types recursively.
+    /// First occurrence of each type name wins. Used to generate structs from IR (e.g. DecodedScriptPubKey).
+    fn build_type_registry(methods: &[RpcDef]) -> HashMap<String, TypeDef> {
+        let mut reg = HashMap::new();
+        fn visit(ty: &TypeDef, reg: &mut HashMap<String, TypeDef>) {
+            if matches!(ty.kind, TypeKind::Object) && ty.name != "object" && ty.name != "array" {
+                reg.entry(ty.name.clone()).or_insert_with(|| ty.clone());
+            }
+            if let Some(fields) = &ty.fields {
+                for f in fields {
+                    visit(&f.field_type, reg);
+                }
+            }
+        }
+        for method in methods {
+            if let Some(ref result) = method.result {
+                visit(result, &mut reg);
+            }
+        }
+        reg
+    }
+
     /// RPCs that return a top-level JSON array (schema has Object + single field; bitcoind returns array)
-    const TOP_LEVEL_ARRAY_RPCS: &[&str] = &[
+    const TOP_LEVEL_ARRAY_METHODS: &[&str] = &[
         "deriveaddresses",
         "getaddednodeinfo",
         "getnodeaddresses",
@@ -371,7 +415,7 @@ impl VersionSpecificResponseTypeGenerator {
             ("analyzepsbt", "fee")
                 | ("decodepsbt", "fee")
                 | ("getaddrmaninfo", "network")
-                | ("get_block_template", "field_0")
+                | ("getblocktemplate", "field_0")
                 | ("getindexinfo", "name")
                 | ("getrawaddrman", "table")
                 | ("gettxout", "field_0")
@@ -380,47 +424,265 @@ impl VersionSpecificResponseTypeGenerator {
         )
     }
 
+    /// Returns true iff the IR field has protocol_type "elision". These are documentation/type placeholders,
+    /// not real JSON keys.
+    fn is_elision_field(field: &ir::FieldDef) -> bool {
+        field.field_type.protocol_type.as_deref() == Some("elision")
+    }
+
+    /// Returns the TypeDef for one element of the getblock decoded-tx array (verbosity 2/3).
+    /// That type's fields include the elision placeholder and explicit fields like `fee`.
+    /// Used with [`Self::find_field_in_type`] to drive optionality from the IR without hardcoding paths in the emitter.
+    fn get_getblock_decoded_tx_element_type(method: &RpcDef) -> Option<&ir::TypeDef> {
+        let result = method.result.as_ref()?;
+        let top_fields = result.fields.as_ref()?;
+        let tx1 = top_fields.iter().find(|f| f.name == "tx_1")?;
+        let array_wrapper = tx1.field_type.fields.as_ref()?;
+        let first = array_wrapper.first()?;
+        let inner_fields = first.field_type.fields.as_ref()?;
+        let inner_first = inner_fields.first()?;
+        Some(&inner_first.field_type)
+    }
+
+    /// Returns the field with the given name in the type's direct fields, if any.
+    fn find_field_in_type<'a>(
+        type_def: &'a ir::TypeDef,
+        field_name: &str,
+    ) -> Option<&'a ir::FieldDef> {
+        type_def.fields.as_ref()?.iter().find(|f| f.name == field_name)
+    }
+
+    /// Emits Rust structs for decoded transaction details (getblock verbosity 2/3, getrawtransaction verbose).
+    /// Does not use deny_unknown_fields on inner structs so new Core fields do not break deserialization.
+    /// When `skip_decoded_script_pub_key` is true, DecodedScriptPubKey is already emitted from the IR type registry.
+    /// `fee_required`: when `Some(true)` emit `fee: f64`, otherwise `fee: Option<f64>`; caller derives this from the IR.
+    fn emit_decoded_tx_types(
+        &self,
+        buf: &mut String,
+        fee_required: Option<bool>,
+        skip_decoded_script_pub_key: bool,
+    ) -> Result<()> {
+        if !skip_decoded_script_pub_key {
+            write_doc_line(buf, "Script pubkey in decoded tx output.", "")?;
+            write_doc_line(
+                buf,
+                "See: <https://github.com/bitcoin/bitcoin/blob/744d47fcee0d32a71154292699bfdecf954a6065/src/core_io.cpp#L409-L427>",
+                "",
+            )?;
+            writeln!(buf, "#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]")?;
+            writeln!(buf, "pub struct DecodedScriptPubKey {{")?;
+            write_doc_comment(buf, "Script in human-readable assembly form.", "    ")?;
+            writeln!(buf, "    pub asm: String,")?;
+            write_doc_comment(
+                buf,
+                "Output script descriptor; present only when address/descriptor info was requested (include_address).",
+                "    ",
+            )?;
+            writeln!(buf, "    #[serde(default, skip_serializing_if = \"Option::is_none\")]")?;
+            writeln!(buf, "    pub desc: Option<String>,")?;
+            write_doc_comment(
+                buf,
+                "Output script serialized as hex; present only when hex was requested (include_hex).",
+                "    ",
+            )?;
+            writeln!(buf, "    #[serde(default, skip_serializing_if = \"Option::is_none\")]")?;
+            writeln!(buf, "    pub hex: Option<String>,")?;
+            write_doc_comment(
+                buf,
+                "Categorized script type (for example, \"pubkeyhash\").",
+                "    ",
+            )?;
+            writeln!(buf, "    #[serde(rename = \"type\")]")?;
+            writeln!(buf, "    pub type_: String,")?;
+            write_doc_comment(
+                buf,
+                "Decoded destination address for this script, when available.",
+                "    ",
+            )?;
+            writeln!(buf, "    #[serde(default, skip_serializing_if = \"Option::is_none\")]")?;
+            writeln!(buf, "    pub address: Option<String>,")?;
+            writeln!(buf, "}}")?;
+            writeln!(buf)?;
+        }
+
+        write_doc_line(buf, "Script sig in decoded tx input.", "")?;
+        write_doc_line(
+            buf,
+            "See: <https://github.com/bitcoin/bitcoin/blob/744d47fcee0d32a71154292699bfdecf954a6065/src/core_io.cpp#L458-L461>",
+            "",
+        )?;
+        writeln!(buf, "#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]")?;
+        writeln!(buf, "pub struct DecodedScriptSig {{")?;
+        write_doc_comment(buf, "scriptSig in human-readable assembly form.", "    ")?;
+        writeln!(buf, "    pub asm: String,")?;
+        write_doc_comment(buf, "scriptSig serialized as hex.", "    ")?;
+        writeln!(buf, "    pub hex: String,")?;
+        writeln!(buf, "}}")?;
+        writeln!(buf)?;
+
+        write_doc_line(
+            buf,
+            "Previous output (prevout) in decoded tx input; present for getblock verbosity 3.",
+            "",
+        )?;
+        writeln!(buf, "#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]")?;
+        writeln!(buf, "pub struct DecodedPrevout {{")?;
+        write_doc_comment(
+            buf,
+            "True if the prevout was created by a coinbase transaction.",
+            "    ",
+        )?;
+        writeln!(buf, "    pub generated: bool,")?;
+        write_doc_comment(buf, "Block height where the prevout was created.", "    ")?;
+        writeln!(buf, "    pub height: i64,")?;
+        write_doc_comment(buf, "Decoded script pubkey of the prevout output.", "    ")?;
+        writeln!(buf, "    #[serde(rename = \"scriptPubKey\")]")?;
+        writeln!(buf, "    pub script_pub_key: DecodedScriptPubKey,")?;
+        write_doc_comment(buf, "Value of the prevout output in BTC.", "    ")?;
+        writeln!(buf, "    pub value: f64,")?;
+        writeln!(buf, "}}")?;
+        writeln!(buf)?;
+
+        write_doc_line(
+            buf,
+            "Transaction input in decoded tx; prevout is None for getblock verbosity 2, Some for verbosity 3.",
+            "",
+        )?;
+        writeln!(buf, "#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]")?;
+        writeln!(buf, "pub struct DecodedVin {{")?;
+        write_doc_comment(buf, "Transaction id of the previous output being spent.", "    ")?;
+        writeln!(buf, "    pub txid: String,")?;
+        write_doc_comment(buf, "Index of the previous output being spent.", "    ")?;
+        writeln!(buf, "    pub vout: u32,")?;
+        write_doc_comment(buf, "Decoded scriptSig for this input, when present.", "    ")?;
+        writeln!(
+            buf,
+            "    #[serde(rename = \"scriptSig\", default, skip_serializing_if = \"Option::is_none\")]"
+        )?;
+        writeln!(buf, "    pub script_sig: Option<DecodedScriptSig>,")?;
+        write_doc_comment(buf, "Input sequence number.", "    ")?;
+        writeln!(buf, "    pub sequence: u64,")?;
+        write_doc_comment(buf, "Witness stack items for this input (if any).", "    ")?;
+        writeln!(buf, "    #[serde(default, skip_serializing_if = \"Option::is_none\")]")?;
+        writeln!(buf, "    pub txinwitness: Option<Vec<String>>,")?;
+        write_doc_comment(
+            buf,
+            "Decoded details of the previous output when verbosity includes prevout.",
+            "    ",
+        )?;
+        writeln!(buf, "    #[serde(default, skip_serializing_if = \"Option::is_none\")]")?;
+        writeln!(buf, "    pub prevout: Option<DecodedPrevout>,")?;
+        writeln!(buf, "}}")?;
+        writeln!(buf)?;
+
+        write_doc_line(buf, "Transaction output in decoded tx; mirrors Core vout object.", "")?;
+        write_doc_line(
+            buf,
+            "See: <https://github.com/bitcoin/bitcoin/blob/744d47fcee0d32a71154292699bfdecf954a6065/src/core_io.cpp#L495-L519>",
+            "",
+        )?;
+        writeln!(buf, "#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]")?;
+        writeln!(buf, "pub struct DecodedVout {{")?;
+        write_doc_comment(buf, "Value in BTC of this output.", "    ")?;
+        writeln!(buf, "    pub value: f64,")?;
+        write_doc_comment(buf, "Index of this output within the transaction.", "    ")?;
+        writeln!(buf, "    pub n: u32,")?;
+        write_doc_comment(buf, "Decoded script pubkey of this output.", "    ")?;
+        writeln!(buf, "    #[serde(rename = \"scriptPubKey\")]")?;
+        writeln!(buf, "    pub script_pub_key: DecodedScriptPubKey,")?;
+        writeln!(buf, "}}")?;
+        writeln!(buf)?;
+
+        write_doc_line(
+            buf,
+            "Decoded transaction details (getblock verbosity 2/3 and getrawtransaction verbose).",
+            "",
+        )?;
+        writeln!(buf, "#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]")?;
+        writeln!(buf, "pub struct DecodedTxDetails {{")?;
+        write_doc_comment(buf, "Transaction id.", "    ")?;
+        writeln!(buf, "    pub txid: String,")?;
+        write_doc_comment(buf, "Witness transaction id (wtxid).", "    ")?;
+        writeln!(buf, "    pub hash: String,")?;
+        write_doc_comment(buf, "Transaction version.", "    ")?;
+        writeln!(buf, "    pub version: i32,")?;
+        write_doc_comment(buf, "Total serialized size of the transaction in bytes.", "    ")?;
+        writeln!(buf, "    pub size: u32,")?;
+        write_doc_comment(buf, "Virtual transaction size (vsize) as defined in BIP 141.", "    ")?;
+        writeln!(buf, "    pub vsize: u32,")?;
+        write_doc_comment(buf, "Transaction weight as defined in BIP 141.", "    ")?;
+        writeln!(buf, "    pub weight: u32,")?;
+        write_doc_comment(buf, "Transaction locktime.", "    ")?;
+        writeln!(buf, "    pub locktime: u32,")?;
+        write_doc_comment(buf, "List of transaction inputs.", "    ")?;
+        writeln!(buf, "    pub vin: Vec<DecodedVin>,")?;
+        write_doc_comment(buf, "List of transaction outputs.", "    ")?;
+        writeln!(buf, "    pub vout: Vec<DecodedVout>,")?;
+        write_doc_comment(
+            buf,
+            "Fee paid by the transaction, when undo data is available.",
+            "    ",
+        )?;
+        if fee_required == Some(true) {
+            writeln!(buf, "    pub fee: f64,")?;
+        } else {
+            // Optional when IR says required=false, or when IR path is missing (e.g. older IR)
+            writeln!(buf, "    #[serde(default, skip_serializing_if = \"Option::is_none\")]")?;
+            writeln!(buf, "    pub fee: Option<f64>,")?;
+        }
+        write_doc_comment(
+            buf,
+            "Raw transaction serialized as hex (consistent with getrawtransaction verbose output).",
+            "    ",
+        )?;
+        writeln!(buf, "    pub hex: String,")?;
+        writeln!(buf, "}}")?;
+        writeln!(buf)?;
+
+        Ok(())
+    }
+
     /// Generate response type for a specific method
-    fn generate_method_response(&self, rpc: &RpcDef) -> Result<Option<String>> {
+    fn generate_method_response(&self, method: &RpcDef) -> Result<Option<String>> {
         // RPCs that return a top-level array: generate array wrapper instead of struct
-        if Self::TOP_LEVEL_ARRAY_RPCS.contains(&rpc.name.as_str()) {
-            let struct_name = self.response_struct_name(rpc);
-            return Ok(Some(self.generate_array_wrapper(rpc, &struct_name)?));
+        if Self::TOP_LEVEL_ARRAY_METHODS.contains(&method.name.as_str()) {
+            let struct_name = self.response_struct_name(method);
+            return Ok(Some(self.generate_array_wrapper(method, &struct_name)?));
         }
 
         // RPCs that return arbitrary JSON (echo/echojson)
-        if Self::ECHO_JSON_VALUE_RPCS.contains(&rpc.name.as_str()) {
-            let struct_name = self.response_struct_name(rpc);
-            return Ok(Some(self.generate_value_wrapper(rpc, &struct_name)?));
+        if Self::ECHO_JSON_VALUE_RPCS.contains(&method.name.as_str()) {
+            let struct_name = self.response_struct_name(method);
+            return Ok(Some(self.generate_value_wrapper(method, &struct_name)?));
         }
 
         // help returns a plain string
-        if rpc.name.as_str() == "help" {
-            let struct_name = self.response_struct_name(rpc);
+        if method.name.as_str() == "help" {
+            let struct_name = self.response_struct_name(method);
             return Ok(Some(self.generate_primitive_wrapper(&struct_name, "string", &None)?));
         }
 
         // Simplified - always generate from IR data since we removed metadata registries
-        if let Some(result) = &rpc.result {
+        if let Some(result) = &method.result {
             if let Some(fields) = &result.fields {
                 if !fields.is_empty() {
-                    return Ok(Some(self.generate_from_ir_data(rpc, result)?));
+                    return Ok(Some(self.generate_from_ir_data(method, result)?));
                 }
             }
         }
 
         // For methods without result types, generate unit structs
-        self.generate_unit_response(rpc)
+        self.generate_unit_response(method)
     }
 
     /// Generate response type from IR data (TypeDef.fields)
-    fn generate_from_ir_data(&self, rpc: &RpcDef, result: &ir::TypeDef) -> Result<String> {
-        let struct_name = self.response_struct_name(rpc);
+    fn generate_from_ir_data(&self, method: &RpcDef, result: &ir::TypeDef) -> Result<String> {
+        let struct_name = self.response_struct_name(method);
         let mut buf = String::new();
 
         // Generate struct documentation using PascalCase canonical method name
         let canonical_name =
-            crate::utils::canonical_from_adapter_method(&self.implementation, &rpc.name)
+            crate::utils::canonical_from_adapter_method(&self.implementation, &method.name)
                 .unwrap_or_else(|_| struct_name.replace("Response", ""));
         write_doc_line(&mut buf, &format!("Response for the `{}` RPC method", canonical_name), "")?;
         writeln!(&mut buf, "///")?;
@@ -432,9 +694,9 @@ impl VersionSpecificResponseTypeGenerator {
         // This happens when we have both simple type results and object results.
         // getblockstats has all-optional fields but returns only an object (no string variant);
         // use standard Deserialize so we don't require a custom visitor.
-        let has_conditional_results = (rpc.name == "getrawtransaction"
-            || self.check_conditional_results(rpc, result))
-            && rpc.name != "getblockstats";
+        let has_conditional_results = (method.name == "getrawtransaction"
+            || self.check_conditional_results(result))
+            && method.name != "getblockstats";
 
         if has_conditional_results {
             // Generate struct without Deserialize derive (we'll implement it manually)
@@ -451,12 +713,12 @@ impl VersionSpecificResponseTypeGenerator {
 
         // Generate fields from IR data (when conditional, all fields must be Option for string|object)
         if let Some(fields) = &result.fields {
-            for field in fields {
+            for field in fields.iter().filter(|f| !Self::is_elision_field(f)) {
                 self.generate_ir_field(
                     &mut buf,
                     field,
                     &struct_name,
-                    rpc.name.as_str(),
+                    method.name.as_str(),
                     has_conditional_results,
                 )?;
             }
@@ -466,10 +728,28 @@ impl VersionSpecificResponseTypeGenerator {
 
         // Generate custom Deserialize implementation if needed
         if has_conditional_results {
-            self.generate_conditional_deserialize_impl(&mut buf, rpc, result, &struct_name)?;
+            self.generate_conditional_deserialize_impl(&mut buf, result, &struct_name)?;
         }
 
         Ok(buf)
+    }
+
+    /// Emit a single struct from an IR TypeDef (for nested/named types from the type registry).
+    /// Uses the same field logic as method responses; no deny_unknown_fields on inner structs.
+    fn generate_struct_from_type_def(&self, type_def: &TypeDef, buf: &mut String) -> Result<()> {
+        if !type_def.description.is_empty() {
+            write_doc_comment(buf, &type_def.description, "")?;
+        }
+        writeln!(buf, "#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]")?;
+        writeln!(buf, "pub struct {} {{", type_def.name)?;
+        if let Some(fields) = &type_def.fields {
+            for field in fields.iter().filter(|f| !Self::is_elision_field(f)) {
+                self.generate_ir_field(buf, field, &type_def.name, "", false)?;
+            }
+        }
+        writeln!(buf, "}}")?;
+        writeln!(buf)?;
+        Ok(())
     }
 
     /// Generate a field from IR FieldDef
@@ -496,10 +776,6 @@ impl VersionSpecificResponseTypeGenerator {
         };
         // Elision fields are type/documentation placeholders (e.g. getblock verbosity); never present as JSON keys
         if field.field_type.protocol_type.as_deref() == Some("elision") {
-            field_type = format!("Option<{}>", base_field_type);
-        }
-        // getblock verbosity-dependent arrays (only present for verbosity >= 2 or >= 3)
-        if field.name == "tx_1" || field.name == "tx_2" {
             field_type = format!("Option<{}>", base_field_type);
         }
         // Override: some Core fields are absent on certain networks/versions
@@ -563,13 +839,23 @@ impl VersionSpecificResponseTypeGenerator {
                     );
                 rust_type.to_string()
             }
-            ir::TypeKind::Object => {
-                // For structured types, use the type name, but handle special cases
-                if type_def.name == "object" || type_def.name == "array" {
-                    "serde_json::Value".to_string()
-                } else {
-                    type_def.name.clone()
-                }
+            ir::TypeKind::Array => {
+                // Array fields must map to Vec<...>, not a single element type.
+                // Otherwise serde may deserialize into [T; 32] (e.g. hash) and fail with
+                // "invalid length N, expected fewer elements in array" when N > 32.
+                let method_result = types::MethodResult {
+                    type_: "array".to_string(),
+                    optional: false,
+                    description: type_def.description.clone(),
+                    key_name: field_name.to_string(),
+                    condition: String::new(),
+                    inner: Vec::new(),
+                };
+                let (rust_type, _) =
+                    adapters::bitcoin_core::types::BitcoinCoreTypeRegistry::map_result_type(
+                        &method_result,
+                    );
+                rust_type.to_string()
             }
             _ => "serde_json::Value".to_string(),
         };
@@ -586,16 +872,16 @@ impl VersionSpecificResponseTypeGenerator {
     // Removed generate_fallback_response - no more transparent wrappers
 
     /// Generate unit response for methods that return "none" or have no meaningful return value
-    fn generate_unit_response(&self, rpc: &RpcDef) -> Result<Option<String>> {
-        let struct_name = self.response_struct_name(rpc);
+    fn generate_unit_response(&self, method: &RpcDef) -> Result<Option<String>> {
+        let struct_name = self.response_struct_name(method);
         let mut buf = String::new();
 
         // Check if the method has a return type defined in the IR
-        if let Some(result) = &rpc.result {
+        if let Some(result) = &method.result {
             match &result.kind {
                 ir::TypeKind::Array => {
                     // Generate array wrapper for methods that return arrays
-                    return Ok(Some(self.generate_array_wrapper(rpc, &struct_name)?));
+                    return Ok(Some(self.generate_array_wrapper(method, &struct_name)?));
                 }
                 ir::TypeKind::Primitive => {
                     // Generate primitive wrapper for methods that return primitives
@@ -613,7 +899,7 @@ impl VersionSpecificResponseTypeGenerator {
 
         // Generate struct documentation using PascalCase canonical method name
         let canonical_name =
-            crate::utils::canonical_from_adapter_method(&self.implementation, &rpc.name)
+            crate::utils::canonical_from_adapter_method(&self.implementation, &method.name)
                 .unwrap_or_else(|_| struct_name.replace("Response", ""));
         write_doc_line(&mut buf, &format!("Response for the `{}` RPC method", canonical_name), "")?;
         writeln!(&mut buf, "///")?;
@@ -627,9 +913,11 @@ impl VersionSpecificResponseTypeGenerator {
     }
 
     /// Check if a method has conditional results (can return different types based on conditions)
-    fn check_conditional_results(&self, _rpc: &RpcDef, result: &ir::TypeDef) -> bool {
+    fn check_conditional_results(&self, result: &ir::TypeDef) -> bool {
         // Check if all fields are optional (indicating conditional results)
         if let Some(fields) = &result.fields {
+            let fields: Vec<&ir::FieldDef> =
+                fields.iter().filter(|f| !Self::is_elision_field(f)).collect();
             if fields.is_empty() {
                 return false;
             }
@@ -644,7 +932,6 @@ impl VersionSpecificResponseTypeGenerator {
     fn generate_conditional_deserialize_impl(
         &self,
         buf: &mut String,
-        _rpc: &RpcDef,
         result: &ir::TypeDef,
         struct_name: &str,
     ) -> Result<()> {
@@ -671,11 +958,13 @@ impl VersionSpecificResponseTypeGenerator {
         writeln!(buf)?;
         // Handle string case (when verbose=false, e.g. getrawtransaction returns hex string)
         // Find the field that receives the string: "data" (hex) or "txid"
-        let string_field = if let Some(fields) = &result.fields {
-            fields.iter().find(|f| f.name == "data" || f.name == "txid" || f.name.contains("txid"))
-        } else {
-            None
-        };
+        let fields: Vec<&ir::FieldDef> = result
+            .fields
+            .as_ref()
+            .map(|fs| fs.iter().filter(|f| !Self::is_elision_field(f)).collect())
+            .unwrap_or_default();
+        let string_field =
+            fields.iter().find(|f| f.name == "data" || f.name == "txid" || f.name.contains("txid"));
         let param_name = if string_field.is_some() { "v" } else { "_v" };
         writeln!(
             buf,
@@ -685,7 +974,7 @@ impl VersionSpecificResponseTypeGenerator {
         writeln!(buf, "            where")?;
         writeln!(buf, "                E: de::Error,")?;
         writeln!(buf, "            {{")?;
-        if let Some(fields) = &result.fields {
+        if !fields.is_empty() {
             if let Some(field) = string_field {
                 let field_name = self.sanitize_identifier(&field.name);
                 let field_type = self.map_ir_type_to_rust(&field.field_type, &field.name);
@@ -704,7 +993,7 @@ impl VersionSpecificResponseTypeGenerator {
                     )?;
                 }
                 writeln!(buf, "                Ok({} {{", struct_name)?;
-                for f in fields {
+                for f in &fields {
                     let fn_name = self.sanitize_identifier(&f.name);
                     if f.name == field.name {
                         writeln!(buf, "                    {}: Some({}),", fn_name, fn_name)?;
@@ -716,7 +1005,7 @@ impl VersionSpecificResponseTypeGenerator {
             } else {
                 // Fallback: create struct with all fields as None
                 writeln!(buf, "                Ok({} {{", struct_name)?;
-                for f in fields {
+                for f in &fields {
                     let fn_name = self.sanitize_identifier(&f.name);
                     writeln!(buf, "                    {}: None,", fn_name)?;
                 }
@@ -733,13 +1022,13 @@ impl VersionSpecificResponseTypeGenerator {
         writeln!(buf, "            where")?;
         writeln!(buf, "                M: de::MapAccess<'de>,")?;
         writeln!(buf, "            {{")?;
-        if let Some(fields) = &result.fields {
-            for f in fields {
+        if !fields.is_empty() {
+            for f in &fields {
                 let fn_name = self.sanitize_identifier(&f.name);
                 writeln!(buf, "                let mut {} = None;", fn_name)?;
             }
             writeln!(buf, "                while let Some(key) = map.next_key::<String>()? {{")?;
-            for f in fields {
+            for f in &fields {
                 let fn_name = self.sanitize_identifier(&f.name);
                 writeln!(buf, "                    if key == \"{}\" {{", f.name)?;
                 writeln!(buf, "                        if {}.is_some() {{", fn_name)?;
@@ -829,7 +1118,7 @@ impl VersionSpecificResponseTypeGenerator {
             writeln!(buf, "                    }}")?;
             writeln!(buf, "                }}")?;
             writeln!(buf, "                Ok({} {{", struct_name)?;
-            for f in fields {
+            for f in &fields {
                 let fn_name = self.sanitize_identifier(&f.name);
                 writeln!(buf, "                    {},", fn_name)?;
             }
@@ -847,15 +1136,17 @@ impl VersionSpecificResponseTypeGenerator {
     }
 
     /// Get response struct name for a method
-    fn response_struct_name(&self, rpc: &RpcDef) -> String {
+    fn response_struct_name(&self, method: &RpcDef) -> String {
         let canonical =
-            crate::utils::canonical_from_adapter_method(&self.implementation, &rpc.name);
+            crate::utils::canonical_from_adapter_method(&self.implementation, &method.name);
         match canonical {
             Ok(name) => format!("{}Response", name),
             Err(_) => {
-                let snake =
-                    crate::utils::protocol_rpc_method_to_rust_name(&self.implementation, &rpc.name)
-                        .unwrap_or_else(|_| crate::utils::rpc_method_to_rust_name(&rpc.name));
+                let snake = crate::utils::protocol_rpc_method_to_rust_name(
+                    &self.implementation,
+                    &method.name,
+                )
+                .unwrap_or_else(|_| crate::utils::rpc_method_to_rust_name(&method.name));
                 format!("{}Response", crate::utils::snake_to_pascal_case(&snake))
             }
         }
@@ -1027,7 +1318,7 @@ impl VersionSpecificResponseTypeGenerator {
         // Generate transparent wrapper struct with custom deserializer
         writeln!(&mut buf, "#[derive(Debug, Clone, PartialEq, Serialize)]")?;
         writeln!(&mut buf, "pub struct {} {{", struct_name)?;
-        writeln!(&mut buf, "    /// Wrapped primitive value")?;
+        write_doc_line(&mut buf, "Wrapped primitive value", "    ")?;
         writeln!(&mut buf, "    pub value: {},", inner_type)?;
         writeln!(&mut buf, "}}")?;
         writeln!(&mut buf)?;
@@ -1368,12 +1659,12 @@ impl VersionSpecificResponseTypeGenerator {
     }
 
     /// Generate array wrapper for methods that return arrays
-    fn generate_array_wrapper(&self, rpc: &RpcDef, struct_name: &str) -> Result<String> {
+    fn generate_array_wrapper(&self, method: &RpcDef, struct_name: &str) -> Result<String> {
         let mut buf = String::new();
 
         // Generate struct documentation using PascalCase canonical method name
         let canonical_name =
-            crate::utils::canonical_from_adapter_method(&self.implementation, &rpc.name)
+            crate::utils::canonical_from_adapter_method(&self.implementation, &method.name)
                 .unwrap_or_else(|_| struct_name.replace("Response", "").to_string());
         write_doc_line(&mut buf, &format!("Response for the `{}` RPC method", canonical_name), "")?;
         writeln!(&mut buf, "///")?;
@@ -1386,7 +1677,7 @@ impl VersionSpecificResponseTypeGenerator {
         // Generate transparent wrapper struct
         writeln!(&mut buf, "#[derive(Debug, Clone, PartialEq, Serialize)]")?;
         writeln!(&mut buf, "pub struct {} {{", struct_name)?;
-        writeln!(&mut buf, "    /// Wrapped array value")?;
+        write_doc_line(&mut buf, "Wrapped array value", "    ")?;
         writeln!(&mut buf, "    pub value: Vec<serde_json::Value>,")?;
         writeln!(&mut buf, "}}")?;
         writeln!(&mut buf)?;
@@ -1424,10 +1715,10 @@ impl VersionSpecificResponseTypeGenerator {
     }
 
     /// Generate wrapper for RPCs that return arbitrary JSON (echo/echojson); whole response is one Value
-    fn generate_value_wrapper(&self, rpc: &RpcDef, struct_name: &str) -> Result<String> {
+    fn generate_value_wrapper(&self, method: &RpcDef, struct_name: &str) -> Result<String> {
         let mut buf = String::new();
         let canonical_name =
-            crate::utils::canonical_from_adapter_method(&self.implementation, &rpc.name)
+            crate::utils::canonical_from_adapter_method(&self.implementation, &method.name)
                 .unwrap_or_else(|_| struct_name.replace("Response", "").to_string());
         write_doc_line(&mut buf, &format!("Response for the `{}` RPC method", canonical_name), "")?;
         writeln!(&mut buf, "///")?;
@@ -1439,7 +1730,7 @@ impl VersionSpecificResponseTypeGenerator {
 
         writeln!(&mut buf, "#[derive(Debug, Clone, PartialEq, Serialize)]")?;
         writeln!(&mut buf, "pub struct {} {{", struct_name)?;
-        writeln!(&mut buf, "    /// Wrapped JSON value")?;
+        write_doc_line(&mut buf, "Wrapped JSON value", "    ")?;
         writeln!(&mut buf, "    pub value: serde_json::Value,")?;
         writeln!(&mut buf, "}}")?;
         writeln!(&mut buf)?;
@@ -1462,6 +1753,20 @@ impl VersionSpecificResponseTypeGenerator {
         writeln!(&mut buf, "}}")?;
 
         Ok(buf)
+    }
+
+    /// Recursively collect nested type names from a TypeDef (so nested scriptPubKey is seen).
+    fn collect_nested_types_from_type_def(
+        &self,
+        type_def: &ir::TypeDef,
+        nested_types: &mut std::collections::HashSet<String>,
+    ) {
+        self.collect_nested_types(&type_def.name, nested_types);
+        if let Some(ref fields) = type_def.fields {
+            for field in fields {
+                self.collect_nested_types_from_type_def(&field.field_type, nested_types);
+            }
+        }
     }
 
     /// Collect nested types from a field type string
@@ -1489,9 +1794,28 @@ impl VersionSpecificResponseTypeGenerator {
         }
     }
 
-    /// Generate a placeholder struct for an undefined nested type
-    fn generate_nested_type(&self, type_name: &str) -> Result<Option<String>> {
-        // Simplified - generate type alias since IR doesn't track per-type versions
+    /// Names of decoded-tx types that we emit as full structs in emit_decoded_tx_types (not from IR).
+    /// DecodedScriptPubKey is no longer here; it is generated from the type registry when present in IR.
+    const DECODED_TX_TYPE_NAMES: &[&str] =
+        &["DecodedScriptSig", "DecodedPrevout", "DecodedVin", "DecodedVout", "DecodedTxDetails"];
+
+    /// Generate a nested type: from type registry when present, else skip (decoded-tx) or type alias.
+    fn generate_nested_type(
+        &self,
+        type_name: &str,
+        type_registry: &HashMap<String, TypeDef>,
+    ) -> Result<Option<String>> {
+        if let Some(type_def) = type_registry.get(type_name) {
+            if matches!(type_def.kind, TypeKind::Object) && type_def.fields.is_some() {
+                let mut buf = String::new();
+                self.generate_struct_from_type_def(type_def, &mut buf)?;
+                return Ok(Some(buf));
+            }
+        }
+        // Skip types that we emit as full structs in emit_decoded_tx_types.
+        if Self::DECODED_TX_TYPE_NAMES.contains(&type_name) {
+            return Ok(None);
+        }
         let type_alias = self.generate_type_alias(type_name)?;
         Ok(Some(type_alias))
     }
@@ -1511,7 +1835,7 @@ impl VersionSpecificResponseTypeGenerator {
         };
 
         let mut output = String::new();
-        writeln!(output, "/// Type alias for {}", type_name)?;
+        write_doc_line(&mut output, &format!("Type alias for {}", type_name), "")?;
         writeln!(output, "pub type {} = {};", type_name, rust_type)?;
         Ok(output)
     }

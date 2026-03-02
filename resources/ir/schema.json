@@ -1983,18 +1983,18 @@
                             },
                             {
                               "type": "string",
-                              "optional": false,
-                              "description": "The type, eg 'pubkeyhash'",
-                              "skip_type_check": false,
-                              "key_name": "type",
-                              "condition": ""
-                            },
-                            {
-                              "type": "string",
                               "optional": true,
                               "description": "The Bitcoin address (only if a well-defined address exists)",
                               "skip_type_check": false,
                               "key_name": "address",
+                              "condition": ""
+                            },
+                            {
+                              "type": "string",
+                              "optional": false,
+                              "description": "The type (one of: nonstandard, anchor, pubkey, pubkeyhash, scripthash, multisig, nulldata, witness_v0_scripthash, witness_v0_keyhash, witness_v1_taproot, witness_unknown)",
+                              "skip_type_check": false,
+                              "key_name": "type",
                               "condition": ""
                             }
                           ]
@@ -13699,18 +13699,18 @@
                 },
                 {
                   "type": "string",
-                  "optional": false,
-                  "description": "The type, eg pubkeyhash",
-                  "skip_type_check": false,
-                  "key_name": "type",
-                  "condition": ""
-                },
-                {
-                  "type": "string",
                   "optional": true,
                   "description": "The Bitcoin address (only if a well-defined address exists)",
                   "skip_type_check": false,
                   "key_name": "address",
+                  "condition": ""
+                },
+                {
+                  "type": "string",
+                  "optional": false,
+                  "description": "The type (one of: nonstandard, anchor, pubkey, pubkeyhash, scripthash, multisig, nulldata, witness_v0_scripthash, witness_v0_keyhash, witness_v1_taproot, witness_unknown)",
+                  "skip_type_check": false,
+                  "key_name": "type",
                   "condition": ""
                 }
               ]

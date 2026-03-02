@@ -52,12 +52,8 @@ pub fn render_type_from_ir(type_def: &TypeDef) -> String {
     match &type_def.kind {
         TypeKind::Primitive => render_primitive(type_def),
         TypeKind::Object => render_struct(type_def),
-        TypeKind::Enum => render_enum(type_def),
         TypeKind::Array => render_array(type_def),
-        TypeKind::Custom => {
-            // Simply refer to the base_type
-            type_def.base_type.as_deref().unwrap_or(&type_def.name).to_string()
-        }
+        TypeKind::Enum => render_enum(type_def),
         TypeKind::Optional => {
             // Handle optional types
             if let Some(base_type) = &type_def.base_type {
@@ -70,6 +66,7 @@ pub fn render_type_from_ir(type_def: &TypeDef) -> String {
             // Use base_type if available, otherwise use name
             type_def.base_type.as_deref().unwrap_or(&type_def.name).to_string()
         }
+        TypeKind::Custom => type_def.base_type.as_deref().unwrap_or(&type_def.name).to_string(),
     }
 }
 
