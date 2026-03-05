@@ -47,32 +47,28 @@ pub fn normalize_field_name(name: &str) -> String {
 pub fn map_parameter_type_to_rust(param_type: &str, param_name: &str) -> String {
     let normalized_param = normalize_field_name(param_name);
 
-    match param_type {
-        "string" | "hex" => {
-            // Specific field-name rules for strongly-typed Bitcoin types
-            // Fall back to String for generic string/hex parameters
-            match normalized_param.as_str() {
-                "address" => "bitcoin::Address".to_string(),
-                "blockhash" => "bitcoin::BlockHash".to_string(),
-                "txid" => "bitcoin::Txid".to_string(),
-                "scriptpubkey" | "script_pubkey" => "bitcoin::ScriptBuf".to_string(),
-                "script" => "bitcoin::ScriptBuf".to_string(),
-                "redeemscript" | "redeem_script" => "bitcoin::ScriptBuf".to_string(),
-                "witnessscript" | "witness_script" => "bitcoin::ScriptBuf".to_string(),
-                _ => "String".to_string(),
-            }
+    if matches!(param_type, "string" | "hex") {
+        // Specific field-name rules for strongly-typed Bitcoin types
+        // Fall back to String for generic string/hex parameters
+        return match normalized_param.as_str() {
+            "address" => "bitcoin::Address",
+            "blockhash" => "bitcoin::BlockHash",
+            "txid" => "bitcoin::Txid",
+            "scriptpubkey" | "script" | "redeemscript" | "witnessscript" => "bitcoin::ScriptBuf",
+            _ => "String",
         }
-        "number" | "int" | "integer" => {
-            // All numbers are i64 by default (including signed integers that can be negative)
-            // Specific field names like "changepos", "confirmations", "nblocks" can accept -1
-            "i64".to_string()
-        }
-        "boolean" | "bool" => "bool".to_string(),
-        "object" => "serde_json::Value".to_string(),
-        "array" => "Vec<serde_json::Value>".to_string(),
-        "range" => "serde_json::Value".to_string(),
-        _ => "serde_json::Value".to_string(),
+        .to_owned();
     }
+
+    match param_type {
+        // All numbers are i64 by default (including signed integers that can be negative)
+        // Specific field names like "changepos", "confirmations", "nblocks" can accept -1
+        "number" | "int" | "integer" => "i64",
+        "boolean" | "bool" => "bool",
+        "array" => "Vec<serde_json::Value>",
+        _ => "serde_json::Value",
+    }
+    .to_owned()
 }
 
 #[cfg(test)]
