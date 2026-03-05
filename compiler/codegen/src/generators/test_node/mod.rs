@@ -69,12 +69,61 @@ impl TestNodeGenerator {
             .iter()
             .any(|m| m.params.iter().any(|p| p.param_type.name.contains("PublicKey")));
 
+        // Whether any param maps to the shared FeeRate type via the type adapter.
+        let uses_fee_rate = crate::generators::fee_rate_utils::methods_use_fee_rate(
+            methods.iter(),
+            type_adapter.as_ref(),
+        );
+
+        // Whether any param is FeeRate with name "maxfeerate" (needs custom BTC/kvB serde).
+        let uses_maxfeerate = crate::generators::fee_rate_utils::methods_use_maxfeerate(
+            methods.iter(),
+            type_adapter.as_ref(),
+        );
         // Add necessary imports
         if uses_hash_or_height {
             header.push_str("use crate::types::HashOrHeight;\n");
         }
         if uses_public_key {
             header.push_str("use crate::types::PublicKey;\n");
+        }
+        if uses_fee_rate {
+            header.push_str("use crate::types::FeeRate;\n");
+        }
+
+        // Serde helper for Option<FeeRate> as maxfeerate (BTC/kvB f64). FeeRate has no built-in Serialize.
+        if uses_maxfeerate {
+            header.push_str(
+                r#"
+mod serde_fee_rate {
+    pub mod maxfeerate_opt {
+        use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
+        use crate::types::FeeRate;
+
+        #[allow(clippy::ref_option)]
+        pub fn serialize<S>(f: &Option<FeeRate>, s: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            match f {
+                Some(r) => s.serialize_some(&((r.to_sat_per_kvb_floor() as f64) / 100_000_000.0)),
+                None => s.serialize_none(),
+            }
+        }
+
+        pub fn deserialize<'d, D: Deserializer<'d>>(d: D) -> Result<Option<FeeRate>, D::Error> {
+            let opt: Option<f64> = Option::deserialize(d)?;
+            Ok(opt.map(|v| {
+                let sat_per_kvb = (v * 100_000_000.0).round().clamp(0.0, u32::MAX as f64) as u32;
+                FeeRate::from_sat_per_kvb(sat_per_kvb)
+            }))
+        }
+    }
+}
+
+"#,
+            );
         }
         header.push('\n');
 
