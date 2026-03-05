@@ -257,35 +257,36 @@ impl VersionSpecificClientTraitGenerator {
             .unwrap_or_else(|e| panic!("{}", e));
         let response_type = self.get_response_type(rpc);
 
+        // Build arguments once so they're in scope for both params_sig and method body
+        let arguments: Vec<types::Argument> = rpc
+            .params
+            .iter()
+            .map(|param| {
+                let param_type = &param.param_type;
+                let protocol_type = param_type.protocol_type.as_ref().unwrap_or_else(|| {
+                    panic!(
+                        "Parameter '{}' in method '{}' is missing protocol_type. Rust type name is '{}'. \
+                        All parameters must have protocol_type set for proper type categorization.",
+                        param.name, rpc.name, param_type.name
+                    )
+                });
+                types::Argument {
+                    names: vec![param.name.clone()],
+                    type_: protocol_type.clone(),
+                    required: param.required,
+                    description: param.description.clone(),
+                    oneline_description: String::new(),
+                    also_positional: false,
+                    hidden: false,
+                    type_str: None,
+                }
+            })
+            .collect();
+
         // Generate individual parameters instead of struct
         let params_sig = if rpc.params.is_empty() {
             "".to_string()
         } else {
-            let arguments: Vec<types::Argument> = rpc
-                .params
-                .iter()
-                .map(|param| {
-                    let param_type = &param.param_type;
-                    let protocol_type = param_type.protocol_type.as_ref().unwrap_or_else(|| {
-                        panic!(
-							"Parameter '{}' in method '{}' is missing protocol_type. Rust type name is '{}'. \
-							All parameters must have protocol_type set for proper type categorization.",
-							param.name, rpc.name, param_type.name
-						)
-                    });
-                    types::Argument {
-                        names: vec![param.name.clone()],
-                        type_: protocol_type.clone(),
-                        required: param.required,
-                        description: param.description.clone(),
-                        oneline_description: String::new(),
-                        also_positional: false,
-                        hidden: false,
-                        type_str: None,
-                    }
-                })
-                .collect();
-
             let adapter = self.get_adapter();
             let param_parts: Vec<String> = arguments
                 .iter()
@@ -334,7 +335,7 @@ impl VersionSpecificClientTraitGenerator {
             // Use rpc_params as variable name to avoid conflict with parameter named "params"
             writeln!(buf, "        let mut rpc_params = vec![];")
                 .expect("Failed to write params array initialization");
-            for param in &rpc.params {
+            for (param, _) in rpc.params.iter().zip(arguments.iter()) {
                 let param_name = sanitize_external_identifier(&param.name);
                 if !param.required {
                     // Optional parameter: only include if Some
