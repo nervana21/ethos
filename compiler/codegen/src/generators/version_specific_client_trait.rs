@@ -330,24 +330,55 @@ impl VersionSpecificClientTraitGenerator {
         // Add method body - delegate to the transport layer
         // Generate individual parameter serialization
         if !rpc.params.is_empty() {
+            let adapter = self.get_adapter();
             // Create params array from individual parameters
             // Optional parameters (Option<T>) should only be included if they're Some(...)
             // Use rpc_params as variable name to avoid conflict with parameter named "params"
             writeln!(buf, "        let mut rpc_params = vec![];")
                 .expect("Failed to write params array initialization");
-            for (param, _) in rpc.params.iter().zip(arguments.iter()) {
+            for (param, arg) in rpc.params.iter().zip(arguments.iter()) {
                 let param_name = sanitize_external_identifier(&param.name);
+                let (base_ty, _) =
+                    TypeRegistry::map_argument_type_with_adapter(arg, adapter.as_ref());
+                let field_name = param.name.as_str();
+                let is_fee_rate = field_name == "fee_rate";
+                let is_max_fee_rate = field_name == "maxfeerate";
+
+                // Serialize parameters according to their semantic type and JSON unit.
+                // - FeeRate: fee_rate → sat/vB numeric, maxfeerate → BTC/kvB numeric
+                // - bitcoin::Amount: BTC floats via to_btc()
+                // - everything else: default json!(param)
+                let push_expr = if base_ty == "FeeRate" && is_fee_rate {
+                    format!("serde_json::json!({}.to_sat_per_vb_floor())", param_name)
+                } else if base_ty == "FeeRate" && is_max_fee_rate {
+                    format!(
+                        "serde_json::json!(({}.to_sat_per_kvb_floor() as f64) / 100_000_000.0)",
+                        param_name
+                    )
+                } else if base_ty == "bitcoin::Amount" {
+                    format!("serde_json::json!({}.to_btc())", param_name)
+                } else {
+                    format!("serde_json::json!({})", param_name)
+                };
+
                 if !param.required {
-                    // Optional parameter: only include if Some
+                    let val_expr = if base_ty == "FeeRate" && is_fee_rate {
+                        "serde_json::json!(val.to_sat_per_vb_floor())"
+                    } else if base_ty == "FeeRate" && is_max_fee_rate {
+                        "serde_json::json!((val.to_sat_per_kvb_floor() as f64) / 100_000_000.0)"
+                    } else if base_ty == "bitcoin::Amount" {
+                        "serde_json::json!(val.to_btc())"
+                    } else {
+                        "serde_json::json!(val)"
+                    };
                     writeln!(buf, "        if let Some(val) = {} {{", param_name)
                         .expect("Failed to write optional parameter check");
-                    writeln!(buf, "            rpc_params.push(serde_json::json!(val));")
+                    writeln!(buf, "            rpc_params.push({});", val_expr)
                         .expect("Failed to write optional parameter push");
                     writeln!(buf, "        }}")
                         .expect("Failed to write optional parameter closing");
                 } else {
-                    // Required parameter: always include
-                    writeln!(buf, "        rpc_params.push(serde_json::json!({}));", param_name)
+                    writeln!(buf, "        rpc_params.push({});", push_expr)
                         .expect("Failed to write required parameter serialization");
                 }
             }
