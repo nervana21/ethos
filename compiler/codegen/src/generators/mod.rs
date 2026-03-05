@@ -13,6 +13,9 @@ pub mod client_trait;
 pub mod node_manager;
 pub use node_manager::NodeManagerGenerator;
 
+/// Shared helpers for generator modules
+pub mod fee_rate_utils;
+
 pub mod test_node;
 
 /// Version-specific response type generator
