@@ -654,6 +654,53 @@ impl VersionSpecificResponseTypeGenerator {
         writeln!(buf, "}}")?;
         writeln!(buf)?;
 
+        // Thin wrappers used by higher-level helpers around getblock verbosities.
+        write_doc_line(buf, "Hex-encoded block data returned by getblock with verbosity 0.", "")?;
+        writeln!(buf, "#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]")?;
+        writeln!(buf, "pub struct GetBlockV0 {{")?;
+        write_doc_comment(buf, "Serialized block as a hex string.", "    ")?;
+        writeln!(buf, "    pub hex: String,")?;
+        writeln!(buf, "}}")?;
+        writeln!(buf)?;
+
+        write_doc_line(
+            buf,
+            "Verbose block view with decoded transactions (built from getblock verbosities 1 and 2).",
+            "",
+        )?;
+        writeln!(buf, "#[derive(Debug, Clone, PartialEq, Serialize)]")?;
+        writeln!(buf, "pub struct GetBlockWithTxsResponse {{")?;
+        write_doc_comment(
+            buf,
+            "Block header and summary information from getblock verbosity 1.",
+            "    ",
+        )?;
+        writeln!(buf, "    pub base: GetBlockResponse,")?;
+        write_doc_comment(
+            buf,
+            "Fully decoded transactions in the block, matching getblock verbosity 2.",
+            "    ",
+        )?;
+        writeln!(buf, "    pub decoded_txs: Vec<DecodedTxDetails>,")?;
+        writeln!(buf, "}}")?;
+        writeln!(buf)?;
+
+        write_doc_line(
+            buf,
+            "Verbose block view with decoded transactions and prevout metadata (getblock verbosity 3).",
+            "",
+        )?;
+        writeln!(buf, "#[derive(Debug, Clone, PartialEq, Serialize)]")?;
+        writeln!(buf, "pub struct GetBlockWithPrevoutResponse {{")?;
+        write_doc_comment(
+            buf,
+            "Verbose block view with prevout-rich inputs; wraps the verbosity-2 representation.",
+            "    ",
+        )?;
+        writeln!(buf, "    pub inner: GetBlockWithTxsResponse,")?;
+        writeln!(buf, "}}")?;
+        writeln!(buf)?;
+
         Ok(())
     }
 
