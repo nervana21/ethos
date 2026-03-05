@@ -7,6 +7,13 @@ use bitcoin::BlockHash;
 use serde::{Deserialize, Serialize};
 use serde_json;
 
+/// Fee rate type used for Bitcoin Core parameters and results.
+///
+/// This is a thin alias around rust-bitcoin's `FeeRate` type from the
+/// `bitcoin-units` crate, so consumers can use a single canonical fee-rate
+/// representation across generated clients and adapters.
+pub type FeeRate = bitcoin_units::FeeRate;
+
 /// Bitcoin Core-specific type for representing either a block hash or height.
 ///
 /// This type is commonly used in Bitcoin Core RPC methods where a parameter
