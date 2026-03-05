@@ -121,30 +121,10 @@ impl VersionSpecificClientTraitGenerator {
             .any(|m| m.params.iter().any(|arg| arg.param_type.name.contains("PublicKey")));
 
         let adapter = self.get_adapter();
-        let uses_fee_rate = methods.iter().any(|m| {
-            m.params.iter().any(|p| {
-                let protocol_type = p.param_type.protocol_type.as_ref().unwrap_or_else(|| {
-                    panic!(
-                        "Parameter '{}' in method '{}' is missing protocol_type. Rust type name is '{}'. \
-                        All parameters must have protocol_type set for proper type categorization.",
-                        p.name, m.name, p.param_type.name
-                    )
-                });
-                let arg = types::Argument {
-                    names: vec![p.name.clone()],
-                    type_: protocol_type.clone(),
-                    required: p.required,
-                    description: p.description.clone(),
-                    oneline_description: String::new(),
-                    also_positional: false,
-                    hidden: false,
-                    type_str: None,
-                };
-                let (base_ty, _) =
-                    TypeRegistry::map_argument_type_with_adapter(&arg, adapter.as_ref());
-                base_ty == "FeeRate"
-            })
-        });
+        let uses_fee_rate = crate::generators::fee_rate_utils::methods_use_fee_rate(
+            methods.iter().map(|m| *m),
+            adapter.as_ref(),
+        );
         // Add necessary imports
         if uses_hash_or_height {
             imports.push("use crate::types::HashOrHeight".to_string());
