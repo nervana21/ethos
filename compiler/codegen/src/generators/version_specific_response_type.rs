@@ -430,6 +430,21 @@ impl VersionSpecificResponseTypeGenerator {
         field.field_type.protocol_type.as_deref() == Some("elision")
     }
 
+    /// Returns true iff the field should be skipped when emitting a struct field for the given RPC.
+    /// This includes elision placeholders and method-specific scaffolding fields that are not real
+    /// JSON keys in Core's responses.
+    fn should_skip_field_in_struct(rpc_name: &str, field: &ir::FieldDef) -> bool {
+        if Self::is_elision_field(field) {
+            return true;
+        }
+
+        if rpc_name == "getblock" {
+            return matches!(field.name.as_str(), "tx_1" | "tx_2" | "field_21" | "field_23");
+        }
+
+        false
+    }
+
     /// Returns the TypeDef for one element of the getblock decoded-tx array (verbosity 2/3).
     /// That type's fields include the elision placeholder and explicit fields like `fee`.
     /// Used with [`Self::find_field_in_type`] to drive optionality from the IR without hardcoding paths in the emitter.
@@ -713,7 +728,10 @@ impl VersionSpecificResponseTypeGenerator {
 
         // Generate fields from IR data (when conditional, all fields must be Option for string|object)
         if let Some(fields) = &result.fields {
-            for field in fields.iter().filter(|f| !Self::is_elision_field(f)) {
+            for field in fields
+                .iter()
+                .filter(|f| !Self::should_skip_field_in_struct(method.name.as_str(), f))
+            {
                 self.generate_ir_field(
                     &mut buf,
                     field,
