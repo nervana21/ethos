@@ -80,6 +80,38 @@ impl TestNodeGenerator {
             methods.iter(),
             type_adapter.as_ref(),
         );
+        // Whether any param uses SendallRecipient or GetBlockTemplateRequest (we emit them inline).
+        let mut uses_sendall_recipient = false;
+        let mut uses_get_block_template_request = false;
+        let mut uses_amounts_map = false;
+        for m in methods {
+            for p in &m.params {
+                let protocol_type = p.param_type.protocol_type.as_deref().unwrap_or("");
+                let arg = types::Argument {
+                    names: vec![p.name.clone()],
+                    type_: protocol_type.to_string(),
+                    required: p.required,
+                    description: String::new(),
+                    oneline_description: String::new(),
+                    also_positional: false,
+                    hidden: false,
+                    type_str: None,
+                };
+                let (ty, _) = types::TypeRegistry::map_argument_type_with_adapter(
+                    &arg,
+                    type_adapter.as_ref(),
+                );
+                if ty.contains("SendallRecipient") {
+                    uses_sendall_recipient = true;
+                }
+                if ty.contains("GetBlockTemplateRequest") {
+                    uses_get_block_template_request = true;
+                }
+                if p.name == "amounts" && ty.contains("HashMap") && ty.contains("Amount") {
+                    uses_amounts_map = true;
+                }
+            }
+        }
         // Add necessary imports
         if uses_hash_or_height {
             header.push_str("use crate::types::HashOrHeight;\n");
@@ -120,6 +152,68 @@ mod serde_fee_rate {
             }))
         }
     }
+}
+
+"#,
+            );
+        }
+        // Serde helper for sendmany "amounts": HashMap<Address, Amount> with values as BTC in JSON.
+        if uses_amounts_map {
+            header.push_str(
+                r#"
+/// (De)serializes HashMap<Address, Amount> with values as BTC floats (for sendmany "amounts" param).
+pub mod serde_amounts_map {
+    use std::collections::HashMap;
+    use bitcoin::address::NetworkUnchecked;
+    use bitcoin::Address;
+    use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
+    pub fn serialize<S>(
+        map: &HashMap<Address<NetworkUnchecked>, bitcoin::Amount>,
+        s: S,
+    ) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        use serde::ser::SerializeMap;
+        let mut m = s.serialize_map(Some(map.len()))?;
+        for (k, v) in map {
+            m.serialize_entry(k, &v.to_btc())?;
+        }
+        m.end()
+    }
+
+    pub fn deserialize<'de, D>(
+        d: D,
+    ) -> Result<HashMap<Address<NetworkUnchecked>, bitcoin::Amount>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let map = HashMap::<Address<NetworkUnchecked>, f64>::deserialize(d)?;
+        map.into_iter()
+            .map(|(k, v)| {
+                bitcoin::Amount::from_btc(v).map(|a| (k, a)).map_err(serde::de::Error::custom)
+            })
+            .collect()
+    }
+}
+
+"#,
+            );
+        }
+
+        // Param types that are defined inline so the generated crate stays self-contained.
+        if uses_sendall_recipient {
+            header.push_str(
+                r#"
+/// One recipient for the sendall RPC (address and optional amount in BTC).
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq)]
+pub struct SendallRecipient {
+    /// Destination address (unchecked; use `.assume_checked()` or `.require_network()` when needed).
+    pub address: bitcoin::Address<bitcoin::address::NetworkUnchecked>,
+    /// Optional amount (omit to send remaining balance). Serialized as BTC in JSON.
+    #[serde(default, with = "bitcoin::amount::serde::as_btc::opt")]
+    pub amount: Option<bitcoin::Amount>,
 }
 
 "#,
