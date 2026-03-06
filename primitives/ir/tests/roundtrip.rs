@@ -36,7 +36,6 @@ fn create_sample_ir() -> ProtocolIR {
         "rpc",
         "Bitcoin RPC API",
         vec![ProtocolDef::RpcMethod(rpc_def)],
-        "bitcoin_core",
     );
 
     ProtocolIR::new_with_version("0.1.0".to_string(), vec![module])
