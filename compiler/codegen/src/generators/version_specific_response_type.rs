@@ -182,10 +182,10 @@ impl VersionSpecificResponseTypeGenerator {
 
         let type_registry = Self::build_type_registry(methods);
 
-        // Decoded-tx types (DecodedScriptSig, etc.) are emitted by emit_decoded_tx_types below.
-        // DecodedScriptPubKey is generated from the type registry when present in IR.
+        // Manually emitted response structs (decoded-tx helpers, etc.)
+        // are emitted by dedicated helpers (for example, emit_decoded_tx_types) and not from IR.
         let mut processed_types = std::collections::HashSet::new();
-        for name in Self::DECODED_TX_TYPE_NAMES {
+        for name in Self::MANUAL_RESPONSE_TYPE_NAMES {
             processed_types.insert((*name).to_string());
         }
 
@@ -1903,9 +1903,10 @@ impl VersionSpecificResponseTypeGenerator {
         }
     }
 
-    /// Names of decoded-tx types that we emit as full structs in emit_decoded_tx_types (not from IR).
-    /// DecodedScriptPubKey is no longer here; it is generated from the type registry when present in IR.
-    const DECODED_TX_TYPE_NAMES: &[&str] =
+    /// Names of response types that we emit as full structs (not from IR).
+    /// Currently includes only decoded-tx helper structs; DecodedScriptPubKey
+    /// is generated from the type registry when present in IR.
+    const MANUAL_RESPONSE_TYPE_NAMES: &[&str] =
         &["DecodedScriptSig", "DecodedPrevout", "DecodedVin", "DecodedVout", "DecodedTxDetails"];
 
     /// Generate a nested type: from type registry when present, else skip (decoded-tx) or type alias.
@@ -1921,8 +1922,8 @@ impl VersionSpecificResponseTypeGenerator {
                 return Ok(Some(buf));
             }
         }
-        // Skip types that we emit as full structs in emit_decoded_tx_types.
-        if Self::DECODED_TX_TYPE_NAMES.contains(&type_name) {
+        // Skip types that we emit as full structs via manual helpers (not from IR).
+        if Self::MANUAL_RESPONSE_TYPE_NAMES.contains(&type_name) {
             return Ok(None);
         }
         let type_alias = self.generate_type_alias(type_name)?;
