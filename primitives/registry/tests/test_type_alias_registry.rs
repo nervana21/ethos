@@ -167,7 +167,6 @@ fn test_validate_types() {
 
     // Additional protocol types
     map.insert("PublicKey".to_string(), "PublicKey".to_string());
-    map.insert("ShortChannelId".to_string(), "ShortChannelId".to_string());
     map.insert("Satoshis".to_string(), "u64".to_string());
     map.insert("MilliSatoshis".to_string(), "u64".to_string());
     map.insert("Amount".to_string(), "u64".to_string());
@@ -191,7 +190,6 @@ fn test_validate_types() {
         "BitcoinObject".to_string(),
         "BitcoinObjectArray".to_string(),
         "PublicKey".to_string(),
-        "ShortChannelId".to_string(),
         "Satoshis".to_string(),
         "MilliSatoshis".to_string(),
         "Msat".to_string(),
@@ -214,7 +212,6 @@ fn test_validate_types() {
         "serde_json::Map<String, serde_json::Value>".to_string(),
         "Vec<serde_json::Map<String, serde_json::Value>>".to_string(),
         "PublicKey".to_string(),
-        "ShortChannelId".to_string(),
         "u64".to_string(),
         "Vec<u8>".to_string(),
     ];

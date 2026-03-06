@@ -69,10 +69,6 @@ impl TestNodeGenerator {
             .iter()
             .any(|m| m.params.iter().any(|p| p.param_type.name.contains("PublicKey")));
 
-        let uses_short_channel_id = methods
-            .iter()
-            .any(|m| m.params.iter().any(|p| p.param_type.name.contains("ShortChannelId")));
-
         // Add necessary imports
         if uses_hash_or_height {
             header.push_str("use crate::types::HashOrHeight;\n");
@@ -80,10 +76,6 @@ impl TestNodeGenerator {
         if uses_public_key {
             header.push_str("use crate::types::PublicKey;\n");
         }
-        if uses_short_channel_id {
-            header.push_str("use crate::types::ShortChannelId;\n");
-        }
-
         header.push('\n');
 
         let mut code = header;

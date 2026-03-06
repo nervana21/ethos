@@ -120,10 +120,6 @@ impl VersionSpecificClientTraitGenerator {
             .iter()
             .any(|m| m.params.iter().any(|arg| arg.param_type.name.contains("PublicKey")));
 
-        let uses_short_channel_id = methods
-            .iter()
-            .any(|m| m.params.iter().any(|arg| arg.param_type.name.contains("ShortChannelId")));
-
         // Add necessary imports
         if uses_hash_or_height {
             imports.push("use crate::types::HashOrHeight".to_string());
@@ -134,11 +130,6 @@ impl VersionSpecificClientTraitGenerator {
             // Record external symbol usage so lib.rs can re-export it
             record_external_symbol_usage("bitcoin", "PublicKey");
         }
-        if uses_short_channel_id {
-            imports.push("use crate::types::ShortChannelId".to_string());
-        }
-
-        // Avoid adding comment lines or serde imports that may be unused
 
         // Ensure each import ends with a semicolon
         let mut out = imports.join(";\n");
