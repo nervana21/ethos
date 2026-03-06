@@ -9,12 +9,8 @@ use ethos_ir::{ProtocolDef, ProtocolIR, ProtocolModule, TypeKind};
 fn test_ir_roundtrip_simple() {
     let rpc = rpc("getblock", vec![], Some(type_def("GetBlockResponse", TypeKind::Object)), "node");
 
-    let module = ProtocolModule::from_source(
-        "rpc",
-        "Bitcoin Core RPC",
-        vec![ProtocolDef::RpcMethod(rpc)],
-        "test",
-    );
+    let module =
+        ProtocolModule::from_source("rpc", "Bitcoin Core RPC", vec![ProtocolDef::RpcMethod(rpc)]);
     let ir = ProtocolIR::new(vec![module]);
 
     let tmp = std::env::temp_dir().join("ethos_ir_roundtrip").join("simple.ir.json");
@@ -42,7 +38,6 @@ fn test_ir_roundtrip_deterministic() {
         "rpc",
         "Bitcoin Core RPC",
         vec![ProtocolDef::Type(type_def), ProtocolDef::RpcMethod(rpc)],
-        "test",
     );
     let ir = ProtocolIR::new(vec![module]);
 

@@ -7,6 +7,34 @@ use bitcoin::BlockHash;
 use serde::{Deserialize, Serialize};
 use serde_json;
 
+/// Fee rate type used for Bitcoin Core parameters and results.
+///
+/// This is a thin alias around rust-bitcoin's `FeeRate` type from the
+/// `bitcoin-units` crate, so consumers can use a single canonical fee-rate
+/// representation across generated clients and adapters.
+pub type FeeRate = bitcoin_units::FeeRate;
+
+/// One recipient for the `sendall` RPC (address and optional amount in BTC).
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct SendallRecipient {
+    /// Destination address (unchecked; use `.assume_checked()` or `.require_network()` when needed).
+    pub address: bitcoin::Address<bitcoin::address::NetworkUnchecked>,
+    /// Optional amount (omit to send remaining balance). Serialized as BTC in JSON.
+    #[serde(default, with = "bitcoin::amount::serde::as_btc::opt")]
+    pub amount: Option<bitcoin::Amount>,
+}
+
+/// Request options for the `getblocktemplate` RPC (mode, capabilities, rules).
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct GetBlockTemplateRequest {
+    /// Optional mode: "template", "proposal", or omitted.
+    pub mode: Option<String>,
+    /// Optional list of capability strings.
+    pub capabilities: Option<Vec<String>>,
+    /// Optional list of rule strings.
+    pub rules: Option<Vec<String>>,
+}
+
 /// Bitcoin Core-specific type for representing either a block hash or height.
 ///
 /// This type is commonly used in Bitcoin Core RPC methods where a parameter

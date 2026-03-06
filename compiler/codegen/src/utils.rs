@@ -176,21 +176,43 @@ pub fn snake_to_pascal_case(s: &str) -> String {
         .collect()
 }
 
+/// RPC/IR concatenated names -> idiomatic snake_case Rust identifiers.
+/// Keep alphabetically sorted by the RPC key.
+const CONCAT_TO_SNAKE: &[(&str, &str)] = &[
+    ("blockhash", "block_hash"),
+    ("coinbaseaux", "coinbase_aux"),
+    ("coinbasevalue", "coinbase_value"),
+    ("locktime", "lock_time"),
+    ("longpollid", "longpoll_id"),
+    ("maxburnamount", "max_burn_amount"),
+    ("maxconf", "max_conf"),
+    ("maxfeerate", "max_fee_rate"),
+    ("minconf", "min_conf"),
+    ("newpassphrase", "new_passphrase"),
+    ("oldpassphrase", "old_passphrase"),
+    ("subtractfeefromamount", "subtract_fee_from_amount"),
+    ("transactionid", "transaction_id"),
+    ("vbavailable", "vb_available"),
+    ("vbrequired", "vb_required"),
+];
+
 /// Sanitizes external identifiers (e.g. RPC schemas) to be valid Rust identifiers
 pub fn sanitize_external_identifier(name: &str) -> String {
     // Handle reserved keywords
     match name {
-        "type" => "r#type".to_string(),
-        "self" => "self_".to_string(),
-        "super" => "super_".to_string(),
-        "crate" => "crate_".to_string(),
-        _ => {
-            // Replace hyphens with underscores and remove other invalid characters
-            let sanitized = name.replace('-', "_");
-            // Remove any remaining invalid characters (keep only alphanumeric and underscores)
-            sanitized.chars().filter(|c| c.is_alphanumeric() || *c == '_').collect()
-        }
+        "type" => return "r#type".to_string(),
+        "self" => return "self_".to_string(),
+        "super" => return "super_".to_string(),
+        "crate" => return "crate_".to_string(),
+        _ => {}
     }
+    // Concatenated RPC names -> idiomatic snake_case
+    if let Some((_, rust_name)) = CONCAT_TO_SNAKE.iter().find(|(k, _)| *k == name) {
+        return (*rust_name).to_string();
+    }
+    // Replace hyphens with underscores and remove other invalid characters
+    let sanitized = name.replace('-', "_");
+    sanitized.chars().filter(|c| c.is_alphanumeric() || *c == '_').collect()
 }
 
 /// Check if a method needs parameter reordering
@@ -247,5 +269,12 @@ mod tests {
     fn test_capitalize() {
         assert_eq!(capitalize("hello"), "Hello");
         assert_eq!(capitalize("world"), "World");
+    }
+
+    #[test]
+    fn test_sanitize_external_identifier_concat_to_snake() {
+        for (rpc_name, expected) in super::CONCAT_TO_SNAKE {
+            assert_eq!(sanitize_external_identifier(rpc_name), *expected);
+        }
     }
 }
