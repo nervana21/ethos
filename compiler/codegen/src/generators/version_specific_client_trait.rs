@@ -10,6 +10,7 @@ use types::type_adapter::TypeAdapter;
 use types::{Implementation, ProtocolVersion, TypeRegistry};
 
 use super::doc_comment::format_doc_comment;
+use super::fee_rate_utils::methods_use_get_block_template_request;
 use crate::generators::version_specific_response_type::record_external_symbol_usage;
 use crate::utils::{
     canonical_from_adapter_method, protocol_rpc_method_to_rust_name, sanitize_external_identifier,
@@ -125,7 +126,30 @@ impl VersionSpecificClientTraitGenerator {
             methods.iter().map(|m| *m),
             adapter.as_ref(),
         );
+        let uses_sendall_recipient =
+            crate::generators::fee_rate_utils::methods_use_sendall_recipient(
+                methods.iter().map(|m| *m),
+                adapter.as_ref(),
+            );
+        let uses_get_block_template_request =
+            methods_use_get_block_template_request(methods.iter().map(|m| *m), adapter.as_ref());
+
         // Add necessary imports
+        if uses_sendall_recipient || uses_get_block_template_request {
+            let params_mod = self.protocol.client_dir_name();
+            let mut params_types = Vec::new();
+            if uses_sendall_recipient {
+                params_types.push("SendallRecipient");
+            }
+            if uses_get_block_template_request {
+                params_types.push("GetBlockTemplateRequest");
+            }
+            imports.push(format!(
+                "use crate::{}::params::{{{}}}",
+                params_mod,
+                params_types.join(", ")
+            ));
+        }
         if uses_hash_or_height {
             imports.push("use crate::types::HashOrHeight".to_string());
         }
