@@ -14,6 +14,16 @@ use serde_json;
 /// representation across generated clients and adapters.
 pub type FeeRate = bitcoin_units::FeeRate;
 
+/// One recipient for the `sendall` RPC (address and optional amount in BTC).
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct SendallRecipient {
+    /// Destination address (unchecked; use `.assume_checked()` or `.require_network()` when needed).
+    pub address: bitcoin::Address<bitcoin::address::NetworkUnchecked>,
+    /// Optional amount (omit to send remaining balance). Serialized as BTC in JSON.
+    #[serde(default, with = "bitcoin::amount::serde::as_btc::opt")]
+    pub amount: Option<bitcoin::Amount>,
+}
+
 /// Bitcoin Core-specific type for representing either a block hash or height.
 ///
 /// This type is commonly used in Bitcoin Core RPC methods where a parameter
