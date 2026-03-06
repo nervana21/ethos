@@ -8,7 +8,7 @@ A formal RPC description for type-safe Rust clients
 
 Recent [discussion](https://delvingbitcoin.org/t/the-future-of-the-bitcoin-core-gui/2253/17) has suggested a renewed interest in a formal description of the [RPC API](https://github.com/bitcoin/bitcoin/issues/29912) surface. The Bitcoin Core RPC surface is the predominant means through which external clients query the blockchain. As tooling continues to depend on RPC behavior, the need for and benefits from a behavioral specification are likely to increase.
 
-Ethos is a PoC for the capabilities of such a [specification](resources/ir/schema.json). [Other](https://github.com/willcl-ark/bitcoin-rpc-web/blob/master/assets/openrpc.json) comprehensive specifications may be adapted to.
+Ethos and its generated [outputs](https://crates.io/crates/ethos-bitcoind) are a proof of concept for the capabilities of any such [specification](https://github.com/willcl-ark/bitcoin-rpc-web/blob/master/assets/openrpc.json).
 
 ## Architecture
 
