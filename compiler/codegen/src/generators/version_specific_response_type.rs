@@ -182,7 +182,7 @@ impl VersionSpecificResponseTypeGenerator {
 
         let type_registry = Self::build_type_registry(methods);
 
-        // Manually emitted response structs (decoded-tx helpers, etc.)
+        // Manually emitted response structs (decoded-tx helpers, GetBlockTemplateTransaction, etc.)
         // are emitted by dedicated helpers (for example, emit_decoded_tx_types) and not from IR.
         let mut processed_types = std::collections::HashSet::new();
         for name in Self::MANUAL_RESPONSE_TYPE_NAMES {
@@ -231,6 +231,14 @@ impl VersionSpecificResponseTypeGenerator {
         if !decoded_tx_buf.is_empty() {
             out.push_str(&decoded_tx_buf);
             out.push_str("\n\n");
+        }
+
+        // Emit GetBlockTemplateTransaction when getblocktemplate is present so GetBlockTemplateResponse can use it.
+        if methods.iter().any(|m| m.name == "getblocktemplate") {
+            let mut gbt_tx_buf = String::new();
+            self.emit_get_block_template_transaction(&mut gbt_tx_buf)?;
+            out.push_str(&gbt_tx_buf);
+            out.push_str("\n");
         }
 
         // Generate response structs for each method
@@ -424,6 +432,7 @@ impl VersionSpecificResponseTypeGenerator {
         match (rpc_name, field_name) {
             ("getblocktemplate", "vbavailable") => Some("HashMap<String, u32>"),
             ("getblocktemplate", "coinbaseaux") => Some("HashMap<String, String>"),
+            ("getblocktemplate", "transactions") => Some("Vec<GetBlockTemplateTransaction>"),
             (_, "transactionid") => Some("bitcoin::Txid"),
             _ => None,
         }
@@ -1951,10 +1960,15 @@ impl VersionSpecificResponseTypeGenerator {
     }
 
     /// Names of response types that we emit as full structs (not from IR).
-    /// Currently includes only decoded-tx helper structs; DecodedScriptPubKey
-    /// is generated from the type registry when present in IR.
-    const MANUAL_RESPONSE_TYPE_NAMES: &[&str] =
-        &["DecodedScriptSig", "DecodedPrevout", "DecodedVin", "DecodedVout", "DecodedTxDetails"];
+    /// Includes decoded-tx helper structs and GetBlockTemplateTransaction.
+    const MANUAL_RESPONSE_TYPE_NAMES: &[&str] = &[
+        "DecodedScriptSig",
+        "DecodedPrevout",
+        "DecodedVin",
+        "DecodedVout",
+        "DecodedTxDetails",
+        "GetBlockTemplateTransaction",
+    ];
 
     /// Generate a nested type: from type registry when present, else skip (decoded-tx) or type alias.
     fn generate_nested_type(
