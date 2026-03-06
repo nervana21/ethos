@@ -10,7 +10,7 @@ use types::type_adapter::TypeAdapter;
 use types::{Implementation, ProtocolVersion, TypeRegistry};
 
 use super::doc_comment::format_doc_comment;
-use super::fee_rate_utils::methods_use_get_block_template_request;
+use super::fee_rate_utils::{methods_use_amounts_map, methods_use_get_block_template_request};
 use crate::generators::version_specific_response_type::record_external_symbol_usage;
 use crate::utils::{
     canonical_from_adapter_method, protocol_rpc_method_to_rust_name, sanitize_external_identifier,
@@ -133,6 +133,8 @@ impl VersionSpecificClientTraitGenerator {
             );
         let uses_get_block_template_request =
             methods_use_get_block_template_request(methods.iter().map(|m| *m), adapter.as_ref());
+        let uses_amounts_map =
+            methods_use_amounts_map(methods.iter().map(|m| *m), adapter.as_ref());
 
         // Add necessary imports
         if uses_sendall_recipient || uses_get_block_template_request {
