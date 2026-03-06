@@ -219,6 +219,24 @@ pub struct SendallRecipient {
 "#,
             );
         }
+        if uses_get_block_template_request {
+            header.push_str(
+                r#"
+/// Request options for the getblocktemplate RPC (mode, capabilities, rules).
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq)]
+pub struct GetBlockTemplateRequest {
+    /// Optional mode: \"template\", \"proposal\", or omitted.
+    pub mode: Option<String>,
+    /// Optional list of capability strings.
+    pub capabilities: Option<Vec<String>>,
+    /// Optional list of rule strings.
+    pub rules: Option<Vec<String>>,
+}
+
+"#,
+            );
+        }
+
         header.push('\n');
 
         let mut code = header;
