@@ -107,11 +107,17 @@ impl VersionSpecificResponseTypeGenerator {
             if let Some(result) = &method.result {
                 if let Some(fields) = &result.fields {
                     for field in fields {
+                        let rust_type =
+                            Self::response_field_type_override(method.name.as_str(), &field.name)
+                                .map(String::from)
+                                .unwrap_or_else(|| {
+                                    self.map_ir_type_to_rust(&field.field_type, &field.name)
+                                });
                         let field_type = &field.field_type.name;
-                        if field_type.contains("BTreeMap") {
+                        if field_type.contains("BTreeMap") || rust_type.contains("BTreeMap") {
                             needs_btreemap = true;
                         }
-                        if field_type.contains("HashMap") {
+                        if field_type.contains("HashMap") || rust_type.contains("HashMap") {
                             needs_hashmap = true;
                         }
                         if field_type.contains("KeySource") {
@@ -133,7 +139,6 @@ impl VersionSpecificResponseTypeGenerator {
                             needs_proprietarykey = true;
                         }
                         // Check if field type is bitcoin::Amount
-                        let rust_type = self.map_ir_type_to_rust(&field.field_type, &field.name);
                         if rust_type == "bitcoin::Amount" || rust_type.contains("bitcoin::Amount") {
                             needs_amount_deserializer = true;
                         }
@@ -177,10 +182,10 @@ impl VersionSpecificResponseTypeGenerator {
 
         let type_registry = Self::build_type_registry(methods);
 
-        // Decoded-tx types (DecodedScriptSig, etc.) are emitted by emit_decoded_tx_types below.
-        // DecodedScriptPubKey is generated from the type registry when present in IR.
+        // Manually emitted response structs (decoded-tx helpers, GetBlockTemplateTransaction, etc.)
+        // are emitted by dedicated helpers (for example, emit_decoded_tx_types) and not from IR.
         let mut processed_types = std::collections::HashSet::new();
-        for name in Self::DECODED_TX_TYPE_NAMES {
+        for name in Self::MANUAL_RESPONSE_TYPE_NAMES {
             processed_types.insert((*name).to_string());
         }
 
@@ -226,6 +231,14 @@ impl VersionSpecificResponseTypeGenerator {
         if !decoded_tx_buf.is_empty() {
             out.push_str(&decoded_tx_buf);
             out.push_str("\n\n");
+        }
+
+        // Emit GetBlockTemplateTransaction when getblocktemplate is present so GetBlockTemplateResponse can use it.
+        if methods.iter().any(|m| m.name == "getblocktemplate") {
+            let mut gbt_tx_buf = String::new();
+            self.emit_get_block_template_transaction(&mut gbt_tx_buf)?;
+            out.push_str(&gbt_tx_buf);
+            out.push_str("\n");
         }
 
         // Generate response structs for each method
@@ -405,6 +418,26 @@ impl VersionSpecificResponseTypeGenerator {
         "listunspent",
     ];
 
+    /// For TOP_LEVEL_ARRAY_METHODS, optional element type for stronger typing (None = Vec<serde_json::Value>).
+    fn array_wrapper_element_type(method_name: &str) -> Option<&'static str> {
+        match method_name {
+            "deriveaddresses" => Some("String"),
+            "getorphantxs" => Some("bitcoin::Txid"),
+            _ => None,
+        }
+    }
+
+    /// Stronger types for specific (rpc_name, field_name) when the default would be serde_json::Value.
+    fn response_field_type_override(rpc_name: &str, field_name: &str) -> Option<&'static str> {
+        match (rpc_name, field_name) {
+            ("getblocktemplate", "vbavailable") => Some("HashMap<String, u32>"),
+            ("getblocktemplate", "coinbaseaux") => Some("HashMap<String, String>"),
+            ("getblocktemplate", "transactions") => Some("Vec<GetBlockTemplateTransaction>"),
+            (_, "transactionid") => Some("bitcoin::Txid"),
+            _ => None,
+        }
+    }
+
     /// RPCs that return arbitrary JSON (echo/echojson); need Value wrapper with whole-response deserialize
     const ECHO_JSON_VALUE_RPCS: &[&str] = &["echo", "echojson"];
 
@@ -428,6 +461,21 @@ impl VersionSpecificResponseTypeGenerator {
     /// not real JSON keys.
     fn is_elision_field(field: &ir::FieldDef) -> bool {
         field.field_type.protocol_type.as_deref() == Some("elision")
+    }
+
+    /// Returns true iff the field should be skipped when emitting a struct field for the given RPC.
+    /// This includes elision placeholders and method-specific scaffolding fields that are not real
+    /// JSON keys in Core's responses.
+    fn should_skip_field_in_struct(rpc_name: &str, field: &ir::FieldDef) -> bool {
+        if Self::is_elision_field(field) {
+            return true;
+        }
+
+        if rpc_name == "getblock" {
+            return matches!(field.name.as_str(), "tx_1" | "tx_2" | "field_21" | "field_23");
+        }
+
+        false
     }
 
     /// Returns the TypeDef for one element of the getblock decoded-tx array (verbosity 2/3).
@@ -639,6 +687,100 @@ impl VersionSpecificResponseTypeGenerator {
         writeln!(buf, "}}")?;
         writeln!(buf)?;
 
+        // Thin wrappers used by higher-level helpers around getblock verbosities.
+        write_doc_line(buf, "Hex-encoded block data returned by getblock with verbosity 0.", "")?;
+        writeln!(buf, "#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]")?;
+        writeln!(buf, "pub struct GetBlockV0 {{")?;
+        write_doc_comment(buf, "Serialized block as a hex string.", "    ")?;
+        writeln!(buf, "    pub hex: String,")?;
+        writeln!(buf, "}}")?;
+        writeln!(buf)?;
+
+        write_doc_line(
+            buf,
+            "Verbose block view with decoded transactions (built from getblock verbosities 1 and 2).",
+            "",
+        )?;
+        writeln!(buf, "#[derive(Debug, Clone, PartialEq, Serialize)]")?;
+        writeln!(buf, "pub struct GetBlockWithTxsResponse {{")?;
+        write_doc_comment(
+            buf,
+            "Block header and summary information from getblock verbosity 1.",
+            "    ",
+        )?;
+        writeln!(buf, "    pub base: GetBlockResponse,")?;
+        write_doc_comment(
+            buf,
+            "Fully decoded transactions in the block, matching getblock verbosity 2.",
+            "    ",
+        )?;
+        writeln!(buf, "    pub decoded_txs: Vec<DecodedTxDetails>,")?;
+        writeln!(buf, "}}")?;
+        writeln!(buf)?;
+
+        write_doc_line(
+            buf,
+            "Verbose block view with decoded transactions and prevout metadata (getblock verbosity 3).",
+            "",
+        )?;
+        writeln!(buf, "#[derive(Debug, Clone, PartialEq, Serialize)]")?;
+        writeln!(buf, "pub struct GetBlockWithPrevoutResponse {{")?;
+        write_doc_comment(
+            buf,
+            "Verbose block view with prevout-rich inputs; wraps the verbosity-2 representation.",
+            "    ",
+        )?;
+        writeln!(buf, "    pub inner: GetBlockWithTxsResponse,")?;
+        writeln!(buf, "}}")?;
+        writeln!(buf)?;
+
+        Ok(())
+    }
+
+    /// Emit GetBlockTemplateTransaction struct for getblocktemplate response "transactions" array.
+    /// BIP 22/23/145: data, depends, fee (optional), hash, sigops (optional), txid, weight.
+    fn emit_get_block_template_transaction(&self, buf: &mut String) -> Result<()> {
+        write_doc_line(
+            buf,
+            "One transaction entry in getblocktemplate \"transactions\" array (BIP 22/23/145).",
+            "",
+        )?;
+        writeln!(buf, "#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]")?;
+        writeln!(buf, "pub struct GetBlockTemplateTransaction {{")?;
+        write_doc_comment(buf, "Transaction data encoded in hexadecimal (byte-for-byte).", "    ")?;
+        writeln!(buf, "    pub data: String,")?;
+        write_doc_comment(
+            buf,
+            "1-based indexes of transactions in the 'transactions' list that must be present before this one.",
+            "    ",
+        )?;
+        writeln!(buf, "    pub depends: Vec<i64>,")?;
+        write_doc_comment(
+            buf,
+            "Difference in value between inputs and outputs (satoshis); absent when unknown.",
+            "    ",
+        )?;
+        writeln!(buf, "    #[serde(default, skip_serializing_if = \"Option::is_none\")]")?;
+        writeln!(buf, "    pub fee: Option<i64>,")?;
+        write_doc_comment(
+            buf,
+            "Transaction hash including witness data (byte-reversed hex).",
+            "    ",
+        )?;
+        writeln!(buf, "    pub hash: String,")?;
+        write_doc_comment(buf, "Total SigOps cost for block limits; absent when unknown.", "    ")?;
+        writeln!(buf, "    #[serde(default, skip_serializing_if = \"Option::is_none\")]")?;
+        writeln!(buf, "    pub sigops: Option<i64>,")?;
+        write_doc_comment(
+            buf,
+            "Transaction hash excluding witness data (byte-reversed hex).",
+            "    ",
+        )?;
+        writeln!(buf, "    pub txid: String,")?;
+        write_doc_comment(buf, "Total transaction weight for block limits.", "    ")?;
+        writeln!(buf, "    pub weight: i64,")?;
+        writeln!(buf, "}}")?;
+        writeln!(buf)?;
         Ok(())
     }
 
@@ -713,7 +855,10 @@ impl VersionSpecificResponseTypeGenerator {
 
         // Generate fields from IR data (when conditional, all fields must be Option for string|object)
         if let Some(fields) = &result.fields {
-            for field in fields.iter().filter(|f| !Self::is_elision_field(f)) {
+            for field in fields
+                .iter()
+                .filter(|f| !Self::should_skip_field_in_struct(method.name.as_str(), f))
+            {
                 self.generate_ir_field(
                     &mut buf,
                     field,
@@ -766,8 +911,14 @@ impl VersionSpecificResponseTypeGenerator {
             write_doc_comment(buf, &field.description, "    ")?;
         }
 
-        // Generate field definition
-        let base_field_type = self.map_ir_type_to_rust(&field.field_type, &field.name);
+        // Generate field definition (use stronger type override when set)
+        let base_field_type = Self::response_field_type_override(rpc_name, &field.name)
+            .map(String::from)
+            .unwrap_or_else(|| self.map_ir_type_to_rust(&field.field_type, &field.name));
+        if base_field_type.starts_with("bitcoin::") {
+            let symbol = base_field_type.split("::").last().unwrap_or(&base_field_type);
+            record_external_symbol("bitcoin", symbol);
+        }
         let field_name = self.sanitize_identifier(&field.name);
         let mut field_type = if field.required && !force_optional_conditional {
             base_field_type.clone()
@@ -785,13 +936,11 @@ impl VersionSpecificResponseTypeGenerator {
             || field.name == "limitclustercount"
             || field.name == "limitclustersize"
         {
-            field_type =
-                format!("Option<{}>", self.map_ir_type_to_rust(&field.field_type, &field.name));
+            field_type = format!("Option<{}>", base_field_type);
         }
         // Override: bitcoind omits these fields in some modes/versions
         if Self::optional_field_override(rpc_name, &field.name) {
-            field_type =
-                format!("Option<{}>", self.map_ir_type_to_rust(&field.field_type, &field.name));
+            field_type = format!("Option<{}>", base_field_type);
         }
 
         // Add serde rename attribute if the field name was changed
@@ -856,6 +1005,14 @@ impl VersionSpecificResponseTypeGenerator {
                         &method_result,
                     );
                 rust_type.to_string()
+            }
+            ir::TypeKind::Object => {
+                // Decoded tx fields: IR uses Object (with nested array shape) for vin/vout; map to typed vecs.
+                match field_name {
+                    "vin" => "Vec<DecodedVin>".to_string(),
+                    "vout" => "Vec<DecodedVout>".to_string(),
+                    _ => "serde_json::Value".to_string(),
+                }
             }
             _ => "serde_json::Value".to_string(),
         };
@@ -1661,6 +1818,17 @@ impl VersionSpecificResponseTypeGenerator {
     /// Generate array wrapper for methods that return arrays
     fn generate_array_wrapper(&self, method: &RpcDef, struct_name: &str) -> Result<String> {
         let mut buf = String::new();
+        let elem_ty = Self::array_wrapper_element_type(&method.name);
+
+        if let Some(ty) = elem_ty {
+            if ty.starts_with("bitcoin::") {
+                let symbol = ty.split("::").last().unwrap_or(ty);
+                record_external_symbol("bitcoin", symbol);
+            }
+        }
+
+        let value_ty = elem_ty.unwrap_or("serde_json::Value");
+        let vec_ty = format!("Vec<{}>", value_ty);
 
         // Generate struct documentation using PascalCase canonical method name
         let canonical_name =
@@ -1678,7 +1846,7 @@ impl VersionSpecificResponseTypeGenerator {
         writeln!(&mut buf, "#[derive(Debug, Clone, PartialEq, Serialize)]")?;
         writeln!(&mut buf, "pub struct {} {{", struct_name)?;
         write_doc_line(&mut buf, "Wrapped array value", "    ")?;
-        writeln!(&mut buf, "    pub value: Vec<serde_json::Value>,")?;
+        writeln!(&mut buf, "    pub value: {},", vec_ty)?;
         writeln!(&mut buf, "}}")?;
         writeln!(&mut buf)?;
 
@@ -1688,24 +1856,21 @@ impl VersionSpecificResponseTypeGenerator {
         writeln!(&mut buf, "    where")?;
         writeln!(&mut buf, "        D: serde::Deserializer<'de>,")?;
         writeln!(&mut buf, "    {{")?;
-        writeln!(
-            &mut buf,
-            "        let value = Vec::<serde_json::Value>::deserialize(deserializer)?;"
-        )?;
+        writeln!(&mut buf, "        let value = Vec::<{}>::deserialize(deserializer)?;", value_ty)?;
         writeln!(&mut buf, "        Ok(Self {{ value }})")?;
         writeln!(&mut buf, "    }}")?;
         writeln!(&mut buf, "}}")?;
         writeln!(&mut buf)?;
 
         // Generate From implementations for transparent conversion
-        writeln!(&mut buf, "impl From<Vec<serde_json::Value>> for {} {{", struct_name)?;
-        writeln!(&mut buf, "    fn from(value: Vec<serde_json::Value>) -> Self {{")?;
+        writeln!(&mut buf, "impl From<{}> for {} {{", vec_ty, struct_name)?;
+        writeln!(&mut buf, "    fn from(value: {}) -> Self {{", vec_ty)?;
         writeln!(&mut buf, "        Self {{ value }}")?;
         writeln!(&mut buf, "    }}")?;
         writeln!(&mut buf, "}}")?;
         writeln!(&mut buf)?;
 
-        writeln!(&mut buf, "impl From<{}> for Vec<serde_json::Value> {{", struct_name)?;
+        writeln!(&mut buf, "impl From<{}> for {} {{", struct_name, vec_ty)?;
         writeln!(&mut buf, "    fn from(wrapper: {}) -> Self {{", struct_name)?;
         writeln!(&mut buf, "        wrapper.value")?;
         writeln!(&mut buf, "    }}")?;
@@ -1794,10 +1959,16 @@ impl VersionSpecificResponseTypeGenerator {
         }
     }
 
-    /// Names of decoded-tx types that we emit as full structs in emit_decoded_tx_types (not from IR).
-    /// DecodedScriptPubKey is no longer here; it is generated from the type registry when present in IR.
-    const DECODED_TX_TYPE_NAMES: &[&str] =
-        &["DecodedScriptSig", "DecodedPrevout", "DecodedVin", "DecodedVout", "DecodedTxDetails"];
+    /// Names of response types that we emit as full structs (not from IR).
+    /// Includes decoded-tx helper structs and GetBlockTemplateTransaction.
+    const MANUAL_RESPONSE_TYPE_NAMES: &[&str] = &[
+        "DecodedScriptSig",
+        "DecodedPrevout",
+        "DecodedVin",
+        "DecodedVout",
+        "DecodedTxDetails",
+        "GetBlockTemplateTransaction",
+    ];
 
     /// Generate a nested type: from type registry when present, else skip (decoded-tx) or type alias.
     fn generate_nested_type(
@@ -1812,8 +1983,8 @@ impl VersionSpecificResponseTypeGenerator {
                 return Ok(Some(buf));
             }
         }
-        // Skip types that we emit as full structs in emit_decoded_tx_types.
-        if Self::DECODED_TX_TYPE_NAMES.contains(&type_name) {
+        // Skip types that we emit as full structs via manual helpers (not from IR).
+        if Self::MANUAL_RESPONSE_TYPE_NAMES.contains(&type_name) {
             return Ok(None);
         }
         let type_alias = self.generate_type_alias(type_name)?;

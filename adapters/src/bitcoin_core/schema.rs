@@ -349,16 +349,16 @@ pub fn load_method_version_map() -> Result<HashMap<String, String>, Box<dyn std:
     Ok(method_to_version)
 }
 
-/// Look up the version when a method was first added from the canonical IR
+/// Look up the version when a method was first added from a preloaded version map.
 ///
-/// This queries the version map loaded from the canonical IR file to find when
-/// a method was first introduced. Returns None if the method is not found or
-/// if the version map cannot be loaded.
-fn get_method_version_added(method_name: &str) -> Option<String> {
-    match load_method_version_map() {
-        Ok(version_map) => version_map.get(method_name).cloned(),
-        Err(_) => None, // If we can't load version map, return None
-    }
+/// Returns None if the method is not in the map. The map is built once from the canonical IR
+/// so we never overwrite an existing version_added with the schema version for methods that
+/// were already in the canonical IR.
+fn get_method_version_added_from_map(
+    method_name: &str,
+    version_map: &HashMap<String, String>,
+) -> Option<String> {
+    version_map.get(method_name).cloned()
 }
 
 /// Extract version-specific IR from canonical IR
@@ -721,24 +721,29 @@ fn convert_rpc_method(raw: RawRpcMethod, version_added: Option<String>) -> RpcDe
 }
 
 /// Convert raw Bitcoin Core schema to ProtocolIR with optional version
+///
+/// `version_added` is preserved from the canonical IR (resources/ir/bitcoin.ir.json) when the
+/// method already exists there; only methods not in the canonical IR get the current schema
+/// version. The version map is loaded once so we never incorrectly overwrite an existing
+/// version_added (e.g. 30.2) with the schema version (e.g. 30.99) due to a failed or
+/// inconsistent re-read.
 pub fn convert_to_protocol_ir_with_version(raw: RawSchema, version: Option<String>) -> ProtocolIR {
     use ir::{ProtocolDef, ProtocolModule};
+
+    // Load canonical IR version map once and reuse for all methods, so we preserve existing
+    // version_added and never overwrite with schema version for methods that were already there.
+    let version_map = load_method_version_map().unwrap_or_default();
 
     let mut definitions = Vec::new();
 
     for (_, rpc) in raw.rpcs {
-        // Determine version_added based on available information
-        // Check the version map first to see if method existed in earlier version
         let version_added = {
-            let version_from_map = get_method_version_added(&rpc.name);
+            let version_from_map = get_method_version_added_from_map(&rpc.name, &version_map);
             if let Some(version) = version_from_map {
-                // Method found in version map, use that version
                 Some(version)
             } else if let Some(ref current_version) = version {
-                // Method not in version map, but we have a current version - use it
                 Some(current_version.clone())
             } else {
-                // Method not in version map and no current version provided - cannot determine
                 None
             }
         };

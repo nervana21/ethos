@@ -47,32 +47,60 @@ pub fn normalize_field_name(name: &str) -> String {
 pub fn map_parameter_type_to_rust(param_type: &str, param_name: &str) -> String {
     let normalized_param = normalize_field_name(param_name);
 
-    match param_type {
-        "string" | "hex" => {
-            // Specific field-name rules for strongly-typed Bitcoin types
-            // Fall back to String for generic string/hex parameters
-            match normalized_param.as_str() {
-                "address" => "bitcoin::Address".to_string(),
-                "blockhash" => "bitcoin::BlockHash".to_string(),
-                "txid" => "bitcoin::Txid".to_string(),
-                "scriptpubkey" | "script_pubkey" => "bitcoin::ScriptBuf".to_string(),
-                "script" => "bitcoin::ScriptBuf".to_string(),
-                "redeemscript" | "redeem_script" => "bitcoin::ScriptBuf".to_string(),
-                "witnessscript" | "witness_script" => "bitcoin::ScriptBuf".to_string(),
-                _ => "String".to_string(),
-            }
+    if matches!(param_type, "string" | "hex") {
+        // Specific field-name rules for strongly-typed Bitcoin types
+        // Fall back to String for generic string/hex parameters
+        return match normalized_param.as_str() {
+            "address" => "bitcoin::Address",
+            "blockhash" => "bitcoin::BlockHash",
+            "txid" => "bitcoin::Txid",
+            "scriptpubkey" | "script" | "redeemscript" | "witnessscript" => "bitcoin::ScriptBuf",
+            _ => "String",
         }
-        "number" | "int" | "integer" => {
-            // All numbers are i64 by default (including signed integers that can be negative)
-            // Specific field names like "changepos", "confirmations", "nblocks" can accept -1
-            "i64".to_string()
-        }
-        "boolean" | "bool" => "bool".to_string(),
-        "object" => "serde_json::Value".to_string(),
-        "array" => "Vec<serde_json::Value>".to_string(),
-        "range" => "serde_json::Value".to_string(),
-        _ => "serde_json::Value".to_string(),
+        .to_owned();
     }
+
+    // Amount-domain parameters get more specific handling based on field name.
+    if param_type == "amount" {
+        // feerate: sat/vB, maxfeerate: BTC/kvB. Both are fee *rates*, not plain amounts.
+        // Represent them with the shared FeeRate type; other amount fields stay as bitcoin::Amount.
+        return match normalized_param.as_str() {
+            "feerate" | "maxfeerate" => "FeeRate".to_owned(),
+            _ => "bitcoin::Amount".to_owned(),
+        };
+    }
+
+    // Object params with known shapes
+    if param_type == "object" {
+        return match normalized_param.as_str() {
+            // sendmany: address -> amount (BTC in JSON; rust-bitcoin Amount in Rust)
+            "amounts" => "std::collections::HashMap<bitcoin::Address<bitcoin::address::NetworkUnchecked>, bitcoin::Amount>".to_owned(),
+            // getblocktemplate: mode, capabilities, rules (struct emitted in generated params)
+            "templaterequest" => "GetBlockTemplateRequest".to_owned(),
+            _ => "serde_json::Value".to_owned(),
+        };
+    }
+
+    // Array params with known element types
+    if param_type == "array" {
+        return match normalized_param.as_str() {
+            // sendmany: list of address strings to subtract fee from
+            "subtractfeefrom" =>
+                "Vec<bitcoin::Address<bitcoin::address::NetworkUnchecked>>".to_owned(),
+            // sendall: list of { address, amount? } (struct emitted in generated params)
+            "recipients" => "Vec<SendallRecipient>".to_owned(),
+            _ => "Vec<serde_json::Value>".to_owned(),
+        };
+    }
+
+    match param_type {
+        // All numbers are i64 by default (including signed integers that can be negative)
+        // Specific field names like "changepos", "confirmations", "nblocks" can accept -1
+        "number" | "int" | "integer" => "i64",
+        "boolean" | "bool" => "bool",
+        _ => "serde_json::Value",
+    }
+    .to_owned()
 }
 
 #[cfg(test)]
@@ -122,6 +150,26 @@ mod tests {
 
         let array = map_parameter_type_to_rust("array", "any");
         assert_eq!(array, "Vec<serde_json::Value>");
+
+        let amounts = map_parameter_type_to_rust("object", "amounts");
+        assert!(
+            amounts.contains("HashMap")
+                && amounts.contains("Address")
+                && amounts.contains("bitcoin::Amount")
+        );
+
+        let subtractfeefrom = map_parameter_type_to_rust("array", "subtractfeefrom");
+        assert!(
+            subtractfeefrom.contains("Vec")
+                && subtractfeefrom.contains("Address")
+                && subtractfeefrom.contains("NetworkUnchecked")
+        );
+
+        let recipients = map_parameter_type_to_rust("array", "recipients");
+        assert!(recipients.contains("SendallRecipient"));
+
+        let template_request = map_parameter_type_to_rust("object", "template_request");
+        assert!(template_request.contains("GetBlockTemplateRequest"));
 
         let range = map_parameter_type_to_rust("range", "any");
         assert_eq!(range, "serde_json::Value");

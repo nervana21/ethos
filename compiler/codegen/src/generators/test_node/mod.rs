@@ -7,6 +7,9 @@ use ir::RpcDef;
 use types::Implementation;
 
 use super::doc_comment::{format_doc_comment, write_doc_comment};
+use super::fee_rate_utils::{
+    methods_use_amounts_map, methods_use_get_block_template_request, methods_use_sendall_recipient,
+};
 use crate::utils::{rpc_method_to_rust_name, sanitize_external_identifier, snake_to_pascal_case};
 use crate::{CodeGenerator, ProtocolVersion};
 pub mod utils;
@@ -69,10 +72,22 @@ impl TestNodeGenerator {
             .iter()
             .any(|m| m.params.iter().any(|p| p.param_type.name.contains("PublicKey")));
 
-        let uses_short_channel_id = methods
-            .iter()
-            .any(|m| m.params.iter().any(|p| p.param_type.name.contains("ShortChannelId")));
+        // Whether any param maps to the shared FeeRate type via the type adapter.
+        let uses_fee_rate = crate::generators::fee_rate_utils::methods_use_fee_rate(
+            methods.iter(),
+            type_adapter.as_ref(),
+        );
 
+        // Whether any param is FeeRate with name "maxfeerate" (needs custom BTC/kvB serde).
+        let uses_maxfeerate = crate::generators::fee_rate_utils::methods_use_maxfeerate(
+            methods.iter(),
+            type_adapter.as_ref(),
+        );
+        let uses_sendall_recipient =
+            methods_use_sendall_recipient(methods.iter(), type_adapter.as_ref());
+        let uses_get_block_template_request =
+            methods_use_get_block_template_request(methods.iter(), type_adapter.as_ref());
+        let uses_amounts_map = methods_use_amounts_map(methods.iter(), type_adapter.as_ref());
         // Add necessary imports
         if uses_hash_or_height {
             header.push_str("use crate::types::HashOrHeight;\n");
@@ -80,8 +95,135 @@ impl TestNodeGenerator {
         if uses_public_key {
             header.push_str("use crate::types::PublicKey;\n");
         }
-        if uses_short_channel_id {
-            header.push_str("use crate::types::ShortChannelId;\n");
+        if uses_fee_rate {
+            header.push_str("use crate::types::FeeRate;\n");
+        }
+
+        // Serde helper for Option<FeeRate> as maxfeerate (BTC/kvB f64). FeeRate has no built-in Serialize.
+        if uses_maxfeerate {
+            header.push_str(
+                r#"
+mod serde_fee_rate {
+    pub mod maxfeerate_opt {
+        use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
+        use crate::types::FeeRate;
+
+        #[allow(clippy::ref_option)]
+        pub fn serialize<S>(f: &Option<FeeRate>, s: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            match f {
+                Some(r) => s.serialize_some(&((r.to_sat_per_kvb_floor() as f64) / 100_000_000.0)),
+                None => s.serialize_none(),
+            }
+        }
+
+        pub fn deserialize<'d, D: Deserializer<'d>>(d: D) -> Result<Option<FeeRate>, D::Error> {
+            let opt: Option<f64> = Option::deserialize(d)?;
+            Ok(opt.map(|v| {
+                let sat_per_kvb = (v * 100_000_000.0).round().clamp(0.0, u32::MAX as f64) as u32;
+                FeeRate::from_sat_per_kvb(sat_per_kvb)
+            }))
+        }
+    }
+}
+
+"#,
+            );
+        }
+        // Serde helper for sendmany "amounts": HashMap<Address, Amount> with values as BTC in JSON.
+        if uses_amounts_map {
+            header.push_str(
+                r#"
+/// (De)serializes HashMap<Address, Amount> with values as BTC floats (for sendmany "amounts" param).
+pub mod serde_amounts_map {
+    use std::collections::HashMap;
+    use bitcoin::address::NetworkUnchecked;
+    use bitcoin::Address;
+    use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
+    pub fn serialize<S>(
+        map: &HashMap<Address<NetworkUnchecked>, bitcoin::Amount>,
+        s: S,
+    ) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        use serde::ser::SerializeMap;
+        let mut m = s.serialize_map(Some(map.len()))?;
+        for (k, v) in map {
+            m.serialize_entry(k, &v.to_btc())?;
+        }
+        m.end()
+    }
+
+    pub fn deserialize<'de, D>(
+        d: D,
+    ) -> Result<HashMap<Address<NetworkUnchecked>, bitcoin::Amount>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let map = HashMap::<Address<NetworkUnchecked>, f64>::deserialize(d)?;
+        map.into_iter()
+            .map(|(k, v)| {
+                bitcoin::Amount::from_btc(v).map(|a| (k, a)).map_err(serde::de::Error::custom)
+            })
+            .collect()
+    }
+}
+
+/// Reference wrapper for the sendmany "amounts" map; serializes to JSON with amounts as BTC.
+#[derive(Debug)]
+pub struct SendmanyAmountsRef<'a>(pub &'a std::collections::HashMap<bitcoin::Address<bitcoin::address::NetworkUnchecked>, bitcoin::Amount>);
+
+impl serde::Serialize for SendmanyAmountsRef<'_> {
+    fn serialize<S>(&self, s: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serde_amounts_map::serialize(self.0, s)
+    }
+}
+
+"#,
+            );
+        }
+
+        // Param types that are defined inline so the generated crate stays self-contained.
+        if uses_sendall_recipient {
+            header.push_str(
+                r#"
+/// One recipient for the sendall RPC (address and optional amount in BTC).
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq)]
+pub struct SendallRecipient {
+    /// Destination address (unchecked; use `.assume_checked()` or `.require_network()` when needed).
+    pub address: bitcoin::Address<bitcoin::address::NetworkUnchecked>,
+    /// Optional amount (omit to send remaining balance). Serialized as BTC in JSON.
+    #[serde(default, with = "bitcoin::amount::serde::as_btc::opt")]
+    pub amount: Option<bitcoin::Amount>,
+}
+
+"#,
+            );
+        }
+        if uses_get_block_template_request {
+            header.push_str(
+                r#"
+/// Request options for the getblocktemplate RPC (mode, capabilities, rules).
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq)]
+pub struct GetBlockTemplateRequest {
+    /// Optional mode: \"template\", \"proposal\", or omitted.
+    pub mode: Option<String>,
+    /// Optional list of capability strings.
+    pub capabilities: Option<Vec<String>>,
+    /// Optional list of rule strings.
+    pub rules: Option<Vec<String>>,
+}
+
+"#,
+            );
         }
 
         header.push('\n');
@@ -129,10 +271,33 @@ impl TestNodeGenerator {
                     &arg,
                     type_adapter.as_ref(),
                 );
-                let ty = if !p.required { format!("Option<{base_ty}>") } else { base_ty };
+                let ty = if !p.required { format!("Option<{base_ty}>") } else { base_ty.clone() };
 
                 write_doc_comment(&mut code, &p.description, "    ")
                     .expect("Failed to write field doc");
+                // FeeRate has no Serialize; use crate serde(with) helpers or bitcoin_units.
+                if base_ty == "FeeRate" {
+                    let with_path = if p.name == "maxfeerate" {
+                        "crate::bitcoin_core_client::params::serde_fee_rate::maxfeerate_opt"
+                    } else if p.required {
+                        "bitcoin_units::fee_rate::serde::as_sat_per_vb_floor"
+                    } else {
+                        "bitcoin_units::fee_rate::serde::as_sat_per_vb_floor::opt"
+                    };
+                    writeln!(code, "    #[serde(with = \"{}\")]", with_path)
+                        .expect("Failed to write serde attribute");
+                }
+                // sendmany "amounts": HashMap<Address, Amount> serializes values as BTC in JSON.
+                if p.name == "amounts" && base_ty.contains("HashMap") && base_ty.contains("Amount")
+                {
+                    writeln!(code, "    #[serde(with = \"crate::bitcoin_core_client::params::serde_amounts_map\")]")
+                        .expect("Failed to write serde attribute");
+                }
+                // Preserve RPC JSON key when Rust field name differs (e.g. minconf -> min_conf)
+                if field != p.name {
+                    writeln!(code, "    #[serde(rename = \"{}\")]", p.name)
+                        .expect("Failed to write serde rename");
+                }
                 writeln!(code, "    pub {}: {},", field, ty).expect("Failed to write field");
             }
             writeln!(code, "}}\n").expect("Failed to write struct closing");

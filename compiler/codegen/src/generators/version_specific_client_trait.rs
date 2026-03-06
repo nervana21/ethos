@@ -10,6 +10,7 @@ use types::type_adapter::TypeAdapter;
 use types::{Implementation, ProtocolVersion, TypeRegistry};
 
 use super::doc_comment::format_doc_comment;
+use super::fee_rate_utils::{methods_use_amounts_map, methods_use_get_block_template_request};
 use crate::generators::version_specific_response_type::record_external_symbol_usage;
 use crate::utils::{
     canonical_from_adapter_method, protocol_rpc_method_to_rust_name, sanitize_external_identifier,
@@ -120,11 +121,40 @@ impl VersionSpecificClientTraitGenerator {
             .iter()
             .any(|m| m.params.iter().any(|arg| arg.param_type.name.contains("PublicKey")));
 
-        let uses_short_channel_id = methods
-            .iter()
-            .any(|m| m.params.iter().any(|arg| arg.param_type.name.contains("ShortChannelId")));
+        let adapter = self.get_adapter();
+        let uses_fee_rate = crate::generators::fee_rate_utils::methods_use_fee_rate(
+            methods.iter().map(|m| *m),
+            adapter.as_ref(),
+        );
+        let uses_sendall_recipient =
+            crate::generators::fee_rate_utils::methods_use_sendall_recipient(
+                methods.iter().map(|m| *m),
+                adapter.as_ref(),
+            );
+        let uses_get_block_template_request =
+            methods_use_get_block_template_request(methods.iter().map(|m| *m), adapter.as_ref());
+        let uses_amounts_map =
+            methods_use_amounts_map(methods.iter().map(|m| *m), adapter.as_ref());
 
         // Add necessary imports
+        let params_mod = self.protocol.client_dir_name();
+        let mut params_imports = Vec::new();
+        if uses_sendall_recipient {
+            params_imports.push("SendallRecipient");
+        }
+        if uses_get_block_template_request {
+            params_imports.push("GetBlockTemplateRequest");
+        }
+        if uses_amounts_map {
+            params_imports.push("SendmanyAmountsRef");
+        }
+        if !params_imports.is_empty() {
+            imports.push(format!(
+                "use crate::{}::params::{{{}}}",
+                params_mod,
+                params_imports.join(", ")
+            ));
+        }
         if uses_hash_or_height {
             imports.push("use crate::types::HashOrHeight".to_string());
         }
@@ -134,8 +164,8 @@ impl VersionSpecificClientTraitGenerator {
             // Record external symbol usage so lib.rs can re-export it
             record_external_symbol_usage("bitcoin", "PublicKey");
         }
-        if uses_short_channel_id {
-            imports.push("use crate::types::ShortChannelId".to_string());
+        if uses_fee_rate {
+            imports.push("use crate::types::FeeRate".to_string());
         }
 
         // Avoid adding comment lines or serde imports that may be unused
@@ -236,35 +266,36 @@ impl VersionSpecificClientTraitGenerator {
             .unwrap_or_else(|e| panic!("{}", e));
         let response_type = self.get_response_type(rpc);
 
+        // Build arguments once so they're in scope for both params_sig and method body
+        let arguments: Vec<types::Argument> = rpc
+            .params
+            .iter()
+            .map(|param| {
+                let param_type = &param.param_type;
+                let protocol_type = param_type.protocol_type.as_ref().unwrap_or_else(|| {
+                    panic!(
+                        "Parameter '{}' in method '{}' is missing protocol_type. Rust type name is '{}'. \
+                        All parameters must have protocol_type set for proper type categorization.",
+                        param.name, rpc.name, param_type.name
+                    )
+                });
+                types::Argument {
+                    names: vec![param.name.clone()],
+                    type_: protocol_type.clone(),
+                    required: param.required,
+                    description: param.description.clone(),
+                    oneline_description: String::new(),
+                    also_positional: false,
+                    hidden: false,
+                    type_str: None,
+                }
+            })
+            .collect();
+
         // Generate individual parameters instead of struct
         let params_sig = if rpc.params.is_empty() {
             "".to_string()
         } else {
-            let arguments: Vec<types::Argument> = rpc
-                .params
-                .iter()
-                .map(|param| {
-                    let param_type = &param.param_type;
-                    let protocol_type = param_type.protocol_type.as_ref().unwrap_or_else(|| {
-                        panic!(
-							"Parameter '{}' in method '{}' is missing protocol_type. Rust type name is '{}'. \
-							All parameters must have protocol_type set for proper type categorization.",
-							param.name, rpc.name, param_type.name
-						)
-                    });
-                    types::Argument {
-                        names: vec![param.name.clone()],
-                        type_: protocol_type.clone(),
-                        required: param.required,
-                        description: param.description.clone(),
-                        oneline_description: String::new(),
-                        also_positional: false,
-                        hidden: false,
-                        type_str: None,
-                    }
-                })
-                .collect();
-
             let adapter = self.get_adapter();
             let param_parts: Vec<String> = arguments
                 .iter()
@@ -308,24 +339,66 @@ impl VersionSpecificClientTraitGenerator {
         // Add method body - delegate to the transport layer
         // Generate individual parameter serialization
         if !rpc.params.is_empty() {
+            let adapter = self.get_adapter();
             // Create params array from individual parameters
             // Optional parameters (Option<T>) should only be included if they're Some(...)
             // Use rpc_params as variable name to avoid conflict with parameter named "params"
             writeln!(buf, "        let mut rpc_params = vec![];")
                 .expect("Failed to write params array initialization");
-            for param in &rpc.params {
+            for (param, arg) in rpc.params.iter().zip(arguments.iter()) {
                 let param_name = sanitize_external_identifier(&param.name);
+                let (base_ty, _) =
+                    TypeRegistry::map_argument_type_with_adapter(arg, adapter.as_ref());
+                let field_name = param.name.as_str();
+                let is_fee_rate = field_name == "fee_rate";
+                let is_max_fee_rate = field_name == "maxfeerate";
+                let is_amounts_map = field_name == "amounts"
+                    && base_ty.contains("HashMap")
+                    && base_ty.contains("Amount");
+
+                // Serialize parameters according to their semantic type and JSON unit.
+                // - FeeRate: fee_rate → sat/vB numeric, maxfeerate → BTC/kvB numeric
+                // - bitcoin::Amount: BTC floats via to_btc()
+                // - sendmany "amounts": HashMap<Address, Amount> → JSON object with BTC float values
+                // - everything else: default json!(param)
+                let push_expr = if base_ty == "FeeRate" && is_fee_rate {
+                    format!("serde_json::json!({}.to_sat_per_vb_floor())", param_name)
+                } else if base_ty == "FeeRate" && is_max_fee_rate {
+                    format!(
+                        "serde_json::json!(({}.to_sat_per_kvb_floor() as f64) / 100_000_000.0)",
+                        param_name
+                    )
+                } else if base_ty == "bitcoin::Amount" {
+                    format!("serde_json::json!({}.to_btc())", param_name)
+                } else if is_amounts_map {
+                    format!(
+                        "serde_json::to_value(SendmanyAmountsRef(&{})).expect(\"serialize amounts\")",
+                        param_name
+                    )
+                } else {
+                    format!("serde_json::json!({})", param_name)
+                };
+
                 if !param.required {
-                    // Optional parameter: only include if Some
+                    let val_expr = if base_ty == "FeeRate" && is_fee_rate {
+                        "serde_json::json!(val.to_sat_per_vb_floor())"
+                    } else if base_ty == "FeeRate" && is_max_fee_rate {
+                        "serde_json::json!((val.to_sat_per_kvb_floor() as f64) / 100_000_000.0)"
+                    } else if base_ty == "bitcoin::Amount" {
+                        "serde_json::json!(val.to_btc())"
+                    } else if is_amounts_map {
+                        "serde_json::to_value(SendmanyAmountsRef(&val)).expect(\"serialize amounts\")"
+                    } else {
+                        "serde_json::json!(val)"
+                    };
                     writeln!(buf, "        if let Some(val) = {} {{", param_name)
                         .expect("Failed to write optional parameter check");
-                    writeln!(buf, "            rpc_params.push(serde_json::json!(val));")
+                    writeln!(buf, "            rpc_params.push({});", val_expr)
                         .expect("Failed to write optional parameter push");
                     writeln!(buf, "        }}")
                         .expect("Failed to write optional parameter closing");
                 } else {
-                    // Required parameter: always include
-                    writeln!(buf, "        rpc_params.push(serde_json::json!({}));", param_name)
+                    writeln!(buf, "        rpc_params.push({});", push_expr)
                         .expect("Failed to write required parameter serialization");
                 }
             }

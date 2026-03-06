@@ -137,14 +137,12 @@ mod tests {
             CAP_RPC,
             "Bitcoin Core RPC",
             vec![ProtocolDef::RpcMethod(rpc_def1)],
-            "bitcoin_core",
         );
 
         let module2 = ir::ProtocolModule::from_source(
             CAP_RPC,
             "Bitcoin Core RPC",
             vec![ProtocolDef::RpcMethod(rpc_def2)],
-            "bitcoin_core",
         );
 
         let ir1 = ProtocolIR::new(vec![module1]);
@@ -179,7 +177,6 @@ mod tests {
             CAP_RPC,
             "Bitcoin Core RPC",
             vec![ProtocolDef::RpcMethod(rpc_def)],
-            "bitcoin_core",
         );
 
         let ir = ProtocolIR::new(vec![module]);
@@ -225,14 +222,12 @@ mod tests {
             CAP_RPC,
             "Bitcoin Core RPC",
             vec![ProtocolDef::RpcMethod(rpc_def1)],
-            "bitcoin_core",
         );
 
         let module2 = ir::ProtocolModule::from_source(
             CAP_RPC,
             "Bitcoin Core RPC",
             vec![ProtocolDef::RpcMethod(rpc_def2)],
-            "bitcoin_core",
         );
 
         let ir1 = ProtocolIR::new(vec![module1]);

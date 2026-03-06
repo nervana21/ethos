@@ -30,7 +30,9 @@ pub mod rpc_adapter;
 
 // Re-export the main ProtocolAdapter types for convenience
 pub use adapter_facade::*;
-pub use bitcoin_core::types::{BitcoinCoreRpcType, BitcoinCoreTypeRegistry};
+pub use bitcoin_core::types::{
+    BitcoinCoreRpcType, BitcoinCoreTypeRegistry, GetBlockTemplateRequest, SendallRecipient,
+};
 pub use fuzz_types::{FuzzCase, FuzzResult, ProtocolAdapter as FuzzProtocolAdapter};
 pub use protocol_adapter::*;
 pub use rpc_adapter::RpcAdapter;
