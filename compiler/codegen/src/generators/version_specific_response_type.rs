@@ -107,11 +107,17 @@ impl VersionSpecificResponseTypeGenerator {
             if let Some(result) = &method.result {
                 if let Some(fields) = &result.fields {
                     for field in fields {
+                        let rust_type =
+                            Self::response_field_type_override(method.name.as_str(), &field.name)
+                                .map(String::from)
+                                .unwrap_or_else(|| {
+                                    self.map_ir_type_to_rust(&field.field_type, &field.name)
+                                });
                         let field_type = &field.field_type.name;
-                        if field_type.contains("BTreeMap") {
+                        if field_type.contains("BTreeMap") || rust_type.contains("BTreeMap") {
                             needs_btreemap = true;
                         }
-                        if field_type.contains("HashMap") {
+                        if field_type.contains("HashMap") || rust_type.contains("HashMap") {
                             needs_hashmap = true;
                         }
                         if field_type.contains("KeySource") {
@@ -133,7 +139,6 @@ impl VersionSpecificResponseTypeGenerator {
                             needs_proprietarykey = true;
                         }
                         // Check if field type is bitcoin::Amount
-                        let rust_type = self.map_ir_type_to_rust(&field.field_type, &field.name);
                         if rust_type == "bitcoin::Amount" || rust_type.contains("bitcoin::Amount") {
                             needs_amount_deserializer = true;
                         }
@@ -404,6 +409,25 @@ impl VersionSpecificResponseTypeGenerator {
         "listtransactions",
         "listunspent",
     ];
+
+    /// For TOP_LEVEL_ARRAY_METHODS, optional element type for stronger typing (None = Vec<serde_json::Value>).
+    fn array_wrapper_element_type(method_name: &str) -> Option<&'static str> {
+        match method_name {
+            "deriveaddresses" => Some("String"),
+            "getorphantxs" => Some("bitcoin::Txid"),
+            _ => None,
+        }
+    }
+
+    /// Stronger types for specific (rpc_name, field_name) when the default would be serde_json::Value.
+    fn response_field_type_override(rpc_name: &str, field_name: &str) -> Option<&'static str> {
+        match (rpc_name, field_name) {
+            ("getblocktemplate", "vbavailable") => Some("HashMap<String, u32>"),
+            ("getblocktemplate", "coinbaseaux") => Some("HashMap<String, String>"),
+            (_, "transactionid") => Some("bitcoin::Txid"),
+            _ => None,
+        }
+    }
 
     /// RPCs that return arbitrary JSON (echo/echojson); need Value wrapper with whole-response deserialize
     const ECHO_JSON_VALUE_RPCS: &[&str] = &["echo", "echojson"];
@@ -831,8 +855,14 @@ impl VersionSpecificResponseTypeGenerator {
             write_doc_comment(buf, &field.description, "    ")?;
         }
 
-        // Generate field definition
-        let base_field_type = self.map_ir_type_to_rust(&field.field_type, &field.name);
+        // Generate field definition (use stronger type override when set)
+        let base_field_type = Self::response_field_type_override(rpc_name, &field.name)
+            .map(String::from)
+            .unwrap_or_else(|| self.map_ir_type_to_rust(&field.field_type, &field.name));
+        if base_field_type.starts_with("bitcoin::") {
+            let symbol = base_field_type.split("::").last().unwrap_or(&base_field_type);
+            record_external_symbol("bitcoin", symbol);
+        }
         let field_name = self.sanitize_identifier(&field.name);
         let mut field_type = if field.required && !force_optional_conditional {
             base_field_type.clone()
@@ -850,13 +880,11 @@ impl VersionSpecificResponseTypeGenerator {
             || field.name == "limitclustercount"
             || field.name == "limitclustersize"
         {
-            field_type =
-                format!("Option<{}>", self.map_ir_type_to_rust(&field.field_type, &field.name));
+            field_type = format!("Option<{}>", base_field_type);
         }
         // Override: bitcoind omits these fields in some modes/versions
         if Self::optional_field_override(rpc_name, &field.name) {
-            field_type =
-                format!("Option<{}>", self.map_ir_type_to_rust(&field.field_type, &field.name));
+            field_type = format!("Option<{}>", base_field_type);
         }
 
         // Add serde rename attribute if the field name was changed
@@ -921,6 +949,14 @@ impl VersionSpecificResponseTypeGenerator {
                         &method_result,
                     );
                 rust_type.to_string()
+            }
+            ir::TypeKind::Object => {
+                // Decoded tx fields: IR uses Object (with nested array shape) for vin/vout; map to typed vecs.
+                match field_name {
+                    "vin" => "Vec<DecodedVin>".to_string(),
+                    "vout" => "Vec<DecodedVout>".to_string(),
+                    _ => "serde_json::Value".to_string(),
+                }
             }
             _ => "serde_json::Value".to_string(),
         };
@@ -1726,6 +1762,17 @@ impl VersionSpecificResponseTypeGenerator {
     /// Generate array wrapper for methods that return arrays
     fn generate_array_wrapper(&self, method: &RpcDef, struct_name: &str) -> Result<String> {
         let mut buf = String::new();
+        let elem_ty = Self::array_wrapper_element_type(&method.name);
+
+        if let Some(ty) = elem_ty {
+            if ty.starts_with("bitcoin::") {
+                let symbol = ty.split("::").last().unwrap_or(ty);
+                record_external_symbol("bitcoin", symbol);
+            }
+        }
+
+        let value_ty = elem_ty.unwrap_or("serde_json::Value");
+        let vec_ty = format!("Vec<{}>", value_ty);
 
         // Generate struct documentation using PascalCase canonical method name
         let canonical_name =
@@ -1743,7 +1790,7 @@ impl VersionSpecificResponseTypeGenerator {
         writeln!(&mut buf, "#[derive(Debug, Clone, PartialEq, Serialize)]")?;
         writeln!(&mut buf, "pub struct {} {{", struct_name)?;
         write_doc_line(&mut buf, "Wrapped array value", "    ")?;
-        writeln!(&mut buf, "    pub value: Vec<serde_json::Value>,")?;
+        writeln!(&mut buf, "    pub value: {},", vec_ty)?;
         writeln!(&mut buf, "}}")?;
         writeln!(&mut buf)?;
 
@@ -1753,24 +1800,21 @@ impl VersionSpecificResponseTypeGenerator {
         writeln!(&mut buf, "    where")?;
         writeln!(&mut buf, "        D: serde::Deserializer<'de>,")?;
         writeln!(&mut buf, "    {{")?;
-        writeln!(
-            &mut buf,
-            "        let value = Vec::<serde_json::Value>::deserialize(deserializer)?;"
-        )?;
+        writeln!(&mut buf, "        let value = Vec::<{}>::deserialize(deserializer)?;", value_ty)?;
         writeln!(&mut buf, "        Ok(Self {{ value }})")?;
         writeln!(&mut buf, "    }}")?;
         writeln!(&mut buf, "}}")?;
         writeln!(&mut buf)?;
 
         // Generate From implementations for transparent conversion
-        writeln!(&mut buf, "impl From<Vec<serde_json::Value>> for {} {{", struct_name)?;
-        writeln!(&mut buf, "    fn from(value: Vec<serde_json::Value>) -> Self {{")?;
+        writeln!(&mut buf, "impl From<{}> for {} {{", vec_ty, struct_name)?;
+        writeln!(&mut buf, "    fn from(value: {}) -> Self {{", vec_ty)?;
         writeln!(&mut buf, "        Self {{ value }}")?;
         writeln!(&mut buf, "    }}")?;
         writeln!(&mut buf, "}}")?;
         writeln!(&mut buf)?;
 
-        writeln!(&mut buf, "impl From<{}> for Vec<serde_json::Value> {{", struct_name)?;
+        writeln!(&mut buf, "impl From<{}> for {} {{", struct_name, vec_ty)?;
         writeln!(&mut buf, "    fn from(wrapper: {}) -> Self {{", struct_name)?;
         writeln!(&mut buf, "        wrapper.value")?;
         writeln!(&mut buf, "    }}")?;
