@@ -728,6 +728,53 @@ impl VersionSpecificResponseTypeGenerator {
         Ok(())
     }
 
+    /// Emit GetBlockTemplateTransaction struct for getblocktemplate response "transactions" array.
+    /// BIP 22/23/145: data, depends, fee (optional), hash, sigops (optional), txid, weight.
+    fn emit_get_block_template_transaction(&self, buf: &mut String) -> Result<()> {
+        write_doc_line(
+            buf,
+            "One transaction entry in getblocktemplate \"transactions\" array (BIP 22/23/145).",
+            "",
+        )?;
+        writeln!(buf, "#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]")?;
+        writeln!(buf, "pub struct GetBlockTemplateTransaction {{")?;
+        write_doc_comment(buf, "Transaction data encoded in hexadecimal (byte-for-byte).", "    ")?;
+        writeln!(buf, "    pub data: String,")?;
+        write_doc_comment(
+            buf,
+            "1-based indexes of transactions in the 'transactions' list that must be present before this one.",
+            "    ",
+        )?;
+        writeln!(buf, "    pub depends: Vec<i64>,")?;
+        write_doc_comment(
+            buf,
+            "Difference in value between inputs and outputs (satoshis); absent when unknown.",
+            "    ",
+        )?;
+        writeln!(buf, "    #[serde(default, skip_serializing_if = \"Option::is_none\")]")?;
+        writeln!(buf, "    pub fee: Option<i64>,")?;
+        write_doc_comment(
+            buf,
+            "Transaction hash including witness data (byte-reversed hex).",
+            "    ",
+        )?;
+        writeln!(buf, "    pub hash: String,")?;
+        write_doc_comment(buf, "Total SigOps cost for block limits; absent when unknown.", "    ")?;
+        writeln!(buf, "    #[serde(default, skip_serializing_if = \"Option::is_none\")]")?;
+        writeln!(buf, "    pub sigops: Option<i64>,")?;
+        write_doc_comment(
+            buf,
+            "Transaction hash excluding witness data (byte-reversed hex).",
+            "    ",
+        )?;
+        writeln!(buf, "    pub txid: String,")?;
+        write_doc_comment(buf, "Total transaction weight for block limits.", "    ")?;
+        writeln!(buf, "    pub weight: i64,")?;
+        writeln!(buf, "}}")?;
+        writeln!(buf)?;
+        Ok(())
+    }
+
     /// Generate response type for a specific method
     fn generate_method_response(&self, method: &RpcDef) -> Result<Option<String>> {
         // RPCs that return a top-level array: generate array wrapper instead of struct
