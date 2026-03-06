@@ -372,7 +372,7 @@ impl VersionSpecificClientTraitGenerator {
                     format!("serde_json::json!({}.to_btc())", param_name)
                 } else if is_amounts_map {
                     format!(
-                        "serde_json::json!({}.iter().map(|(k, v)| (serde_json::to_value(k).unwrap().as_str().unwrap().to_string(), v.to_btc())).collect::<std::collections::HashMap<_, _>>())",
+                        "serde_json::to_value(SendmanyAmountsRef(&{})).expect(\"serialize amounts\")",
                         param_name
                     )
                 } else {
@@ -387,7 +387,7 @@ impl VersionSpecificClientTraitGenerator {
                     } else if base_ty == "bitcoin::Amount" {
                         "serde_json::json!(val.to_btc())"
                     } else if is_amounts_map {
-                        "serde_json::json!(val.iter().map(|(k, v)| (serde_json::to_value(k).unwrap().as_str().unwrap().to_string(), v.to_btc())).collect::<std::collections::HashMap<_, _>>())"
+                        "serde_json::to_value(SendmanyAmountsRef(&val)).expect(\"serialize amounts\")"
                     } else {
                         "serde_json::json!(val)"
                     };
