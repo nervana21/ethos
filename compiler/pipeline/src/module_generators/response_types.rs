@@ -49,7 +49,6 @@ impl ModuleGenerator for ResponseTypesModuleGenerator {
             types_content,
             "pub enum HashOrHeight {{ Hash(bitcoin::BlockHash), Height(u32) }}"
         )?;
-        writeln!(types_content, "pub type ShortChannelId = String;")?;
         std::fs::write(&types_mod_rs, types_content)?;
 
         Ok(())
