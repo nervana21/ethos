@@ -137,19 +137,22 @@ impl VersionSpecificClientTraitGenerator {
             methods_use_amounts_map(methods.iter().map(|m| *m), adapter.as_ref());
 
         // Add necessary imports
-        if uses_sendall_recipient || uses_get_block_template_request {
-            let params_mod = self.protocol.client_dir_name();
-            let mut params_types = Vec::new();
-            if uses_sendall_recipient {
-                params_types.push("SendallRecipient");
-            }
-            if uses_get_block_template_request {
-                params_types.push("GetBlockTemplateRequest");
-            }
+        let params_mod = self.protocol.client_dir_name();
+        let mut params_imports = Vec::new();
+        if uses_sendall_recipient {
+            params_imports.push("SendallRecipient");
+        }
+        if uses_get_block_template_request {
+            params_imports.push("GetBlockTemplateRequest");
+        }
+        if uses_amounts_map {
+            params_imports.push("SendmanyAmountsRef");
+        }
+        if !params_imports.is_empty() {
             imports.push(format!(
                 "use crate::{}::params::{{{}}}",
                 params_mod,
-                params_types.join(", ")
+                params_imports.join(", ")
             ));
         }
         if uses_hash_or_height {
