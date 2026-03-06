@@ -24,6 +24,17 @@ pub struct SendallRecipient {
     pub amount: Option<bitcoin::Amount>,
 }
 
+/// Request options for the `getblocktemplate` RPC (mode, capabilities, rules).
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct GetBlockTemplateRequest {
+    /// Optional mode: "template", "proposal", or omitted.
+    pub mode: Option<String>,
+    /// Optional list of capability strings.
+    pub capabilities: Option<Vec<String>>,
+    /// Optional list of rule strings.
+    pub rules: Option<Vec<String>>,
+}
+
 /// Bitcoin Core-specific type for representing either a block hash or height.
 ///
 /// This type is commonly used in Bitcoin Core RPC methods where a parameter
