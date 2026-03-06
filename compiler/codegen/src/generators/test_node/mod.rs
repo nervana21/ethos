@@ -133,6 +133,24 @@ impl TestNodeGenerator {
 
                 write_doc_comment(&mut code, &p.description, "    ")
                     .expect("Failed to write field doc");
+                // FeeRate has no Serialize; use crate serde(with) helpers or bitcoin_units.
+                if base_ty == "FeeRate" {
+                    let with_path = if p.name == "maxfeerate" {
+                        "crate::bitcoin_core_client::params::serde_fee_rate::maxfeerate_opt"
+                    } else if p.required {
+                        "bitcoin_units::fee_rate::serde::as_sat_per_vb_floor"
+                    } else {
+                        "bitcoin_units::fee_rate::serde::as_sat_per_vb_floor::opt"
+                    };
+                    writeln!(code, "    #[serde(with = \"{}\")]", with_path)
+                        .expect("Failed to write serde attribute");
+                }
+                // sendmany "amounts": HashMap<Address, Amount> serializes values as BTC in JSON.
+                if p.name == "amounts" && base_ty.contains("HashMap") && base_ty.contains("Amount")
+                {
+                    writeln!(code, "    #[serde(with = \"crate::bitcoin_core_client::params::serde_amounts_map\")]")
+                        .expect("Failed to write serde attribute");
+                }
                 // Preserve RPC JSON key when Rust field name differs (e.g. minconf -> min_conf)
                 if field != p.name {
                     writeln!(code, "    #[serde(rename = \"{}\")]", p.name)
