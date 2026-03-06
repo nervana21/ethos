@@ -362,7 +362,7 @@ impl ProtocolIR {
             defs.extend(types_by_name.into_values().map(ProtocolDef::Type));
 
             // Create merged module
-            let module = ProtocolModule::from_source(&name, &desc, defs, "merged");
+            let module = ProtocolModule::from_source(&name, &desc, defs);
             merged_modules.push(module);
         }
 
@@ -411,12 +411,7 @@ impl ProtocolModule {
     pub fn definitions_mut(&mut self) -> &mut Vec<ProtocolDef> { &mut self.definitions }
 
     /// Create a new protocol module
-    pub fn from_source(
-        name: &str,
-        desc: &str,
-        defs: Vec<ProtocolDef>,
-        _source: &'static str,
-    ) -> Self {
+    pub fn from_source(name: &str, desc: &str, defs: Vec<ProtocolDef>) -> Self {
         ProtocolModule::new(name.to_string(), desc.to_string(), defs)
     }
 }
