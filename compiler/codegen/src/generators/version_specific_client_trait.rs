@@ -347,10 +347,14 @@ impl VersionSpecificClientTraitGenerator {
                 let field_name = param.name.as_str();
                 let is_fee_rate = field_name == "fee_rate";
                 let is_max_fee_rate = field_name == "maxfeerate";
+                let is_amounts_map = field_name == "amounts"
+                    && base_ty.contains("HashMap")
+                    && base_ty.contains("Amount");
 
                 // Serialize parameters according to their semantic type and JSON unit.
                 // - FeeRate: fee_rate → sat/vB numeric, maxfeerate → BTC/kvB numeric
                 // - bitcoin::Amount: BTC floats via to_btc()
+                // - sendmany "amounts": HashMap<Address, Amount> → JSON object with BTC float values
                 // - everything else: default json!(param)
                 let push_expr = if base_ty == "FeeRate" && is_fee_rate {
                     format!("serde_json::json!({}.to_sat_per_vb_floor())", param_name)
@@ -361,6 +365,11 @@ impl VersionSpecificClientTraitGenerator {
                     )
                 } else if base_ty == "bitcoin::Amount" {
                     format!("serde_json::json!({}.to_btc())", param_name)
+                } else if is_amounts_map {
+                    format!(
+                        "serde_json::json!({}.iter().map(|(k, v)| (serde_json::to_value(k).unwrap().as_str().unwrap().to_string(), v.to_btc())).collect::<std::collections::HashMap<_, _>>())",
+                        param_name
+                    )
                 } else {
                     format!("serde_json::json!({})", param_name)
                 };
@@ -372,6 +381,8 @@ impl VersionSpecificClientTraitGenerator {
                         "serde_json::json!((val.to_sat_per_kvb_floor() as f64) / 100_000_000.0)"
                     } else if base_ty == "bitcoin::Amount" {
                         "serde_json::json!(val.to_btc())"
+                    } else if is_amounts_map {
+                        "serde_json::json!(val.iter().map(|(k, v)| (serde_json::to_value(k).unwrap().as_str().unwrap().to_string(), v.to_btc())).collect::<std::collections::HashMap<_, _>>())"
                     } else {
                         "serde_json::json!(val)"
                     };
