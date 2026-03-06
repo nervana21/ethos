@@ -7,6 +7,9 @@ use ir::RpcDef;
 use types::Implementation;
 
 use super::doc_comment::{format_doc_comment, write_doc_comment};
+use super::fee_rate_utils::{
+    methods_use_amounts_map, methods_use_get_block_template_request, methods_use_sendall_recipient,
+};
 use crate::utils::{rpc_method_to_rust_name, sanitize_external_identifier, snake_to_pascal_case};
 use crate::{CodeGenerator, ProtocolVersion};
 pub mod utils;
@@ -80,38 +83,11 @@ impl TestNodeGenerator {
             methods.iter(),
             type_adapter.as_ref(),
         );
-        // Whether any param uses SendallRecipient or GetBlockTemplateRequest (we emit them inline).
-        let mut uses_sendall_recipient = false;
-        let mut uses_get_block_template_request = false;
-        let mut uses_amounts_map = false;
-        for m in methods {
-            for p in &m.params {
-                let protocol_type = p.param_type.protocol_type.as_deref().unwrap_or("");
-                let arg = types::Argument {
-                    names: vec![p.name.clone()],
-                    type_: protocol_type.to_string(),
-                    required: p.required,
-                    description: String::new(),
-                    oneline_description: String::new(),
-                    also_positional: false,
-                    hidden: false,
-                    type_str: None,
-                };
-                let (ty, _) = types::TypeRegistry::map_argument_type_with_adapter(
-                    &arg,
-                    type_adapter.as_ref(),
-                );
-                if ty.contains("SendallRecipient") {
-                    uses_sendall_recipient = true;
-                }
-                if ty.contains("GetBlockTemplateRequest") {
-                    uses_get_block_template_request = true;
-                }
-                if p.name == "amounts" && ty.contains("HashMap") && ty.contains("Amount") {
-                    uses_amounts_map = true;
-                }
-            }
-        }
+        let uses_sendall_recipient =
+            methods_use_sendall_recipient(methods.iter(), type_adapter.as_ref());
+        let uses_get_block_template_request =
+            methods_use_get_block_template_request(methods.iter(), type_adapter.as_ref());
+        let uses_amounts_map = methods_use_amounts_map(methods.iter(), type_adapter.as_ref());
         // Add necessary imports
         if uses_hash_or_height {
             header.push_str("use crate::types::HashOrHeight;\n");
