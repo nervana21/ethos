@@ -60,6 +60,16 @@ pub fn map_parameter_type_to_rust(param_type: &str, param_name: &str) -> String 
         .to_owned();
     }
 
+    // Amount-domain parameters get more specific handling based on field name.
+    if param_type == "amount" {
+        // feerate: sat/vB, maxfeerate: BTC/kvB. Both are fee *rates*, not plain amounts.
+        // Represent them with the shared FeeRate type; other amount fields stay as bitcoin::Amount.
+        return match normalized_param.as_str() {
+            "feerate" | "maxfeerate" => "FeeRate".to_owned(),
+            _ => "bitcoin::Amount".to_owned(),
+        };
+    }
+
     match param_type {
         // All numbers are i64 by default (including signed integers that can be negative)
         // Specific field names like "changepos", "confirmations", "nblocks" can accept -1
