@@ -70,12 +70,34 @@ pub fn map_parameter_type_to_rust(param_type: &str, param_name: &str) -> String 
         };
     }
 
+    // Object params with known shapes
+    if param_type == "object" {
+        return match normalized_param.as_str() {
+            // sendmany: address -> amount (BTC in JSON; rust-bitcoin Amount in Rust)
+            "amounts" => "std::collections::HashMap<bitcoin::Address<bitcoin::address::NetworkUnchecked>, bitcoin::Amount>".to_owned(),
+            // getblocktemplate: mode, capabilities, rules (struct emitted in generated params)
+            "templaterequest" => "GetBlockTemplateRequest".to_owned(),
+            _ => "serde_json::Value".to_owned(),
+        };
+    }
+
+    // Array params with known element types
+    if param_type == "array" {
+        return match normalized_param.as_str() {
+            // sendmany: list of address strings to subtract fee from
+            "subtractfeefrom" =>
+                "Vec<bitcoin::Address<bitcoin::address::NetworkUnchecked>>".to_owned(),
+            // sendall: list of { address, amount? } (struct emitted in generated params)
+            "recipients" => "Vec<SendallRecipient>".to_owned(),
+            _ => "Vec<serde_json::Value>".to_owned(),
+        };
+    }
+
     match param_type {
         // All numbers are i64 by default (including signed integers that can be negative)
         // Specific field names like "changepos", "confirmations", "nblocks" can accept -1
         "number" | "int" | "integer" => "i64",
         "boolean" | "bool" => "bool",
-        "array" => "Vec<serde_json::Value>",
         _ => "serde_json::Value",
     }
     .to_owned()
@@ -128,6 +150,26 @@ mod tests {
 
         let array = map_parameter_type_to_rust("array", "any");
         assert_eq!(array, "Vec<serde_json::Value>");
+
+        let amounts = map_parameter_type_to_rust("object", "amounts");
+        assert!(
+            amounts.contains("HashMap")
+                && amounts.contains("Address")
+                && amounts.contains("bitcoin::Amount")
+        );
+
+        let subtractfeefrom = map_parameter_type_to_rust("array", "subtractfeefrom");
+        assert!(
+            subtractfeefrom.contains("Vec")
+                && subtractfeefrom.contains("Address")
+                && subtractfeefrom.contains("NetworkUnchecked")
+        );
+
+        let recipients = map_parameter_type_to_rust("array", "recipients");
+        assert!(recipients.contains("SendallRecipient"));
+
+        let template_request = map_parameter_type_to_rust("object", "template_request");
+        assert!(template_request.contains("GetBlockTemplateRequest"));
 
         let range = map_parameter_type_to_rust("range", "any");
         assert_eq!(range, "serde_json::Value");
