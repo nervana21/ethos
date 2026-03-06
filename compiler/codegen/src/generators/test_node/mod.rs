@@ -129,10 +129,15 @@ impl TestNodeGenerator {
                     &arg,
                     type_adapter.as_ref(),
                 );
-                let ty = if !p.required { format!("Option<{base_ty}>") } else { base_ty };
+                let ty = if !p.required { format!("Option<{base_ty}>") } else { base_ty.clone() };
 
                 write_doc_comment(&mut code, &p.description, "    ")
                     .expect("Failed to write field doc");
+                // Preserve RPC JSON key when Rust field name differs (e.g. minconf -> min_conf)
+                if field != p.name {
+                    writeln!(code, "    #[serde(rename = \"{}\")]", p.name)
+                        .expect("Failed to write serde rename");
+                }
                 writeln!(code, "    pub {}: {},", field, ty).expect("Failed to write field");
             }
             writeln!(code, "}}\n").expect("Failed to write struct closing");
