@@ -61,7 +61,6 @@ fn emit_imports(code: &mut String) {
 \n\
 use base64::{{engine::general_purpose, Engine}};\n\
 use bitreq::{{post, Client as BitreqClient, Error as BitreqError, RequestExt}};\n\
-use serde;\n\
 use serde_json::Value;\n\
 use thiserror::Error;\n\
 use tokio::time::sleep;\n\
@@ -458,7 +457,6 @@ fn emit_unix_socket_imports(code: &mut String) {
         code,
         "use std::path::PathBuf;\n\
 \n\
-use serde;\n\
 use serde_json::Value;\n\
 use thiserror::Error;\n\
 use tokio::io::{{AsyncReadExt, AsyncWriteExt}};\n\
