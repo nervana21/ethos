@@ -611,8 +611,8 @@ impl VersionSpecificResponseTypeGenerator {
         write_doc_comment(buf, "Input sequence number.", "    ")?;
         writeln!(buf, "    pub sequence: u64,")?;
         write_doc_comment(buf, "Witness stack items for this input (if any).", "    ")?;
-        writeln!(buf, "    #[serde(default, skip_serializing_if = \"Option::is_none\")]")?;
-        writeln!(buf, "    pub txinwitness: Option<Vec<String>>,")?;
+        writeln!(buf, "    #[serde(rename = \"txinwitness\", default, skip_serializing_if = \"Option::is_none\")]")?;
+        writeln!(buf, "    pub tx_in_witness: Option<Vec<String>>,")?;
         write_doc_comment(
             buf,
             "Decoded details of the previous output when verbosity includes prevout.",
