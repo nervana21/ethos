@@ -120,6 +120,7 @@ mod serde_fee_rate {
             }
         }
 
+        #[allow(dead_code)]
         pub fn deserialize<'d, D: Deserializer<'d>>(d: D) -> Result<Option<FeeRate>, D::Error> {
             let opt: Option<f64> = Option::deserialize(d)?;
             Ok(opt.map(|v| {
