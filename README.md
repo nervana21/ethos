@@ -12,7 +12,7 @@ Ethos and its generated [outputs](https://crates.io/crates/ethos-bitcoind) are a
 
 ## Architecture
 
-[Schema](resources/ir/schema.json) → [IR](resources/ir/bitcoin.ir.json) → [codegen](https://crates.io/crates/ethos-bitcoind)
+[OpenRPC](resources/ir/openrpc.json) → [IR](resources/ir/bitcoin.ir.json) → [codegen](https://crates.io/crates/ethos-bitcoind)
 
 ## Getting Started
 
