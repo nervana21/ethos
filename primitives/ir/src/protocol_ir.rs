@@ -88,7 +88,7 @@ pub struct MessageDef {
 }
 
 /// Type definition
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct TypeDef {
     /// Rust-mapped type name (e.g., "String", "i64", "u64")
     ///
@@ -178,9 +178,10 @@ pub struct VariantDef {
 }
 
 /// Type kinds
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub enum TypeKind {
     /// Primitive type (string, number, boolean, etc.)
+    #[default]
     Primitive,
     /// Object type (struct)
     Object,
