@@ -7,43 +7,31 @@ NIGHTLY_VERSION := trim(read(justfile_directory() / "nightly-version"))
 _default:
     @just --list
 
-# Generate client artifacts from IR files
-generate input_file="":
-    @if [ -n "{{input_file}}" ]; then \
-        cargo run --package ethos-cli --bin ethos-compiler -- pipeline --input {{input_file}} --implementation bitcoin_core; \
+# Use release builds for pipeline/adapters (much faster run; first build takes longer).
+# Set to "" for debug builds (e.g. when debugging the compiler).
+RELEASE := "--release"
+
+# Process OpenRPC document (or version) into canonical IR. Input = path to OpenRPC JSON or version (e.g. v30.2.8) to extract from canonical IR.
+# Example: just process-openrpc resources/ir/openrpc.json  |  just process-openrpc v30.2.8 out.ir.json
+process-openrpc input output="":
+    @if [ -z "{{output}}" ]; then \
+        cargo run {{RELEASE}} -p ethos-adapters --bin process_bitcoin_openrpc -- {{input}}; \
     else \
-        cargo run --package ethos-cli --bin ethos-compiler -- pipeline --implementation bitcoin_core; \
+        cargo run {{RELEASE}} -p ethos-adapters --bin process_bitcoin_openrpc -- {{input}} {{output}}; \
     fi
 
-# Usage: just generate-into-repo /path/to/ethos-bitcoind [version] [impl]
-# First time: mkdir ../ethos-bitcoind && cd ../ethos-bitcoind && git init
-#   or with version override: just generate-into-repo ../ethos-bitcoind v30.2.8
-generate-into-repo output_path version="" impl="bitcoin_core":
-    @if [ -n "{{version}}" ]; then \
-        cargo run --package ethos-cli --bin ethos-compiler -- pipeline --implementation {{impl}} --version {{version}} --output {{output_path}}; \
-    else \
-        cargo run --package ethos-cli --bin ethos-compiler -- pipeline --implementation {{impl}} --output {{output_path}}; \
-    fi
+# Generate client from IR. Set output_path to write into a repo (e.g. ../ethos-bitcoind); use version for a pinned release.
+# Example: just generate-from-ir  |  just generate-from-ir ../ethos-bitcoind v30.2.8
+generate-from-ir input_file="" output_path="" version="" impl="bitcoin_core":
+    @set --; \
+    [ -n "{{output_path}}" ] && set -- "$@" --output "{{output_path}}"; \
+    [ -n "{{version}}" ] && set -- "$@" --version "{{version}}"; \
+    [ -n "{{input_file}}" ] && set -- "$@" --input "{{input_file}}"; \
+    cargo run {{RELEASE}} --package ethos-cli --bin ethos-compiler -- pipeline --implementation {{impl}} "$@"
 
-# Alias for process-schema
-create-version-ir schema_file output_file="":
-    @just process-schema {{schema_file}} {{output_file}}
-
-# Process Bitcoin Core schema.json to IR
-process-schema schema_file output_file="":
-    @if [ -z "{{output_file}}" ]; then \
-        cargo run -p ethos-adapters --bin process_bitcoin_schema -- {{schema_file}}; \
-    else \
-        cargo run -p ethos-adapters --bin process_bitcoin_schema -- {{schema_file}} {{output_file}}; \
-    fi
-
-# Extract version-specific IR from canonical bitcoin.ir.json
-extract-version-ir version output_file="":
-    @if [ -z "{{output_file}}" ]; then \
-        cargo run -p ethos-adapters --bin process_bitcoin_schema -- {{version}}; \
-    else \
-        cargo run -p ethos-adapters --bin process_bitcoin_schema -- {{version}} {{output_file}}; \
-    fi
+# Process OpenRPC → IR → generate client into repo. Default openrpc_file includes hidden RPCs.
+process-openrpc-and-generate output_path version="" openrpc_file="resources/ir/openrpc.json" impl="bitcoin_core":
+    just process-openrpc {{openrpc_file}} resources/ir/bitcoin.ir.json && just generate-from-ir resources/ir/bitcoin.ir.json {{output_path}} {{version}} {{impl}}
 
 
 # Code quality
@@ -112,6 +100,8 @@ corpus-pull:
 examples:
     @echo "Examples:"
     @echo "  just sane                # Full check before push (lint + tests)"
-    @echo "  just generate            # Generate client from IR"
-    @echo "  just generate-into-repo ../ethos-bitcoind   # Generate into a separate git repo for diff review"
+    @echo "  just generate-from-ir            # Generate client from IR"
+    @echo "  just generate-from-ir ../ethos-bitcoind v30.2.8   # Generate into repo with version"
+    @echo "  just process-openrpc resources/ir/openrpc.json resources/ir/bitcoin.ir.json"
+    @echo "  just process-openrpc-and-generate ../ethos-bitcoind   # OpenRPC → IR → generate into repo"
     @echo "  just corpus-pull         # Pull all corpus repositories"
