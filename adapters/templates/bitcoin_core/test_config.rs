@@ -11,6 +11,18 @@ use crate::config::Config;
 
 const DEFAULT_EXTRA_ARGS: [&str; 2] = ["-prune=0", "-txindex"];
 
+/// Error returned when the configured network is not supported for node startup.
+#[derive(Debug)]
+pub struct UnsupportedNetwork;
+
+impl std::fmt::Display for UnsupportedNetwork {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "unsupported network")
+    }
+}
+
+impl std::error::Error for UnsupportedNetwork {}
+
 /// TestConfig represents the configuration needed to run a Bitcoin node in a test environment.
 /// This struct encapsulates test‑node settings: network, RPC port, username, password, and extra args.
 /// Defaults are:
@@ -70,16 +82,17 @@ impl fmt::Debug for TestConfig {
 }
 
 impl TestConfig {
-    /// Return the value used with `-chain=<value>` for the configured network
-    pub fn as_chain_str(&self) -> &'static str {
+    /// Return the value used with `-chain=<value>` for the configured network.
+    /// Returns `Err(UnsupportedNetwork)` if the network variant is not supported for node startup.
+    pub fn as_chain_str(&self) -> Result<&'static str, UnsupportedNetwork> {
         #[allow(unreachable_patterns)]
         match self.network {
-            Network::Bitcoin => "main",
-            Network::Regtest => "regtest",
-            Network::Signet => "signet",
-            Network::Testnet => "testnet",
-            Network::Testnet4 => "testnet4",
-            _ => panic!("Unsupported network variant"),
+            Network::Bitcoin => Ok("main"),
+            Network::Regtest => Ok("regtest"),
+            Network::Signet => Ok("signet"),
+            Network::Testnet => Ok("testnet"),
+            Network::Testnet4 => Ok("testnet4"),
+            _ => Err(UnsupportedNetwork),
         }
     }
 
