@@ -283,8 +283,8 @@ impl<'a> MethodTemplate<'a> {
 
         if needs_parameter_reordering(&arguments) {
             // For methods that require argument reordering, serialize from the parameter struct
-            // The custom Serialize impl already serializes the struct as an array, so we need to spread it
-            "            ..serde_json::to_value(&params).unwrap().as_array().unwrap().clone()"
+            // The custom Serialize impl already serializes the struct as an array
+            "            let rpc_params: Vec<serde_json::Value> = serde_json::to_value(&params)\n                .map_err(|e| TransportError::Json(e.to_string()))?\n                .as_array()\n                .ok_or_else(|| TransportError::Rpc(\"expected array\".into()))?\n                .clone();"
                 .to_string()
         } else {
             // For methods not needing reordering, serialize individual parameters
@@ -363,11 +363,15 @@ impl<'a> MethodTemplate<'a> {
             })
             .collect();
 
-        let needs_mut = !needs_parameter_reordering(&arguments)
-            && self.method.params.iter().any(|p| !p.required);
-        let params_decl =
-            if needs_mut { "let mut rpc_params = vec![];" } else { "let rpc_params = vec![" };
-        let params_close = if needs_mut { "" } else { "];" };
+        let needs_reorder = needs_parameter_reordering(&arguments);
+        let needs_mut = !needs_reorder && self.method.params.iter().any(|p| !p.required);
+        let (params_decl, params_close) = if needs_reorder {
+            ("", "")
+        } else if needs_mut {
+            ("let mut rpc_params = vec![];", "")
+        } else {
+            ("let rpc_params = vec![", "];")
+        };
 
         format!(
             "{clippy_allow}async fn {name}(&self{sig}) -> Result<{ret}, TransportError> {{
