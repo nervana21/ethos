@@ -54,7 +54,7 @@ fn main() {
                 args[0]
             );
             eprintln!(
-                "  {} --dump-ir <implementation>         # Extract IR from schema and save to file",
+                "  {} --dump-ir <implementation>         # Write IR for implementation to file",
                 args[0]
             );
             eprintln!("Examples:");
