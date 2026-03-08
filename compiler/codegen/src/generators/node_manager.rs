@@ -31,6 +31,7 @@ impl CodeGenerator for NodeManagerGenerator {
         // Generate module header and imports
         generate_module_header(&mut code, display_name);
         generate_imports(&mut code);
+        generate_init_constants(&mut code);
 
         // Generate common structures
         generate_node_state_struct(&mut code);
@@ -86,6 +87,17 @@ use std::time::Instant;
 use crate::transport::DefaultTransport;"#
     )
     .expect("Failed to write tracing imports");
+}
+
+fn generate_init_constants(code: &mut String) {
+    writeln!(
+        code,
+        r#"
+/// RPC codes indicating node still initializing (-28 warmup, -4 warmup).
+const INIT_WAIT_RPC_CODES: [&str; 2] = ["\"code\":-28", "\"code\":-4"];
+const INIT_MAX_RETRIES: u32 = 30;"#
+    )
+    .expect("Failed to write init constants");
 }
 
 fn generate_node_state_struct(code: &mut String) {
@@ -495,34 +507,20 @@ fn generate_create_transport_method(
         code,
         r#"
     async fn create_transport(&self) -> Result<std::sync::Arc<crate::transport::DefaultTransport>, TransportError> {{
-        use std::sync::Arc;
-        use crate::transport::DefaultTransport;
-
         // Create HTTP transport for Bitcoin Core
         let rpc_url = format!("http://127.0.0.1:{{}}", self.rpc_port());
         let auth = Some((self.rpc_username().to_string(), self.rpc_password().to_string()));
         let transport = Arc::new(DefaultTransport::new(rpc_url, auth));
 
-        // Wait for node to be ready for RPC with Bitcoin Core specific initialization logic
-        // Bitcoin Core initialization states that require waiting:
-        // -28: RPC in warmup
-        // -4:  RPC in warmup (alternative code)
-        let init_states = [
-            "\"code\":-28",
-            "\"code\":-4",
-        ];
-
-        let max_retries = 30;
         let mut retries = 0;
 
         loop {{
             match transport.call::<serde_json::Value>("{}", &[]).await {{
                 Ok(_) => break,
                 Err(TransportError::Rpc(e)) => {{
-                    // Check if the error matches any known initialization state
-                    let is_init_state = init_states.iter().any(|state| e.contains(state));
-                    if is_init_state && retries < max_retries {{
-                        tracing::debug!("Waiting for initialization: {{}} (attempt {{}}/{{}})", e, retries + 1, max_retries);
+                    let is_init_state = INIT_WAIT_RPC_CODES.iter().any(|state| e.contains(state));
+                    if is_init_state && retries < INIT_MAX_RETRIES {{
+                        tracing::debug!("Waiting for initialization: {{}} (attempt {{}}/{{}})", e, retries + 1, INIT_MAX_RETRIES);
                         tokio::time::sleep(std::time::Duration::from_secs(1)).await;
                         retries += 1;
                         continue;
