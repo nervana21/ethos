@@ -102,8 +102,8 @@ impl TransportModuleGenerator {
 
         // Generate protocol-specific transport constructor call
         let transport_constructor = match transport_protocol {
-            "http" => "DefaultTransport::new(socket_path, None)",
-            "unix" => "DefaultTransport::new(socket_path)",
+            "http" => "DefaultTransport::new(url, None)",
+            "unix" => "DefaultTransport::new(url)",
             _ => panic!(
                 "Unsupported transport protocol: {}. Supported protocols: http, unix",
                 transport_protocol
