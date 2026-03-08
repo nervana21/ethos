@@ -3,6 +3,7 @@
 //! This module provides configuration utilities for running Bitcoin nodes in test environments.
 
 use std::env;
+use std::fmt;
 use std::path::PathBuf;
 
 use bitcoin::Network;
@@ -36,7 +37,7 @@ const DEFAULT_EXTRA_ARGS: [&str; 2] = ["-prune=0", "-txindex"];
 /// # Environment Overrides
 ///
 /// Reads `RPC_NETWORK`, `RPC_PORT`, `RPC_USER`, and `RPC_PASS`, and `BITCOIND_PATH` (path to bitcoind executable) to override defaults.
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct TestConfig {
     /// Which Bitcoin network to run against.
     pub network: Network,
@@ -53,6 +54,19 @@ pub struct TestConfig {
     pub bitcoind_path: Option<PathBuf>,
     /// Extra command-line arguments to pass to bitcoind
     pub extra_args: Vec<String>,
+}
+
+impl fmt::Debug for TestConfig {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("TestConfig")
+            .field("network", &self.network)
+            .field("rpc_port", &self.rpc_port)
+            .field("rpc_username", &"[redacted]")
+            .field("rpc_password", &"[redacted]")
+            .field("bitcoind_path", &self.bitcoind_path)
+            .field("extra_args", &self.extra_args)
+            .finish()
+    }
 }
 
 impl TestConfig {
