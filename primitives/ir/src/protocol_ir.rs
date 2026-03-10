@@ -147,6 +147,12 @@ pub struct ParamDef {
     pub description: String,
     /// Default value (if any)
     pub default_value: Option<String>,
+    /// Version when this parameter was added (None = available in all versions / unknown)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub version_added: Option<String>,
+    /// Version when this parameter was removed (None = still present)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub version_removed: Option<String>,
 }
 
 /// Field definition
@@ -162,6 +168,12 @@ pub struct FieldDef {
     pub description: String,
     /// Default value (if any)
     pub default_value: Option<String>,
+    /// Version when this field was added (None = available in all versions / unknown)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub version_added: Option<String>,
+    /// Version when this field was removed (None = still present)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub version_removed: Option<String>,
 }
 
 /// Variant definition for enums

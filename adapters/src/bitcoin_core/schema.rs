@@ -679,6 +679,8 @@ fn convert_argument(raw: RawArgument) -> ParamDef {
         required: raw.required,
         description: raw.description,
         default_value: raw.default.map(|v| v.to_string()).or_else(|| raw.default_hint),
+        version_added: None,
+        version_removed: None,
     }
 }
 
