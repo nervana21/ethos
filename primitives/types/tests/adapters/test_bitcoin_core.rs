@@ -48,6 +48,8 @@ fn convert_method_result_to_type_def(result: &MethodResult) -> ir::TypeDef {
                     required: !inner.optional,
                     description: inner.description.clone(),
                     default_value: None,
+                    version_added: None,
+                    version_removed: None,
                 })
                 .collect(),
         )

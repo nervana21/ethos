@@ -290,6 +290,8 @@ fn build_array_of_objects_wrapper(inner_fields: Vec<FieldDef>) -> Vec<FieldDef> 
         required: true,
         description: String::new(),
         default_value: None,
+        version_added: None,
+        version_removed: None,
     }]
 }
 
@@ -462,6 +464,8 @@ fn convert_argument_to_type_def(raw: &RawArgument) -> TypeDef {
             required: inner.is_required(),
             description: inner.description.clone(),
             default_value: inner.default_value(),
+            version_added: None,
+            version_removed: None,
         });
 
         type_def.fields = Some(if raw.r#type == "array" {
@@ -504,6 +508,8 @@ fn convert_result(raw: &RawResult, parent_key: Option<&str>) -> TypeDef {
                 required: inner.is_required(),
                 description: inner.description.clone(),
                 default_value: inner.default_value(),
+                version_added: None,
+                version_removed: None,
             })
             .collect();
 
@@ -610,6 +616,8 @@ fn merge_results_to_object(results: &[RawResult]) -> TypeDef {
                     required: is_required,
                     description: inner.description.clone(),
                     default_value: None,
+                    version_added: None,
+                    version_removed: None,
                 });
             }
         } else {
@@ -652,6 +660,8 @@ fn merge_results_to_object(results: &[RawResult]) -> TypeDef {
                 required: !result.optional,
                 description: result.description.clone(),
                 default_value: None,
+                version_added: None,
+                version_removed: None,
             });
         }
     }

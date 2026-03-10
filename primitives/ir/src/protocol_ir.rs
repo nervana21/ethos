@@ -156,7 +156,7 @@ pub struct ParamDef {
 }
 
 /// Field definition
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize)]
 pub struct FieldDef {
     /// Field name
     pub name: String,
@@ -174,6 +174,80 @@ pub struct FieldDef {
     /// Version when this field was removed (None = still present)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub version_removed: Option<String>,
+}
+
+// Custom deserializer to support both legacy IR field shape (with `key`) and
+// the newer shape (with `name`).
+impl<'de> Deserialize<'de> for FieldDef {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        struct FieldDefHelper {
+            #[serde(default)]
+            name: Option<String>,
+            #[serde(default)]
+            key: Option<FieldKeyHelper>,
+            field_type: TypeDef,
+            required: bool,
+            description: String,
+            #[serde(default)]
+            default_value: Option<String>,
+            #[serde(default)]
+            version_added: Option<String>,
+            #[serde(default)]
+            version_removed: Option<String>,
+        }
+
+        #[derive(Deserialize)]
+        #[serde(untagged)]
+        enum FieldKeyHelper {
+            /// Legacy IR encoded the field name under a `Named` variant.
+            NamedVariant {
+                #[serde(rename = "Named")]
+                named: String,
+            },
+            /// IR encodes anonymous fields under an `Anonymous` variant.
+            AnonymousVariant {
+                #[serde(rename = "Anonymous")]
+                anonymous: usize,
+            },
+            /// Fallback: accept a plain string or any other representation.
+            Other(serde_json::Value),
+        }
+
+        let helper = FieldDefHelper::deserialize(deserializer)?;
+
+        let name = if let Some(n) = helper.name {
+            n
+        } else if let Some(key) = helper.key {
+            match key {
+                FieldKeyHelper::NamedVariant { named } => named,
+                // Anonymous fields don't carry a stable human-readable name; treat them
+                // as unnamed to preserve compatibility with legacy IR that omitted `name`.
+                FieldKeyHelper::AnonymousVariant { anonymous: _ } => "<unnamed>".to_string(),
+                FieldKeyHelper::Other(v) => v
+                    .as_str()
+                    .map(|s| s.to_string())
+                    // Fallback: accept any non-string key as an unnamed field.
+                    .unwrap_or_else(|| "<unnamed>".to_string()),
+            }
+        } else {
+            // Legacy IR may omit both `name` and `key` in rare cases; synthesize a placeholder.
+            "<unnamed>".to_string()
+        };
+
+        Ok(FieldDef {
+            name,
+            field_type: helper.field_type,
+            required: helper.required,
+            description: helper.description,
+            default_value: helper.default_value,
+            version_added: helper.version_added,
+            version_removed: helper.version_removed,
+        })
+    }
 }
 
 /// Variant definition for enums
