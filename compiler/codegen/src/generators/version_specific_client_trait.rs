@@ -5,7 +5,7 @@
 
 use std::fmt::Write as _;
 
-use ir::RpcDef;
+use ir::{ParamDef, RpcDef};
 use types::type_adapter::TypeAdapter;
 use types::{Implementation, ProtocolVersion, TypeRegistry};
 
@@ -35,6 +35,17 @@ impl VersionSpecificClientTraitGenerator {
         self.protocol.create_type_adapter().unwrap_or_else(|_| {
             panic!("No adapter available for protocol: {}", self.protocol.as_str())
         })
+    }
+
+    /// Params visible for the generator's target version. Delegates to the openrpc adapter
+    /// for Bitcoin Core; other implementations use all params as-is.
+    fn params_for_version(&self, rpc: &RpcDef) -> Vec<ParamDef> {
+        let target = self.version.as_str();
+        if self.protocol.as_str() == "bitcoin_core" {
+            adapters::bitcoin_core::openrpc::filter_params_for_version(&rpc.params, target)
+        } else {
+            rpc.params.clone()
+        }
     }
 }
 
@@ -112,14 +123,16 @@ impl VersionSpecificClientTraitGenerator {
         let mut imports =
             vec!["use crate::types::*".to_string(), "use std::future::Future".to_string()];
 
-        // Check for custom types that need imports
-        let uses_hash_or_height = methods
-            .iter()
-            .any(|m| m.params.iter().any(|arg| arg.param_type.name.contains("HashOrHeight")));
+        // Check for custom types that need imports, using version-filtered params.
+        let uses_hash_or_height = methods.iter().any(|m| {
+            self.params_for_version(m)
+                .iter()
+                .any(|arg| arg.param_type.name.contains("HashOrHeight"))
+        });
 
-        let uses_public_key = methods
-            .iter()
-            .any(|m| m.params.iter().any(|arg| arg.param_type.name.contains("PublicKey")));
+        let uses_public_key = methods.iter().any(|m| {
+            self.params_for_version(m).iter().any(|arg| arg.param_type.name.contains("PublicKey"))
+        });
 
         let adapter = self.get_adapter();
         let uses_fee_rate = crate::generators::fee_rate_utils::methods_use_fee_rate(
@@ -182,12 +195,12 @@ impl VersionSpecificClientTraitGenerator {
             .unwrap_or_else(|e| panic!("{}", e));
         let response_type = self.get_response_type(rpc);
 
-        // Generate individual parameters instead of struct
-        let params_sig = if rpc.params.is_empty() {
+        // Generate individual parameters (version-filtered) instead of struct
+        let params = self.params_for_version(rpc);
+        let params_sig = if params.is_empty() {
             "".to_string()
         } else {
-            let arguments: Vec<types::Argument> = rpc
-                .params
+            let arguments: Vec<types::Argument> = params
                 .iter()
                 .map(|param| {
                     let param_type = &param.param_type;
@@ -266,9 +279,10 @@ impl VersionSpecificClientTraitGenerator {
             .unwrap_or_else(|e| panic!("{}", e));
         let response_type = self.get_response_type(rpc);
 
-        // Build arguments once so they're in scope for both params_sig and method body
-        let arguments: Vec<types::Argument> = rpc
-            .params
+        // Build arguments (version-filtered) once so they're in scope for both
+        // `params_sig` and the method body.
+        let params = self.params_for_version(rpc);
+        let arguments: Vec<types::Argument> = params
             .iter()
             .map(|param| {
                 let param_type = &param.param_type;
@@ -293,7 +307,7 @@ impl VersionSpecificClientTraitGenerator {
             .collect();
 
         // Generate individual parameters instead of struct
-        let params_sig = if rpc.params.is_empty() {
+        let params_sig = if params.is_empty() {
             "".to_string()
         } else {
             let adapter = self.get_adapter();

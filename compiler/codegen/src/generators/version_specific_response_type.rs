@@ -63,6 +63,16 @@ impl VersionSpecificResponseTypeGenerator {
         Ok(Self { version, implementation })
     }
 
+    /// Filter a `TypeDef`'s fields (and nested types) by `version_added` / `version_removed`
+    /// for the generator's target version. Delegates to the openrpc adapter for Bitcoin Core;
+    /// other implementations use the IR as-is.
+    fn filter_type_def_for_version(&self, ty: &ir::TypeDef) -> ir::TypeDef {
+        if self.implementation != "bitcoin_core" {
+            return ty.clone();
+        }
+        adapters::bitcoin_core::openrpc::filter_type_def_for_version(ty, self.version.as_str())
+    }
+
     /// Generate version-specific response types
     pub fn generate(&self, methods: &[RpcDef]) -> Result<Vec<(String, String)>> {
         let mut out = String::from("//! Generated version-specific RPC response types\n");
@@ -105,6 +115,7 @@ impl VersionSpecificResponseTypeGenerator {
         // Check all methods for type usage - generate directly from IR
         for method in methods {
             if let Some(result) = &method.result {
+                let result = self.filter_type_def_for_version(result);
                 if let Some(fields) = &result.fields {
                     for field in fields {
                         let rust_type =
@@ -804,11 +815,15 @@ impl VersionSpecificResponseTypeGenerator {
             return Ok(Some(self.generate_primitive_wrapper(&struct_name, "string", &None)?));
         }
 
-        // Simplified - always generate from IR data since we removed metadata registries
+        // Simplified - always generate from IR data since we removed metadata
+        // registries. For Bitcoin Core, we first filter the IR result type
+        // using version metadata so fields that are not present in this
+        // release are omitted from the generated struct.
         if let Some(result) = &method.result {
+            let result = self.filter_type_def_for_version(result);
             if let Some(fields) = &result.fields {
                 if !fields.is_empty() {
-                    return Ok(Some(self.generate_from_ir_data(method, result)?));
+                    return Ok(Some(self.generate_from_ir_data(method, &result)?));
                 }
             }
         }
@@ -817,7 +832,9 @@ impl VersionSpecificResponseTypeGenerator {
         self.generate_unit_response(method)
     }
 
-    /// Generate response type from IR data (TypeDef.fields)
+    /// Generate response type from IR data (TypeDef.fields). The `result`
+    /// passed here is already filtered for the generator's target version for
+    /// Bitcoin Core; other implementations use the IR as-is.
     fn generate_from_ir_data(&self, method: &RpcDef, result: &ir::TypeDef) -> Result<String> {
         let struct_name = self.response_struct_name(method);
         let mut buf = String::new();
@@ -879,9 +896,13 @@ impl VersionSpecificResponseTypeGenerator {
         Ok(buf)
     }
 
-    /// Emit a single struct from an IR TypeDef (for nested/named types from the type registry).
-    /// Uses the same field logic as method responses; no deny_unknown_fields on inner structs.
+    /// Emit a single struct from an IR `TypeDef` (for nested/named types from
+    /// the type registry). Uses the same field logic as method responses; no
+    /// `deny_unknown_fields` on inner structs. For Bitcoin Core the type is
+    /// first filtered for the generator's target version so nested helpers do
+    /// not include fields that are not present in this release.
     fn generate_struct_from_type_def(&self, type_def: &TypeDef, buf: &mut String) -> Result<()> {
+        let type_def = self.filter_type_def_for_version(type_def);
         if !type_def.description.is_empty() {
             write_doc_comment(buf, &type_def.description, "")?;
         }
