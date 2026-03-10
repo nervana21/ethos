@@ -42,6 +42,8 @@ pub fn param(name: &str, param_type: TypeDef, required: bool) -> ParamDef {
         required,
         description: String::new(),
         default_value: None,
+        version_added: None,
+        version_removed: None,
     }
 }
 
