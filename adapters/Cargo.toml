@@ -28,8 +28,8 @@ tokio-test = "0.4"
 serial_test = "^3.1"
 
 [[bin]]
-name = "process_bitcoin_schema"
-path = "src/bin/process_bitcoin_schema.rs"
+name = "process_bitcoin_openrpc"
+path = "src/bin/process_bitcoin_openrpc.rs"
 
 [features]
 default = ["bitcoin-core", "runtime-backend"]

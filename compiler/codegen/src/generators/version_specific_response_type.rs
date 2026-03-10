@@ -2019,3 +2019,227 @@ impl VersionSpecificResponseTypeGenerator {
         )
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn array_wrapper_uses_ir_element_type() {
+        let version = ProtocolVersion::from_str("30.0.0").unwrap();
+        let gen = VersionSpecificResponseTypeGenerator::new(version, "bitcoin_core".to_string());
+
+        // IR: top-level array of primitive strings.
+        let elem_ty = TypeDef {
+            name: "string".to_string(),
+            description: String::new(),
+            kind: TypeKind::Primitive,
+            fields: None,
+            variants: None,
+            base_type: None,
+            protocol_type: Some("string".to_string()),
+            canonical_name: None,
+            condition: None,
+        };
+
+        let result_ty = TypeDef {
+            name: "array".to_string(),
+            description: String::new(),
+            kind: TypeKind::Array,
+            fields: Some(vec![ir::FieldDef {
+                name: "field_0".to_string(),
+                field_type: elem_ty,
+                required: true,
+                description: String::new(),
+                default_value: None,
+                version_added: None,
+                version_removed: None,
+            }]),
+            variants: None,
+            base_type: None,
+            protocol_type: Some("array".to_string()),
+            canonical_name: None,
+            condition: None,
+        };
+
+        let method = RpcDef {
+            name: "deriveaddresses".to_string(),
+            description: String::new(),
+            params: Vec::new(),
+            result: Some(result_ty),
+            category: String::new(),
+            access_level: ir::AccessLevel::Public,
+            requires_private_keys: false,
+            version_added: None,
+            version_removed: None,
+            examples: None,
+            hidden: None,
+        };
+
+        let code = gen
+            .generate_method_response(&method)
+            .expect("generation must succeed")
+            .expect("response must be generated");
+
+        // We expect a transparent wrapper over Vec<String>.
+        assert!(
+            code.contains("pub value: Vec<String>"),
+            "expected Vec<String> field, got:\n{code}"
+        );
+    }
+
+    #[test]
+    fn array_wrapper_uses_value_vec_for_any() {
+        let version = ProtocolVersion::from_str("30.0.0").unwrap();
+        let gen = VersionSpecificResponseTypeGenerator::new(version, "bitcoin_core".to_string());
+
+        // IR: top-level array of primitive `any` (maps to serde_json::Value).
+        let elem_ty = TypeDef {
+            name: "any".to_string(),
+            description: String::new(),
+            kind: TypeKind::Primitive,
+            fields: None,
+            variants: None,
+            base_type: None,
+            protocol_type: Some("any".to_string()),
+            canonical_name: None,
+            condition: None,
+        };
+
+        let result_ty = TypeDef {
+            name: "array".to_string(),
+            description: String::new(),
+            kind: TypeKind::Array,
+            fields: Some(vec![ir::FieldDef {
+                name: "field_0".to_string(),
+                field_type: elem_ty,
+                required: true,
+                description: String::new(),
+                default_value: None,
+                version_added: None,
+                version_removed: None,
+            }]),
+            variants: None,
+            base_type: None,
+            protocol_type: Some("array".to_string()),
+            canonical_name: None,
+            condition: None,
+        };
+
+        let method = RpcDef {
+            name: "getrawmempool".to_string(),
+            description: String::new(),
+            params: Vec::new(),
+            result: Some(result_ty),
+            category: String::new(),
+            access_level: ir::AccessLevel::Public,
+            requires_private_keys: false,
+            version_added: None,
+            version_removed: None,
+            examples: None,
+            hidden: None,
+        };
+
+        let code = gen
+            .generate_method_response(&method)
+            .expect("generation must succeed")
+            .expect("response must be generated");
+
+        // We expect a transparent wrapper over Vec<serde_json::Value>.
+        assert!(
+            code.contains("pub value: Vec<serde_json::Value>"),
+            "expected Vec<serde_json::Value> field, got:\n{code}"
+        );
+    }
+
+    #[test]
+    fn getblocktemplate_placeholder_field_optional() {
+        let version = ProtocolVersion::from_str("30.0.0").unwrap();
+        let gen = VersionSpecificResponseTypeGenerator::new(version, "bitcoin_core".to_string());
+
+        // IR: object result whose first anonymous field encodes the proposal-accepted `none` result.
+        let none_ty = TypeDef {
+            name: "none".to_string(),
+            description: String::new(),
+            kind: TypeKind::Primitive,
+            fields: None,
+            variants: None,
+            base_type: None,
+            protocol_type: Some("none".to_string()),
+            canonical_name: None,
+            condition: Some("If the proposal was accepted with mode=='proposal'".to_string()),
+        };
+
+        let version_ty = TypeDef {
+            name: "number".to_string(),
+            description: String::new(),
+            kind: TypeKind::Primitive,
+            fields: None,
+            variants: None,
+            base_type: None,
+            protocol_type: Some("number".to_string()),
+            canonical_name: None,
+            condition: None,
+        };
+
+        let result_ty = TypeDef {
+            name: "object".to_string(),
+            description: String::new(),
+            kind: TypeKind::Object,
+            fields: Some(vec![
+                ir::FieldDef {
+                    name: "field_0".to_string(),
+                    field_type: none_ty,
+                    required: true,
+                    description: String::new(),
+                    default_value: None,
+                    version_added: None,
+                    version_removed: None,
+                },
+                ir::FieldDef {
+                    name: "version".to_string(),
+                    field_type: version_ty,
+                    required: true,
+                    description: String::new(),
+                    default_value: None,
+                    version_added: None,
+                    version_removed: None,
+                },
+            ]),
+            variants: None,
+            base_type: None,
+            protocol_type: Some("object".to_string()),
+            canonical_name: None,
+            condition: None,
+        };
+
+        let method = RpcDef {
+            name: "getblocktemplate".to_string(),
+            description: String::new(),
+            params: Vec::new(),
+            result: Some(result_ty),
+            category: String::new(),
+            access_level: ir::AccessLevel::Public,
+            requires_private_keys: false,
+            version_added: None,
+            version_removed: None,
+            examples: None,
+            hidden: None,
+        };
+
+        let code = gen
+            .generate_method_response(&method)
+            .expect("generation must succeed")
+            .expect("response must be generated");
+
+        // The placeholder field should be optional with a serde default attribute.
+        assert!(
+            code.contains("#[serde(default)]"),
+            "expected serde default attr for placeholder field, got:\n{code}"
+        );
+        assert!(
+            code.contains("pub field_0: Option<()>"),
+            "expected optional unit placeholder field, got:\n{code}"
+        );
+    }
+}
