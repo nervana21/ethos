@@ -64,10 +64,10 @@ pub struct RpcDef {
     /// Version when this method was last supported (None if still supported)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub version_removed: Option<String>,
-    /// Example usage strings for the method (preserved from raw schema)
+    /// Example usage strings for the method (preserved from schema)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub examples: Option<Vec<String>>,
-    /// Whether this method is hidden from documentation (preserved from raw schema)
+    /// Whether this method is hidden from documentation (preserved from schema)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub hidden: Option<bool>,
 }
@@ -116,7 +116,7 @@ pub struct TypeDef {
     /// Canonical name for this type if it is an alias or duplicate
     #[serde(skip_serializing_if = "Option::is_none")]
     pub canonical_name: Option<String>,
-    /// Condition under which this type/field is present (preserved from raw schema)
+    /// Condition under which this type/field is present (preserved from schema)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub condition: Option<String>,
 }
