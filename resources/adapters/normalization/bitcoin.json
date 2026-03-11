@@ -86,6 +86,7 @@
       "GetRawChangeAddress": "getrawchangeaddress",
       "GetRawMempool": "getrawmempool",
       "GetRawTransaction": "getrawtransaction",
+      "GetPrivateBroadcastInfo": "getprivatebroadcastinfo",
       "GetReceivedByLabel": "getreceivedbylabel",
       "GetRpcInfo": "getrpcinfo",
       "GetTransaction": "gettransaction",
