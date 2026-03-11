@@ -3,7 +3,51 @@
 //! IR roundtrip tests (serialize → deserialize).
 
 use ethos_ir::test_utils::{rpc, type_def};
-use ethos_ir::{ProtocolDef, ProtocolIR, ProtocolModule, TypeKind};
+use ethos_ir::{FieldDef, FieldKey, ProtocolDef, ProtocolIR, ProtocolModule, TypeDef, TypeKind};
+
+fn minimal_type_def() -> TypeDef { type_def("", TypeKind::Primitive) }
+
+#[test]
+fn test_field_key_roundtrip() {
+    // Roundtrip `FieldKey` Named and Anonymous through JSON.
+    let type_with_keys = TypeDef {
+        name: "object".to_string(),
+        description: String::new(),
+        kind: TypeKind::Object,
+        fields: Some(vec![
+            FieldDef {
+                key: FieldKey::Named("txid".to_string()),
+                field_type: minimal_type_def(),
+                required: true,
+                description: String::new(),
+                default_value: None,
+                version_added: None,
+                version_removed: None,
+            },
+            FieldDef {
+                key: FieldKey::Anonymous(1),
+                field_type: minimal_type_def(),
+                required: true,
+                description: String::new(),
+                default_value: None,
+                version_added: None,
+                version_removed: None,
+            },
+        ]),
+        variants: None,
+        base_type: None,
+        protocol_type: None,
+        canonical_name: None,
+        condition: None,
+    };
+    let json = serde_json::to_string_pretty(&type_with_keys).expect("serialize");
+    let loaded: TypeDef = serde_json::from_str(&json).expect("deserialize");
+    let fields = loaded.fields.as_ref().expect("fields");
+    assert_eq!(fields[0].key.as_ident(), "txid");
+    assert_eq!(fields[1].key.as_ident(), "field_1");
+    assert!(!fields[0].key.is_anonymous());
+    assert_eq!(fields[1].key.anonymous_index(), Some(1));
+}
 
 #[test]
 fn test_ir_roundtrip_simple() {

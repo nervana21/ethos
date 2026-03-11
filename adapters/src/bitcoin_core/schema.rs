@@ -30,7 +30,10 @@
 use std::collections::{BTreeMap, HashMap};
 use std::path::PathBuf;
 
-use ir::{FieldDef, ParamDef, ProtocolDef, ProtocolIR, ProtocolModule, RpcDef, TypeDef, TypeKind};
+use ir::{
+    FieldDef, FieldKey, ParamDef, ProtocolDef, ProtocolIR, ProtocolModule, RpcDef, TypeDef,
+    TypeKind,
+};
 use path::{find_project_root, get_ir_dir, parse_version_components, version_ir_filename};
 use semantics::method_categorization;
 use serde::Deserialize;
@@ -285,7 +288,7 @@ fn build_array_of_objects_wrapper(inner_fields: Vec<FieldDef>) -> Vec<FieldDef> 
     };
 
     vec![FieldDef {
-        name: "field".to_string(),
+        key: FieldKey::Named("field".to_string()),
         field_type: object_type,
         required: true,
         description: String::new(),
@@ -459,7 +462,7 @@ fn convert_argument_to_type_def(raw: &RawArgument) -> TypeDef {
     // Handle nested structures
     if matches!(kind, TypeKind::Object) && !raw.inner.is_empty() {
         let fields = build_fields_from_inner(&raw.inner, |inner| FieldDef {
-            name: inner.field_name(),
+            key: FieldKey::Named(inner.field_name()),
             field_type: convert_argument_to_type_def(inner),
             required: inner.is_required(),
             description: inner.description.clone(),
@@ -502,14 +505,22 @@ fn convert_result(raw: &RawResult, parent_key: Option<&str>) -> TypeDef {
         let fields: Vec<FieldDef> = raw
             .inner
             .iter()
-            .map(|inner| FieldDef {
-                name: inner.field_name(),
-                field_type: convert_result(inner, parent),
-                required: inner.is_required(),
-                description: inner.description.clone(),
-                default_value: inner.default_value(),
-                version_added: None,
-                version_removed: None,
+            .enumerate()
+            .map(|(i, inner)| {
+                let key = if inner.key_name.is_empty() {
+                    FieldKey::Anonymous(i)
+                } else {
+                    FieldKey::Named(inner.field_name())
+                };
+                FieldDef {
+                    key,
+                    field_type: convert_result(inner, parent),
+                    required: inner.is_required(),
+                    description: inner.description.clone(),
+                    default_value: inner.default_value(),
+                    version_added: None,
+                    version_removed: None,
+                }
             })
             .collect();
 
@@ -611,7 +622,7 @@ fn merge_results_to_object(results: &[RawResult]) -> TypeDef {
                 let parent =
                     if result.key_name.is_empty() { None } else { Some(result.key_name.as_str()) };
                 fields.push(FieldDef {
-                    name: field_name,
+                    key: FieldKey::Named(field_name),
                     field_type: convert_result(inner, parent),
                     required: is_required,
                     description: inner.description.clone(),
@@ -655,7 +666,7 @@ fn merge_results_to_object(results: &[RawResult]) -> TypeDef {
             let field_name = ensure_unique_name(base_field_name);
 
             fields.push(FieldDef {
-                name: field_name,
+                key: FieldKey::Named(field_name),
                 field_type: convert_result(result, None),
                 required: !result.optional,
                 description: result.description.clone(),

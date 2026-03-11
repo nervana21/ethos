@@ -118,12 +118,14 @@ impl VersionSpecificResponseTypeGenerator {
                 let result = self.filter_type_def_for_version(result);
                 if let Some(fields) = &result.fields {
                     for field in fields {
-                        let rust_type =
-                            Self::response_field_type_override(method.name.as_str(), &field.name)
-                                .map(String::from)
-                                .unwrap_or_else(|| {
-                                    self.map_ir_type_to_rust(&field.field_type, &field.name)
-                                });
+                        let rust_type = Self::response_field_type_override(
+                            method.name.as_str(),
+                            &field.key.as_ident(),
+                        )
+                        .map(String::from)
+                        .unwrap_or_else(|| {
+                            self.map_ir_type_to_rust(&field.field_type, &field.key.as_ident())
+                        });
                         let field_type = &field.field_type.name;
                         if field_type.contains("BTreeMap") || rust_type.contains("BTreeMap") {
                             needs_btreemap = true;
@@ -483,7 +485,10 @@ impl VersionSpecificResponseTypeGenerator {
         }
 
         if rpc_name == "getblock" {
-            return matches!(field.name.as_str(), "tx_1" | "tx_2" | "field_21" | "field_23");
+            return matches!(
+                field.key.as_ident().as_str(),
+                "tx_1" | "tx_2" | "field_21" | "field_23"
+            );
         }
 
         false
@@ -495,7 +500,7 @@ impl VersionSpecificResponseTypeGenerator {
     fn get_getblock_decoded_tx_element_type(method: &RpcDef) -> Option<&ir::TypeDef> {
         let result = method.result.as_ref()?;
         let top_fields = result.fields.as_ref()?;
-        let tx1 = top_fields.iter().find(|f| f.name == "tx_1")?;
+        let tx1 = top_fields.iter().find(|f| f.key.as_ident() == "tx_1")?;
         let array_wrapper = tx1.field_type.fields.as_ref()?;
         let first = array_wrapper.first()?;
         let inner_fields = first.field_type.fields.as_ref()?;
@@ -508,7 +513,7 @@ impl VersionSpecificResponseTypeGenerator {
         type_def: &'a ir::TypeDef,
         field_name: &str,
     ) -> Option<&'a ir::FieldDef> {
-        type_def.fields.as_ref()?.iter().find(|f| f.name == field_name)
+        type_def.fields.as_ref()?.iter().find(|f| f.key.as_ident() == field_name)
     }
 
     /// Emits Rust structs for decoded transaction details (getblock verbosity 2/3, getrawtransaction verbose).
@@ -933,14 +938,14 @@ impl VersionSpecificResponseTypeGenerator {
         }
 
         // Generate field definition (use stronger type override when set)
-        let base_field_type = Self::response_field_type_override(rpc_name, &field.name)
+        let base_field_type = Self::response_field_type_override(rpc_name, &field.key.as_ident())
             .map(String::from)
-            .unwrap_or_else(|| self.map_ir_type_to_rust(&field.field_type, &field.name));
+            .unwrap_or_else(|| self.map_ir_type_to_rust(&field.field_type, &field.key.as_ident()));
         if base_field_type.starts_with("bitcoin::") {
             let symbol = base_field_type.split("::").last().unwrap_or(&base_field_type);
             record_external_symbol("bitcoin", symbol);
         }
-        let field_name = self.sanitize_identifier(&field.name);
+        let field_name = self.sanitize_identifier(&field.key.as_ident());
         let mut field_type = if field.required && !force_optional_conditional {
             base_field_type.clone()
         } else {
@@ -951,26 +956,26 @@ impl VersionSpecificResponseTypeGenerator {
             field_type = format!("Option<{}>", base_field_type);
         }
         // Override: some Core fields are absent on certain networks/versions
-        if field.name == "blockmintxfee"
-            || field.name == "maxdatacarriersize"
-            || field.name == "permitbaremultisig"
-            || field.name == "limitclustercount"
-            || field.name == "limitclustersize"
+        if field.key.as_ident() == "blockmintxfee"
+            || field.key.as_ident() == "maxdatacarriersize"
+            || field.key.as_ident() == "permitbaremultisig"
+            || field.key.as_ident() == "limitclustercount"
+            || field.key.as_ident() == "limitclustersize"
         {
             field_type = format!("Option<{}>", base_field_type);
         }
         // Override: bitcoind omits these fields in some modes/versions
-        if Self::optional_field_override(rpc_name, &field.name) {
+        if Self::optional_field_override(rpc_name, &field.key.as_ident()) {
             field_type = format!("Option<{}>", base_field_type);
         }
 
         // Add serde rename attribute if the field name was changed
-        if field_name != field.name {
-            writeln!(buf, "    #[serde(rename = \"{}\")]", field.name)?;
+        if field_name != field.key.as_ident() {
+            writeln!(buf, "    #[serde(rename = \"{}\")]", field.key.as_ident())?;
         }
 
         // When we force Option for omitted fields, allow missing key to deserialize as None
-        if Self::optional_field_override(rpc_name, &field.name) {
+        if Self::optional_field_override(rpc_name, &field.key.as_ident()) {
             writeln!(buf, "    #[serde(default)]")?;
         }
 
@@ -1141,8 +1146,11 @@ impl VersionSpecificResponseTypeGenerator {
             .as_ref()
             .map(|fs| fs.iter().filter(|f| !Self::is_elision_field(f)).collect())
             .unwrap_or_default();
-        let string_field =
-            fields.iter().find(|f| f.name == "data" || f.name == "txid" || f.name.contains("txid"));
+        let string_field = fields.iter().find(|f| {
+            f.key.as_ident() == "data"
+                || f.key.as_ident() == "txid"
+                || f.key.as_ident().contains("txid")
+        });
         let param_name = if string_field.is_some() { "v" } else { "_v" };
         writeln!(
             buf,
@@ -1154,10 +1162,10 @@ impl VersionSpecificResponseTypeGenerator {
         writeln!(buf, "            {{")?;
         if !fields.is_empty() {
             if let Some(field) = string_field {
-                let field_name = self.sanitize_identifier(&field.name);
-                let field_type = self.map_ir_type_to_rust(&field.field_type, &field.name);
+                let field_name = self.sanitize_identifier(&field.key.as_ident());
+                let field_type = self.map_ir_type_to_rust(&field.field_type, &field.key.as_ident());
                 // "data" is typically a string (hex); use to_string(); others (e.g. txid) use FromStr
-                if field.name == "data" && field_type == "String" {
+                if field.key.as_ident() == "data" && field_type == "String" {
                     writeln!(
                         buf,
                         "                let {} = {}.to_string();",
@@ -1172,8 +1180,8 @@ impl VersionSpecificResponseTypeGenerator {
                 }
                 writeln!(buf, "                Ok({} {{", struct_name)?;
                 for f in &fields {
-                    let fn_name = self.sanitize_identifier(&f.name);
-                    if f.name == field.name {
+                    let fn_name = self.sanitize_identifier(&f.key.as_ident());
+                    if f.key.as_ident() == field.key.as_ident() {
                         writeln!(buf, "                    {}: Some({}),", fn_name, fn_name)?;
                     } else {
                         writeln!(buf, "                    {}: None,", fn_name)?;
@@ -1184,7 +1192,7 @@ impl VersionSpecificResponseTypeGenerator {
                 // Fallback: create struct with all fields as None
                 writeln!(buf, "                Ok({} {{", struct_name)?;
                 for f in &fields {
-                    let fn_name = self.sanitize_identifier(&f.name);
+                    let fn_name = self.sanitize_identifier(&f.key.as_ident());
                     writeln!(buf, "                    {}: None,", fn_name)?;
                 }
                 writeln!(buf, "                }})")?;
@@ -1202,22 +1210,22 @@ impl VersionSpecificResponseTypeGenerator {
         writeln!(buf, "            {{")?;
         if !fields.is_empty() {
             for f in &fields {
-                let fn_name = self.sanitize_identifier(&f.name);
+                let fn_name = self.sanitize_identifier(&f.key.as_ident());
                 writeln!(buf, "                let mut {} = None;", fn_name)?;
             }
             writeln!(buf, "                while let Some(key) = map.next_key::<String>()? {{")?;
             for f in &fields {
-                let fn_name = self.sanitize_identifier(&f.name);
-                writeln!(buf, "                    if key == \"{}\" {{", f.name)?;
+                let fn_name = self.sanitize_identifier(&f.key.as_ident());
+                writeln!(buf, "                    if key == \"{}\" {{", f.key.as_ident())?;
                 writeln!(buf, "                        if {}.is_some() {{", fn_name)?;
                 writeln!(
                     buf,
                     "                            return Err(de::Error::duplicate_field(\"{}\"));",
-                    f.name
+                    f.key.as_ident()
                 )?;
                 writeln!(buf, "                        }}")?;
-                let field_type = self.map_ir_type_to_rust(&f.field_type, &f.name);
-                let base_field_type = self.map_ir_type_to_rust(&f.field_type, &f.name);
+                let field_type = self.map_ir_type_to_rust(&f.field_type, &f.key.as_ident());
+                let base_field_type = self.map_ir_type_to_rust(&f.field_type, &f.key.as_ident());
                 let is_optional = field_type.starts_with("Option<");
                 let inner_type = if is_optional {
                     field_type
@@ -1297,7 +1305,7 @@ impl VersionSpecificResponseTypeGenerator {
             writeln!(buf, "                }}")?;
             writeln!(buf, "                Ok({} {{", struct_name)?;
             for f in &fields {
-                let fn_name = self.sanitize_identifier(&f.name);
+                let fn_name = self.sanitize_identifier(&f.key.as_ident());
                 writeln!(buf, "                    {},", fn_name)?;
             }
             writeln!(buf, "                }})")?;
