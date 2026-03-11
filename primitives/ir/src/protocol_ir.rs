@@ -121,6 +121,39 @@ pub struct TypeDef {
     pub condition: Option<String>,
 }
 
+impl TypeDef {
+    /// If this type represents a homogeneous JSON array, return the element type.
+    ///
+    /// Convention:
+    /// - `kind == TypeKind::Array`
+    /// - `fields` contains a single entry that serves as the element prototype
+    /// - The field key may be either:
+    ///   - `FieldKey::Anonymous(0)` (preferred positional form), or
+    ///   - `FieldKey::Named("field_0")` (legacy/synthetic name).
+    ///
+    /// Callers should use this helper instead of matching on `FieldKey` directly
+    /// so IR producers can evolve without breaking consumers.
+    pub fn array_element_type(&self) -> Option<&TypeDef> {
+        if !matches!(self.kind, TypeKind::Array) {
+            return None;
+        }
+        let fields = self.fields.as_ref()?;
+        if fields.len() != 1 {
+            return None;
+        }
+        let field = &fields[0];
+
+        let is_positional_zero = field.key.is_positional_zero()
+            || matches!(field.key, FieldKey::Named(ref s) if s == "field_0");
+
+        if !is_positional_zero {
+            return None;
+        }
+
+        Some(&field.field_type)
+    }
+}
+
 /// Constant definition
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ConstantDef {
@@ -198,6 +231,12 @@ impl FieldKey {
             FieldKey::Named(_) => None,
         }
     }
+
+    /// Returns true iff this key represents the first positional element (index 0).
+    ///
+    /// This is a convenience for code that needs to reason about array element
+    /// prototypes without matching on the enum directly.
+    pub fn is_positional_zero(&self) -> bool { self.anonymous_index() == Some(0) }
 
     /// Trims the name in place for named fields; no-op for anonymous.
     pub fn trim_named_in_place(&mut self) {
