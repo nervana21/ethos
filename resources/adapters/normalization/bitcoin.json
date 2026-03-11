@@ -89,6 +89,7 @@
       "GetPrivateBroadcastInfo": "getprivatebroadcastinfo",
       "GetReceivedByLabel": "getreceivedbylabel",
       "GetRpcInfo": "getrpcinfo",
+      "GetOpenRpcInfo": "getopenrpcinfo",
       "GetTransaction": "gettransaction",
       "GetTxOut": "gettxout",
       "GetTxOutProof": "gettxoutproof",
