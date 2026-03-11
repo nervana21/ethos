@@ -155,11 +155,79 @@ pub struct ParamDef {
     pub version_removed: Option<String>,
 }
 
+/// Identity of a field: either a named key (e.g. JSON key) or an anonymous
+/// ordinal (position in the parent's `fields` array).
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub enum FieldKey {
+    /// Named field (e.g. JSON object key).
+    Named(String),
+    /// Anonymous field identified by position (index in the parent's `fields`).
+    Anonymous(usize),
+}
+
+impl FieldKey {
+    /// Returns the string used for Rust identifiers and display (for example,
+    /// codegen and diagnostics). `Named(s) => s`, `Anonymous(i) =>
+    /// "field_{i}"`.
+    pub fn as_ident(&self) -> String {
+        match self {
+            FieldKey::Named(s) => s.clone(),
+            FieldKey::Anonymous(i) => format!("field_{i}"),
+        }
+    }
+
+    /// Returns the JSON key for this field when present. Named fields have a
+    /// key; anonymous fields do not.
+    pub fn json_key(&self) -> Option<&str> {
+        match self {
+            FieldKey::Named(s) => Some(s.as_str()),
+            FieldKey::Anonymous(_) => None,
+        }
+    }
+
+    // Helpers below: prefer these over matching on the enum so the abstraction
+    // can be replaced later (e.g. with a plain string) without changing call sites.
+
+    /// Returns true for anonymous (positional) fields, false for named.
+    pub fn is_anonymous(&self) -> bool { matches!(self, FieldKey::Anonymous(_)) }
+
+    /// Returns the ordinal for anonymous fields; `None` for named.
+    pub fn anonymous_index(&self) -> Option<usize> {
+        match self {
+            FieldKey::Anonymous(i) => Some(*i),
+            FieldKey::Named(_) => None,
+        }
+    }
+
+    /// Trims the name in place for named fields; no-op for anonymous.
+    pub fn trim_named_in_place(&mut self) {
+        if let FieldKey::Named(s) = self {
+            *s = s.trim().to_string();
+        }
+    }
+
+    /// Resolves this key against a slice of fields: by index for anonymous, by
+    /// name (with index fallback) for named.
+    pub fn find_in<'a>(
+        &self,
+        fields: &'a [FieldDef],
+        fallback_index: usize,
+    ) -> Option<&'a FieldDef> {
+        match self {
+            FieldKey::Anonymous(i) => fields.get(*i),
+            FieldKey::Named(s) => fields
+                .iter()
+                .find(|e| e.key.json_key() == Some(s.as_str()))
+                .or_else(|| fields.get(fallback_index)),
+        }
+    }
+}
+
 /// Field definition
 #[derive(Debug, Clone, Serialize)]
 pub struct FieldDef {
-    /// Field name
-    pub name: String,
+    /// Field identity (named or anonymous by ordinal).
+    pub key: FieldKey,
     /// Field type
     pub field_type: TypeDef,
     /// Whether this field is required
@@ -219,27 +287,29 @@ impl<'de> Deserialize<'de> for FieldDef {
 
         let helper = FieldDefHelper::deserialize(deserializer)?;
 
-        let name = if let Some(n) = helper.name {
-            n
-        } else if let Some(key) = helper.key {
+        // Prefer explicit `key` when present; fall back to legacy `name` field.
+        let mut key = if let Some(key) = helper.key {
             match key {
-                FieldKeyHelper::NamedVariant { named } => named,
-                // Anonymous fields don't carry a stable human-readable name; treat them
-                // as unnamed to preserve compatibility with legacy IR that omitted `name`.
-                FieldKeyHelper::AnonymousVariant { anonymous: _ } => "<unnamed>".to_string(),
+                FieldKeyHelper::NamedVariant { named } => FieldKey::Named(named),
+                FieldKeyHelper::AnonymousVariant { anonymous } => FieldKey::Anonymous(anonymous),
                 FieldKeyHelper::Other(v) => v
                     .as_str()
-                    .map(|s| s.to_string())
+                    .map(|s| FieldKey::Named(s.to_string()))
                     // Fallback: accept any non-string key as an unnamed field.
-                    .unwrap_or_else(|| "<unnamed>".to_string()),
+                    .unwrap_or(FieldKey::Named("<unnamed>".to_string())),
             }
+        } else if let Some(name) = helper.name {
+            FieldKey::Named(name)
         } else {
             // Legacy IR may omit both `name` and `key` in rare cases; synthesize a placeholder.
-            "<unnamed>".to_string()
+            FieldKey::Named("<unnamed>".to_string())
         };
 
+        // Normalize named keys to trimmed form.
+        key.trim_named_in_place();
+
         Ok(FieldDef {
-            name,
+            key,
             field_type: helper.field_type,
             required: helper.required,
             description: helper.description,

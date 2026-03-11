@@ -5,7 +5,10 @@
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
-use ir::{FieldDef, ParamDef, ProtocolDef, ProtocolIR, ProtocolModule, RpcDef, TypeDef, TypeKind};
+use ir::{
+    FieldDef, FieldKey, ParamDef, ProtocolDef, ProtocolIR, ProtocolModule, RpcDef, TypeDef,
+    TypeKind,
+};
 use path::{
     canonical_bitcoin_ir_path, find_project_root, get_ir_dir, resolve_ir_output_path,
     version_ir_filename,
@@ -306,7 +309,7 @@ fn build_array_of_objects_wrapper(inner_fields: Vec<FieldDef>) -> Vec<FieldDef> 
     };
 
     vec![FieldDef {
-        name: "field".to_string(),
+        key: FieldKey::Named("field".to_string()),
         field_type: object_type,
         required: true,
         description: String::new(),
@@ -511,7 +514,10 @@ fn find_matching_field<'a>(
     existing_fields: &'a [ir::FieldDef],
     index: usize,
 ) -> Option<&'a ir::FieldDef> {
-    existing_fields.iter().find(|e| e.name == our.name).or_else(|| existing_fields.get(index))
+    existing_fields
+        .iter()
+        .find(|e| e.key.json_key() == our.key.json_key())
+        .or_else(|| existing_fields.get(index))
 }
 
 /// Copies version_added/version_removed from existing `TypeDef` fields into our `TypeDef` (by field name or index, recursively).
@@ -651,7 +657,7 @@ fn convert_argument_to_type_def(raw: &RawArgument) -> TypeDef {
     // Handle nested structures
     if matches!(kind, TypeKind::Object) && !raw.inner.is_empty() {
         let fields = build_fields_from_inner(&raw.inner, |inner| FieldDef {
-            name: inner.field_name(),
+            key: FieldKey::Named(inner.field_name()),
             field_type: convert_argument_to_type_def(inner),
             required: inner.is_required(),
             description: inner.description.clone(),
@@ -699,7 +705,7 @@ fn convert_result(raw: &RawResult, parent_key: Option<&str>) -> TypeDef {
                     inner.field_name()
                 };
                 FieldDef {
-                    name,
+                    key: FieldKey::Named(name),
                     field_type: convert_result(inner, parent),
                     required: inner.is_required(),
                     description: inner.description.clone(),
@@ -807,7 +813,7 @@ fn merge_results_to_object(results: &[RawResult]) -> TypeDef {
                 let parent =
                     if result.key_name.is_empty() { None } else { Some(result.key_name.as_str()) };
                 fields.push(FieldDef {
-                    name,
+                    key: FieldKey::Named(name),
                     field_type: convert_result(inner, parent),
                     required: is_required,
                     description: inner.description.clone(),
@@ -850,7 +856,7 @@ fn merge_results_to_object(results: &[RawResult]) -> TypeDef {
 
             let name = ensure_unique_name(base_field_name);
             fields.push(FieldDef {
-                name,
+                key: FieldKey::Named(name),
                 field_type: convert_result(result, None),
                 required: !result.optional,
                 description: result.description.clone(),
@@ -926,7 +932,7 @@ fn convert_openrpc_method(method: OpenRpcMethod, version_added: Option<String>) 
             description: canonical.description.clone(),
             kind: TypeKind::Array,
             fields: Some(vec![FieldDef {
-                name: "field_0".to_string(),
+                key: FieldKey::Named("field_0".to_string()),
                 field_type: element_type,
                 required: !canonical.optional,
                 description: canonical.description.clone(),
