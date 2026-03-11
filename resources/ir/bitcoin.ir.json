@@ -16422,6 +16422,420 @@
         },
         {
           "RpcMethod": {
+            "name": "getopenrpcinfo",
+            "description": "Returns an OpenRPC document for currently available RPC commands.",
+            "params": [],
+            "result": {
+              "name": "object",
+              "description": "",
+              "kind": "Object",
+              "fields": [
+                {
+                  "name": "openrpc",
+                  "field_type": {
+                    "name": "string",
+                    "description": "OpenRPC specification version.",
+                    "kind": "Primitive",
+                    "fields": null,
+                    "variants": null,
+                    "base_type": null,
+                    "protocol_type": "string"
+                  },
+                  "required": true,
+                  "description": "OpenRPC specification version.",
+                  "default_value": null,
+                  "version_added": "30.99.0-705399b1d57a-dirty"
+                },
+                {
+                  "name": "info",
+                  "field_type": {
+                    "name": "object",
+                    "description": "Metadata about this JSON-RPC interface.",
+                    "kind": "Object",
+                    "fields": [
+                      {
+                        "name": "title",
+                        "field_type": {
+                          "name": "string",
+                          "description": "API title.",
+                          "kind": "Primitive",
+                          "fields": null,
+                          "variants": null,
+                          "base_type": null,
+                          "protocol_type": "string"
+                        },
+                        "required": true,
+                        "description": "API title.",
+                        "default_value": null,
+                        "version_added": "31"
+                      },
+                      {
+                        "name": "version",
+                        "field_type": {
+                          "name": "string",
+                          "description": "Bitcoin Core version string.",
+                          "kind": "Primitive",
+                          "fields": null,
+                          "variants": null,
+                          "base_type": null,
+                          "protocol_type": "string"
+                        },
+                        "required": true,
+                        "description": "Bitcoin Core version string.",
+                        "default_value": null,
+                        "version_added": "31"
+                      },
+                      {
+                        "name": "description",
+                        "field_type": {
+                          "name": "string",
+                          "description": "API description.",
+                          "kind": "Primitive",
+                          "fields": null,
+                          "variants": null,
+                          "base_type": null,
+                          "protocol_type": "string"
+                        },
+                        "required": true,
+                        "description": "API description.",
+                        "default_value": null,
+                        "version_added": "31"
+                      }
+                    ],
+                    "variants": null,
+                    "base_type": null,
+                    "protocol_type": "object"
+                  },
+                  "required": true,
+                  "description": "Metadata about this JSON-RPC interface.",
+                  "default_value": null,
+                  "version_added": "31"
+                },
+                {
+                  "name": "methods",
+                  "field_type": {
+                    "name": "array",
+                    "description": "Documented RPC methods.",
+                    "kind": "Object",
+                    "fields": [
+                      {
+                        "name": "field",
+                        "field_type": {
+                          "name": "object",
+                          "description": "",
+                          "kind": "Object",
+                          "fields": [
+                            {
+                              "name": "field_0",
+                              "field_type": {
+                                "name": "object",
+                                "description": "An RPC method description object.",
+                                "kind": "Object",
+                                "fields": [
+                                  {
+                                    "name": "name",
+                                    "field_type": {
+                                      "name": "string",
+                                      "description": "Method name.",
+                                      "kind": "Primitive",
+                                      "fields": null,
+                                      "variants": null,
+                                      "base_type": null,
+                                      "protocol_type": "string"
+                                    },
+                                    "required": true,
+                                    "description": "Method name.",
+                                    "default_value": null,
+                                    "version_added": "31"
+                                  },
+                                  {
+                                    "name": "description",
+                                    "field_type": {
+                                      "name": "string",
+                                      "description": "Method description.",
+                                      "kind": "Primitive",
+                                      "fields": null,
+                                      "variants": null,
+                                      "base_type": null,
+                                      "protocol_type": "string"
+                                    },
+                                    "required": true,
+                                    "description": "Method description.",
+                                    "default_value": null,
+                                    "version_added": "31"
+                                  },
+                                  {
+                                    "name": "params",
+                                    "field_type": {
+                                      "name": "array",
+                                      "description": "Method parameters.",
+                                      "kind": "Object",
+                                      "fields": [
+                                        {
+                                          "name": "field",
+                                          "field_type": {
+                                            "name": "object",
+                                            "description": "",
+                                            "kind": "Object",
+                                            "fields": [
+                                              {
+                                                "name": "field_0",
+                                                "field_type": {
+                                                  "name": "object",
+                                                  "description": "A parameter.",
+                                                  "kind": "Object",
+                                                  "fields": [
+                                                    {
+                                                      "name": "name",
+                                                      "field_type": {
+                                                        "name": "string",
+                                                        "description": "Parameter name.",
+                                                        "kind": "Primitive",
+                                                        "fields": null,
+                                                        "variants": null,
+                                                        "base_type": null,
+                                                        "protocol_type": "string"
+                                                      },
+                                                      "required": true,
+                                                      "description": "Parameter name.",
+                                                      "default_value": null,
+                                                      "version_added": "31"
+                                                    },
+                                                    {
+                                                      "name": "required",
+                                                      "field_type": {
+                                                        "name": "boolean",
+                                                        "description": "Whether the parameter is required.",
+                                                        "kind": "Primitive",
+                                                        "fields": null,
+                                                        "variants": null,
+                                                        "base_type": null,
+                                                        "protocol_type": "boolean"
+                                                      },
+                                                      "required": true,
+                                                      "description": "Whether the parameter is required.",
+                                                      "default_value": null,
+                                                      "version_added": "31"
+                                                    },
+                                                    {
+                                                      "name": "schema",
+                                                      "field_type": {
+                                                        "name": "any",
+                                                        "description": "JSON Schema for the parameter.",
+                                                        "kind": "Primitive",
+                                                        "fields": null,
+                                                        "variants": null,
+                                                        "base_type": null,
+                                                        "protocol_type": "any"
+                                                      },
+                                                      "required": true,
+                                                      "description": "JSON Schema for the parameter.",
+                                                      "default_value": null,
+                                                      "version_added": "31"
+                                                    },
+                                                    {
+                                                      "name": "description",
+                                                      "field_type": {
+                                                        "name": "string",
+                                                        "description": "Parameter description.",
+                                                        "kind": "Primitive",
+                                                        "fields": null,
+                                                        "variants": null,
+                                                        "base_type": null,
+                                                        "protocol_type": "string"
+                                                      },
+                                                      "required": false,
+                                                      "description": "Parameter description.",
+                                                      "default_value": null,
+                                                      "version_added": "31"
+                                                    },
+                                                    {
+                                                      "name": "x-bitcoin-aliases",
+                                                      "field_type": {
+                                                        "name": "array",
+                                                        "description": "Alternative parameter names.",
+                                                        "kind": "Array",
+                                                        "fields": null,
+                                                        "variants": null,
+                                                        "base_type": null,
+                                                        "protocol_type": "array"
+                                                      },
+                                                      "required": false,
+                                                      "description": "Alternative parameter names.",
+                                                      "default_value": null,
+                                                      "version_added": "31"
+                                                    },
+                                                    {
+                                                      "name": "x-bitcoin-type-str",
+                                                      "field_type": {
+                                                        "name": "array",
+                                                        "description": "Type string hints.",
+                                                        "kind": "Array",
+                                                        "fields": null,
+                                                        "variants": null,
+                                                        "base_type": null,
+                                                        "protocol_type": "array"
+                                                      },
+                                                      "required": false,
+                                                      "description": "Type string hints.",
+                                                      "default_value": null,
+                                                      "version_added": "31"
+                                                    },
+                                                    {
+                                                      "name": "x-bitcoin-also-positional",
+                                                      "field_type": {
+                                                        "name": "boolean",
+                                                        "description": "Whether the parameter can also be passed positionally.",
+                                                        "kind": "Primitive",
+                                                        "fields": null,
+                                                        "variants": null,
+                                                        "base_type": null,
+                                                        "protocol_type": "boolean"
+                                                      },
+                                                      "required": false,
+                                                      "description": "Whether the parameter can also be passed positionally.",
+                                                      "default_value": null,
+                                                      "version_added": "31"
+                                                    }
+                                                  ],
+                                                  "variants": null,
+                                                  "base_type": null,
+                                                  "protocol_type": "object"
+                                                },
+                                                "required": true,
+                                                "description": "A parameter.",
+                                                "default_value": null
+                                              }
+                                            ],
+                                            "variants": null,
+                                            "base_type": null,
+                                            "protocol_type": "object"
+                                          },
+                                          "required": true,
+                                          "description": "",
+                                          "default_value": null,
+                                          "version_added": "31"
+                                        }
+                                      ],
+                                      "variants": null,
+                                      "base_type": null,
+                                      "protocol_type": "array"
+                                    },
+                                    "required": true,
+                                    "description": "Method parameters.",
+                                    "default_value": null,
+                                    "version_added": "31"
+                                  },
+                                  {
+                                    "name": "result",
+                                    "field_type": {
+                                      "name": "object",
+                                      "description": "Method result.",
+                                      "kind": "Object",
+                                      "fields": [
+                                        {
+                                          "name": "name",
+                                          "field_type": {
+                                            "name": "string",
+                                            "description": "Result name.",
+                                            "kind": "Primitive",
+                                            "fields": null,
+                                            "variants": null,
+                                            "base_type": null,
+                                            "protocol_type": "string"
+                                          },
+                                          "required": true,
+                                          "description": "Result name.",
+                                          "default_value": null,
+                                          "version_added": "31"
+                                        },
+                                        {
+                                          "name": "schema",
+                                          "field_type": {
+                                            "name": "any",
+                                            "description": "JSON Schema for the result.",
+                                            "kind": "Primitive",
+                                            "fields": null,
+                                            "variants": null,
+                                            "base_type": null,
+                                            "protocol_type": "any"
+                                          },
+                                          "required": true,
+                                          "description": "JSON Schema for the result.",
+                                          "default_value": null,
+                                          "version_added": "31"
+                                        }
+                                      ],
+                                      "variants": null,
+                                      "base_type": null,
+                                      "protocol_type": "object"
+                                    },
+                                    "required": true,
+                                    "description": "Method result.",
+                                    "default_value": null,
+                                    "version_added": "31"
+                                  },
+                                  {
+                                    "name": "x-bitcoin-category",
+                                    "field_type": {
+                                      "name": "string",
+                                      "description": "RPC category.",
+                                      "kind": "Primitive",
+                                      "fields": null,
+                                      "variants": null,
+                                      "base_type": null,
+                                      "protocol_type": "string"
+                                    },
+                                    "required": true,
+                                    "description": "RPC category.",
+                                    "default_value": null,
+                                    "version_added": "31"
+                                  }
+                                ],
+                                "variants": null,
+                                "base_type": null,
+                                "protocol_type": "object"
+                              },
+                              "required": true,
+                              "description": "An RPC method description object.",
+                              "default_value": null
+                            }
+                          ],
+                          "variants": null,
+                          "base_type": null,
+                          "protocol_type": "object"
+                        },
+                        "required": true,
+                        "description": "",
+                        "default_value": null,
+                        "version_added": "31"
+                      }
+                    ],
+                    "variants": null,
+                    "base_type": null,
+                    "protocol_type": "array"
+                  },
+                  "required": true,
+                  "description": "Documented RPC methods.",
+                  "default_value": null,
+                  "version_added": "31"
+                }
+              ],
+              "variants": null,
+              "base_type": null,
+              "protocol_type": "object"
+            },
+            "category": "control",
+            "access_level": "Public",
+            "requires_private_keys": false,
+            "version_added": "31",
+            "examples": [
+              "getopenrpcinfo\n\nReturns an OpenRPC document for currently available RPC commands.\n\nResult:\n{                                                      (json object)\n  \"openrpc\" : \"str\",                                   (string) OpenRPC specification version.\n  \"info\" : {                                           (json object) Metadata about this JSON-RPC interface.\n    \"title\" : \"str\",                                   (string) API title.\n    \"version\" : \"str\",                                 (string) Bitcoin Core version string.\n    \"description\" : \"str\"                              (string) API description.\n  },\n  \"methods\" : [                                        (json array) Documented RPC methods.\n    {                                                  (json object) An RPC method description object.\n      \"name\" : \"str\",                                  (string) Method name.\n      \"description\" : \"str\",                           (string) Method description.\n      \"params\" : [                                     (json array) Method parameters.\n        {                                              (json object) A parameter.\n          \"name\" : \"str\",                              (string) Parameter name.\n          \"required\" : true|false,                     (boolean) Whether the parameter is required.\n          \"schema\" : xxx,                              (any) JSON Schema for the parameter.\n          \"description\" : \"str\",                       (string, optional) Parameter description.\n          \"x-bitcoin-aliases\" : [                      (json array, optional) Alternative parameter names.\n            \"str\",                                     (string) An alias.\n            ...\n          ],\n          \"x-bitcoin-type-str\" : [                     (json array, optional) Type string hints.\n            \"str\",                                     (string) A type string.\n            ...\n          ],\n          \"x-bitcoin-also-positional\" : true|false     (boolean, optional) Whether the parameter can also be passed positionally.\n        },\n        ...\n      ],\n      \"result\" : {                                     (json object) Method result.\n        \"name\" : \"str\",                                (string) Result name.\n        \"schema\" : xxx                                 (any) JSON Schema for the result.\n      },\n      \"x-bitcoin-category\" : \"str\"                     (string) RPC category.\n    },\n    ...\n  ]\n}\n\nExamples:\n> bitcoin-cli getopenrpcinfo \n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"getopenrpcinfo\", \"params\": []}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
+            ]
+          }
+        },
+        {
+          "RpcMethod": {
             "name": "getorphantxs",
             "description": "Shows transactions in the tx orphanage.\n\nEXPERIMENTAL warning: this call may be changed in future releases.\n",
             "params": [
@@ -16758,7 +17172,8 @@
               ],
               "variants": null,
               "base_type": null,
-              "protocol_type": "object"
+              "protocol_type": "array",
+              "condition": "for verbose = 0"
             },
             "category": "hidden",
             "access_level": "Internal",
@@ -17584,36 +17999,28 @@
               "kind": "Object",
               "fields": [
                 {
-                  "key": {
-                    "Named": "transactions"
-                  },
+                  "name": "transactions",
                   "field_type": {
                     "name": "array",
                     "description": "",
                     "kind": "Object",
                     "fields": [
                       {
-                        "key": {
-                          "Named": "field"
-                        },
+                        "name": "field",
                         "field_type": {
                           "name": "object",
                           "description": "",
                           "kind": "Object",
                           "fields": [
                             {
-                              "key": {
-                                "Anonymous": 0
-                              },
+                              "name": "field_0",
                               "field_type": {
                                 "name": "object",
                                 "description": "",
                                 "kind": "Object",
                                 "fields": [
                                   {
-                                    "key": {
-                                      "Named": "txid"
-                                    },
+                                    "name": "txid",
                                     "field_type": {
                                       "name": "hex",
                                       "description": "The transaction hash in hex",
@@ -17629,9 +18036,7 @@
                                     "version_added": "31"
                                   },
                                   {
-                                    "key": {
-                                      "Named": "wtxid"
-                                    },
+                                    "name": "wtxid",
                                     "field_type": {
                                       "name": "hex",
                                       "description": "The transaction witness hash in hex",
@@ -17647,9 +18052,7 @@
                                     "version_added": "31"
                                   },
                                   {
-                                    "key": {
-                                      "Named": "hex"
-                                    },
+                                    "name": "hex",
                                     "field_type": {
                                       "name": "hex",
                                       "description": "The serialized, hex-encoded transaction data",
@@ -17665,36 +18068,28 @@
                                     "version_added": "31"
                                   },
                                   {
-                                    "key": {
-                                      "Named": "peers"
-                                    },
+                                    "name": "peers",
                                     "field_type": {
                                       "name": "array",
                                       "description": "Per-peer send and acknowledgment information for this transaction",
                                       "kind": "Object",
                                       "fields": [
                                         {
-                                          "key": {
-                                            "Named": "field"
-                                          },
+                                          "name": "field",
                                           "field_type": {
                                             "name": "object",
                                             "description": "",
                                             "kind": "Object",
                                             "fields": [
                                               {
-                                                "key": {
-                                                  "Anonymous": 0
-                                                },
+                                                "name": "field_0",
                                                 "field_type": {
                                                   "name": "object",
                                                   "description": "",
                                                   "kind": "Object",
                                                   "fields": [
                                                     {
-                                                      "key": {
-                                                        "Named": "address"
-                                                      },
+                                                      "name": "address",
                                                       "field_type": {
                                                         "name": "string",
                                                         "description": "The address of the peer to which the transaction was sent",
@@ -17710,9 +18105,7 @@
                                                       "version_added": "31"
                                                     },
                                                     {
-                                                      "key": {
-                                                        "Named": "sent"
-                                                      },
+                                                      "name": "sent",
                                                       "field_type": {
                                                         "name": "timestamp",
                                                         "description": "The time this transaction was picked for sending to this peer via private broadcast (seconds since epoch)",
@@ -17728,9 +18121,7 @@
                                                       "version_added": "31"
                                                     },
                                                     {
-                                                      "key": {
-                                                        "Named": "received"
-                                                      },
+                                                      "name": "received",
                                                       "field_type": {
                                                         "name": "timestamp",
                                                         "description": "The time this peer acknowledged reception of the transaction (seconds since epoch)",
@@ -18455,7 +18846,8 @@
               ],
               "variants": null,
               "base_type": null,
-              "protocol_type": "object"
+              "protocol_type": "array",
+              "condition": "for verbose = false"
             },
             "category": "blockchain",
             "access_level": "Public",
