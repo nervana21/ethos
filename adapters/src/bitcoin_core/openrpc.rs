@@ -23,9 +23,10 @@ use crate::conversion_helpers::{determine_requires_private_keys, sort_definition
 ///
 /// For these methods, Bitcoin Core's OpenRPC metadata models the result as an
 /// array via `x-bitcoin-results`. The Ethos IR mirrors that behavior by
-/// emitting a `TypeDef` with `kind: Array` (see `TOP_LEVEL_ARRAY_METHODS`
-/// handling in `convert_openrpc_method`) instead of wrapping the result in an
-/// artificial object with a single field.
+/// emitting a `TypeDef` with `kind: Array` instead of wrapping the result in an
+/// artificial object with a single field. Downstream code should use
+/// `TypeDef::array_element_type()` to discover the element type rather than
+/// inspecting `FieldKey` directly.
 pub const TOP_LEVEL_ARRAY_METHODS: &[&str] = &[
     "deriveaddresses",
     "getaddednodeinfo",
@@ -924,14 +925,17 @@ fn convert_openrpc_method(method: OpenRpcMethod, version_added: Option<String>) 
         };
 
         // Convention for top-level array results in IR:
-        // represent them as `TypeKind::Array` with a single anonymous index-0 field.
-        // The version-specific response generator relies on this shape in
-        // `array_element_type_from_ir` to detect and emit array wrappers.
+        // represent them as `TypeKind::Array` with a single element prototype
+        // field. `TypeDef::array_element_type()` recognizes this shape (including
+        // the synthetic `"field_0"` name) and is the canonical way to query the
+        // array element type.
         Some(TypeDef {
             name: "array".to_string(),
             description: canonical.description.clone(),
             kind: TypeKind::Array,
             fields: Some(vec![FieldDef {
+                // Synthetic element prototype; see `TypeDef::array_element_type()`
+                // for how this is interpreted by consumers.
                 key: FieldKey::Named("field_0".to_string()),
                 field_type: element_type,
                 required: !canonical.optional,
