@@ -46,6 +46,145 @@
         },
         {
           "RpcMethod": {
+            "name": "abortprivatebroadcast",
+            "description": "Abort private broadcast attempts for a transaction currently being privately broadcast.\nThe transaction will be removed from the private broadcast queue.",
+            "params": [
+              {
+                "name": "id",
+                "param_type": {
+                  "name": "hex",
+                  "description": "A transaction identifier to abort. It will be matched against both txid and wtxid for all transactions in the private broadcast queue.\nIf the provided id matches a txid that corresponds to multiple transactions with different wtxids, multiple transactions will be removed and returned.",
+                  "kind": "Primitive",
+                  "fields": null,
+                  "variants": null,
+                  "base_type": null,
+                  "protocol_type": "hex"
+                },
+                "required": true,
+                "description": "A transaction identifier to abort. It will be matched against both txid and wtxid for all transactions in the private broadcast queue.\nIf the provided id matches a txid that corresponds to multiple transactions with different wtxids, multiple transactions will be removed and returned.",
+                "default_value": null,
+                "version_added": "31"
+              }
+            ],
+            "result": {
+              "name": "object",
+              "description": "",
+              "kind": "Object",
+              "fields": [
+                {
+                  "name": "removed_transactions",
+                  "field_type": {
+                    "name": "array",
+                    "description": "Transactions removed from the private broadcast queue",
+                    "kind": "Object",
+                    "fields": [
+                      {
+                        "name": "field",
+                        "field_type": {
+                          "name": "object",
+                          "description": "",
+                          "kind": "Object",
+                          "fields": [
+                            {
+                              "name": "field_0",
+                              "field_type": {
+                                "name": "object",
+                                "description": "",
+                                "kind": "Object",
+                                "fields": [
+                                  {
+                                    "name": "txid",
+                                    "field_type": {
+                                      "name": "hex",
+                                      "description": "The transaction hash in hex",
+                                      "kind": "Primitive",
+                                      "fields": null,
+                                      "variants": null,
+                                      "base_type": null,
+                                      "protocol_type": "hex"
+                                    },
+                                    "required": true,
+                                    "description": "The transaction hash in hex",
+                                    "default_value": null,
+                                    "version_added": "31"
+                                  },
+                                  {
+                                    "name": "wtxid",
+                                    "field_type": {
+                                      "name": "hex",
+                                      "description": "The transaction witness hash in hex",
+                                      "kind": "Primitive",
+                                      "fields": null,
+                                      "variants": null,
+                                      "base_type": null,
+                                      "protocol_type": "hex"
+                                    },
+                                    "required": true,
+                                    "description": "The transaction witness hash in hex",
+                                    "default_value": null,
+                                    "version_added": "31"
+                                  },
+                                  {
+                                    "name": "hex",
+                                    "field_type": {
+                                      "name": "hex",
+                                      "description": "The serialized, hex-encoded transaction data",
+                                      "kind": "Primitive",
+                                      "fields": null,
+                                      "variants": null,
+                                      "base_type": null,
+                                      "protocol_type": "hex"
+                                    },
+                                    "required": true,
+                                    "description": "The serialized, hex-encoded transaction data",
+                                    "default_value": null,
+                                    "version_added": "31"
+                                  }
+                                ],
+                                "variants": null,
+                                "base_type": null,
+                                "protocol_type": "object"
+                              },
+                              "required": true,
+                              "description": "",
+                              "default_value": null
+                            }
+                          ],
+                          "variants": null,
+                          "base_type": null,
+                          "protocol_type": "object"
+                        },
+                        "required": true,
+                        "description": "",
+                        "default_value": null,
+                        "version_added": "31"
+                      }
+                    ],
+                    "variants": null,
+                    "base_type": null,
+                    "protocol_type": "array"
+                  },
+                  "required": true,
+                  "description": "Transactions removed from the private broadcast queue",
+                  "default_value": null,
+                  "version_added": "31"
+                }
+              ],
+              "variants": null,
+              "base_type": null,
+              "protocol_type": "object"
+            },
+            "category": "rawtransactions",
+            "access_level": "Public",
+            "requires_private_keys": false,
+            "version_added": "31",
+            "examples": [
+              "abortprivatebroadcast \"id\"\n\nAbort private broadcast attempts for a transaction currently being privately broadcast.\nThe transaction will be removed from the private broadcast queue.\n\nArguments:\n1. id    (string, required) A transaction identifier to abort. It will be matched against both txid and wtxid for all transactions in the private broadcast queue.\n         If the provided id matches a txid that corresponds to multiple transactions with different wtxids, multiple transactions will be removed and returned.\n\nResult:\n{                               (json object)\n  \"removed_transactions\" : [    (json array) Transactions removed from the private broadcast queue\n    {                           (json object)\n      \"txid\" : \"hex\",           (string) The transaction hash in hex\n      \"wtxid\" : \"hex\",          (string) The transaction witness hash in hex\n      \"hex\" : \"hex\"             (string) The serialized, hex-encoded transaction data\n    },\n    ...\n  ]\n}\n\nExamples:\n> bitcoin-cli abortprivatebroadcast \"id\"\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"abortprivatebroadcast\", \"params\": [\"id\"]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
+            ]
+          }
+        },
+        {
+          "RpcMethod": {
             "name": "abortrescan",
             "description": "Stops current wallet rescan triggered by an RPC call, e.g. by a rescanblockchain call.\nNote: Use \"getwalletinfo\" to query the scanning progress.\n",
             "params": [],
