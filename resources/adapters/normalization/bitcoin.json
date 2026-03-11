@@ -3,6 +3,7 @@
     "bitcoin_core": {
       "AbandonTransaction": "abandontransaction",
       "AbortRescan": "abortrescan",
+      "AbortPrivateBroadcast": "abortprivatebroadcast",
       "AddConnection": "addconnection",
       "AddNode": "addnode",
       "AddPeerAddress": "addpeeraddress",
