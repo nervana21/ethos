@@ -17575,6 +17575,250 @@
         },
         {
           "RpcMethod": {
+            "name": "getprivatebroadcastinfo",
+            "description": "Returns information about transactions that are currently being privately broadcast.",
+            "params": [],
+            "result": {
+              "name": "object",
+              "description": "",
+              "kind": "Object",
+              "fields": [
+                {
+                  "key": {
+                    "Named": "transactions"
+                  },
+                  "field_type": {
+                    "name": "array",
+                    "description": "",
+                    "kind": "Object",
+                    "fields": [
+                      {
+                        "key": {
+                          "Named": "field"
+                        },
+                        "field_type": {
+                          "name": "object",
+                          "description": "",
+                          "kind": "Object",
+                          "fields": [
+                            {
+                              "key": {
+                                "Anonymous": 0
+                              },
+                              "field_type": {
+                                "name": "object",
+                                "description": "",
+                                "kind": "Object",
+                                "fields": [
+                                  {
+                                    "key": {
+                                      "Named": "txid"
+                                    },
+                                    "field_type": {
+                                      "name": "hex",
+                                      "description": "The transaction hash in hex",
+                                      "kind": "Primitive",
+                                      "fields": null,
+                                      "variants": null,
+                                      "base_type": null,
+                                      "protocol_type": "hex"
+                                    },
+                                    "required": true,
+                                    "description": "The transaction hash in hex",
+                                    "default_value": null,
+                                    "version_added": "31"
+                                  },
+                                  {
+                                    "key": {
+                                      "Named": "wtxid"
+                                    },
+                                    "field_type": {
+                                      "name": "hex",
+                                      "description": "The transaction witness hash in hex",
+                                      "kind": "Primitive",
+                                      "fields": null,
+                                      "variants": null,
+                                      "base_type": null,
+                                      "protocol_type": "hex"
+                                    },
+                                    "required": true,
+                                    "description": "The transaction witness hash in hex",
+                                    "default_value": null,
+                                    "version_added": "31"
+                                  },
+                                  {
+                                    "key": {
+                                      "Named": "hex"
+                                    },
+                                    "field_type": {
+                                      "name": "hex",
+                                      "description": "The serialized, hex-encoded transaction data",
+                                      "kind": "Primitive",
+                                      "fields": null,
+                                      "variants": null,
+                                      "base_type": null,
+                                      "protocol_type": "hex"
+                                    },
+                                    "required": true,
+                                    "description": "The serialized, hex-encoded transaction data",
+                                    "default_value": null,
+                                    "version_added": "31"
+                                  },
+                                  {
+                                    "key": {
+                                      "Named": "peers"
+                                    },
+                                    "field_type": {
+                                      "name": "array",
+                                      "description": "Per-peer send and acknowledgment information for this transaction",
+                                      "kind": "Object",
+                                      "fields": [
+                                        {
+                                          "key": {
+                                            "Named": "field"
+                                          },
+                                          "field_type": {
+                                            "name": "object",
+                                            "description": "",
+                                            "kind": "Object",
+                                            "fields": [
+                                              {
+                                                "key": {
+                                                  "Anonymous": 0
+                                                },
+                                                "field_type": {
+                                                  "name": "object",
+                                                  "description": "",
+                                                  "kind": "Object",
+                                                  "fields": [
+                                                    {
+                                                      "key": {
+                                                        "Named": "address"
+                                                      },
+                                                      "field_type": {
+                                                        "name": "string",
+                                                        "description": "The address of the peer to which the transaction was sent",
+                                                        "kind": "Primitive",
+                                                        "fields": null,
+                                                        "variants": null,
+                                                        "base_type": null,
+                                                        "protocol_type": "string"
+                                                      },
+                                                      "required": true,
+                                                      "description": "The address of the peer to which the transaction was sent",
+                                                      "default_value": null,
+                                                      "version_added": "31"
+                                                    },
+                                                    {
+                                                      "key": {
+                                                        "Named": "sent"
+                                                      },
+                                                      "field_type": {
+                                                        "name": "timestamp",
+                                                        "description": "The time this transaction was picked for sending to this peer via private broadcast (seconds since epoch)",
+                                                        "kind": "Primitive",
+                                                        "fields": null,
+                                                        "variants": null,
+                                                        "base_type": null,
+                                                        "protocol_type": "timestamp"
+                                                      },
+                                                      "required": true,
+                                                      "description": "The time this transaction was picked for sending to this peer via private broadcast (seconds since epoch)",
+                                                      "default_value": null,
+                                                      "version_added": "31"
+                                                    },
+                                                    {
+                                                      "key": {
+                                                        "Named": "received"
+                                                      },
+                                                      "field_type": {
+                                                        "name": "timestamp",
+                                                        "description": "The time this peer acknowledged reception of the transaction (seconds since epoch)",
+                                                        "kind": "Primitive",
+                                                        "fields": null,
+                                                        "variants": null,
+                                                        "base_type": null,
+                                                        "protocol_type": "timestamp"
+                                                      },
+                                                      "required": false,
+                                                      "description": "The time this peer acknowledged reception of the transaction (seconds since epoch)",
+                                                      "default_value": null,
+                                                      "version_added": "31"
+                                                    }
+                                                  ],
+                                                  "variants": null,
+                                                  "base_type": null,
+                                                  "protocol_type": "object"
+                                                },
+                                                "required": true,
+                                                "description": "",
+                                                "default_value": null
+                                              }
+                                            ],
+                                            "variants": null,
+                                            "base_type": null,
+                                            "protocol_type": "object"
+                                          },
+                                          "required": true,
+                                          "description": "",
+                                          "default_value": null,
+                                          "version_added": "31"
+                                        }
+                                      ],
+                                      "variants": null,
+                                      "base_type": null,
+                                      "protocol_type": "array"
+                                    },
+                                    "required": true,
+                                    "description": "Per-peer send and acknowledgment information for this transaction",
+                                    "default_value": null,
+                                    "version_added": "31"
+                                  }
+                                ],
+                                "variants": null,
+                                "base_type": null,
+                                "protocol_type": "object"
+                              },
+                              "required": true,
+                              "description": "",
+                              "default_value": null
+                            }
+                          ],
+                          "variants": null,
+                          "base_type": null,
+                          "protocol_type": "object"
+                        },
+                        "required": true,
+                        "description": "",
+                        "default_value": null,
+                        "version_added": "31"
+                      }
+                    ],
+                    "variants": null,
+                    "base_type": null,
+                    "protocol_type": "array"
+                  },
+                  "required": true,
+                  "description": "",
+                  "default_value": null,
+                  "version_added": "31"
+                }
+              ],
+              "variants": null,
+              "base_type": null,
+              "protocol_type": "object"
+            },
+            "category": "rawtransactions",
+            "access_level": "Public",
+            "requires_private_keys": false,
+            "version_added": "31",
+            "examples": [
+              "getprivatebroadcastinfo\n\nReturns information about transactions that are currently being privately broadcast.\n\nResult:\n{                               (json object)\n  \"transactions\" : [            (json array)\n    {                           (json object)\n      \"txid\" : \"hex\",           (string) The transaction hash in hex\n      \"wtxid\" : \"hex\",          (string) The transaction witness hash in hex\n      \"hex\" : \"hex\",            (string) The serialized, hex-encoded transaction data\n      \"peers\" : [               (json array) Per-peer send and acknowledgment information for this transaction\n        {                       (json object)\n          \"address\" : \"str\",    (string) The address of the peer to which the transaction was sent\n          \"sent\" : xxx,         (numeric) The time this transaction was picked for sending to this peer via private broadcast (seconds since epoch)\n          \"received\" : xxx      (numeric, optional) The time this peer acknowledged reception of the transaction (seconds since epoch)\n        },\n        ...\n      ]\n    },\n    ...\n  ]\n}\n\nExamples:\n> bitcoin-cli getprivatebroadcastinfo \n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"getprivatebroadcastinfo\", \"params\": []}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
+            ]
+          }
+        },
+        {
+          "RpcMethod": {
             "name": "getrawaddrman",
             "description": "EXPERIMENTAL warning: this call may be changed in future releases.\n\nReturns information on all address manager entries for the new and tried tables.\n",
             "params": [],
