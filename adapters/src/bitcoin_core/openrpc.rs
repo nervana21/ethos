@@ -983,6 +983,60 @@ fn convert_openrpc_method(method: OpenRpcMethod, version_added: Option<String>) 
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn top_level_array_methods_use_array_typedef_with_element_type() {
+        let raw_elem = RawResult {
+            r#type: "string".to_string(),
+            optional: false,
+            description: "the derived addresses".to_string(),
+            skip_type_check: false,
+            key_name: String::new(),
+            condition: String::new(),
+            inner: Vec::new(),
+        };
+
+        let raw_array = RawResult {
+            r#type: "array".to_string(),
+            optional: false,
+            description: "list of derived addresses".to_string(),
+            skip_type_check: false,
+            key_name: String::new(),
+            condition: String::new(),
+            inner: vec![raw_elem],
+        };
+
+        let method = OpenRpcMethod {
+            name: "deriveaddresses".to_string(),
+            description: String::new(),
+            params: Vec::new(),
+            result: Some(OpenRpcResult {
+                name: Some("result".to_string()),
+                schema: None,
+                x_bitcoin_results: vec![raw_array],
+            }),
+            x_bitcoin_category: "wallet".to_string(),
+            x_bitcoin_examples: None,
+            x_bitcoin_argument_names: Vec::new(),
+            x_bitcoin_arguments: Vec::new(),
+        };
+
+        let rpc = convert_openrpc_method(method, Some("30".to_string()));
+        let result_ty = rpc.result.expect("result type should be present");
+
+        assert_eq!(result_ty.kind, TypeKind::Array);
+
+        let elem_ty = result_ty
+            .array_element_type()
+            .expect("array element type should be discoverable via helper");
+
+        assert_eq!(elem_ty.protocol_type.as_deref(), Some("string"));
+    }
+}
+
 /// Converts OpenRPC (Bitcoin Core) to `ProtocolIR` using a preloaded version map.
 ///
 /// Use this when you already have the canonical IR loaded (e.g. for merge) to avoid re-reading.
