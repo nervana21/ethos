@@ -18,6 +18,7 @@ fn create_sample_ir() -> ProtocolIR {
             kind: TypeKind::Object,
             fields: Some(vec![]),
             variants: None,
+            union_variants: None,
             base_type: None,
             protocol_type: Some("object".to_string()),
             canonical_name: None,
