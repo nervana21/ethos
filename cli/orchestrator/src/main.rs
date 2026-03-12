@@ -215,6 +215,23 @@ fn compile_with_ir(
     use pipeline::protocol_compiler::EthosCompiler;
     use pipeline::template_management::create_source_directory_with_templates;
 
+    // Filter IR to only methods available in the target version (excludes unreleased / future
+    // methods) for Bitcoin Core.
+    if implementation == Implementation::BitcoinCore {
+        let filtered =
+            adapters::bitcoin_core::openrpc::extract_version_ir(ir.clone(), version.as_str());
+        if filtered.get_rpc_methods().is_empty() {
+            eprintln!(
+                "warning: version filter for {} would remove all methods (e.g. IR has \
+                 version_added from unreleased/doc only). Using full IR. Fix canonical IR \
+                 version_added or load so version preservation works.",
+                version.as_str()
+            );
+        } else {
+            ir = filtered;
+        }
+    }
+
     // Create source directory structure and copy template files
     let src_dir = create_source_directory_with_templates(output_dir, implementation)?;
 

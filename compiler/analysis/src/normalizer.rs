@@ -145,7 +145,7 @@ impl IRNormalizer {
 
     /// Normalize a FieldDef
     fn normalize_field_def(&self, field: &mut FieldDef) -> Result<(), Box<dyn std::error::Error>> {
-        field.name = field.name.trim().to_string();
+        field.key.trim_named_in_place();
         field.description = field.description.trim().to_string();
 
         if let Some(ref mut default_value) = field.default_value {

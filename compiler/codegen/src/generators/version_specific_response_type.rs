@@ -63,6 +63,16 @@ impl VersionSpecificResponseTypeGenerator {
         Ok(Self { version, implementation })
     }
 
+    /// Filter a `TypeDef`'s fields (and nested types) by `version_added` / `version_removed`
+    /// for the generator's target version. Delegates to the openrpc adapter for Bitcoin Core;
+    /// other implementations use the IR as-is.
+    fn filter_type_def_for_version(&self, ty: &ir::TypeDef) -> ir::TypeDef {
+        if self.implementation != "bitcoin_core" {
+            return ty.clone();
+        }
+        adapters::bitcoin_core::openrpc::filter_type_def_for_version(ty, self.version.as_str())
+    }
+
     /// Generate version-specific response types
     pub fn generate(&self, methods: &[RpcDef]) -> Result<Vec<(String, String)>> {
         let mut out = String::from("//! Generated version-specific RPC response types\n");
@@ -105,14 +115,17 @@ impl VersionSpecificResponseTypeGenerator {
         // Check all methods for type usage - generate directly from IR
         for method in methods {
             if let Some(result) = &method.result {
+                let result = self.filter_type_def_for_version(result);
                 if let Some(fields) = &result.fields {
                     for field in fields {
-                        let rust_type =
-                            Self::response_field_type_override(method.name.as_str(), &field.name)
-                                .map(String::from)
-                                .unwrap_or_else(|| {
-                                    self.map_ir_type_to_rust(&field.field_type, &field.name)
-                                });
+                        let rust_type = Self::response_field_type_override(
+                            method.name.as_str(),
+                            &field.key.as_ident(),
+                        )
+                        .map(String::from)
+                        .unwrap_or_else(|| {
+                            self.map_ir_type_to_rust(&field.field_type, &field.key.as_ident())
+                        });
                         let field_type = &field.field_type.name;
                         if field_type.contains("BTreeMap") || rust_type.contains("BTreeMap") {
                             needs_btreemap = true;
@@ -402,29 +415,12 @@ impl VersionSpecificResponseTypeGenerator {
         reg
     }
 
-    /// RPCs that return a top-level JSON array (schema has Object + single field; bitcoind returns array)
-    const TOP_LEVEL_ARRAY_METHODS: &[&str] = &[
-        "deriveaddresses",
-        "getaddednodeinfo",
-        "getnodeaddresses",
-        "getorphantxs",
-        "getpeerinfo",
-        "getrawmempool",
-        "listbanned",
-        "listlockunspent",
-        "listreceivedbyaddress",
-        "listreceivedbylabel",
-        "listtransactions",
-        "listunspent",
-    ];
-
-    /// For TOP_LEVEL_ARRAY_METHODS, optional element type for stronger typing (None = Vec<serde_json::Value>).
-    fn array_wrapper_element_type(method_name: &str) -> Option<&'static str> {
-        match method_name {
-            "deriveaddresses" => Some("String"),
-            "getorphantxs" => Some("bitcoin::Txid"),
-            _ => None,
-        }
+    /// If this result represents a top-level JSON array in IR, return the element type.
+    ///
+    /// Delegates to `TypeDef::array_element_type()` so that array semantics are
+    /// centralized in the IR layer instead of re-encoding `FieldKey` conventions here.
+    fn array_element_type_from_ir(result: &ir::TypeDef) -> Option<&ir::TypeDef> {
+        result.array_element_type()
     }
 
     /// Stronger types for specific (rpc_name, field_name) when the default would be serde_json::Value.
@@ -472,7 +468,10 @@ impl VersionSpecificResponseTypeGenerator {
         }
 
         if rpc_name == "getblock" {
-            return matches!(field.name.as_str(), "tx_1" | "tx_2" | "field_21" | "field_23");
+            return matches!(
+                field.key.as_ident().as_str(),
+                "tx_1" | "tx_2" | "field_21" | "field_23"
+            );
         }
 
         false
@@ -484,7 +483,7 @@ impl VersionSpecificResponseTypeGenerator {
     fn get_getblock_decoded_tx_element_type(method: &RpcDef) -> Option<&ir::TypeDef> {
         let result = method.result.as_ref()?;
         let top_fields = result.fields.as_ref()?;
-        let tx1 = top_fields.iter().find(|f| f.name == "tx_1")?;
+        let tx1 = top_fields.iter().find(|f| f.key.as_ident() == "tx_1")?;
         let array_wrapper = tx1.field_type.fields.as_ref()?;
         let first = array_wrapper.first()?;
         let inner_fields = first.field_type.fields.as_ref()?;
@@ -497,7 +496,7 @@ impl VersionSpecificResponseTypeGenerator {
         type_def: &'a ir::TypeDef,
         field_name: &str,
     ) -> Option<&'a ir::FieldDef> {
-        type_def.fields.as_ref()?.iter().find(|f| f.name == field_name)
+        type_def.fields.as_ref()?.iter().find(|f| f.key.as_ident() == field_name)
     }
 
     /// Emits Rust structs for decoded transaction details (getblock verbosity 2/3, getrawtransaction verbose).
@@ -786,10 +785,12 @@ impl VersionSpecificResponseTypeGenerator {
 
     /// Generate response type for a specific method
     fn generate_method_response(&self, method: &RpcDef) -> Result<Option<String>> {
-        // RPCs that return a top-level array: generate array wrapper instead of struct
-        if Self::TOP_LEVEL_ARRAY_METHODS.contains(&method.name.as_str()) {
-            let struct_name = self.response_struct_name(method);
-            return Ok(Some(self.generate_array_wrapper(method, &struct_name)?));
+        // RPCs whose IR result is a top-level array: generate array wrapper instead of struct.
+        if let Some(result) = &method.result {
+            if Self::array_element_type_from_ir(result).is_some() {
+                let struct_name = self.response_struct_name(method);
+                return Ok(Some(self.generate_array_wrapper(method, &struct_name, result)?));
+            }
         }
 
         // RPCs that return arbitrary JSON (echo/echojson)
@@ -804,11 +805,15 @@ impl VersionSpecificResponseTypeGenerator {
             return Ok(Some(self.generate_primitive_wrapper(&struct_name, "string", &None)?));
         }
 
-        // Simplified - always generate from IR data since we removed metadata registries
+        // Simplified - always generate from IR data since we removed metadata
+        // registries. For Bitcoin Core, we first filter the IR result type
+        // using version metadata so fields that are not present in this
+        // release are omitted from the generated struct.
         if let Some(result) = &method.result {
+            let result = self.filter_type_def_for_version(result);
             if let Some(fields) = &result.fields {
                 if !fields.is_empty() {
-                    return Ok(Some(self.generate_from_ir_data(method, result)?));
+                    return Ok(Some(self.generate_from_ir_data(method, &result)?));
                 }
             }
         }
@@ -817,7 +822,8 @@ impl VersionSpecificResponseTypeGenerator {
         self.generate_unit_response(method)
     }
 
-    /// Generate response type from IR data (TypeDef.fields)
+    /// Generate response type from IR data (TypeDef.fields). The caller must pass a result
+    /// already filtered for the generator's target version.
     fn generate_from_ir_data(&self, method: &RpcDef, result: &ir::TypeDef) -> Result<String> {
         let struct_name = self.response_struct_name(method);
         let mut buf = String::new();
@@ -879,9 +885,13 @@ impl VersionSpecificResponseTypeGenerator {
         Ok(buf)
     }
 
-    /// Emit a single struct from an IR TypeDef (for nested/named types from the type registry).
-    /// Uses the same field logic as method responses; no deny_unknown_fields on inner structs.
+    /// Emit a single struct from an IR `TypeDef` (for nested/named types from
+    /// the type registry). Uses the same field logic as method responses; no
+    /// `deny_unknown_fields` on inner structs. For Bitcoin Core the type is
+    /// first filtered for the generator's target version so nested helpers do
+    /// not include fields that are not present in this release.
     fn generate_struct_from_type_def(&self, type_def: &TypeDef, buf: &mut String) -> Result<()> {
+        let type_def = self.filter_type_def_for_version(type_def);
         if !type_def.description.is_empty() {
             write_doc_comment(buf, &type_def.description, "")?;
         }
@@ -912,14 +922,14 @@ impl VersionSpecificResponseTypeGenerator {
         }
 
         // Generate field definition (use stronger type override when set)
-        let base_field_type = Self::response_field_type_override(rpc_name, &field.name)
+        let base_field_type = Self::response_field_type_override(rpc_name, &field.key.as_ident())
             .map(String::from)
-            .unwrap_or_else(|| self.map_ir_type_to_rust(&field.field_type, &field.name));
+            .unwrap_or_else(|| self.map_ir_type_to_rust(&field.field_type, &field.key.as_ident()));
         if base_field_type.starts_with("bitcoin::") {
             let symbol = base_field_type.split("::").last().unwrap_or(&base_field_type);
             record_external_symbol("bitcoin", symbol);
         }
-        let field_name = self.sanitize_identifier(&field.name);
+        let field_name = self.sanitize_identifier(&field.key.as_ident());
         let mut field_type = if field.required && !force_optional_conditional {
             base_field_type.clone()
         } else {
@@ -930,26 +940,26 @@ impl VersionSpecificResponseTypeGenerator {
             field_type = format!("Option<{}>", base_field_type);
         }
         // Override: some Core fields are absent on certain networks/versions
-        if field.name == "blockmintxfee"
-            || field.name == "maxdatacarriersize"
-            || field.name == "permitbaremultisig"
-            || field.name == "limitclustercount"
-            || field.name == "limitclustersize"
+        if field.key.as_ident() == "blockmintxfee"
+            || field.key.as_ident() == "maxdatacarriersize"
+            || field.key.as_ident() == "permitbaremultisig"
+            || field.key.as_ident() == "limitclustercount"
+            || field.key.as_ident() == "limitclustersize"
         {
             field_type = format!("Option<{}>", base_field_type);
         }
         // Override: bitcoind omits these fields in some modes/versions
-        if Self::optional_field_override(rpc_name, &field.name) {
+        if Self::optional_field_override(rpc_name, &field.key.as_ident()) {
             field_type = format!("Option<{}>", base_field_type);
         }
 
         // Add serde rename attribute if the field name was changed
-        if field_name != field.name {
-            writeln!(buf, "    #[serde(rename = \"{}\")]", field.name)?;
+        if field_name != field.key.as_ident() {
+            writeln!(buf, "    #[serde(rename = \"{}\")]", field.key.as_ident())?;
         }
 
         // When we force Option for omitted fields, allow missing key to deserialize as None
-        if Self::optional_field_override(rpc_name, &field.name) {
+        if Self::optional_field_override(rpc_name, &field.key.as_ident()) {
             writeln!(buf, "    #[serde(default)]")?;
         }
 
@@ -1038,7 +1048,7 @@ impl VersionSpecificResponseTypeGenerator {
             match &result.kind {
                 ir::TypeKind::Array => {
                     // Generate array wrapper for methods that return arrays
-                    return Ok(Some(self.generate_array_wrapper(method, &struct_name)?));
+                    return Ok(Some(self.generate_array_wrapper(method, &struct_name, &result)?));
                 }
                 ir::TypeKind::Primitive => {
                     // Generate primitive wrapper for methods that return primitives
@@ -1120,8 +1130,11 @@ impl VersionSpecificResponseTypeGenerator {
             .as_ref()
             .map(|fs| fs.iter().filter(|f| !Self::is_elision_field(f)).collect())
             .unwrap_or_default();
-        let string_field =
-            fields.iter().find(|f| f.name == "data" || f.name == "txid" || f.name.contains("txid"));
+        let string_field = fields.iter().find(|f| {
+            f.key.as_ident() == "data"
+                || f.key.as_ident() == "txid"
+                || f.key.as_ident().contains("txid")
+        });
         let param_name = if string_field.is_some() { "v" } else { "_v" };
         writeln!(
             buf,
@@ -1133,10 +1146,10 @@ impl VersionSpecificResponseTypeGenerator {
         writeln!(buf, "            {{")?;
         if !fields.is_empty() {
             if let Some(field) = string_field {
-                let field_name = self.sanitize_identifier(&field.name);
-                let field_type = self.map_ir_type_to_rust(&field.field_type, &field.name);
+                let field_name = self.sanitize_identifier(&field.key.as_ident());
+                let field_type = self.map_ir_type_to_rust(&field.field_type, &field.key.as_ident());
                 // "data" is typically a string (hex); use to_string(); others (e.g. txid) use FromStr
-                if field.name == "data" && field_type == "String" {
+                if field.key.as_ident() == "data" && field_type == "String" {
                     writeln!(
                         buf,
                         "                let {} = {}.to_string();",
@@ -1151,8 +1164,8 @@ impl VersionSpecificResponseTypeGenerator {
                 }
                 writeln!(buf, "                Ok({} {{", struct_name)?;
                 for f in &fields {
-                    let fn_name = self.sanitize_identifier(&f.name);
-                    if f.name == field.name {
+                    let fn_name = self.sanitize_identifier(&f.key.as_ident());
+                    if f.key.as_ident() == field.key.as_ident() {
                         writeln!(buf, "                    {}: Some({}),", fn_name, fn_name)?;
                     } else {
                         writeln!(buf, "                    {}: None,", fn_name)?;
@@ -1163,7 +1176,7 @@ impl VersionSpecificResponseTypeGenerator {
                 // Fallback: create struct with all fields as None
                 writeln!(buf, "                Ok({} {{", struct_name)?;
                 for f in &fields {
-                    let fn_name = self.sanitize_identifier(&f.name);
+                    let fn_name = self.sanitize_identifier(&f.key.as_ident());
                     writeln!(buf, "                    {}: None,", fn_name)?;
                 }
                 writeln!(buf, "                }})")?;
@@ -1181,22 +1194,22 @@ impl VersionSpecificResponseTypeGenerator {
         writeln!(buf, "            {{")?;
         if !fields.is_empty() {
             for f in &fields {
-                let fn_name = self.sanitize_identifier(&f.name);
+                let fn_name = self.sanitize_identifier(&f.key.as_ident());
                 writeln!(buf, "                let mut {} = None;", fn_name)?;
             }
             writeln!(buf, "                while let Some(key) = map.next_key::<String>()? {{")?;
             for f in &fields {
-                let fn_name = self.sanitize_identifier(&f.name);
-                writeln!(buf, "                    if key == \"{}\" {{", f.name)?;
+                let fn_name = self.sanitize_identifier(&f.key.as_ident());
+                writeln!(buf, "                    if key == \"{}\" {{", f.key.as_ident())?;
                 writeln!(buf, "                        if {}.is_some() {{", fn_name)?;
                 writeln!(
                     buf,
                     "                            return Err(de::Error::duplicate_field(\"{}\"));",
-                    f.name
+                    f.key.as_ident()
                 )?;
                 writeln!(buf, "                        }}")?;
-                let field_type = self.map_ir_type_to_rust(&f.field_type, &f.name);
-                let base_field_type = self.map_ir_type_to_rust(&f.field_type, &f.name);
+                let field_type = self.map_ir_type_to_rust(&f.field_type, &f.key.as_ident());
+                let base_field_type = self.map_ir_type_to_rust(&f.field_type, &f.key.as_ident());
                 let is_optional = field_type.starts_with("Option<");
                 let inner_type = if is_optional {
                     field_type
@@ -1276,7 +1289,7 @@ impl VersionSpecificResponseTypeGenerator {
             writeln!(buf, "                }}")?;
             writeln!(buf, "                Ok({} {{", struct_name)?;
             for f in &fields {
-                let fn_name = self.sanitize_identifier(&f.name);
+                let fn_name = self.sanitize_identifier(&f.key.as_ident());
                 writeln!(buf, "                    {},", fn_name)?;
             }
             writeln!(buf, "                }})")?;
@@ -1815,19 +1828,27 @@ impl VersionSpecificResponseTypeGenerator {
         Ok(buf)
     }
 
-    /// Generate array wrapper for methods that return arrays
-    fn generate_array_wrapper(&self, method: &RpcDef, struct_name: &str) -> Result<String> {
+    /// Generate array wrapper for methods that return arrays.
+    /// When IR encodes the element type (TypeKind::Array with a single anonymous field),
+    /// we derive the Rust element type from that; otherwise we fall back to `serde_json::Value`.
+    fn generate_array_wrapper(
+        &self,
+        method: &RpcDef,
+        struct_name: &str,
+        result: &ir::TypeDef,
+    ) -> Result<String> {
         let mut buf = String::new();
-        let elem_ty = Self::array_wrapper_element_type(&method.name);
+        let value_ty = if let Some(elem_ty) = Self::array_element_type_from_ir(result) {
+            self.map_ir_type_to_rust(elem_ty, "field_0")
+        } else {
+            "serde_json::Value".to_string()
+        };
 
-        if let Some(ty) = elem_ty {
-            if ty.starts_with("bitcoin::") {
-                let symbol = ty.split("::").last().unwrap_or(ty);
-                record_external_symbol("bitcoin", symbol);
-            }
+        if let Some(stripped) = value_ty.strip_prefix("bitcoin::") {
+            let symbol = stripped.split("::").last().unwrap_or(stripped);
+            record_external_symbol("bitcoin", symbol);
         }
 
-        let value_ty = elem_ty.unwrap_or("serde_json::Value");
         let vec_ty = format!("Vec<{}>", value_ty);
 
         // Generate struct documentation using PascalCase canonical method name
@@ -2017,5 +2038,294 @@ impl VersionSpecificResponseTypeGenerator {
             type_name,
             "ScriptBuf" | "Transaction" | "TxOut" | "KeySource" | "TapTree" | "ProprietaryKey"
         )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn array_wrapper_uses_ir_element_type() {
+        let version = ProtocolVersion::from_str("30.0.0").unwrap();
+        let gen = VersionSpecificResponseTypeGenerator::new(version, "bitcoin_core".to_string());
+
+        // IR: top-level array of primitive strings.
+        let elem_ty = TypeDef {
+            name: "string".to_string(),
+            description: String::new(),
+            kind: TypeKind::Primitive,
+            fields: None,
+            variants: None,
+            base_type: None,
+            protocol_type: Some("string".to_string()),
+            canonical_name: None,
+            condition: None,
+        };
+
+        // Element encoded as anonymous positional field_0.
+        let result_ty = TypeDef {
+            name: "array".to_string(),
+            description: String::new(),
+            kind: TypeKind::Array,
+            fields: Some(vec![ir::FieldDef {
+                key: ir::FieldKey::Anonymous(0),
+                field_type: elem_ty,
+                required: true,
+                description: String::new(),
+                default_value: None,
+                version_added: None,
+                version_removed: None,
+            }]),
+            variants: None,
+            base_type: None,
+            protocol_type: Some("array".to_string()),
+            canonical_name: None,
+            condition: None,
+        };
+
+        let method = RpcDef {
+            name: "deriveaddresses".to_string(),
+            description: String::new(),
+            params: Vec::new(),
+            result: Some(result_ty),
+            category: String::new(),
+            access_level: ir::AccessLevel::Public,
+            requires_private_keys: false,
+            version_added: None,
+            version_removed: None,
+            examples: None,
+            hidden: None,
+        };
+
+        let code = gen
+            .generate_method_response(&method)
+            .expect("generation must succeed")
+            .expect("response must be generated");
+
+        // We expect a transparent wrapper over Vec<String>.
+        assert!(
+            code.contains("pub value: Vec<String>"),
+            "expected Vec<String> field, got:\n{code}"
+        );
+    }
+
+    #[test]
+    fn array_wrapper_recognizes_named_field_0_element() {
+        let version = ProtocolVersion::from_str("30.0.0").unwrap();
+        let gen = VersionSpecificResponseTypeGenerator::new(version, "bitcoin_core".to_string());
+
+        // IR: top-level array of primitive strings with a synthetic Named(\"field_0\") key.
+        let elem_ty = TypeDef {
+            name: "string".to_string(),
+            description: String::new(),
+            kind: TypeKind::Primitive,
+            fields: None,
+            variants: None,
+            base_type: None,
+            protocol_type: Some("string".to_string()),
+            canonical_name: None,
+            condition: None,
+        };
+
+        let result_ty = TypeDef {
+            name: "array".to_string(),
+            description: String::new(),
+            kind: TypeKind::Array,
+            fields: Some(vec![ir::FieldDef {
+                key: ir::FieldKey::Named("field_0".to_string()),
+                field_type: elem_ty,
+                required: true,
+                description: String::new(),
+                default_value: None,
+                version_added: None,
+                version_removed: None,
+            }]),
+            variants: None,
+            base_type: None,
+            protocol_type: Some("array".to_string()),
+            canonical_name: None,
+            condition: None,
+        };
+
+        let method = RpcDef {
+            name: "deriveaddresses".to_string(),
+            description: String::new(),
+            params: Vec::new(),
+            result: Some(result_ty),
+            category: String::new(),
+            access_level: ir::AccessLevel::Public,
+            requires_private_keys: false,
+            version_added: None,
+            version_removed: None,
+            examples: None,
+            hidden: None,
+        };
+
+        let code = gen
+            .generate_method_response(&method)
+            .expect("generation must succeed")
+            .expect("response must be generated");
+
+        // We still expect a transparent wrapper over Vec<String>.
+        assert!(
+            code.contains("pub value: Vec<String>"),
+            "expected Vec<String> field for Named(\"field_0\") element, got:\n{code}"
+        );
+    }
+
+    #[test]
+    fn array_wrapper_uses_value_vec_for_any() {
+        let version = ProtocolVersion::from_str("30.0.0").unwrap();
+        let gen = VersionSpecificResponseTypeGenerator::new(version, "bitcoin_core".to_string());
+
+        // IR: top-level array of primitive `any` (maps to serde_json::Value).
+        let elem_ty = TypeDef {
+            name: "any".to_string(),
+            description: String::new(),
+            kind: TypeKind::Primitive,
+            fields: None,
+            variants: None,
+            base_type: None,
+            protocol_type: Some("any".to_string()),
+            canonical_name: None,
+            condition: None,
+        };
+
+        let result_ty = TypeDef {
+            name: "array".to_string(),
+            description: String::new(),
+            kind: TypeKind::Array,
+            fields: Some(vec![ir::FieldDef {
+                key: ir::FieldKey::Anonymous(0),
+                field_type: elem_ty,
+                required: true,
+                description: String::new(),
+                default_value: None,
+                version_added: None,
+                version_removed: None,
+            }]),
+            variants: None,
+            base_type: None,
+            protocol_type: Some("array".to_string()),
+            canonical_name: None,
+            condition: None,
+        };
+
+        let method = RpcDef {
+            name: "getrawmempool".to_string(),
+            description: String::new(),
+            params: Vec::new(),
+            result: Some(result_ty),
+            category: String::new(),
+            access_level: ir::AccessLevel::Public,
+            requires_private_keys: false,
+            version_added: None,
+            version_removed: None,
+            examples: None,
+            hidden: None,
+        };
+
+        let code = gen
+            .generate_method_response(&method)
+            .expect("generation must succeed")
+            .expect("response must be generated");
+
+        // We expect a transparent wrapper over Vec<serde_json::Value>.
+        assert!(
+            code.contains("pub value: Vec<serde_json::Value>"),
+            "expected Vec<serde_json::Value> field, got:\n{code}"
+        );
+    }
+
+    #[test]
+    fn getblocktemplate_placeholder_field_optional() {
+        let version = ProtocolVersion::from_str("30.0.0").unwrap();
+        let gen = VersionSpecificResponseTypeGenerator::new(version, "bitcoin_core".to_string());
+
+        // IR: object result whose first anonymous field encodes the proposal-accepted `none` result.
+        let none_ty = TypeDef {
+            name: "none".to_string(),
+            description: String::new(),
+            kind: TypeKind::Primitive,
+            fields: None,
+            variants: None,
+            base_type: None,
+            protocol_type: Some("none".to_string()),
+            canonical_name: None,
+            condition: Some("If the proposal was accepted with mode=='proposal'".to_string()),
+        };
+
+        let version_ty = TypeDef {
+            name: "number".to_string(),
+            description: String::new(),
+            kind: TypeKind::Primitive,
+            fields: None,
+            variants: None,
+            base_type: None,
+            protocol_type: Some("number".to_string()),
+            canonical_name: None,
+            condition: None,
+        };
+
+        let result_ty = TypeDef {
+            name: "object".to_string(),
+            description: String::new(),
+            kind: TypeKind::Object,
+            fields: Some(vec![
+                ir::FieldDef {
+                    key: ir::FieldKey::Anonymous(0),
+                    field_type: none_ty,
+                    required: true,
+                    description: String::new(),
+                    default_value: None,
+                    version_added: None,
+                    version_removed: None,
+                },
+                ir::FieldDef {
+                    key: ir::FieldKey::Named("version".to_string()),
+                    field_type: version_ty,
+                    required: true,
+                    description: String::new(),
+                    default_value: None,
+                    version_added: None,
+                    version_removed: None,
+                },
+            ]),
+            variants: None,
+            base_type: None,
+            protocol_type: Some("object".to_string()),
+            canonical_name: None,
+            condition: None,
+        };
+
+        let method = RpcDef {
+            name: "getblocktemplate".to_string(),
+            description: String::new(),
+            params: Vec::new(),
+            result: Some(result_ty),
+            category: String::new(),
+            access_level: ir::AccessLevel::Public,
+            requires_private_keys: false,
+            version_added: None,
+            version_removed: None,
+            examples: None,
+            hidden: None,
+        };
+
+        let code = gen
+            .generate_method_response(&method)
+            .expect("generation must succeed")
+            .expect("response must be generated");
+
+        // The placeholder field should be optional with a serde default attribute.
+        assert!(
+            code.contains("#[serde(default)]"),
+            "expected serde default attr for placeholder field, got:\n{code}"
+        );
+        assert!(
+            code.contains("pub field_0: Option<()>"),
+            "expected optional unit placeholder field, got:\n{code}"
+        );
     }
 }

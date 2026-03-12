@@ -3,6 +3,7 @@
     "bitcoin_core": {
       "AbandonTransaction": "abandontransaction",
       "AbortRescan": "abortrescan",
+      "AbortPrivateBroadcast": "abortprivatebroadcast",
       "AddConnection": "addconnection",
       "AddNode": "addnode",
       "AddPeerAddress": "addpeeraddress",
@@ -85,8 +86,10 @@
       "GetRawChangeAddress": "getrawchangeaddress",
       "GetRawMempool": "getrawmempool",
       "GetRawTransaction": "getrawtransaction",
+      "GetPrivateBroadcastInfo": "getprivatebroadcastinfo",
       "GetReceivedByLabel": "getreceivedbylabel",
       "GetRpcInfo": "getrpcinfo",
+      "GetOpenRpcInfo": "getopenrpcinfo",
       "GetTransaction": "gettransaction",
       "GetTxOut": "gettxout",
       "GetTxOutProof": "gettxoutproof",

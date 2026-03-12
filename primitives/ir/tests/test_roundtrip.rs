@@ -3,7 +3,142 @@
 //! IR roundtrip tests (serialize → deserialize).
 
 use ethos_ir::test_utils::{rpc, type_def};
-use ethos_ir::{ProtocolDef, ProtocolIR, ProtocolModule, TypeKind};
+use ethos_ir::{FieldDef, FieldKey, ProtocolDef, ProtocolIR, ProtocolModule, TypeDef, TypeKind};
+
+fn minimal_type_def() -> TypeDef { type_def("", TypeKind::Primitive) }
+
+#[test]
+fn test_field_key_roundtrip() {
+    // Roundtrip `FieldKey` Named and Anonymous through JSON.
+    let type_with_keys = TypeDef {
+        name: "object".to_string(),
+        description: String::new(),
+        kind: TypeKind::Object,
+        fields: Some(vec![
+            FieldDef {
+                key: FieldKey::Named("txid".to_string()),
+                field_type: minimal_type_def(),
+                required: true,
+                description: String::new(),
+                default_value: None,
+                version_added: None,
+                version_removed: None,
+            },
+            FieldDef {
+                key: FieldKey::Anonymous(1),
+                field_type: minimal_type_def(),
+                required: true,
+                description: String::new(),
+                default_value: None,
+                version_added: None,
+                version_removed: None,
+            },
+        ]),
+        variants: None,
+        base_type: None,
+        protocol_type: None,
+        canonical_name: None,
+        condition: None,
+    };
+    let json = serde_json::to_string_pretty(&type_with_keys).expect("serialize");
+    let loaded: TypeDef = serde_json::from_str(&json).expect("deserialize");
+    let fields = loaded.fields.as_ref().expect("fields");
+    assert_eq!(fields[0].key.as_ident(), "txid");
+    assert_eq!(fields[1].key.as_ident(), "field_1");
+    assert!(!fields[0].key.is_anonymous());
+    assert_eq!(fields[1].key.anonymous_index(), Some(1));
+}
+
+#[test]
+fn array_element_type_helper_supports_anonymous_and_named_field_0() {
+    // Anonymous positional element at index 0.
+    let elem_ty = minimal_type_def();
+    let array_with_anonymous = TypeDef {
+        name: "array".to_string(),
+        description: String::new(),
+        kind: TypeKind::Array,
+        fields: Some(vec![FieldDef {
+            key: FieldKey::Anonymous(0),
+            field_type: elem_ty.clone(),
+            required: true,
+            description: String::new(),
+            default_value: None,
+            version_added: None,
+            version_removed: None,
+        }]),
+        variants: None,
+        base_type: None,
+        protocol_type: Some("array".to_string()),
+        canonical_name: None,
+        condition: None,
+    };
+
+    let elem =
+        array_with_anonymous.array_element_type().expect("anonymous(0) element must be recognized");
+    assert_eq!(elem.name, elem_ty.name);
+
+    // Synthetic Named(\"field_0\") element should also be recognized.
+    let array_with_named = TypeDef {
+        name: "array".to_string(),
+        description: String::new(),
+        kind: TypeKind::Array,
+        fields: Some(vec![FieldDef {
+            key: FieldKey::Named("field_0".to_string()),
+            field_type: elem_ty.clone(),
+            required: true,
+            description: String::new(),
+            default_value: None,
+            version_added: None,
+            version_removed: None,
+        }]),
+        variants: None,
+        base_type: None,
+        protocol_type: Some("array".to_string()),
+        canonical_name: None,
+        condition: None,
+    };
+
+    let elem2 = array_with_named
+        .array_element_type()
+        .expect("Named(\"field_0\") element must be recognized");
+    assert_eq!(elem2.name, elem_ty.name);
+
+    // Non-array kinds and arrays with multiple fields should return None.
+    let not_array = minimal_type_def();
+    assert!(not_array.array_element_type().is_none());
+
+    let multi_field_array = TypeDef {
+        name: "array".to_string(),
+        description: String::new(),
+        kind: TypeKind::Array,
+        fields: Some(vec![
+            FieldDef {
+                key: FieldKey::Anonymous(0),
+                field_type: minimal_type_def(),
+                required: true,
+                description: String::new(),
+                default_value: None,
+                version_added: None,
+                version_removed: None,
+            },
+            FieldDef {
+                key: FieldKey::Anonymous(1),
+                field_type: minimal_type_def(),
+                required: true,
+                description: String::new(),
+                default_value: None,
+                version_added: None,
+                version_removed: None,
+            },
+        ]),
+        variants: None,
+        base_type: None,
+        protocol_type: Some("array".to_string()),
+        canonical_name: None,
+        condition: None,
+    };
+    assert!(multi_field_array.array_element_type().is_none());
+}
 
 #[test]
 fn test_ir_roundtrip_simple() {

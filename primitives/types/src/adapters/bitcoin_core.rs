@@ -97,7 +97,8 @@ impl BitcoinCoreAdapter {
             fields
                 .iter()
                 .map(|field| {
-                    let is_optional_override = matches!(field.name.as_str(), "permitbaremultisig");
+                    let is_optional_override =
+                        matches!(field.key.as_ident().as_str(), "permitbaremultisig");
 
                     // Recursively handle nested structures: if the field's type has its own fields,
                     // recursively convert them to nested MethodResult entries
@@ -112,7 +113,7 @@ impl BitcoinCoreAdapter {
                         type_: field.field_type.name.clone(),
                         optional: !field.required || is_optional_override,
                         description: field.description.clone(),
-                        key_name: field.name.clone(),
+                        key_name: field.key.as_ident(),
                         condition: String::new(),
                         inner: nested_inner,
                     }

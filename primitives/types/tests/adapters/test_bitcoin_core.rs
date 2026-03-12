@@ -1,4 +1,4 @@
-use ir::{AccessLevel, RpcDef};
+use ir::{AccessLevel, FieldKey, RpcDef};
 use types::adapters::bitcoin_core::BitcoinCoreAdapter;
 use types::type_adapter::TypeAdapter;
 use types::MethodResult;
@@ -33,7 +33,7 @@ fn convert_method_result_to_type_def(result: &MethodResult) -> ir::TypeDef {
                 .inner
                 .iter()
                 .map(|inner| ir::FieldDef {
-                    name: inner.key_name.clone(),
+                    key: FieldKey::Named(inner.key_name.clone()),
                     field_type: ir::TypeDef {
                         name: inner.type_.clone(),
                         description: inner.description.clone(),
@@ -48,6 +48,8 @@ fn convert_method_result_to_type_def(result: &MethodResult) -> ir::TypeDef {
                     required: !inner.optional,
                     description: inner.description.clone(),
                     default_value: None,
+                    version_added: None,
+                    version_removed: None,
                 })
                 .collect(),
         )

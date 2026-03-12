@@ -62,6 +62,42 @@ pub fn get_protocol_spec_path(
     Ok(project_root.join("resources").join(spec_file))
 }
 
+/// Path to the canonical Bitcoin IR file
+///
+/// # Arguments
+///
+/// * `project_root` - Path to the project root directory
+///
+/// # Returns
+///
+/// Returns `PathBuf` for `project_root/resources/ir/bitcoin.ir.json`.
+pub fn canonical_bitcoin_ir_path(project_root: &Path) -> PathBuf {
+    project_root.join("resources/ir/bitcoin.ir.json")
+}
+
+/// Resolves IR output path for writing (relative paths are resolved against
+/// project root).
+///
+/// Does not canonicalize; the file may not exist yet. Use this so read and
+/// write use the same resolved path when targeting the canonical file.
+///
+/// # Arguments
+///
+/// * `project_root` - Path to the project root directory
+/// * `output` - Requested output path (relative or absolute)
+///
+/// # Returns
+///
+/// Returns `PathBuf`: absolute `output` if `output` is absolute, else
+/// `project_root.join(output)`.
+pub fn resolve_ir_output_path(project_root: &Path, output: &Path) -> PathBuf {
+    if output.is_absolute() {
+        output.to_path_buf()
+    } else {
+        project_root.join(output)
+    }
+}
+
 /// Get the path to the resources/ir directory relative to project root
 ///
 /// # Returns
