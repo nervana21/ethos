@@ -10,9 +10,10 @@ _default:
 # Use release builds for pipeline/adapters (much faster run; first build takes longer).
 # Set to "" for debug builds (e.g. when debugging the compiler).
 RELEASE := "--release"
+LATEST_VERSION := "v30.2.8"
 
-# Process OpenRPC document (or version) into canonical IR. Input = path to OpenRPC JSON or version (e.g. v30.2.8) to extract from canonical IR.
-# Example: just process-openrpc resources/ir/openrpc.json  |  just process-openrpc v30.2.8 out.ir.json
+# Process OpenRPC document (or version) into canonical IR. Input = path to OpenRPC JSON or version (e.g. {{LATEST_VERSION}}) to extract from canonical IR.
+# Example: just process-openrpc resources/ir/openrpc.json  |  just process-openrpc {{LATEST_VERSION}} out.ir.json
 process-openrpc input output="":
     @if [ -z "{{output}}" ]; then \
         cargo run {{RELEASE}} -p ethos-adapters --bin process_bitcoin_openrpc -- {{input}}; \
@@ -21,7 +22,7 @@ process-openrpc input output="":
     fi
 
 # Generate client from IR. Set output_path to write into a repo (e.g. ../ethos-bitcoind); use version for a pinned release.
-# Example: just generate-from-ir  |  just generate-from-ir ../ethos-bitcoind v30.2.8
+# Example: just generate-from-ir  |  just generate-from-ir ../ethos-bitcoind {{LATEST_VERSION}}
 generate-from-ir input_file="" output_path="" version="" impl="bitcoin_core":
     @set --; \
     [ -n "{{output_path}}" ] && set -- "$@" --output "{{output_path}}"; \
@@ -101,7 +102,7 @@ examples:
     @echo "Examples:"
     @echo "  just sane                # Full check before push (lint + tests)"
     @echo "  just generate-from-ir            # Generate client from IR"
-    @echo "  just generate-from-ir ../ethos-bitcoind v30.2.8   # Generate into repo with version"
+    @echo "  just generate-from-ir ../ethos-bitcoind {{LATEST_VERSION}}   # Generate into repo with version"
     @echo "  just process-openrpc resources/ir/openrpc.json resources/ir/bitcoin.ir.json"
     @echo "  just process-openrpc-and-generate ../ethos-bitcoind   # OpenRPC → IR → generate into repo"
     @echo "  just corpus-pull         # Pull all corpus repositories"
