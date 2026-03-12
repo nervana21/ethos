@@ -1862,7 +1862,19 @@ impl VersionSpecificResponseTypeGenerator {
     ) -> Result<String> {
         let mut buf = String::new();
         let value_ty = if let Some(elem_ty) = Self::array_element_type_from_ir(result) {
-            self.map_ir_type_to_rust(elem_ty, "field_0")
+            // When the IR describes an array of objects with a named element
+            // type (e.g. for top-level array RPCs such as getpeerinfo), use
+            // that named type so changes to the OpenRPC element schema are
+            // reflected in a dedicated struct instead of being erased to
+            // `serde_json::Value`.
+            if matches!(elem_ty.kind, ir::TypeKind::Object)
+                && !elem_ty.name.is_empty()
+                && elem_ty.name != "object"
+            {
+                elem_ty.name.clone()
+            } else {
+                self.map_ir_type_to_rust(elem_ty, "field_0")
+            }
         } else {
             "serde_json::Value".to_string()
         };
