@@ -15061,7 +15061,7 @@
               "fields": [
                 {
                   "key": {
-                    "Named": "field_0_1"
+                    "Named": "field_0"
                   },
                   "field_type": {
                     "name": "array",
@@ -15672,7 +15672,7 @@
               "fields": [
                 {
                   "key": {
-                    "Named": "field_0_1"
+                    "Named": "field_0"
                   },
                   "field_type": {
                     "name": "array",
