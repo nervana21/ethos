@@ -42,6 +42,27 @@ pub const TOP_LEVEL_ARRAY_METHODS: &[&str] = &[
     "listunspent",
 ];
 
+/// Derive a stable, Rust-friendly name for the element type of a top-level
+/// array result for a given RPC method.
+///
+/// This is intentionally simple: it uppercases the first character of the
+/// method name (which is lower_snake or concatenated, e.g. "getpeerinfo")
+/// and appends "Element". The exact casing is not critical as long as it is
+/// stable and unique per method.
+fn top_level_array_element_type_name(method_name: &str) -> String {
+    let mut chars = method_name.chars();
+    match chars.next() {
+        None => "Element".to_string(),
+        Some(first) => {
+            let mut out = String::new();
+            out.extend(first.to_uppercase());
+            out.push_str(chars.as_str());
+            out.push_str("Element");
+            out
+        }
+    }
+}
+
 /// OpenRPC document produced by Bitcoin Core's `getopenrpcinfo`
 #[derive(Debug, Clone, Deserialize)]
 #[allow(dead_code)]
@@ -911,7 +932,7 @@ fn convert_openrpc_method(method: OpenRpcMethod, version_added: Option<String>) 
         // Derive the element type from the canonical array result:
         // - When inner results describe per-element structure, use the first inner entry.
         // - Otherwise fall back to a generic `any` primitive so codegen can still infer `Vec<Value>`.
-        let element_type = if canonical.r#type == "array" && !canonical.inner.is_empty() {
+        let mut element_type = if canonical.r#type == "array" && !canonical.inner.is_empty() {
             let elem = &canonical.inner[0];
             convert_result(elem, None)
         } else {
@@ -923,6 +944,13 @@ fn convert_openrpc_method(method: OpenRpcMethod, version_added: Option<String>) 
                 ..Default::default()
             }
         };
+
+        // For top-level array RPCs whose elements are objects, give the element
+        // type a stable, named identity so downstream codegen can emit a
+        // dedicated struct instead of falling back to `serde_json::Value`.
+        if matches!(element_type.kind, TypeKind::Object) {
+            element_type.name = top_level_array_element_type_name(&method.name);
+        }
 
         // Convention for top-level array results in IR:
         // represent them as `TypeKind::Array` with a single element prototype
