@@ -8409,7 +8409,7 @@
                     "Named": "field_0"
                   },
                   "field_type": {
-                    "name": "object",
+                    "name": "GetaddednodeinfoElement",
                     "description": "",
                     "kind": "Object",
                     "fields": [
@@ -18003,7 +18003,7 @@
                     "Named": "field_0"
                   },
                   "field_type": {
-                    "name": "object",
+                    "name": "GetnodeaddressesElement",
                     "description": "",
                     "kind": "Object",
                     "fields": [
@@ -18650,7 +18650,7 @@
                     "Named": "field_0"
                   },
                   "field_type": {
-                    "name": "object",
+                    "name": "GetpeerinfoElement",
                     "description": "",
                     "kind": "Object",
                     "fields": [
@@ -24610,7 +24610,7 @@
                     "Named": "field_0"
                   },
                   "field_type": {
-                    "name": "object",
+                    "name": "ListbannedElement",
                     "description": "",
                     "kind": "Object",
                     "fields": [
@@ -25041,7 +25041,7 @@
                     "Named": "field_0"
                   },
                   "field_type": {
-                    "name": "object",
+                    "name": "ListlockunspentElement",
                     "description": "",
                     "kind": "Object",
                     "fields": [
@@ -25193,7 +25193,7 @@
                     "Named": "field_0"
                   },
                   "field_type": {
-                    "name": "object",
+                    "name": "ListreceivedbyaddressElement",
                     "description": "",
                     "kind": "Object",
                     "fields": [
@@ -25381,7 +25381,7 @@
                     "Named": "field_0"
                   },
                   "field_type": {
-                    "name": "object",
+                    "name": "ListreceivedbylabelElement",
                     "description": "",
                     "kind": "Object",
                     "fields": [
@@ -26180,7 +26180,7 @@
                     "Named": "field_0"
                   },
                   "field_type": {
-                    "name": "object",
+                    "name": "ListtransactionsElement",
                     "description": "",
                     "kind": "Object",
                     "fields": [
@@ -26826,7 +26826,7 @@
                     "Named": "field_0"
                   },
                   "field_type": {
-                    "name": "object",
+                    "name": "ListunspentElement",
                     "description": "",
                     "kind": "Object",
                     "fields": [
