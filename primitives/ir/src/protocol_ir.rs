@@ -64,10 +64,10 @@ pub struct RpcDef {
     /// Version when this method was last supported (None if still supported)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub version_removed: Option<String>,
-    /// Example usage strings for the method (preserved from raw schema)
+    /// Example usage strings for the method (preserved from schema)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub examples: Option<Vec<String>>,
-    /// Whether this method is hidden from documentation (preserved from raw schema)
+    /// Whether this method is hidden from documentation (preserved from schema)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub hidden: Option<bool>,
 }
@@ -88,7 +88,7 @@ pub struct MessageDef {
 }
 
 /// Type definition
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct TypeDef {
     /// Rust-mapped type name (e.g., "String", "i64", "u64")
     ///
@@ -116,9 +116,42 @@ pub struct TypeDef {
     /// Canonical name for this type if it is an alias or duplicate
     #[serde(skip_serializing_if = "Option::is_none")]
     pub canonical_name: Option<String>,
-    /// Condition under which this type/field is present (preserved from raw schema)
+    /// Condition under which this type/field is present (preserved from schema)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub condition: Option<String>,
+}
+
+impl TypeDef {
+    /// If this type represents a homogeneous JSON array, return the element type.
+    ///
+    /// Convention:
+    /// - `kind == TypeKind::Array`
+    /// - `fields` contains a single entry that serves as the element prototype
+    /// - The field key may be either:
+    ///   - `FieldKey::Anonymous(0)` (preferred positional form), or
+    ///   - `FieldKey::Named("field_0")` (legacy/synthetic name).
+    ///
+    /// Callers should use this helper instead of matching on `FieldKey` directly
+    /// so IR producers can evolve without breaking consumers.
+    pub fn array_element_type(&self) -> Option<&TypeDef> {
+        if !matches!(self.kind, TypeKind::Array) {
+            return None;
+        }
+        let fields = self.fields.as_ref()?;
+        if fields.len() != 1 {
+            return None;
+        }
+        let field = &fields[0];
+
+        let is_positional_zero = field.key.is_positional_zero()
+            || matches!(field.key, FieldKey::Named(ref s) if s == "field_0");
+
+        if !is_positional_zero {
+            return None;
+        }
+
+        Some(&field.field_type)
+    }
 }
 
 /// Constant definition
@@ -147,13 +180,93 @@ pub struct ParamDef {
     pub description: String,
     /// Default value (if any)
     pub default_value: Option<String>,
+    /// Version when this parameter was added (None = available in all versions / unknown)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub version_added: Option<String>,
+    /// Version when this parameter was removed (None = still present)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub version_removed: Option<String>,
+}
+
+/// Identity of a field: either a named key (e.g. JSON key) or an anonymous
+/// ordinal (position in the parent's `fields` array).
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub enum FieldKey {
+    /// Named field (e.g. JSON object key).
+    Named(String),
+    /// Anonymous field identified by position (index in the parent's `fields`).
+    Anonymous(usize),
+}
+
+impl FieldKey {
+    /// Returns the string used for Rust identifiers and display (for example,
+    /// codegen and diagnostics). `Named(s) => s`, `Anonymous(i) =>
+    /// "field_{i}"`.
+    pub fn as_ident(&self) -> String {
+        match self {
+            FieldKey::Named(s) => s.clone(),
+            FieldKey::Anonymous(i) => format!("field_{i}"),
+        }
+    }
+
+    /// Returns the JSON key for this field when present. Named fields have a
+    /// key; anonymous fields do not.
+    pub fn json_key(&self) -> Option<&str> {
+        match self {
+            FieldKey::Named(s) => Some(s.as_str()),
+            FieldKey::Anonymous(_) => None,
+        }
+    }
+
+    // Helpers below: prefer these over matching on the enum so the abstraction
+    // can be replaced later (e.g. with a plain string) without changing call sites.
+
+    /// Returns true for anonymous (positional) fields, false for named.
+    pub fn is_anonymous(&self) -> bool { matches!(self, FieldKey::Anonymous(_)) }
+
+    /// Returns the ordinal for anonymous fields; `None` for named.
+    pub fn anonymous_index(&self) -> Option<usize> {
+        match self {
+            FieldKey::Anonymous(i) => Some(*i),
+            FieldKey::Named(_) => None,
+        }
+    }
+
+    /// Returns true iff this key represents the first positional element (index 0).
+    ///
+    /// This is a convenience for code that needs to reason about array element
+    /// prototypes without matching on the enum directly.
+    pub fn is_positional_zero(&self) -> bool { self.anonymous_index() == Some(0) }
+
+    /// Trims the name in place for named fields; no-op for anonymous.
+    pub fn trim_named_in_place(&mut self) {
+        if let FieldKey::Named(s) = self {
+            *s = s.trim().to_string();
+        }
+    }
+
+    /// Resolves this key against a slice of fields: by index for anonymous, by
+    /// name (with index fallback) for named.
+    pub fn find_in<'a>(
+        &self,
+        fields: &'a [FieldDef],
+        fallback_index: usize,
+    ) -> Option<&'a FieldDef> {
+        match self {
+            FieldKey::Anonymous(i) => fields.get(*i),
+            FieldKey::Named(s) => fields
+                .iter()
+                .find(|e| e.key.json_key() == Some(s.as_str()))
+                .or_else(|| fields.get(fallback_index)),
+        }
+    }
 }
 
 /// Field definition
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize)]
 pub struct FieldDef {
-    /// Field name
-    pub name: String,
+    /// Field identity (named or anonymous by ordinal).
+    pub key: FieldKey,
     /// Field type
     pub field_type: TypeDef,
     /// Whether this field is required
@@ -162,6 +275,88 @@ pub struct FieldDef {
     pub description: String,
     /// Default value (if any)
     pub default_value: Option<String>,
+    /// Version when this field was added (None = available in all versions / unknown)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub version_added: Option<String>,
+    /// Version when this field was removed (None = still present)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub version_removed: Option<String>,
+}
+
+// Custom deserializer to support both legacy IR field shape (with `key`) and
+// the newer shape (with `name`).
+impl<'de> Deserialize<'de> for FieldDef {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        struct FieldDefHelper {
+            #[serde(default)]
+            name: Option<String>,
+            #[serde(default)]
+            key: Option<FieldKeyHelper>,
+            field_type: TypeDef,
+            required: bool,
+            description: String,
+            #[serde(default)]
+            default_value: Option<String>,
+            #[serde(default)]
+            version_added: Option<String>,
+            #[serde(default)]
+            version_removed: Option<String>,
+        }
+
+        #[derive(Deserialize)]
+        #[serde(untagged)]
+        enum FieldKeyHelper {
+            /// Legacy IR encoded the field name under a `Named` variant.
+            NamedVariant {
+                #[serde(rename = "Named")]
+                named: String,
+            },
+            /// IR encodes anonymous fields under an `Anonymous` variant.
+            AnonymousVariant {
+                #[serde(rename = "Anonymous")]
+                anonymous: usize,
+            },
+            /// Fallback: accept a plain string or any other representation.
+            Other(serde_json::Value),
+        }
+
+        let helper = FieldDefHelper::deserialize(deserializer)?;
+
+        // Prefer explicit `key` when present; fall back to legacy `name` field.
+        let mut key = if let Some(key) = helper.key {
+            match key {
+                FieldKeyHelper::NamedVariant { named } => FieldKey::Named(named),
+                FieldKeyHelper::AnonymousVariant { anonymous } => FieldKey::Anonymous(anonymous),
+                FieldKeyHelper::Other(v) => v
+                    .as_str()
+                    .map(|s| FieldKey::Named(s.to_string()))
+                    // Fallback: accept any non-string key as an unnamed field.
+                    .unwrap_or(FieldKey::Named("<unnamed>".to_string())),
+            }
+        } else if let Some(name) = helper.name {
+            FieldKey::Named(name)
+        } else {
+            // Legacy IR may omit both `name` and `key` in rare cases; synthesize a placeholder.
+            FieldKey::Named("<unnamed>".to_string())
+        };
+
+        // Normalize named keys to trimmed form.
+        key.trim_named_in_place();
+
+        Ok(FieldDef {
+            key,
+            field_type: helper.field_type,
+            required: helper.required,
+            description: helper.description,
+            default_value: helper.default_value,
+            version_added: helper.version_added,
+            version_removed: helper.version_removed,
+        })
+    }
 }
 
 /// Variant definition for enums
@@ -178,9 +373,10 @@ pub struct VariantDef {
 }
 
 /// Type kinds
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub enum TypeKind {
     /// Primitive type (string, number, boolean, etc.)
+    #[default]
     Primitive,
     /// Object type (struct)
     Object,
