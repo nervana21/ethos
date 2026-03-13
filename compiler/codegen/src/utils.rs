@@ -585,6 +585,25 @@ pub fn sanitize_external_identifier(name: &str) -> String {
     }
 }
 
+/// Sanitizes a type name for use as a Rust type or struct name (e.g. in generated code).
+/// Replaces `/` and `-` with `_`, then converts to upper camel case (PascalCase) so
+/// `GetrawaddrmanBucket/position` -> `GetrawaddrmanBucketPosition` and we avoid non_camel_case_types warnings.
+pub fn sanitize_type_name_for_rust(name: &str) -> String {
+    let with_underscores = name.replace('/', "_").replace('-', "_");
+    // Convert to PascalCase: split on _, capitalize each segment, join (e.g. GetrawaddrmanBucket_position -> GetrawaddrmanBucketPosition)
+    with_underscores
+        .split('_')
+        .filter(|s| !s.is_empty())
+        .map(|s| {
+            let mut c = s.chars();
+            match c.next() {
+                None => String::new(),
+                Some(first) => first.to_uppercase().chain(c).collect(),
+            }
+        })
+        .collect()
+}
+
 /// Check if a method needs parameter reordering
 pub fn needs_parameter_reordering(args: &[Argument]) -> bool {
     // Simple heuristic: if we have more than 3 parameters, use a struct
@@ -918,5 +937,18 @@ mod tests {
         for (rpc_name, expected) in super::CONCAT_TO_SNAKE {
             assert_eq!(sanitize_external_identifier(rpc_name), *expected);
         }
+    }
+
+    #[test]
+    fn test_sanitize_type_name_for_rust() {
+        assert_eq!(
+            sanitize_type_name_for_rust("GetrawaddrmanBucket/position"),
+            "GetrawaddrmanBucketPosition"
+        );
+        assert_eq!(
+            sanitize_type_name_for_rust("SubmitpackageTx-results"),
+            "SubmitpackageTxResults"
+        );
+        assert_eq!(sanitize_type_name_for_rust("DecodepsbtTx"), "DecodepsbtTx");
     }
 }
