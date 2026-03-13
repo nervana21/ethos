@@ -139,7 +139,10 @@ impl VersionSpecificResponseTypeGenerator {
                         if field_type.contains("ScriptBuf") {
                             needs_scriptbuf = true;
                         }
-                        if field_type.contains("Transaction") {
+                        // Only need bitcoin::Transaction when we actually use it (BitcoinTransaction or bitcoin::Transaction), not for GetBlockTemplateTransaction etc.
+                        if rust_type == "BitcoinTransaction"
+                            || field_type.contains("bitcoin::Transaction")
+                        {
                             needs_transaction = true;
                         }
                         if field_type.contains("TxOut") {
