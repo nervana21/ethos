@@ -559,7 +559,8 @@ const CONCAT_TO_SNAKE: &[(&str, &str)] = &[
     ("wtxid", "w_txid"),
 ];
 
-/// Sanitizes external identifiers (e.g. RPC schemas) to be valid Rust identifiers
+/// Sanitizes external identifiers (e.g. RPC schemas) to be valid Rust identifiers.
+/// Prefixes with `field_` when the result would start with a digit (e.g. `10th_percentile_feerate` -> `field_10th_percentile_feerate`).
 pub fn sanitize_external_identifier(name: &str) -> String {
     // Handle reserved keywords
     match name {
@@ -574,8 +575,14 @@ pub fn sanitize_external_identifier(name: &str) -> String {
         return (*rust_name).to_string();
     }
     // Replace hyphens with underscores and remove other invalid characters
-    let sanitized = name.replace('-', "_");
-    sanitized.chars().filter(|c| c.is_alphanumeric() || *c == '_').collect()
+    let sanitized: String =
+        name.replace('-', "_").chars().filter(|c| c.is_alphanumeric() || *c == '_').collect();
+    // Rust identifiers cannot start with a digit; use field_ prefix so #[serde(rename)] keeps JSON key correct
+    if sanitized.chars().next().map(|c| c.is_ascii_digit()).unwrap_or(false) {
+        format!("field_{sanitized}")
+    } else {
+        sanitized
+    }
 }
 
 /// Check if a method needs parameter reordering
@@ -875,6 +882,10 @@ mod tests {
         let out = sanitize_external_identifier("foo@bar");
 
         assert_eq!(out, "foobar");
+
+        // Rust identifiers cannot start with a digit; prefix with field_ and caller uses #[serde(rename)] for JSON key
+        let out = sanitize_external_identifier("10th_percentile_feerate");
+        assert_eq!(out, "field_10th_percentile_feerate");
     }
 
     #[test]
