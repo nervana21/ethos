@@ -34,19 +34,21 @@ pub fn determine_requires_private_keys(category: &str, method_name: &str) -> boo
     WALLET_METHODS_REQUIRING_PRIVATE_KEYS.contains(&name.as_str())
 }
 
-/// Sorts protocol definitions by RPC method name
+/// Sorts protocol definitions: Type defs first (by type name), then RpcMethod defs (by method name).
 ///
-/// This ensures consistent ordering of definitions across different code paths.
+/// This ensures consistent ordering and keeps canonical type definitions before method definitions.
 pub fn sort_definitions_by_name(definitions: &mut Vec<ProtocolDef>) {
     definitions.sort_by(|a, b| {
-        let name_a = match a {
-            ProtocolDef::RpcMethod(ref rpc) => &rpc.name,
-            _ => return std::cmp::Ordering::Equal,
+        let (ord_a, name_a) = match a {
+            ProtocolDef::Type(ref ty) => (0u8, ty.name.as_str()),
+            ProtocolDef::RpcMethod(ref rpc) => (1, rpc.name.as_str()),
+            _ => (2, ""),
         };
-        let name_b = match b {
-            ProtocolDef::RpcMethod(ref rpc) => &rpc.name,
-            _ => return std::cmp::Ordering::Equal,
+        let (ord_b, name_b) = match b {
+            ProtocolDef::Type(ref ty) => (0, ty.name.as_str()),
+            ProtocolDef::RpcMethod(ref rpc) => (1, rpc.name.as_str()),
+            _ => (2, ""),
         };
-        name_a.cmp(name_b)
+        (ord_a, name_a).cmp(&(ord_b, name_b))
     });
 }
