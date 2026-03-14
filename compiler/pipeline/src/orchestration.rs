@@ -156,7 +156,7 @@ pub fn compile_from_ir(
 
     // Run compiler passes (validation, canonicalization, etc.)
     let compiler = EthosCompiler::new();
-    protocol_ir = compiler.run_compiler_passes(protocol_ir, &crate_root)?;
+    protocol_ir = compiler.run_compiler_passes(protocol_ir)?;
 
     // Setup project files (Cargo.toml, README, etc.)
     setup_project_files(&crate_root, version, implementation)?;

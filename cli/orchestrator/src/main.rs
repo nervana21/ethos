@@ -243,7 +243,7 @@ fn compile_with_ir(
 
     // Run compiler passes (validation, canonicalization, etc.)
     let compiler = EthosCompiler::new();
-    ir = compiler.run_compiler_passes(ir, output_dir)?;
+    ir = compiler.run_compiler_passes(ir)?;
 
     // Setup project files (Cargo.toml, README, etc.)
     setup_project_files(output_dir, version, implementation)?;

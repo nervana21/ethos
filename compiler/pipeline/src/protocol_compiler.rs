@@ -3,8 +3,6 @@
 //! This module provides the core compiler functionality that operates on
 //! ProtocolIR to generate protocol clients, documentation, and tests.
 
-use std::path::Path;
-
 use adapters::ProtocolAdapter;
 use analysis::{IrValidator, TypeCanonicalizer};
 use ir::ProtocolIR;
@@ -50,11 +48,7 @@ impl EthosCompiler {
     }
 
     /// Run compiler passes on the ProtocolIR
-    pub fn run_compiler_passes(
-        &self,
-        mut ir: ProtocolIR,
-        output_dir: &Path,
-    ) -> EthosCompilerResult<ProtocolIR> {
+    pub fn run_compiler_passes(&self, mut ir: ProtocolIR) -> EthosCompilerResult<ProtocolIR> {
         // Populate access_level for each RPC based on category/name before validation
         for module in ir.modules_mut().iter_mut() {
             for def in module.definitions_mut().iter_mut() {
@@ -77,18 +71,7 @@ impl EthosCompiler {
         }
 
         let canonicalizer = TypeCanonicalizer;
-        let promotion_map = canonicalizer.canonicalize(&mut ir);
-
-        // If duplicate types are detected during canonicalization, emit a timestamped
-        // `promotion_map-<timestamp>.json`. This helps debug and inspect type collisions
-        // when integrating or molding new protocols.
-        if !promotion_map.is_empty() {
-            use chrono::Utc;
-            let timestamp = Utc::now().format("%Y%m%d-%H%M%S");
-            let map_path = output_dir.join(format!("promotion_map_{}.json", timestamp));
-            let mut file = std::fs::File::create(&map_path)?;
-            serde_json::to_writer_pretty(&mut file, &promotion_map)?;
-        }
+        let _ = canonicalizer.canonicalize(&mut ir);
 
         Ok(ir)
     }
