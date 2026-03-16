@@ -4,7 +4,7 @@
 //! type metadata extracted from corepc to generate accurate types for each
 //! Bitcoin Core version.
 
-use std::collections::HashMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write as _;
 use std::str::FromStr;
 use std::sync::{Mutex, OnceLock};
@@ -89,8 +89,8 @@ impl VersionSpecificResponseTypeGenerator {
         out.push_str("//! These types are version-specific and may not match other versions.\n");
 
         // First, collect all nested types that need to be generated
-        // Simplified - generate directly from IR result types instead of metadata
-        let mut nested_types = std::collections::HashSet::new();
+        // BTreeSet for deterministic iteration order so generated output is stable.
+        let mut nested_types = BTreeSet::new();
         for method in methods {
             if let Some(result) = &method.result {
                 self.collect_nested_types_from_type_def(result, &mut nested_types);
@@ -197,16 +197,18 @@ impl VersionSpecificResponseTypeGenerator {
 
         // Manually emitted response structs (decoded-tx helpers, GetBlockTemplateTransaction, etc.)
         // are emitted by dedicated helpers (for example, emit_decoded_tx_types) and not from IR.
-        let mut processed_types = std::collections::HashSet::new();
+        let mut processed_types = BTreeSet::new();
         for name in Self::MANUAL_RESPONSE_TYPE_NAMES {
             processed_types.insert((*name).to_string());
         }
 
-        // Generate nested types first, recursively collecting more nested types
+        // Generate nested types first, recursively collecting more nested types.
+        // BTreeSet gives deterministic iteration over type names.
         let mut all_nested_types = nested_types.clone();
 
         while !all_nested_types.is_empty() {
-            let current_types: Vec<String> = all_nested_types.drain().collect();
+            let current_types: Vec<String> = all_nested_types.iter().cloned().collect();
+            all_nested_types.clear();
 
             for nested_type in &current_types {
                 if processed_types.contains(nested_type) {
@@ -395,9 +397,10 @@ impl VersionSpecificResponseTypeGenerator {
 
     /// Build a registry of named object types by walking all method result types recursively.
     /// First occurrence of each type name wins. Used to generate structs from IR (e.g. DecodedScriptPubKey).
-    fn build_type_registry(methods: &[RpcDef]) -> HashMap<String, TypeDef> {
-        let mut reg = HashMap::new();
-        fn visit(ty: &TypeDef, reg: &mut HashMap<String, TypeDef>) {
+    /// BTreeMap so keys are iterated in stable, sorted order.
+    fn build_type_registry(methods: &[RpcDef]) -> BTreeMap<String, TypeDef> {
+        let mut reg = BTreeMap::new();
+        fn visit(ty: &TypeDef, reg: &mut BTreeMap<String, TypeDef>) {
             if matches!(ty.kind, TypeKind::Object) && ty.name != "object" && ty.name != "array" {
                 reg.entry(ty.name.clone()).or_insert_with(|| ty.clone());
             }
@@ -1950,7 +1953,7 @@ impl VersionSpecificResponseTypeGenerator {
     fn collect_nested_types_from_type_def(
         &self,
         type_def: &ir::TypeDef,
-        nested_types: &mut std::collections::HashSet<String>,
+        nested_types: &mut BTreeSet<String>,
     ) {
         self.collect_nested_types(&type_def.name, nested_types);
         if let Some(ref fields) = type_def.fields {
@@ -1961,11 +1964,7 @@ impl VersionSpecificResponseTypeGenerator {
     }
 
     /// Collect nested types from a field type string
-    fn collect_nested_types(
-        &self,
-        type_name: &str,
-        nested_types: &mut std::collections::HashSet<String>,
-    ) {
+    fn collect_nested_types(&self, type_name: &str, nested_types: &mut BTreeSet<String>) {
         // Extract type names that start with uppercase (custom types)
         let words: Vec<&str> = type_name.split(|c: char| !c.is_alphanumeric()).collect();
         for word in words {
@@ -2000,7 +1999,7 @@ impl VersionSpecificResponseTypeGenerator {
     fn generate_nested_type(
         &self,
         type_name: &str,
-        type_registry: &HashMap<String, TypeDef>,
+        type_registry: &BTreeMap<String, TypeDef>,
     ) -> Result<Option<String>> {
         if let Some(type_def) = type_registry.get(type_name) {
             if matches!(type_def.kind, TypeKind::Object) && type_def.fields.is_some() {
@@ -2340,6 +2339,122 @@ mod tests {
         assert!(
             code.contains("pub field_0: Option<()>"),
             "expected optional unit placeholder field, got:\n{code}"
+        );
+    }
+
+    /// Regression test for the BTreeMap/BTreeSet stabilization: when the set of nested types
+    /// changes (e.g. one method removed), HashSet iteration order can change, so the remaining
+    /// structs appear in a different order and the diff is noisy. With BTreeSet, order is
+    /// deterministic (sorted), so the relative order of remaining structs is stable.
+    ///
+    /// Type names Aa, Bb, Cc are chosen so that with HashSet the iteration order differs
+    /// when the set shrinks from 3 to 2 elements; this test then fails. With BTreeSet it passes.
+    #[test]
+    fn nested_type_emission_order_stable_when_set_shrinks() {
+        use std::str::FromStr;
+
+        use ir::AccessLevel;
+
+        let version = ProtocolVersion::from_str("30.0.0").unwrap();
+        let gen = VersionSpecificResponseTypeGenerator::new(version, "bitcoin_core".to_string());
+
+        fn object_type(name: &str) -> TypeDef {
+            let string_ty = TypeDef {
+                name: "string".to_string(),
+                description: String::new(),
+                kind: TypeKind::Primitive,
+                fields: None,
+                variants: None,
+                union_variants: None,
+                base_type: None,
+                protocol_type: Some("string".to_string()),
+                canonical_name: None,
+                condition: None,
+            };
+            TypeDef {
+                name: name.to_string(),
+                description: String::new(),
+                kind: TypeKind::Object,
+                fields: Some(vec![ir::FieldDef {
+                    key: ir::FieldKey::Named("x".to_string()),
+                    field_type: string_ty,
+                    required: true,
+                    description: String::new(),
+                    default_value: None,
+                    version_added: None,
+                    version_removed: None,
+                }]),
+                variants: None,
+                union_variants: None,
+                base_type: None,
+                protocol_type: None,
+                canonical_name: None,
+                condition: None,
+            }
+        }
+
+        fn rpc_method(name: &str, result: TypeDef) -> RpcDef {
+            RpcDef {
+                name: name.to_string(),
+                description: String::new(),
+                params: Vec::new(),
+                result: Some(result),
+                category: String::new(),
+                access_level: AccessLevel::Public,
+                requires_private_keys: false,
+                version_added: None,
+                version_removed: None,
+                examples: None,
+                hidden: None,
+            }
+        }
+
+        // Use short names with spread hash values so HashSet iteration order is more likely
+        // to differ when set size changes (3 → 2), reproducing the bug with hash-based collections.
+        let type_a = object_type("Aa");
+        let type_b = object_type("Bb");
+        let type_c = object_type("Cc");
+
+        let method_a = rpc_method("method_a", type_a.clone());
+        let method_b = rpc_method("method_b", type_b.clone());
+        let method_c = rpc_method("method_c", type_c);
+
+        // Run 1: all three methods → nested set {Aa, Bb, Cc}
+        let out1 = gen
+            .generate(&[method_a.clone(), method_b.clone(), method_c.clone()])
+            .expect("generate must succeed");
+        let content1 = &out1[0].1;
+
+        // Run 2: remove method_c → nested set {Aa, Bb} (set shrank)
+        let out2 = gen.generate(&[method_a, method_b]).expect("generate must succeed");
+        let content2 = &out2[0].1;
+
+        fn order_of(content: &str, names: &[&str]) -> Vec<usize> {
+            names
+                .iter()
+                .map(|n| {
+                    content
+                        .find(&format!("pub struct {}", n))
+                        .unwrap_or_else(|| panic!("struct {} not found in output", n))
+                })
+                .collect()
+        }
+
+        let names = ["Aa", "Bb"];
+        let positions1 = order_of(content1, &names);
+        let positions2 = order_of(content2, &names);
+
+        // With BTreeSet: order is deterministic (sorted). So NestedTypeA < NestedTypeB in both runs.
+        // With HashSet: when set shrinks from 3 to 2, iteration order can change, so NestedTypeA and
+        // NestedTypeB might swap → relative order in run2 would differ from run1 → assertion fails.
+        let order_a_before_b_run1 = positions1[0] < positions1[1];
+        let order_a_before_b_run2 = positions2[0] < positions2[1];
+        assert!(
+            order_a_before_b_run1 == order_a_before_b_run2,
+            "nested type emission order must be stable when the set shrinks (use BTreeSet, not HashSet). \
+             Run1 order: {:?}, run2 order: {:?}",
+            positions1,
+            positions2
         );
     }
 }
