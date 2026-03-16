@@ -6,6 +6,7 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
+use adapters::bitcoin_core::openrpc::extract_version_ir;
 use path::{find_project_root, load_registry};
 use registry::ir_resolver::IrResolver;
 use types::{Implementation, ProtocolVersion};
@@ -146,6 +147,12 @@ pub fn compile_from_ir(
 
     let mut protocol_ir = ir::ProtocolIR::from_file(&ir_path)
         .map_err(|e| PipelineError::Message(format!("Failed to load IR file: {}", e)))?;
+
+    // Filter IR to only RPCs available in the requested version (Bitcoin Core version_added/version_removed)
+    if implementation == Implementation::BitcoinCore {
+        let core_version = format!("{}.{}", version.major, version.minor);
+        protocol_ir = extract_version_ir(protocol_ir, &core_version);
+    }
 
     // Run compiler passes (validation, canonicalization, etc.)
     let compiler = EthosCompiler::new();
