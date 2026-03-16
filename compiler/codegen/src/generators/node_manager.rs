@@ -329,6 +329,7 @@ fn generate_start_method(code: &mut String, metadata: &types::node_metadata::Nod
     writeln!(
         code,
         r#"
+    /// Start the node. The datadir is always `Some` when the manager is constructed via `new` / `new_with_config`.
     async fn start(&self) -> Result<(), TransportError> {{
         let mut state = self.state.write().await;
         if state.is_running {{
@@ -351,11 +352,12 @@ fn generate_http_start_logic(code: &mut String, metadata: &types::node_metadata:
     writeln!(
         code,
         r##"
-        let datadir = self._datadir.as_ref().unwrap().path();
+        let datadir = self._datadir.as_ref().expect("datadir is set at construction").path();
         let exe = self.config.bitcoind_path.as_deref().unwrap_or_else(|| std::path::Path::new("{}"));
         let mut cmd = Command::new(exe);
 
-        let chain = format!("-chain={{}}", self.config.as_chain_str());
+        let chain_str = self.config.as_chain_str().map_err(|_| TransportError::Rpc("Unsupported network".into()))?;
+        let chain = format!("-chain={{}}", chain_str);
         let data_dir = format!("-datadir={{}}", datadir.display());
         let rpc_port = format!("-rpcport={{}}", self.rpc_port);
         let rpc_bind = format!("-rpcbind=127.0.0.1:{{}}", self.rpc_port);

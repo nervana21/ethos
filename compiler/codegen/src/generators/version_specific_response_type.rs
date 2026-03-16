@@ -833,8 +833,10 @@ impl VersionSpecificResponseTypeGenerator {
             crate::utils::canonical_from_adapter_method(&self.implementation, &method.name)
                 .unwrap_or_else(|_| struct_name.replace("Response", ""));
         write_doc_line(&mut buf, &format!("Response for the `{}` RPC method", canonical_name), "")?;
-        writeln!(&mut buf, "///")?;
         if !result.description.is_empty() {
+            // Add a separating blank doc line only when we have extra description,
+            // so we don't emit a standalone hanging `///`.
+            writeln!(&mut buf, "///")?;
             write_doc_comment(&mut buf, &result.description, "")?;
         }
 
@@ -2057,6 +2059,7 @@ mod tests {
             kind: TypeKind::Primitive,
             fields: None,
             variants: None,
+            union_variants: None,
             base_type: None,
             protocol_type: Some("string".to_string()),
             canonical_name: None,
@@ -2078,6 +2081,7 @@ mod tests {
                 version_removed: None,
             }]),
             variants: None,
+            union_variants: None,
             base_type: None,
             protocol_type: Some("array".to_string()),
             canonical_name: None,
@@ -2122,6 +2126,7 @@ mod tests {
             kind: TypeKind::Primitive,
             fields: None,
             variants: None,
+            union_variants: None,
             base_type: None,
             protocol_type: Some("string".to_string()),
             canonical_name: None,
@@ -2142,6 +2147,7 @@ mod tests {
                 version_removed: None,
             }]),
             variants: None,
+            union_variants: None,
             base_type: None,
             protocol_type: Some("array".to_string()),
             canonical_name: None,
@@ -2186,6 +2192,7 @@ mod tests {
             kind: TypeKind::Primitive,
             fields: None,
             variants: None,
+            union_variants: None,
             base_type: None,
             protocol_type: Some("any".to_string()),
             canonical_name: None,
@@ -2206,6 +2213,7 @@ mod tests {
                 version_removed: None,
             }]),
             variants: None,
+            union_variants: None,
             base_type: None,
             protocol_type: Some("array".to_string()),
             canonical_name: None,
@@ -2250,6 +2258,7 @@ mod tests {
             kind: TypeKind::Primitive,
             fields: None,
             variants: None,
+            union_variants: None,
             base_type: None,
             protocol_type: Some("none".to_string()),
             canonical_name: None,
@@ -2262,6 +2271,7 @@ mod tests {
             kind: TypeKind::Primitive,
             fields: None,
             variants: None,
+            union_variants: None,
             base_type: None,
             protocol_type: Some("number".to_string()),
             canonical_name: None,
@@ -2293,6 +2303,7 @@ mod tests {
                 },
             ]),
             variants: None,
+            union_variants: None,
             base_type: None,
             protocol_type: Some("object".to_string()),
             canonical_name: None,

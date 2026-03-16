@@ -54,6 +54,7 @@ pub fn render_type_from_ir(type_def: &TypeDef) -> String {
         TypeKind::Object => render_struct(type_def),
         TypeKind::Array => render_array(type_def),
         TypeKind::Enum => render_enum(type_def),
+        TypeKind::Union => render_union(type_def),
         TypeKind::Optional => {
             // Handle optional types
             if let Some(base_type) = &type_def.base_type {
@@ -90,6 +91,12 @@ fn render_array(type_def: &TypeDef) -> String {
     // For now, return the name - in a full implementation, this would generate array code
     type_def.name.clone()
 }
+
+/// Render union type (oneOf/anyOf) to a type string.
+/// Callers that need rich handling (e.g. versioned responses) should
+/// generate concrete #[serde(untagged)] enums; this fallback is used
+/// where only a generic value is required.
+fn render_union(_type_def: &TypeDef) -> String { "serde_json::Value".to_string() }
 
 /// Build a protocol registry from ProtocolIR
 /// This creates a registry from the IR-based approach using RpcDef objects.

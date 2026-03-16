@@ -3,12 +3,25 @@
 //! This module provides configuration utilities for running Bitcoin nodes in test environments.
 
 use std::env;
+use std::fmt;
 use std::path::PathBuf;
 
 use bitcoin::Network;
 use crate::config::Config;
 
 const DEFAULT_EXTRA_ARGS: [&str; 2] = ["-prune=0", "-txindex"];
+
+/// Error returned when the configured network is not supported for node startup.
+#[derive(Debug)]
+pub struct UnsupportedNetwork;
+
+impl std::fmt::Display for UnsupportedNetwork {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "unsupported network")
+    }
+}
+
+impl std::error::Error for UnsupportedNetwork {}
 
 /// TestConfig represents the configuration needed to run a Bitcoin node in a test environment.
 /// This struct encapsulates test‑node settings: network, RPC port, username, password, and extra args.
@@ -36,7 +49,7 @@ const DEFAULT_EXTRA_ARGS: [&str; 2] = ["-prune=0", "-txindex"];
 /// # Environment Overrides
 ///
 /// Reads `RPC_NETWORK`, `RPC_PORT`, `RPC_USER`, and `RPC_PASS`, and `BITCOIND_PATH` (path to bitcoind executable) to override defaults.
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct TestConfig {
     /// Which Bitcoin network to run against.
     pub network: Network,
@@ -55,17 +68,31 @@ pub struct TestConfig {
     pub extra_args: Vec<String>,
 }
 
+impl fmt::Debug for TestConfig {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("TestConfig")
+            .field("network", &self.network)
+            .field("rpc_port", &self.rpc_port)
+            .field("rpc_username", &"[redacted]")
+            .field("rpc_password", &"[redacted]")
+            .field("bitcoind_path", &self.bitcoind_path)
+            .field("extra_args", &self.extra_args)
+            .finish()
+    }
+}
+
 impl TestConfig {
-    /// Return the value used with `-chain=<value>` for the configured network
-    pub fn as_chain_str(&self) -> &'static str {
+    /// Return the value used with `-chain=<value>` for the configured network.
+    /// Returns `Err(UnsupportedNetwork)` if the network variant is not supported for node startup.
+    pub fn as_chain_str(&self) -> Result<&'static str, UnsupportedNetwork> {
         #[allow(unreachable_patterns)]
         match self.network {
-            Network::Bitcoin => "main",
-            Network::Regtest => "regtest",
-            Network::Signet => "signet",
-            Network::Testnet => "testnet",
-            Network::Testnet4 => "testnet4",
-            _ => panic!("Unsupported network variant"),
+            Network::Bitcoin => Ok("main"),
+            Network::Regtest => Ok("regtest"),
+            Network::Signet => Ok("signet"),
+            Network::Testnet => Ok("testnet"),
+            Network::Testnet4 => Ok("testnet4"),
+            _ => Err(UnsupportedNetwork),
         }
     }
 

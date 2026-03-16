@@ -901,7 +901,7 @@ fn convert_openrpc_method(method: OpenRpcMethod, version_added: Option<String>) 
 
     let params: Vec<ParamDef> = arguments.into_iter().map(convert_argument).collect();
 
-    let result = if results.is_empty() {
+    let mut result = if results.is_empty() {
         None
     } else if TOP_LEVEL_ARRAY_METHODS.contains(&method.name.as_str()) {
         // For top-level array RPCs, treat the whole result as an array in IR.
@@ -952,6 +952,27 @@ fn convert_openrpc_method(method: OpenRpcMethod, version_added: Option<String>) 
     } else {
         Some(merge_results_to_object(&results))
     };
+
+    // Fix inconsistent synthetic field naming for conditional verbose=false branches on
+    // getmempoolancestors/getmempooldescendants. The merged object currently uses
+    // "field_0_1" for the array branch; normalize this to "field_0" so downstream
+    // codegen sees the conventional synthetic element name.
+    if method.name == "getmempoolancestors" || method.name == "getmempooldescendants" {
+        if let Some(ref mut ty) = result {
+            if matches!(ty.kind, TypeKind::Object) {
+                if let Some(ref mut fields) = ty.fields {
+                    for field in fields {
+                        let is_array_verbose_false = field.field_type.protocol_type.as_deref()
+                            == Some("array")
+                            && field.field_type.condition.as_deref() == Some("for verbose = false");
+                        if is_array_verbose_false {
+                            field.key = FieldKey::Named("field_0".to_string());
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     let category = method.x_bitcoin_category.clone();
     let access_level = method_categorization::access_level_for(&category, &method.name);
