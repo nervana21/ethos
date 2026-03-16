@@ -984,9 +984,12 @@ impl VersionSpecificResponseTypeGenerator {
     fn map_ir_type_to_rust(&self, type_def: &ir::TypeDef, field_name: &str) -> String {
         let mapped = match &type_def.kind {
             ir::TypeKind::Primitive => {
-                // Use the adapter to map the type - this leverages the comprehensive BitcoinCoreTypeRegistry
+                // Use the adapter to map the type via BitcoinCoreTypeRegistry.
+                // Primitives must have protocol_type ("string", "number", "amount", "hex", etc.).
+                let rpc_type =
+                    type_def.protocol_type.clone().expect("primitive type must have protocol_type");
                 let method_result = types::MethodResult {
-                    type_: type_def.name.clone(),
+                    type_: rpc_type,
                     optional: false,
                     description: type_def.description.clone(),
                     key_name: field_name.to_string(),
