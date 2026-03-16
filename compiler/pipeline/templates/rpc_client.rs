@@ -19,8 +19,11 @@ impl RpcClient {
     /// Wrap an existing transport (no URL+auth dance)
     pub fn from_transport(inner: Arc<dyn TransportTrait>) -> Self { Self { transport: inner } }
 
-    /// Create a new RPC client with socket path
-    pub fn new(socket_path: &str) -> Self {
+    /// Create a new RPC client with the given RPC endpoint URL.
+    ///
+    /// The argument must be the full RPC endpoint URL (e.g. `http://127.0.0.1:8332/`),
+    /// not a filesystem path. This constructor is for HTTP/URL-based transport.
+    pub fn new(url: &str) -> Self {
         let transport = {{TRANSPORT_CONSTRUCTOR}};
         Self { transport: Arc::new(transport) }
     }

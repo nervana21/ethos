@@ -104,6 +104,9 @@ pub struct TypeDef {
     pub fields: Option<Vec<FieldDef>>,
     /// Type variants (for enums)
     pub variants: Option<Vec<VariantDef>>,
+    /// Union/one-of variants (for TypeKind::Union)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub union_variants: Option<Vec<UnionVariantDef>>,
     /// Base type (for type aliases)
     pub base_type: Option<String>,
     /// Protocol primitive type identifier (e.g., "string", "number", "boolean", "hex")
@@ -372,6 +375,20 @@ pub struct VariantDef {
     pub associated_data: Option<Vec<FieldDef>>,
 }
 
+/// Variant definition for union/one-of types.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UnionVariantDef {
+    /// Variant name (e.g. "array", "object", or a semantic label).
+    pub name: String,
+    /// Variant description.
+    pub description: String,
+    /// Condition under which this variant is present (e.g. "for verbose = false").
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub condition: Option<String>,
+    /// Variant type definition.
+    pub type_def: TypeDef,
+}
+
 /// Type kinds
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub enum TypeKind {
@@ -390,6 +407,8 @@ pub enum TypeKind {
     Alias,
     /// Dialect-specific or adapter-defined type with concrete implementation (e.g. HashOrHeight enum)
     Custom,
+    /// Union / one-of type composed of multiple variants.
+    Union,
 }
 
 /// Message types

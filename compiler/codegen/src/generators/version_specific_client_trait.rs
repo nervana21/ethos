@@ -386,7 +386,7 @@ impl VersionSpecificClientTraitGenerator {
                     format!("serde_json::json!({}.to_btc())", param_name)
                 } else if is_amounts_map {
                     format!(
-                        "serde_json::to_value(SendmanyAmountsRef(&{})).expect(\"serialize amounts\")",
+                        "serde_json::to_value(SendmanyAmountsRef(&{})).map_err(|e| TransportError::Json(e.to_string()))?",
                         param_name
                     )
                 } else {
@@ -401,7 +401,7 @@ impl VersionSpecificClientTraitGenerator {
                     } else if base_ty == "bitcoin::Amount" {
                         "serde_json::json!(val.to_btc())"
                     } else if is_amounts_map {
-                        "serde_json::to_value(SendmanyAmountsRef(&val)).expect(\"serialize amounts\")"
+                        "serde_json::to_value(SendmanyAmountsRef(&val)).map_err(|e| TransportError::Json(e.to_string()))?"
                     } else {
                         "serde_json::json!(val)"
                     };
