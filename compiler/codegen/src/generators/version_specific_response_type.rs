@@ -830,7 +830,7 @@ impl VersionSpecificResponseTypeGenerator {
 
         // Generate struct documentation using PascalCase canonical method name
         let canonical_name =
-            crate::utils::canonical_from_adapter_method(&self.implementation, &method.name)
+            crate::utils::canonical_from_adapter_method(&self.implementation, &method.name, None)
                 .unwrap_or_else(|_| struct_name.replace("Response", ""));
         write_doc_line(&mut buf, &format!("Response for the `{}` RPC method", canonical_name), "")?;
         if !result.description.is_empty() {
@@ -1068,7 +1068,7 @@ impl VersionSpecificResponseTypeGenerator {
 
         // Generate struct documentation using PascalCase canonical method name
         let canonical_name =
-            crate::utils::canonical_from_adapter_method(&self.implementation, &method.name)
+            crate::utils::canonical_from_adapter_method(&self.implementation, &method.name, None)
                 .unwrap_or_else(|_| struct_name.replace("Response", ""));
         write_doc_line(&mut buf, &format!("Response for the `{}` RPC method", canonical_name), "")?;
         writeln!(&mut buf, "///")?;
@@ -1310,7 +1310,7 @@ impl VersionSpecificResponseTypeGenerator {
     /// Get response struct name for a method
     fn response_struct_name(&self, method: &RpcDef) -> String {
         let canonical =
-            crate::utils::canonical_from_adapter_method(&self.implementation, &method.name);
+            crate::utils::canonical_from_adapter_method(&self.implementation, &method.name, None);
         match canonical {
             Ok(name) => format!("{}Response", name),
             Err(_) => {
@@ -1855,7 +1855,7 @@ impl VersionSpecificResponseTypeGenerator {
 
         // Generate struct documentation using PascalCase canonical method name
         let canonical_name =
-            crate::utils::canonical_from_adapter_method(&self.implementation, &method.name)
+            crate::utils::canonical_from_adapter_method(&self.implementation, &method.name, None)
                 .unwrap_or_else(|_| struct_name.replace("Response", "").to_string());
         write_doc_line(&mut buf, &format!("Response for the `{}` RPC method", canonical_name), "")?;
         writeln!(&mut buf, "///")?;
@@ -1906,7 +1906,7 @@ impl VersionSpecificResponseTypeGenerator {
     fn generate_value_wrapper(&self, method: &RpcDef, struct_name: &str) -> Result<String> {
         let mut buf = String::new();
         let canonical_name =
-            crate::utils::canonical_from_adapter_method(&self.implementation, &method.name)
+            crate::utils::canonical_from_adapter_method(&self.implementation, &method.name, None)
                 .unwrap_or_else(|_| struct_name.replace("Response", "").to_string());
         write_doc_line(&mut buf, &format!("Response for the `{}` RPC method", canonical_name), "")?;
         writeln!(&mut buf, "///")?;
