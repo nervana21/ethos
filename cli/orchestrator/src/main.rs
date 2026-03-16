@@ -31,6 +31,7 @@ async fn main() {
         println!("    --implementation <impl>       Implementation to generate (bitcoin_core) [REQUIRED]");
         println!("    --version <version>           Override version (e.g., v30.2.9)");
         println!("    --output <path>               Write generated crate to <path> (e.g. a separate git repo). Preserves .git for easier diff review.");
+        println!("    --exclude-hidden-rpcs         Do not generate code for hidden/testing-only RPCs (default: include them).");
         println!();
         println!("EXAMPLES:");
         println!("    ethos-cli pipeline --input resources/ir/bitcoin.ir.json --implementation bitcoin_core");
@@ -114,13 +115,18 @@ async fn main() {
             }
         };
 
-        let ir = match ProtocolIR::from_file(&ir_path) {
+        let mut ir = match ProtocolIR::from_file(&ir_path) {
             Ok(ir) => ir,
             Err(e) => {
                 eprintln!("Error: Failed to load IR from file '{}': {}", ir_path.display(), e);
                 std::process::exit(1);
             }
         };
+
+        let exclude_hidden_rpcs = args.iter().any(|a| a == "--exclude-hidden-rpcs");
+        if exclude_hidden_rpcs {
+            ir.strip_hidden_rpcs();
+        }
 
         let version_from_arg =
             args.iter().position(|a| a == "--version").and_then(|i| args.get(i + 1)).cloned();
