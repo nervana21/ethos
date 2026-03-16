@@ -437,7 +437,7 @@ impl VersionSpecificClientTraitGenerator {
         if rpc.result.is_none() {
             "()".to_string()
         } else {
-            match canonical_from_adapter_method(self.protocol.as_str(), &rpc.name) {
+            match canonical_from_adapter_method(self.protocol.as_str(), &rpc.name, None) {
                 Ok(canonical) => format!("{}Response", canonical),
                 Err(_) => format!(
                     "{}Response",
