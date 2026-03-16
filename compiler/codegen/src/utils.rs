@@ -100,6 +100,14 @@ pub fn rpc_method_to_rust_name(rpc_method: &str) -> String {
 /// Suggests a PascalCase canonical key for an unmapped lowercase RPC method name.
 /// Uses a greedy word-boundary split so e.g. "getprivatebroadcastinfo" → "GetPrivateBroadcastInfo".
 pub fn suggest_canonical_key(rpc_method: &str) -> String {
+    // Known acronym- or brand-like names that don't follow simple word capitalization.
+    // Keep this list small and reserved for truly exceptional cases.
+    match rpc_method {
+        // Bitcoin Core OpenRPC helper method: keep "RPC" fully capitalized.
+        "getopenrpcinfo" => return "GetOpenRpcInfo".to_string(),
+        _ => {}
+    }
+
     let lower = rpc_method.to_lowercase();
     let words = segment_lowercase_method_name(&lower);
     words.iter().map(|w| capitalize(w)).collect::<String>()
@@ -169,6 +177,7 @@ const METHOD_WORDS: &[&str] = &[
     "signers",
     "unspent",
     "wallets",
+    "openrpc",
     "accept",
     "active",
     "backup",
