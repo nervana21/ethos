@@ -587,6 +587,7 @@ dependencies = [
  "chrono",
  "ethos-fuzz-types",
  "ethos-ir",
+ "ethos-normalization",
  "ethos-path",
  "ethos-plugins",
  "ethos-semantics",
