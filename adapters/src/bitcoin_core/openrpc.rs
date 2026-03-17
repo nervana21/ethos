@@ -58,6 +58,47 @@ fn top_level_array_element_type_name(method_name: &str) -> String {
     format!("{}Element", canonical_method_pascal(method_name))
 }
 
+/// Singular + PascalCase suffix for result/field keys (e.g. "inputs" -> "Input", "bytesrecv" -> "BytesRecv").
+fn result_key_pascal_suffix(key: &str) -> String {
+    let singular = match key {
+        "bip32_derivs" => "Bip32Derivs",
+        "bytesrecv" => "BytesRecv",
+        "bytesrecv_per_msg" => "BytesRecvPerMsg",
+        "bytessent" => "BytesSent",
+        "bytessent_per_msg" => "BytesSentPerMsg",
+        "final_scriptSig" => "FinalScriptSig",
+        "global_xpubs" => "GlobalXpubs",
+        "hash160_preimages" => "Hash160Preimages",
+        "hash256_preimages" => "Hash256Preimages",
+        "inputs" => "Input",
+        "localaddresses" => "LocalAddresses",
+        "musig2_partial_sigs" => "Musig2PartialSigs",
+        "musig2_participant_pubkeys" => "Musig2ParticipantPubkeys",
+        "musig2_pubnonces" => "Musig2Pubnonces",
+        "non_witness_utxo" => "NonWitnessUtxo",
+        "outputs" => "Output",
+        "partial_signatures" => "PartialSignatures",
+        "prevout_spk" => "PrevoutSpk",
+        "redeem_script" => "RedeemScript",
+        "removed_transactions" => "RemovedTransactions",
+        "ripemd160_preimages" => "Ripemd160Preimages",
+        "sha256_preimages" => "Sha256Preimages",
+        "taproot_bip32_derivs" => "TaprootBip32Derivs",
+        "taproot_scripts" => "TaprootScripts",
+        "tx-results" => "TxResults",
+        "uploadtarget" => "UploadTarget",
+        "witness_script" => "WitnessScript",
+        "witness_utxo" => "WitnessUtxo",
+        "<transactionid>" => "TransactionId",
+        _ => key,
+    };
+    let mut chars = singular.chars();
+    match chars.next() {
+        None => String::new(),
+        Some(first) => first.to_uppercase().collect::<String>() + chars.as_str(),
+    }
+}
+
 /// OpenRPC document produced by Bitcoin Core's `getopenrpcinfo`
 #[derive(Debug, Clone, Deserialize)]
 #[allow(dead_code)]
@@ -695,7 +736,8 @@ fn convert_argument_to_type_def(raw: &RawArgument) -> TypeDef {
 
 /// Converts a raw result to a `TypeDef`.
 /// `parent_key`: when recursing, the key of the parent field (e.g. "vin") so we can name array element types.
-fn convert_result(raw: &RawResult, parent_key: Option<&str>) -> TypeDef {
+/// `method_name`: RPC method name (e.g. "decodepsbt") so we can assign stable type names for codegen.
+fn convert_result(raw: &RawResult, parent_key: Option<&str>, method_name: Option<&str>) -> TypeDef {
     let (type_name, protocol_type) = build_base_type_def(&raw.r#type);
     let kind = determine_type_kind(&raw.r#type, &raw.inner);
 
@@ -723,7 +765,7 @@ fn convert_result(raw: &RawResult, parent_key: Option<&str>) -> TypeDef {
                 };
                 FieldDef {
                     key: FieldKey::Named(name),
-                    field_type: convert_result(inner, parent),
+                    field_type: convert_result(inner, parent, method_name),
                     required: inner.is_required(),
                     description: inner.description.clone(),
                     default_value: inner.default_value(),
@@ -756,13 +798,26 @@ fn convert_result(raw: &RawResult, parent_key: Option<&str>) -> TypeDef {
                 _ => {}
             }
         }
+        // Method-scoped names for object types so codegen emits nested structs (e.g. DecodepsbtTx, DecodepsbtInput)
+        if type_def.name == "object" {
+            if let Some(method) = method_name {
+                let method_pascal = canonical_method_pascal(method);
+                if !raw.key_name.is_empty() {
+                    type_def.name =
+                        format!("{}{}", method_pascal, result_key_pascal_suffix(&raw.key_name));
+                } else if let Some(p) = parent_key {
+                    type_def.name = format!("{}{}", method_pascal, result_key_pascal_suffix(p));
+                }
+            }
+        }
     }
 
     type_def
 }
 
 /// Merges multiple results into a single object `TypeDef`.
-fn merge_results_to_object(results: &[RawResult]) -> TypeDef {
+/// `method_name`: RPC method name so nested object types get stable names (e.g. DecodepsbtTx).
+fn merge_results_to_object(results: &[RawResult], method_name: &str) -> TypeDef {
     let mut fields: Vec<FieldDef> = Vec::new();
     let mut field_names: std::collections::HashSet<String> = std::collections::HashSet::new();
 
@@ -831,7 +886,7 @@ fn merge_results_to_object(results: &[RawResult]) -> TypeDef {
                     if result.key_name.is_empty() { None } else { Some(result.key_name.as_str()) };
                 fields.push(FieldDef {
                     key: FieldKey::Named(name),
-                    field_type: convert_result(inner, parent),
+                    field_type: convert_result(inner, parent, Some(method_name)),
                     required: is_required,
                     description: inner.description.clone(),
                     default_value: None,
@@ -874,7 +929,7 @@ fn merge_results_to_object(results: &[RawResult]) -> TypeDef {
             let name = ensure_unique_name(base_field_name);
             fields.push(FieldDef {
                 key: FieldKey::Named(name),
-                field_type: convert_result(result, None),
+                field_type: convert_result(result, None, Some(method_name)),
                 required: !result.optional,
                 description: result.description.clone(),
                 default_value: None,
@@ -929,7 +984,7 @@ fn convert_openrpc_method(method: OpenRpcMethod, version_added: Option<String>) 
         // - Otherwise fall back to a generic `any` primitive so codegen can still infer `Vec<Value>`.
         let mut element_type = if canonical.r#type == "array" && !canonical.inner.is_empty() {
             let elem = &canonical.inner[0];
-            convert_result(elem, None)
+            convert_result(elem, None, Some(&method.name))
         } else {
             TypeDef {
                 name: "any".to_string(),
@@ -971,9 +1026,9 @@ fn convert_openrpc_method(method: OpenRpcMethod, version_added: Option<String>) 
             ..Default::default()
         })
     } else if results.len() == 1 {
-        Some(convert_result(&results[0], None))
+        Some(convert_result(&results[0], None, Some(&method.name)))
     } else {
-        Some(merge_results_to_object(&results))
+        Some(merge_results_to_object(&results, &method.name))
     };
 
     // Fix inconsistent synthetic field naming for conditional verbose=false branches on
