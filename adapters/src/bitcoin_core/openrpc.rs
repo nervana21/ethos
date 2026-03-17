@@ -9,6 +9,7 @@ use ir::{
     FieldDef, FieldKey, ParamDef, ProtocolDef, ProtocolIR, ProtocolModule, RpcDef, TypeDef,
     TypeKind,
 };
+use normalization::bitcoin_canonical_from_adapter_method;
 use path::{
     canonical_bitcoin_ir_path, find_project_root, get_ir_dir, resolve_ir_output_path,
     version_ir_filename,
@@ -42,25 +43,15 @@ pub const TOP_LEVEL_ARRAY_METHODS: &[&str] = &[
     "listunspent",
 ];
 
-/// Derive a stable, Rust-friendly name for the element type of a top-level
-/// array result for a given RPC method.
-///
-/// This is intentionally simple: it uppercases the first character of the
-/// method name (which is lower_snake or concatenated, e.g. "getpeerinfo")
-/// and appends "Element". The exact casing is not critical as long as it is
-/// stable and unique per method.
 fn top_level_array_element_type_name(method_name: &str) -> String {
-    let mut chars = method_name.chars();
-    match chars.next() {
-        None => "Element".to_string(),
-        Some(first) => {
-            let mut out = String::new();
-            out.extend(first.to_uppercase());
-            out.push_str(chars.as_str());
-            out.push_str("Element");
-            out
-        }
-    }
+    // Derive element type names from the same canonical PascalCase prefix used
+    // for response structs. This keeps e.g. `ListUnspentResponse` aligned with
+    // `ListUnspentElement` without duplicating mapping tables here.
+    //
+    // We treat Bitcoin Core as the only supported protocol in this adapter.
+    let canonical = bitcoin_canonical_from_adapter_method(method_name, None)
+        .unwrap_or_else(|_| normalization::suggest_canonical_key(method_name));
+    format!("{canonical}Element")
 }
 
 /// OpenRPC document produced by Bitcoin Core's `getopenrpcinfo`

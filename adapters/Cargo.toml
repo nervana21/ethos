@@ -12,6 +12,7 @@ chrono = { version = "0.4", features = ["serde"] }
 futures = "0.3"
 fuzz-types = { package = "ethos-fuzz-types", version = "0.1.0", path = "../primitives/fuzz" }
 ir = { package = "ethos-ir", version = "0.1.0", path = "../primitives/ir" }
+normalization = { package = "ethos-normalization", version = "0.1.0", path = "../primitives/normalization" }
 path = { package = "ethos-path", version = "0.1.0", path = "../primitives/path" }
 semantics = { package = "ethos-semantics", version = "0.1.0", path = "../compiler/semantics" }
 plugins = { package = "ethos-plugins", version = "0.1.0", path = "../primitives/plugins" }
