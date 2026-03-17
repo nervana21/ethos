@@ -43,15 +43,19 @@ pub const TOP_LEVEL_ARRAY_METHODS: &[&str] = &[
     "listunspent",
 ];
 
+/// Canonical PascalCase method name used as a stable prefix for generated types.
+fn canonical_method_pascal(method_name: &str) -> String {
+    bitcoin_canonical_from_adapter_method(method_name, None)
+        .unwrap_or_else(|_| normalization::suggest_canonical_key(method_name))
+}
+
 fn top_level_array_element_type_name(method_name: &str) -> String {
     // Derive element type names from the same canonical PascalCase prefix used
     // for response structs. This keeps e.g. `ListUnspentResponse` aligned with
     // `ListUnspentElement` without duplicating mapping tables here.
     //
     // We treat Bitcoin Core as the only supported protocol in this adapter.
-    let canonical = bitcoin_canonical_from_adapter_method(method_name, None)
-        .unwrap_or_else(|_| normalization::suggest_canonical_key(method_name));
-    format!("{canonical}Element")
+    format!("{}Element", canonical_method_pascal(method_name))
 }
 
 /// OpenRPC document produced by Bitcoin Core's `getopenrpcinfo`
