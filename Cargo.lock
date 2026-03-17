@@ -659,6 +659,7 @@ version = "0.1.0"
 dependencies = [
  "ethos-adapters",
  "ethos-ir",
+ "ethos-normalization",
  "ethos-path",
  "ethos-registry",
  "ethos-semantics",
@@ -719,6 +720,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "ethos-normalization"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+]
+
+[[package]]
 name = "ethos-path"
 version = "0.1.0"
 dependencies = [
@@ -735,6 +743,7 @@ dependencies = [
  "ethos-analysis",
  "ethos-codegen",
  "ethos-ir",
+ "ethos-normalization",
  "ethos-path",
  "ethos-plugins",
  "ethos-registry",

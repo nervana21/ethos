@@ -78,7 +78,7 @@ fn apply_suggested_mappings(
 ) -> Result<(), PipelineError> {
     let impl_key = implementation.as_str();
     let filename = implementation.protocol_name();
-    let paths: Vec<_> = codegen::utils::NORMALIZATION_JSON_DIRS
+    let paths: Vec<_> = normalization::NORMALIZATION_JSON_DIRS
         .iter()
         .map(|dir| workspace_root.join(dir).join(format!("{filename}.json")))
         .collect();

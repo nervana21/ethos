@@ -344,7 +344,7 @@ impl CodeGenerator for MethodWrapperGenerator {
                 let fn_name = crate::utils::protocol_rpc_method_to_rust_name_with_context(
                     &self.protocol,
                     &m.name,
-                    crate::utils::UnmappedMethodContext {
+                    normalization::UnmappedMethodContext {
                         category: Some(&m.category),
                         description: Some(&m.description),
                     },

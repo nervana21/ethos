@@ -1,43 +1,9 @@
 // SPDX-License-Identifier: CC0-1.0
 
 use ir::RpcDef;
-use serde_json::{self, Value};
+use normalization::UnmappedMethodContext;
+pub use normalization::{SuggestedMapping, UnmappedMethodsError};
 use types::Argument;
-
-// Embed normalization from workspace
-const BITCOIN_NORMALIZATION_JSON: &str =
-    include_str!("../../../resources/adapters/normalization/bitcoin.json");
-
-/// Relative dirs (from workspace root) for the two copies of each normalization JSON file.
-/// Used for error messages and by the pipeline when writing suggested mappings.
-pub const NORMALIZATION_JSON_DIRS: [&str; 2] =
-    ["compiler/codegen/resources/adapters/normalization", "resources/adapters/normalization"];
-
-/// Optional context for unmapped RPC methods, used to build a rich error message
-/// with category and description from the schema.
-#[derive(Debug, Default, Clone)]
-pub struct UnmappedMethodContext<'a> {
-    /// Schema category (e.g. "hidden", "wallet", "network").
-    pub category: Option<&'a str>,
-    /// Method description or summary from the schema (first line used in error).
-    pub description: Option<&'a str>,
-}
-
-/// A single suggested mapping to add to the normalization JSON files.
-#[derive(Debug, Clone)]
-pub struct SuggestedMapping {
-    /// Adapter RPC method name (lowercase value in JSON).
-    pub rpc_method: String,
-    /// Suggested PascalCase key for method_mappings.
-    pub suggested_key: String,
-}
-
-/// Error when one or more RPC methods have no mapping in the normalization presets.
-#[derive(Debug)]
-pub struct UnmappedMethodsError {
-    /// Suggested entries to add to both normalization JSON files.
-    pub suggestions: Vec<SuggestedMapping>,
-}
 
 /// Validates that every method has a mapping for the given protocol.
 /// Returns an error listing all unmapped methods with suggested keys so the caller
@@ -46,20 +12,8 @@ pub fn validate_method_mappings(
     protocol: &str,
     methods: &[RpcDef],
 ) -> Result<(), UnmappedMethodsError> {
-    let mut suggestions = Vec::new();
-    for m in methods {
-        if canonical_from_adapter_method(protocol, &m.name, None).is_err() {
-            suggestions.push(SuggestedMapping {
-                rpc_method: m.name.clone(),
-                suggested_key: suggest_canonical_key(&m.name),
-            });
-        }
-    }
-    if suggestions.is_empty() {
-        Ok(())
-    } else {
-        Err(UnmappedMethodsError { suggestions })
-    }
+    let method_names: Vec<String> = methods.iter().map(|m| m.name.clone()).collect();
+    normalization::validate_method_mappings(protocol, &method_names)
 }
 
 /// Strict registry-driven conversion: adapter-specific RPC → canonical → snake_case
@@ -325,79 +279,7 @@ fn segment_lowercase_method_name(s: &str) -> Vec<String> {
 /// Resolves the canonical PascalCase name from an adapter-specific RPC using
 /// normalization presets. If the method is unmapped and [context] is provided,
 /// the error message includes suggested mapping, category, and description.
-pub fn canonical_from_adapter_method(
-    protocol: &str,
-    rpc_method: &str,
-    context: Option<&UnmappedMethodContext<'_>>,
-) -> Result<String, String> {
-    let (preset_json_str, impl_key) = match protocol {
-        "bitcoin_core" => (BITCOIN_NORMALIZATION_JSON, "bitcoin_core"),
-        other => return Err(format!("Unsupported protocol '{}'. Supported: bitcoin_core", other)),
-    };
-
-    let preset: Value = serde_json::from_str(preset_json_str)
-        .map_err(|e| format!("Failed to parse normalization preset for {}: {}", protocol, e))?;
-
-    let mappings = preset
-        .get("method_mappings")
-        .and_then(|mm| mm.get(impl_key))
-        .and_then(|v| v.as_object())
-        .ok_or_else(|| format!(
-            "Normalization preset for '{}' missing method_mappings. File must define method_mappings.{}",
-            protocol,
-            impl_key
-        ))?;
-
-    // Build reverse map: adapter-specific -> canonical (PascalCase)
-    for (canonical, adapter_specific_val) in mappings.iter() {
-        if let Some(adapter_specific) = adapter_specific_val.as_str() {
-            if adapter_specific == rpc_method {
-                return Ok(canonical.to_string());
-            }
-        }
-    }
-
-    let filename = if protocol == "bitcoin_core" { "bitcoin" } else { protocol };
-    let suggested = suggest_canonical_key(rpc_method);
-    let path_list: String = NORMALIZATION_JSON_DIRS
-        .iter()
-        .enumerate()
-        .map(|(i, dir)| format!("  ({}) {}/{}.json", i + 1, dir, filename))
-        .collect::<Vec<_>>()
-        .join("\n");
-
-    let mut msg = format!(
-        "Unmapped RPC method '{}' for '{}'.\n\
-         When using the compiler pipeline, suggested mappings are written automatically to both \
-         normalization JSON files—review the changes (e.g. `git diff`) and re-run.\n\
-         Otherwise add to method_mappings.{} in:\n\
-         {}\n\
-         Suggested entry:\n  \"{}\": \"{}\"",
-        rpc_method, protocol, impl_key, path_list, suggested, rpc_method,
-    );
-
-    if let Some(ctx) = context {
-        if let Some(cat) = ctx.category {
-            if !cat.is_empty() {
-                msg.push_str(&format!("\n  Category: {}", cat));
-            }
-        }
-        if let Some(desc) = ctx.description {
-            let first_line = desc.lines().next().unwrap_or("").trim();
-            if !first_line.is_empty() {
-                const MAX_DESC: usize = 120;
-                let summary = if first_line.len() > MAX_DESC {
-                    format!("{}...", &first_line[..MAX_DESC])
-                } else {
-                    first_line.to_string()
-                };
-                msg.push_str(&format!("\n  Summary: {}", summary));
-            }
-        }
-    }
-
-    Err(msg)
-}
+pub use normalization::canonical_from_adapter_method;
 
 /// Convert camelCase to snake_case
 fn camel_to_snake_case(input: &str) -> String {
@@ -821,7 +703,7 @@ mod tests {
     #[test]
     fn test_bitcoin_core_method_words_exhaustive() {
         let json_str = include_str!("../../../resources/adapters/normalization/bitcoin.json");
-        let preset: Value =
+        let preset: serde_json::Value =
             serde_json::from_str(json_str).expect("bitcoin.json must be valid JSON");
         let mappings = preset
             .get("method_mappings")
