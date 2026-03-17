@@ -504,15 +504,15 @@ impl VersionSpecificResponseTypeGenerator {
 
     /// Emits Rust structs for decoded transaction details (getblock verbosity 2/3, getrawtransaction verbose).
     /// Does not use deny_unknown_fields on inner structs so new Core fields do not break deserialization.
-    /// When `skip_decoded_script_pub_key` is true, DecodedScriptPubKey is already emitted from the IR type registry.
+    /// When `skip_decoded_script_pubkey` is true, DecodedScriptPubKey is already emitted from the IR type registry.
     /// `fee_required`: when `Some(true)` emit `fee: f64`, otherwise `fee: Option<f64>`; caller derives this from the IR.
     fn emit_decoded_tx_types(
         &self,
         buf: &mut String,
         fee_required: Option<bool>,
-        skip_decoded_script_pub_key: bool,
+        skip_decoded_script_pubkey: bool,
     ) -> Result<()> {
-        if !skip_decoded_script_pub_key {
+        if !skip_decoded_script_pubkey {
             write_doc_line(buf, "Script pubkey in decoded tx output.", "")?;
             write_doc_line(
                 buf,
@@ -587,7 +587,7 @@ impl VersionSpecificResponseTypeGenerator {
         writeln!(buf, "    pub height: i64,")?;
         write_doc_comment(buf, "Decoded script pubkey of the prevout output.", "    ")?;
         writeln!(buf, "    #[serde(rename = \"scriptPubKey\")]")?;
-        writeln!(buf, "    pub script_pub_key: DecodedScriptPubKey,")?;
+        writeln!(buf, "    pub script_pubkey: DecodedScriptPubKey,")?;
         write_doc_comment(buf, "Value of the prevout output in BTC.", "    ")?;
         writeln!(buf, "    pub value: f64,")?;
         writeln!(buf, "}}")?;
@@ -639,7 +639,7 @@ impl VersionSpecificResponseTypeGenerator {
         writeln!(buf, "    pub n: u32,")?;
         write_doc_comment(buf, "Decoded script pubkey of this output.", "    ")?;
         writeln!(buf, "    #[serde(rename = \"scriptPubKey\")]")?;
-        writeln!(buf, "    pub script_pub_key: DecodedScriptPubKey,")?;
+        writeln!(buf, "    pub script_pubkey: DecodedScriptPubKey,")?;
         writeln!(buf, "}}")?;
         writeln!(buf)?;
 

@@ -468,12 +468,12 @@ const CATEGORY_RULES: &[CategoryRule] = &[
     // Script types
     CategoryRule {
         rpc_type: RpcJsonType::String,
-        field_name: Some("scriptpubkey"),
+        field_name: Some("script_pubkey"),
         category: BitcoinCoreRpcType::BitcoinScriptPubKey,
     },
     CategoryRule {
         rpc_type: RpcJsonType::Hex,
-        field_name: Some("scriptpubkey"),
+        field_name: Some("script_pubkey"),
         category: BitcoinCoreRpcType::BitcoinScriptPubKey,
     },
     CategoryRule {
