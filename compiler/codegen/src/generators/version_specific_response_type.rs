@@ -448,7 +448,6 @@ impl VersionSpecificResponseTypeGenerator {
         matches!(
             (rpc_name, field_name),
             ("analyzepsbt", "fee")
-                | ("decodepsbt", "fee")
                 | ("getaddrmaninfo", "network")
                 | ("getblocktemplate", "field_0")
                 | ("getindexinfo", "name")
