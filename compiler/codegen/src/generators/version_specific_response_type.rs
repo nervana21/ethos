@@ -1026,6 +1026,21 @@ impl VersionSpecificResponseTypeGenerator {
             }
             ir::TypeKind::Object => {
                 // Decoded tx fields: IR uses Object (with nested array shape) for vin/vout; map to typed vecs.
+                // For dynamic per-message byte stats (OBJ_DYN with numeric values), map to a typed map
+                // rather than a generic JSON value when the IR encodes an object with a single "msg"
+                // field of numeric primitive type.
+                if let Some(fields) = &type_def.fields {
+                    if fields.len() == 1 {
+                        let f = &fields[0];
+                        if f.key.as_ident() == "msg"
+                            && matches!(f.field_type.kind, ir::TypeKind::Primitive)
+                            && f.field_type.protocol_type.as_deref() == Some("number")
+                        {
+                            return "std::collections::HashMap<String, u64>".to_string();
+                        }
+                    }
+                }
+
                 match field_name {
                     "vin" => "Vec<DecodedVin>".to_string(),
                     "vout" => "Vec<DecodedVout>".to_string(),
