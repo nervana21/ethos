@@ -435,6 +435,10 @@ impl VersionSpecificResponseTypeGenerator {
             ("getblocktemplate", "vbavailable") => Some("HashMap<String, u32>"),
             ("getblocktemplate", "coinbaseaux") => Some("HashMap<String, String>"),
             ("getblocktemplate", "transactions") => Some("Vec<GetBlockTemplateTransaction>"),
+            // decodepsbt-style response: use IR-driven nested types instead of serde_json::Value
+            ("decodepsbt", "tx") => Some("DecodepsbtTx"),
+            ("decodepsbt", "inputs") => Some("Vec<DecodepsbtInput>"),
+            ("decodepsbt", "outputs") => Some("Vec<DecodepsbtOutput>"),
             (_, "transactionid") => Some("bitcoin::Txid"),
             _ => None,
         }
@@ -2208,6 +2212,188 @@ mod tests {
         assert!(
             code.contains("pub value: Vec<String>"),
             "expected Vec<String> field for Named(\"field_0\") element, got:\n{code}"
+        );
+    }
+
+    /// Asserts that decodepsbt-style response uses IR-driven nested types (DecodepsbtTx, Vec<DecodepsbtInput>, Vec<DecodepsbtOutput>)
+    /// rather than serde_json::Value, so schema changes propagate.
+    #[test]
+    fn decodepsbt_response_uses_ir_nested_types() {
+        let version = ProtocolVersion::from_str("30.0.0").unwrap();
+        let gen = VersionSpecificResponseTypeGenerator::new(version, "bitcoin_core".to_string());
+
+        let tx_obj = TypeDef {
+            name: "DecodepsbtTx".to_string(),
+            description: String::new(),
+            kind: TypeKind::Object,
+            fields: Some(vec![ir::FieldDef {
+                key: ir::FieldKey::Named("txid".to_string()),
+                field_type: TypeDef {
+                    name: "hex".to_string(),
+                    description: String::new(),
+                    kind: TypeKind::Primitive,
+                    fields: None,
+                    variants: None,
+                    union_variants: None,
+                    base_type: None,
+                    protocol_type: Some("hex".to_string()),
+                    canonical_name: None,
+                    condition: None,
+                },
+                required: true,
+                description: String::new(),
+                default_value: None,
+                version_added: None,
+                version_removed: None,
+            }]),
+            variants: None,
+            union_variants: None,
+            base_type: None,
+            protocol_type: Some("object".to_string()),
+            canonical_name: None,
+            condition: None,
+        };
+
+        let input_elem = TypeDef {
+            name: "DecodepsbtInput".to_string(),
+            description: String::new(),
+            kind: TypeKind::Object,
+            fields: Some(vec![]),
+            variants: None,
+            union_variants: None,
+            base_type: None,
+            protocol_type: Some("object".to_string()),
+            canonical_name: None,
+            condition: None,
+        };
+
+        let output_elem = TypeDef {
+            name: "DecodepsbtOutput".to_string(),
+            description: String::new(),
+            kind: TypeKind::Object,
+            fields: Some(vec![]),
+            variants: None,
+            union_variants: None,
+            base_type: None,
+            protocol_type: Some("object".to_string()),
+            canonical_name: None,
+            condition: None,
+        };
+
+        let make_array_of_objects = |elem: TypeDef| TypeDef {
+            name: "array".to_string(),
+            description: String::new(),
+            kind: TypeKind::Object,
+            fields: Some(vec![ir::FieldDef {
+                key: ir::FieldKey::Named("field".to_string()),
+                field_type: TypeDef {
+                    name: "object".to_string(),
+                    description: String::new(),
+                    kind: TypeKind::Object,
+                    fields: Some(vec![ir::FieldDef {
+                        key: ir::FieldKey::Named("field_0".to_string()),
+                        field_type: elem,
+                        required: true,
+                        description: String::new(),
+                        default_value: None,
+                        version_added: None,
+                        version_removed: None,
+                    }]),
+                    variants: None,
+                    union_variants: None,
+                    base_type: None,
+                    protocol_type: Some("object".to_string()),
+                    canonical_name: None,
+                    condition: None,
+                },
+                required: true,
+                description: String::new(),
+                default_value: None,
+                version_added: None,
+                version_removed: None,
+            }]),
+            variants: None,
+            union_variants: None,
+            base_type: None,
+            protocol_type: Some("array".to_string()),
+            canonical_name: None,
+            condition: None,
+        };
+
+        let inputs_array = make_array_of_objects(input_elem);
+        let outputs_array = make_array_of_objects(output_elem);
+
+        let result_ty = TypeDef {
+            name: "object".to_string(),
+            description: String::new(),
+            kind: TypeKind::Object,
+            fields: Some(vec![
+                ir::FieldDef {
+                    key: ir::FieldKey::Named("tx".to_string()),
+                    field_type: tx_obj,
+                    required: true,
+                    description: String::new(),
+                    default_value: None,
+                    version_added: None,
+                    version_removed: None,
+                },
+                ir::FieldDef {
+                    key: ir::FieldKey::Named("inputs".to_string()),
+                    field_type: inputs_array,
+                    required: true,
+                    description: String::new(),
+                    default_value: None,
+                    version_added: None,
+                    version_removed: None,
+                },
+                ir::FieldDef {
+                    key: ir::FieldKey::Named("outputs".to_string()),
+                    field_type: outputs_array,
+                    required: true,
+                    description: String::new(),
+                    default_value: None,
+                    version_added: None,
+                    version_removed: None,
+                },
+            ]),
+            variants: None,
+            union_variants: None,
+            base_type: None,
+            protocol_type: Some("object".to_string()),
+            canonical_name: None,
+            condition: None,
+        };
+
+        let method = RpcDef {
+            name: "decodepsbt".to_string(),
+            description: String::new(),
+            params: Vec::new(),
+            result: Some(result_ty),
+            category: String::new(),
+            access_level: ir::AccessLevel::Public,
+            requires_private_keys: false,
+            version_added: None,
+            version_removed: None,
+            examples: None,
+            hidden: None,
+        };
+
+        let code = gen
+            .generate_method_response(&method)
+            .expect("generation must succeed")
+            .expect("response must be generated");
+
+        assert!(
+            code.contains("DecodepsbtTx"),
+            "decodepsbt response must use IR type DecodepsbtTx, got:\n{code}"
+        );
+        assert!(
+            code.contains("Vec<DecodepsbtInput>"),
+            "decodepsbt response must use Vec<DecodepsbtInput> from IR, got:\n{code}"
+        );
+        assert!(
+            code.contains("Vec<DecodepsbtOutput>"),
+            "decodepsbt response must use Vec<DecodepsbtOutput> from IR, got:\n{code}"
         );
     }
 
