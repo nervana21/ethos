@@ -136,6 +136,44 @@ fn test_protocol_ir_source_implementations() {
     let _protocol_ir = ProtocolIR::new(modules);
 }
 
+#[test]
+fn test_strip_hidden_rpcs() {
+    let mut rpc_hidden = rpc("hidden_rpc", vec![], None, "test");
+    rpc_hidden.hidden = Some(true);
+
+    let rpc_public = rpc("public_rpc", vec![], None, "test"); // hidden: None
+
+    let mut rpc_explicit_visible = rpc("visible_rpc", vec![], None, "test");
+    rpc_explicit_visible.hidden = Some(false);
+
+    let type_def = type_def("SomeType", TypeKind::Object);
+
+    let definitions = vec![
+        ProtocolDef::RpcMethod(rpc_hidden),
+        ProtocolDef::RpcMethod(rpc_public),
+        ProtocolDef::RpcMethod(rpc_explicit_visible),
+        ProtocolDef::Type(type_def),
+    ];
+    let mut ir = ProtocolIR::new(vec![minimal_module("rpc", definitions)]);
+
+    assert_eq!(ir.definition_count(), 4);
+    assert_eq!(ir.get_rpc_methods().len(), 3);
+
+    ir.strip_hidden_rpcs();
+
+    assert_eq!(ir.definition_count(), 3, "one hidden RPC should be removed");
+    let rpcs = ir.get_rpc_methods();
+    assert_eq!(rpcs.len(), 2);
+    let names: Vec<&str> = rpcs.iter().map(|r| r.name.as_str()).collect();
+    assert!(names.contains(&"public_rpc"));
+    assert!(names.contains(&"visible_rpc"));
+    assert!(!names.contains(&"hidden_rpc"));
+
+    let types = ir.get_type_definitions();
+    assert_eq!(types.len(), 1);
+    assert_eq!(types[0].name, "SomeType");
+}
+
 /// Test for ProtocolIR::merge function
 #[test]
 fn test_protocol_ir_merge() {

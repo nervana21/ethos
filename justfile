@@ -22,17 +22,23 @@ process-openrpc input output="":
     fi
 
 # Generate client from IR. Set output_path to write into a repo (e.g. ../ethos-bitcoind); use version for a pinned release.
-# Example: just generate-from-ir  |  just generate-from-ir ../ethos-bitcoind {{LATEST_VERSION}}
-generate-from-ir input_file="" output_path="" version="" impl="bitcoin_core":
+# Extra arguments (e.g. --exclude-hidden-rpcs) are forwarded to the pipeline and applied before codegen.
+# Examples:
+#   just generate-from-ir
+#   just generate-from-ir ../ethos-bitcoind {{LATEST_VERSION}}
+#   just generate-from-ir ../ethos-bitcoind {{LATEST_VERSION}} --exclude-hidden-rpcs
+generate-from-ir input_file="" output_path="" version="" *pipeline_flags:
     @set --; \
     [ -n "{{output_path}}" ] && set -- "$@" --output "{{output_path}}"; \
     [ -n "{{version}}" ] && set -- "$@" --version "{{version}}"; \
     [ -n "{{input_file}}" ] && set -- "$@" --input "{{input_file}}"; \
-    cargo run {{RELEASE}} --package ethos-cli --bin ethos-compiler -- pipeline --implementation {{impl}} "$@"
+    set -- "$@" {{pipeline_flags}}; \
+    cargo run {{RELEASE}} --package ethos-cli --bin ethos-compiler -- pipeline --implementation bitcoin_core "$@"
 
-# Process OpenRPC → IR → generate client into repo. Default openrpc_file includes hidden RPCs.
-process-openrpc-and-generate output_path version="" openrpc_file="resources/ir/openrpc.json" impl="bitcoin_core":
-    just process-openrpc {{openrpc_file}} resources/ir/bitcoin.ir.json && just generate-from-ir resources/ir/bitcoin.ir.json {{output_path}} {{version}} {{impl}}
+# Process OpenRPC → IR → generate client into repo.
+# Uses the default OpenRPC file; extra flags (e.g. --exclude-hidden-rpcs) are forwarded only to the pipeline (not to OpenRPC processing).
+process-openrpc-and-generate output_path version="" *pipeline_flags:
+    just process-openrpc resources/ir/openrpc.json resources/ir/bitcoin.ir.json && just generate-from-ir resources/ir/bitcoin.ir.json {{output_path}} {{version}} {{pipeline_flags}}
 
 
 # Code quality
@@ -101,8 +107,9 @@ corpus-pull:
 examples:
     @echo "Examples:"
     @echo "  just sane                # Full check before push (lint + tests)"
-    @echo "  just generate-from-ir            # Generate client from IR"
-    @echo "  just generate-from-ir ../ethos-bitcoind {{LATEST_VERSION}}   # Generate into repo with version"
+    @echo "  just generate-from-ir            # Generate client from IR (full RPC surface)"
+    @echo "  just generate-from-ir ../ethos-bitcoind {{LATEST_VERSION}}   # Generate into repo with version (full RPC surface)"
+    @echo "  just generate-from-ir ../ethos-bitcoind {{LATEST_VERSION}} --exclude-hidden-rpcs   # Generate without hidden/testing-only RPCs"
     @echo "  just process-openrpc resources/ir/openrpc.json resources/ir/bitcoin.ir.json"
     @echo "  just process-openrpc-and-generate ../ethos-bitcoind   # OpenRPC → IR → generate into repo"
     @echo "  just corpus-pull         # Pull all corpus repositories"

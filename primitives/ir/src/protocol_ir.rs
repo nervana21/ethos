@@ -518,6 +518,17 @@ impl ProtocolIR {
         self.modules.iter().map(|m| m.definitions.len()).sum()
     }
 
+    /// Removes RPC method definitions that are marked `hidden == Some(true)`.
+    /// Non-RPC definitions and RPCs with `hidden != Some(true)` are left unchanged.
+    pub fn strip_hidden_rpcs(&mut self) {
+        for module in self.modules_mut() {
+            module.definitions_mut().retain(|def| match def {
+                ProtocolDef::RpcMethod(rpc) => rpc.hidden != Some(true),
+                _ => true,
+            });
+        }
+    }
+
     /// Merge multiple ProtocolIRs into a single canonical IR
     ///
     /// This method performs merging by:
