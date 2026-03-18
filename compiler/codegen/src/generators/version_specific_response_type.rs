@@ -1050,6 +1050,33 @@ impl VersionSpecificResponseTypeGenerator {
                     }
                 }
 
+                // Arrays encoded as objects with `protocol_type: "array"` and a single
+                // nested element field (as used by decodepsbt-style responses).
+                if type_def.protocol_type.as_deref() == Some("array") {
+                    if let Some(fields) = &type_def.fields {
+                        if fields.len() == 1 {
+                            let outer = &fields[0].field_type;
+                            if let Some(outer_fields) = &outer.fields {
+                                if outer_fields.len() == 1 {
+                                    let elem = &outer_fields[0].field_type;
+                                    // When the innermost element has a concrete name
+                                    // (e.g. DecodepsbtInput / DecodepsbtOutput), map to
+                                    // a typed Vec rather than serde_json::Value.
+                                    if !elem.name.is_empty()
+                                        && elem.name != "object"
+                                        && elem.name != "array"
+                                    {
+                                        return format!(
+                                            "Vec<{}>",
+                                            sanitize_type_name_for_rust(&elem.name)
+                                        );
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
                 match field_name {
                     "vin" => "Vec<DecodedVin>".to_string(),
                     "vout" => "Vec<DecodedVout>".to_string(),
