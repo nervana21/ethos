@@ -1991,6 +1991,18 @@ impl VersionSpecificResponseTypeGenerator {
         type_def: &ir::TypeDef,
         nested_types: &mut BTreeSet<String>,
     ) {
+        // Prefer the full IR type name (sanitized) when it looks like a custom type.
+        // This avoids losing information for names containing separators like `/`
+        // (e.g. `GetRawAddrManBucket/position`).
+        if !type_def.name.is_empty()
+            && type_def.name != "object"
+            && type_def.name != "array"
+            && type_def.name.chars().next().is_some_and(|c| c.is_uppercase())
+        {
+            nested_types.insert(sanitize_type_name_for_rust(&type_def.name));
+        }
+
+        // Also parse the name as a type string (covers generic Rust-like strings).
         self.collect_nested_types(&type_def.name, nested_types);
         if let Some(ref fields) = type_def.fields {
             for field in fields {
