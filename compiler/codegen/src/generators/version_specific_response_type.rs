@@ -1077,6 +1077,17 @@ impl VersionSpecificResponseTypeGenerator {
                     }
                 }
 
+                // Named object types (non-generic) should map to their own struct
+                // instead of falling back to serde_json::Value. This allows IR-
+                // defined nested types like DecodePsbtTx to propagate into the
+                // generated response struct.
+                if !type_def.name.is_empty()
+                    && type_def.name != "object"
+                    && type_def.name != "array"
+                {
+                    return sanitize_type_name_for_rust(&type_def.name);
+                }
+
                 match field_name {
                     "vin" => "Vec<DecodedVin>".to_string(),
                     "vout" => "Vec<DecodedVout>".to_string(),
