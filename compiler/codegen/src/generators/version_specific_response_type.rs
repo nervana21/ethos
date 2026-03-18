@@ -146,7 +146,7 @@ impl VersionSpecificResponseTypeGenerator {
                             needs_transaction = true;
                         }
                         // Only import bitcoin::TxOut when the resolved Rust type actually uses it
-                        if rust_type.contains("TxOut") {
+                        if rust_type == "bitcoin::TxOut" || rust_type.contains("bitcoin::TxOut") {
                             needs_txout = true;
                         }
                         if field_type.contains("TapTree") {
