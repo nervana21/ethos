@@ -341,9 +341,15 @@ impl CodeGenerator for MethodWrapperGenerator {
                 let clippy_allow =
                     if m.params.len() > 7 { "#[allow(clippy::too_many_arguments)]\n" } else { "" };
 
-                let fn_name =
-                    crate::utils::protocol_rpc_method_to_rust_name(&self.protocol, &m.name)
-                        .unwrap_or_else(|e| panic!("{}", e));
+                let fn_name = crate::utils::protocol_rpc_method_to_rust_name_with_context(
+                    &self.protocol,
+                    &m.name,
+                    normalization::UnmappedMethodContext {
+                        category: Some(&m.category),
+                        description: Some(&m.description),
+                    },
+                )
+                .unwrap_or_else(|e| panic!("{}", e));
 
                 let method_wrapper = format!(
                     r#"{docs}

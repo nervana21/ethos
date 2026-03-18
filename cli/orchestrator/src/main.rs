@@ -29,7 +29,7 @@ async fn main() {
         println!("FLAGS:");
         println!("    --input <ir_file>             Load ProtocolIR directly from .ir.json file (optional if --implementation is provided)");
         println!("    --implementation <impl>       Implementation to generate (bitcoin_core) [REQUIRED]");
-        println!("    --version <version>           Override version (e.g., v30.2.9)");
+        println!("    --version <version>           Override version (e.g., v30.2.10)");
         println!("    --output <path>               Write generated crate to <path> (e.g. a separate git repo). Preserves .git for easier diff review.");
         println!("    --exclude-hidden-rpcs         Do not generate code for hidden/testing-only RPCs (default: include them).");
         println!();
@@ -243,7 +243,7 @@ fn compile_with_ir(
 
     // Run compiler passes (validation, canonicalization, etc.)
     let compiler = EthosCompiler::new();
-    ir = compiler.run_compiler_passes(ir, output_dir)?;
+    ir = compiler.run_compiler_passes(ir)?;
 
     // Setup project files (Cargo.toml, README, etc.)
     setup_project_files(output_dir, version, implementation)?;
