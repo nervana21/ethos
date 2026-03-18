@@ -97,6 +97,27 @@ impl VersionSpecificResponseTypeGenerator {
                 self.collect_nested_types_from_type_def(result, &mut nested_types);
             }
         }
+        // Also collect nested types from the actual Rust type strings we will emit for fields.
+        // Some types are introduced by adapter type-mapping (BitcoinCoreTypeRegistry) or
+        // by response_field_type_override and therefore do not appear as IR TypeDef names.
+        for method in methods {
+            if let Some(result) = &method.result {
+                let result = self.filter_type_def_for_version(result);
+                if let Some(fields) = &result.fields {
+                    for field in fields {
+                        let rust_type = Self::response_field_type_override(
+                            method.name.as_str(),
+                            &field.key.as_ident(),
+                        )
+                        .map(String::from)
+                        .unwrap_or_else(|| {
+                            self.map_ir_type_to_rust(&field.field_type, &field.key.as_ident())
+                        });
+                        self.collect_nested_types(&rust_type, &mut nested_types);
+                    }
+                }
+            }
+        }
 
         // Add imports
         out.push_str("use serde::{Deserialize, Serialize};\n");
@@ -2143,6 +2164,26 @@ impl VersionSpecificResponseTypeGenerator {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn scalar_type_aliases_use_bitcoin_types() {
+        let version = ProtocolVersion::from_str("30.0.0").unwrap();
+        let gen = VersionSpecificResponseTypeGenerator::new(version, "bitcoin_core".to_string());
+
+        let amount_alias = gen.generate_type_alias("amount").unwrap();
+        assert!(amount_alias.contains("pub type Amount = bitcoin::Amount;"));
+
+        let blockhash_alias = gen.generate_type_alias("BlockHash").unwrap();
+        assert!(blockhash_alias.contains("pub type BlockHash = bitcoin::BlockHash;"));
+
+        // Also accept lowercase input; left-side casing is derived from `sanitize_type_name_for_rust`.
+        let blockhash_alias_lower = gen.generate_type_alias("blockhash").unwrap();
+        assert!(blockhash_alias_lower.contains("pub type Blockhash = bitcoin::BlockHash;"));
+
+        // `Txid` must be mapped (it was previously missing and defaulted to `String`)
+        let txid_alias = gen.generate_type_alias("Txid").unwrap();
+        assert!(txid_alias.contains("pub type Txid = bitcoin::Txid;"));
+    }
 
     #[test]
     fn array_wrapper_uses_ir_element_type() {
