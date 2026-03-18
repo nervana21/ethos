@@ -437,9 +437,9 @@ impl VersionSpecificResponseTypeGenerator {
             ("getblocktemplate", "coinbaseaux") => Some("HashMap<String, String>"),
             ("getblocktemplate", "transactions") => Some("Vec<GetBlockTemplateTransaction>"),
             // decodepsbt-style response: use IR-driven nested types instead of serde_json::Value
-            ("decodepsbt", "tx") => Some("DecodepsbtTx"),
-            ("decodepsbt", "inputs") => Some("Vec<DecodepsbtInput>"),
-            ("decodepsbt", "outputs") => Some("Vec<DecodepsbtOutput>"),
+            ("decodepsbt", "tx") => Some("DecodePsbtTx"),
+            ("decodepsbt", "inputs") => Some("Vec<DecodePsbtInput>"),
+            ("decodepsbt", "outputs") => Some("Vec<DecodePsbtOutput>"),
             (_, "transactionid") => Some("bitcoin::Txid"),
             _ => None,
         }
@@ -2216,7 +2216,8 @@ mod tests {
         );
     }
 
-    /// Asserts that decodepsbt-style response uses IR-driven nested types (DecodepsbtTx, Vec<DecodepsbtInput>, Vec<DecodepsbtOutput>)
+    /// Asserts that decodepsbt-style response uses IR-driven nested types
+    /// (DecodePsbtTx, Vec<DecodePsbtInput>, Vec<DecodePsbtOutput>)
     /// rather than serde_json::Value, so schema changes propagate.
     #[test]
     fn decodepsbt_response_uses_ir_nested_types() {
@@ -2224,7 +2225,7 @@ mod tests {
         let gen = VersionSpecificResponseTypeGenerator::new(version, "bitcoin_core".to_string());
 
         let tx_obj = TypeDef {
-            name: "DecodepsbtTx".to_string(),
+            name: "DecodePsbtTx".to_string(),
             description: String::new(),
             kind: TypeKind::Object,
             fields: Some(vec![ir::FieldDef {
@@ -2256,7 +2257,7 @@ mod tests {
         };
 
         let input_elem = TypeDef {
-            name: "DecodepsbtInput".to_string(),
+            name: "DecodePsbtInput".to_string(),
             description: String::new(),
             kind: TypeKind::Object,
             fields: Some(vec![]),
@@ -2269,7 +2270,7 @@ mod tests {
         };
 
         let output_elem = TypeDef {
-            name: "DecodepsbtOutput".to_string(),
+            name: "DecodePsbtOutput".to_string(),
             description: String::new(),
             kind: TypeKind::Object,
             fields: Some(vec![]),
@@ -2385,16 +2386,16 @@ mod tests {
             .expect("response must be generated");
 
         assert!(
-            code.contains("DecodepsbtTx"),
-            "decodepsbt response must use IR type DecodepsbtTx, got:\n{code}"
+            code.contains("DecodePsbtTx"),
+            "decodepsbt response must use IR type DecodePsbtTx, got:\n{code}"
         );
         assert!(
-            code.contains("Vec<DecodepsbtInput>"),
-            "decodepsbt response must use Vec<DecodepsbtInput> from IR, got:\n{code}"
+            code.contains("Vec<DecodePsbtInput>"),
+            "decodepsbt response must use Vec<DecodePsbtInput> from IR, got:\n{code}"
         );
         assert!(
-            code.contains("Vec<DecodepsbtOutput>"),
-            "decodepsbt response must use Vec<DecodepsbtOutput> from IR, got:\n{code}"
+            code.contains("Vec<DecodePsbtOutput>"),
+            "decodepsbt response must use Vec<DecodePsbtOutput> from IR, got:\n{code}"
         );
     }
 
