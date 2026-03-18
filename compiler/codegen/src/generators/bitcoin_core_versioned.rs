@@ -1,11 +1,14 @@
 //! Bitcoin Core version-specific type generator
 
-use ir::{ProtocolIR, RpcDef};
+use std::collections::BTreeMap;
+
+use ir::{ProtocolIR, RpcDef, TypeDef};
 use types::ProtocolVersion;
 
 use super::version_specific_client_trait::VersionSpecificClientTraitGenerator;
 use super::version_specific_response_type::VersionSpecificResponseTypeGenerator;
 use super::versioned_generator::VersionedTypeGenerator;
+use crate::utils::sanitize_type_name_for_rust;
 use crate::{CodeGenerator, Result};
 
 /// Bitcoin Core version-specific type generator
@@ -14,7 +17,14 @@ pub struct BitcoinCoreVersionedGenerator {
 }
 
 impl VersionedTypeGenerator for BitcoinCoreVersionedGenerator {
-    fn from_ir(version: ProtocolVersion, _ir: &ProtocolIR) -> Result<Self> { Ok(Self { version }) }
+    fn from_ir(version: ProtocolVersion, ir: &ProtocolIR) -> Result<Self> {
+        let _top_level_types: BTreeMap<String, TypeDef> = ir
+            .get_type_definitions()
+            .iter()
+            .map(|ty| (sanitize_type_name_for_rust(&ty.name), (**ty).clone()))
+            .collect();
+        Ok(Self { version })
+    }
 
     fn generate_response_types(&self, methods: &[RpcDef]) -> Result<Vec<(String, String)>> {
         VersionSpecificResponseTypeGenerator::new(self.version.clone(), "bitcoin_core".to_string())

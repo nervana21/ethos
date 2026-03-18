@@ -4,7 +4,7 @@
 //! type metadata extracted from corepc to generate accurate types for each
 //! Bitcoin Core version.
 
-use std::collections::HashMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write as _;
 use std::str::FromStr;
 use std::sync::{Mutex, OnceLock};
@@ -89,8 +89,8 @@ impl VersionSpecificResponseTypeGenerator {
         out.push_str("//! These types are version-specific and may not match other versions.\n");
 
         // First, collect all nested types that need to be generated
-        // Simplified - generate directly from IR result types instead of metadata
-        let mut nested_types = std::collections::HashSet::new();
+        // BTreeSet for deterministic iteration order so generated output is stable.
+        let mut nested_types = BTreeSet::new();
         for method in methods {
             if let Some(result) = &method.result {
                 self.collect_nested_types_from_type_def(result, &mut nested_types);
@@ -139,10 +139,14 @@ impl VersionSpecificResponseTypeGenerator {
                         if field_type.contains("ScriptBuf") {
                             needs_scriptbuf = true;
                         }
-                        if field_type.contains("Transaction") {
+                        // Only need bitcoin::Transaction when we actually use it (BitcoinTransaction or bitcoin::Transaction), not for GetBlockTemplateTransaction etc.
+                        if rust_type == "BitcoinTransaction"
+                            || field_type.contains("bitcoin::Transaction")
+                        {
                             needs_transaction = true;
                         }
-                        if field_type.contains("TxOut") {
+                        // Only import bitcoin::TxOut when the resolved Rust type actually uses it
+                        if rust_type.contains("TxOut") {
                             needs_txout = true;
                         }
                         if field_type.contains("TapTree") {
@@ -197,16 +201,18 @@ impl VersionSpecificResponseTypeGenerator {
 
         // Manually emitted response structs (decoded-tx helpers, GetBlockTemplateTransaction, etc.)
         // are emitted by dedicated helpers (for example, emit_decoded_tx_types) and not from IR.
-        let mut processed_types = std::collections::HashSet::new();
+        let mut processed_types = BTreeSet::new();
         for name in Self::MANUAL_RESPONSE_TYPE_NAMES {
             processed_types.insert((*name).to_string());
         }
 
-        // Generate nested types first, recursively collecting more nested types
+        // Generate nested types first, recursively collecting more nested types.
+        // BTreeSet gives deterministic iteration over type names.
         let mut all_nested_types = nested_types.clone();
 
         while !all_nested_types.is_empty() {
-            let current_types: Vec<String> = all_nested_types.drain().collect();
+            let current_types: Vec<String> = all_nested_types.iter().cloned().collect();
+            all_nested_types.clear();
 
             for nested_type in &current_types {
                 if processed_types.contains(nested_type) {
@@ -395,9 +401,10 @@ impl VersionSpecificResponseTypeGenerator {
 
     /// Build a registry of named object types by walking all method result types recursively.
     /// First occurrence of each type name wins. Used to generate structs from IR (e.g. DecodedScriptPubKey).
-    fn build_type_registry(methods: &[RpcDef]) -> HashMap<String, TypeDef> {
-        let mut reg = HashMap::new();
-        fn visit(ty: &TypeDef, reg: &mut HashMap<String, TypeDef>) {
+    /// BTreeMap so keys are iterated in stable, sorted order.
+    fn build_type_registry(methods: &[RpcDef]) -> BTreeMap<String, TypeDef> {
+        let mut reg = BTreeMap::new();
+        fn visit(ty: &TypeDef, reg: &mut BTreeMap<String, TypeDef>) {
             if matches!(ty.kind, TypeKind::Object) && ty.name != "object" && ty.name != "array" {
                 reg.entry(ty.name.clone()).or_insert_with(|| ty.clone());
             }
@@ -429,6 +436,10 @@ impl VersionSpecificResponseTypeGenerator {
             ("getblocktemplate", "vbavailable") => Some("HashMap<String, u32>"),
             ("getblocktemplate", "coinbaseaux") => Some("HashMap<String, String>"),
             ("getblocktemplate", "transactions") => Some("Vec<GetBlockTemplateTransaction>"),
+            // decodepsbt-style response: use IR-driven nested types instead of serde_json::Value
+            ("decodepsbt", "tx") => Some("DecodepsbtTx"),
+            ("decodepsbt", "inputs") => Some("Vec<DecodepsbtInput>"),
+            ("decodepsbt", "outputs") => Some("Vec<DecodepsbtOutput>"),
             (_, "transactionid") => Some("bitcoin::Txid"),
             _ => None,
         }
@@ -442,7 +453,6 @@ impl VersionSpecificResponseTypeGenerator {
         matches!(
             (rpc_name, field_name),
             ("analyzepsbt", "fee")
-                | ("decodepsbt", "fee")
                 | ("getaddrmaninfo", "network")
                 | ("getblocktemplate", "field_0")
                 | ("getindexinfo", "name")
@@ -501,15 +511,15 @@ impl VersionSpecificResponseTypeGenerator {
 
     /// Emits Rust structs for decoded transaction details (getblock verbosity 2/3, getrawtransaction verbose).
     /// Does not use deny_unknown_fields on inner structs so new Core fields do not break deserialization.
-    /// When `skip_decoded_script_pub_key` is true, DecodedScriptPubKey is already emitted from the IR type registry.
+    /// When `skip_decoded_script_pubkey` is true, DecodedScriptPubKey is already emitted from the IR type registry.
     /// `fee_required`: when `Some(true)` emit `fee: f64`, otherwise `fee: Option<f64>`; caller derives this from the IR.
     fn emit_decoded_tx_types(
         &self,
         buf: &mut String,
         fee_required: Option<bool>,
-        skip_decoded_script_pub_key: bool,
+        skip_decoded_script_pubkey: bool,
     ) -> Result<()> {
-        if !skip_decoded_script_pub_key {
+        if !skip_decoded_script_pubkey {
             write_doc_line(buf, "Script pubkey in decoded tx output.", "")?;
             write_doc_line(
                 buf,
@@ -584,7 +594,7 @@ impl VersionSpecificResponseTypeGenerator {
         writeln!(buf, "    pub height: i64,")?;
         write_doc_comment(buf, "Decoded script pubkey of the prevout output.", "    ")?;
         writeln!(buf, "    #[serde(rename = \"scriptPubKey\")]")?;
-        writeln!(buf, "    pub script_pub_key: DecodedScriptPubKey,")?;
+        writeln!(buf, "    pub script_pubkey: DecodedScriptPubKey,")?;
         write_doc_comment(buf, "Value of the prevout output in BTC.", "    ")?;
         writeln!(buf, "    pub value: f64,")?;
         writeln!(buf, "}}")?;
@@ -636,7 +646,7 @@ impl VersionSpecificResponseTypeGenerator {
         writeln!(buf, "    pub n: u32,")?;
         write_doc_comment(buf, "Decoded script pubkey of this output.", "    ")?;
         writeln!(buf, "    #[serde(rename = \"scriptPubKey\")]")?;
-        writeln!(buf, "    pub script_pub_key: DecodedScriptPubKey,")?;
+        writeln!(buf, "    pub script_pubkey: DecodedScriptPubKey,")?;
         writeln!(buf, "}}")?;
         writeln!(buf)?;
 
@@ -830,7 +840,7 @@ impl VersionSpecificResponseTypeGenerator {
 
         // Generate struct documentation using PascalCase canonical method name
         let canonical_name =
-            crate::utils::canonical_from_adapter_method(&self.implementation, &method.name)
+            crate::utils::canonical_from_adapter_method(&self.implementation, &method.name, None)
                 .unwrap_or_else(|_| struct_name.replace("Response", ""));
         write_doc_line(&mut buf, &format!("Response for the `{}` RPC method", canonical_name), "")?;
         if !result.description.is_empty() {
@@ -984,9 +994,12 @@ impl VersionSpecificResponseTypeGenerator {
     fn map_ir_type_to_rust(&self, type_def: &ir::TypeDef, field_name: &str) -> String {
         let mapped = match &type_def.kind {
             ir::TypeKind::Primitive => {
-                // Use the adapter to map the type - this leverages the comprehensive BitcoinCoreTypeRegistry
+                // Use the adapter to map the type via BitcoinCoreTypeRegistry.
+                // Primitives must have protocol_type ("string", "number", "amount", "hex", etc.).
+                let rpc_type =
+                    type_def.protocol_type.clone().expect("primitive type must have protocol_type");
                 let method_result = types::MethodResult {
-                    type_: type_def.name.clone(),
+                    type_: rpc_type,
                     optional: false,
                     description: type_def.description.clone(),
                     key_name: field_name.to_string(),
@@ -1020,6 +1033,21 @@ impl VersionSpecificResponseTypeGenerator {
             }
             ir::TypeKind::Object => {
                 // Decoded tx fields: IR uses Object (with nested array shape) for vin/vout; map to typed vecs.
+                // For dynamic per-message byte stats (OBJ_DYN with numeric values), map to a typed map
+                // rather than a generic JSON value when the IR encodes an object with a single "msg"
+                // field of numeric primitive type.
+                if let Some(fields) = &type_def.fields {
+                    if fields.len() == 1 {
+                        let f = &fields[0];
+                        if f.key.as_ident() == "msg"
+                            && matches!(f.field_type.kind, ir::TypeKind::Primitive)
+                            && f.field_type.protocol_type.as_deref() == Some("number")
+                        {
+                            return "std::collections::HashMap<String, u64>".to_string();
+                        }
+                    }
+                }
+
                 match field_name {
                     "vin" => "Vec<DecodedVin>".to_string(),
                     "vout" => "Vec<DecodedVout>".to_string(),
@@ -1068,7 +1096,7 @@ impl VersionSpecificResponseTypeGenerator {
 
         // Generate struct documentation using PascalCase canonical method name
         let canonical_name =
-            crate::utils::canonical_from_adapter_method(&self.implementation, &method.name)
+            crate::utils::canonical_from_adapter_method(&self.implementation, &method.name, None)
                 .unwrap_or_else(|_| struct_name.replace("Response", ""));
         write_doc_line(&mut buf, &format!("Response for the `{}` RPC method", canonical_name), "")?;
         writeln!(&mut buf, "///")?;
@@ -1310,7 +1338,7 @@ impl VersionSpecificResponseTypeGenerator {
     /// Get response struct name for a method
     fn response_struct_name(&self, method: &RpcDef) -> String {
         let canonical =
-            crate::utils::canonical_from_adapter_method(&self.implementation, &method.name);
+            crate::utils::canonical_from_adapter_method(&self.implementation, &method.name, None);
         match canonical {
             Ok(name) => format!("{}Response", name),
             Err(_) => {
@@ -1841,7 +1869,19 @@ impl VersionSpecificResponseTypeGenerator {
     ) -> Result<String> {
         let mut buf = String::new();
         let value_ty = if let Some(elem_ty) = Self::array_element_type_from_ir(result) {
-            self.map_ir_type_to_rust(elem_ty, "field_0")
+            // When the IR describes an array of objects with a named element
+            // type (e.g. for top-level array RPCs such as getpeerinfo), use
+            // that named type so changes to the OpenRPC element schema are
+            // reflected in a dedicated struct instead of being erased to
+            // `serde_json::Value`.
+            if matches!(elem_ty.kind, ir::TypeKind::Object)
+                && !elem_ty.name.is_empty()
+                && elem_ty.name != "object"
+            {
+                elem_ty.name.clone()
+            } else {
+                self.map_ir_type_to_rust(elem_ty, "field_0")
+            }
         } else {
             "serde_json::Value".to_string()
         };
@@ -1855,7 +1895,7 @@ impl VersionSpecificResponseTypeGenerator {
 
         // Generate struct documentation using PascalCase canonical method name
         let canonical_name =
-            crate::utils::canonical_from_adapter_method(&self.implementation, &method.name)
+            crate::utils::canonical_from_adapter_method(&self.implementation, &method.name, None)
                 .unwrap_or_else(|_| struct_name.replace("Response", "").to_string());
         write_doc_line(&mut buf, &format!("Response for the `{}` RPC method", canonical_name), "")?;
         writeln!(&mut buf, "///")?;
@@ -1906,7 +1946,7 @@ impl VersionSpecificResponseTypeGenerator {
     fn generate_value_wrapper(&self, method: &RpcDef, struct_name: &str) -> Result<String> {
         let mut buf = String::new();
         let canonical_name =
-            crate::utils::canonical_from_adapter_method(&self.implementation, &method.name)
+            crate::utils::canonical_from_adapter_method(&self.implementation, &method.name, None)
                 .unwrap_or_else(|_| struct_name.replace("Response", "").to_string());
         write_doc_line(&mut buf, &format!("Response for the `{}` RPC method", canonical_name), "")?;
         writeln!(&mut buf, "///")?;
@@ -1947,7 +1987,7 @@ impl VersionSpecificResponseTypeGenerator {
     fn collect_nested_types_from_type_def(
         &self,
         type_def: &ir::TypeDef,
-        nested_types: &mut std::collections::HashSet<String>,
+        nested_types: &mut BTreeSet<String>,
     ) {
         self.collect_nested_types(&type_def.name, nested_types);
         if let Some(ref fields) = type_def.fields {
@@ -1958,11 +1998,7 @@ impl VersionSpecificResponseTypeGenerator {
     }
 
     /// Collect nested types from a field type string
-    fn collect_nested_types(
-        &self,
-        type_name: &str,
-        nested_types: &mut std::collections::HashSet<String>,
-    ) {
+    fn collect_nested_types(&self, type_name: &str, nested_types: &mut BTreeSet<String>) {
         // Extract type names that start with uppercase (custom types)
         let words: Vec<&str> = type_name.split(|c: char| !c.is_alphanumeric()).collect();
         for word in words {
@@ -1997,7 +2033,7 @@ impl VersionSpecificResponseTypeGenerator {
     fn generate_nested_type(
         &self,
         type_name: &str,
-        type_registry: &HashMap<String, TypeDef>,
+        type_registry: &BTreeMap<String, TypeDef>,
     ) -> Result<Option<String>> {
         if let Some(type_def) = type_registry.get(type_name) {
             if matches!(type_def.kind, TypeKind::Object) && type_def.fields.is_some() {
@@ -2180,6 +2216,188 @@ mod tests {
         );
     }
 
+    /// Asserts that decodepsbt-style response uses IR-driven nested types (DecodepsbtTx, Vec<DecodepsbtInput>, Vec<DecodepsbtOutput>)
+    /// rather than serde_json::Value, so schema changes propagate.
+    #[test]
+    fn decodepsbt_response_uses_ir_nested_types() {
+        let version = ProtocolVersion::from_str("30.0.0").unwrap();
+        let gen = VersionSpecificResponseTypeGenerator::new(version, "bitcoin_core".to_string());
+
+        let tx_obj = TypeDef {
+            name: "DecodepsbtTx".to_string(),
+            description: String::new(),
+            kind: TypeKind::Object,
+            fields: Some(vec![ir::FieldDef {
+                key: ir::FieldKey::Named("txid".to_string()),
+                field_type: TypeDef {
+                    name: "hex".to_string(),
+                    description: String::new(),
+                    kind: TypeKind::Primitive,
+                    fields: None,
+                    variants: None,
+                    union_variants: None,
+                    base_type: None,
+                    protocol_type: Some("hex".to_string()),
+                    canonical_name: None,
+                    condition: None,
+                },
+                required: true,
+                description: String::new(),
+                default_value: None,
+                version_added: None,
+                version_removed: None,
+            }]),
+            variants: None,
+            union_variants: None,
+            base_type: None,
+            protocol_type: Some("object".to_string()),
+            canonical_name: None,
+            condition: None,
+        };
+
+        let input_elem = TypeDef {
+            name: "DecodepsbtInput".to_string(),
+            description: String::new(),
+            kind: TypeKind::Object,
+            fields: Some(vec![]),
+            variants: None,
+            union_variants: None,
+            base_type: None,
+            protocol_type: Some("object".to_string()),
+            canonical_name: None,
+            condition: None,
+        };
+
+        let output_elem = TypeDef {
+            name: "DecodepsbtOutput".to_string(),
+            description: String::new(),
+            kind: TypeKind::Object,
+            fields: Some(vec![]),
+            variants: None,
+            union_variants: None,
+            base_type: None,
+            protocol_type: Some("object".to_string()),
+            canonical_name: None,
+            condition: None,
+        };
+
+        let make_array_of_objects = |elem: TypeDef| TypeDef {
+            name: "array".to_string(),
+            description: String::new(),
+            kind: TypeKind::Object,
+            fields: Some(vec![ir::FieldDef {
+                key: ir::FieldKey::Named("field".to_string()),
+                field_type: TypeDef {
+                    name: "object".to_string(),
+                    description: String::new(),
+                    kind: TypeKind::Object,
+                    fields: Some(vec![ir::FieldDef {
+                        key: ir::FieldKey::Named("field_0".to_string()),
+                        field_type: elem,
+                        required: true,
+                        description: String::new(),
+                        default_value: None,
+                        version_added: None,
+                        version_removed: None,
+                    }]),
+                    variants: None,
+                    union_variants: None,
+                    base_type: None,
+                    protocol_type: Some("object".to_string()),
+                    canonical_name: None,
+                    condition: None,
+                },
+                required: true,
+                description: String::new(),
+                default_value: None,
+                version_added: None,
+                version_removed: None,
+            }]),
+            variants: None,
+            union_variants: None,
+            base_type: None,
+            protocol_type: Some("array".to_string()),
+            canonical_name: None,
+            condition: None,
+        };
+
+        let inputs_array = make_array_of_objects(input_elem);
+        let outputs_array = make_array_of_objects(output_elem);
+
+        let result_ty = TypeDef {
+            name: "object".to_string(),
+            description: String::new(),
+            kind: TypeKind::Object,
+            fields: Some(vec![
+                ir::FieldDef {
+                    key: ir::FieldKey::Named("tx".to_string()),
+                    field_type: tx_obj,
+                    required: true,
+                    description: String::new(),
+                    default_value: None,
+                    version_added: None,
+                    version_removed: None,
+                },
+                ir::FieldDef {
+                    key: ir::FieldKey::Named("inputs".to_string()),
+                    field_type: inputs_array,
+                    required: true,
+                    description: String::new(),
+                    default_value: None,
+                    version_added: None,
+                    version_removed: None,
+                },
+                ir::FieldDef {
+                    key: ir::FieldKey::Named("outputs".to_string()),
+                    field_type: outputs_array,
+                    required: true,
+                    description: String::new(),
+                    default_value: None,
+                    version_added: None,
+                    version_removed: None,
+                },
+            ]),
+            variants: None,
+            union_variants: None,
+            base_type: None,
+            protocol_type: Some("object".to_string()),
+            canonical_name: None,
+            condition: None,
+        };
+
+        let method = RpcDef {
+            name: "decodepsbt".to_string(),
+            description: String::new(),
+            params: Vec::new(),
+            result: Some(result_ty),
+            category: String::new(),
+            access_level: ir::AccessLevel::Public,
+            requires_private_keys: false,
+            version_added: None,
+            version_removed: None,
+            examples: None,
+            hidden: None,
+        };
+
+        let code = gen
+            .generate_method_response(&method)
+            .expect("generation must succeed")
+            .expect("response must be generated");
+
+        assert!(
+            code.contains("DecodepsbtTx"),
+            "decodepsbt response must use IR type DecodepsbtTx, got:\n{code}"
+        );
+        assert!(
+            code.contains("Vec<DecodepsbtInput>"),
+            "decodepsbt response must use Vec<DecodepsbtInput> from IR, got:\n{code}"
+        );
+        assert!(
+            code.contains("Vec<DecodepsbtOutput>"),
+            "decodepsbt response must use Vec<DecodepsbtOutput> from IR, got:\n{code}"
+        );
+    }
+
     #[test]
     fn array_wrapper_uses_value_vec_for_any() {
         let version = ProtocolVersion::from_str("30.0.0").unwrap();
@@ -2337,6 +2555,122 @@ mod tests {
         assert!(
             code.contains("pub field_0: Option<()>"),
             "expected optional unit placeholder field, got:\n{code}"
+        );
+    }
+
+    /// Regression test for the BTreeMap/BTreeSet stabilization: when the set of nested types
+    /// changes (e.g. one method removed), HashSet iteration order can change, so the remaining
+    /// structs appear in a different order and the diff is noisy. With BTreeSet, order is
+    /// deterministic (sorted), so the relative order of remaining structs is stable.
+    ///
+    /// Type names Aa, Bb, Cc are chosen so that with HashSet the iteration order differs
+    /// when the set shrinks from 3 to 2 elements; this test then fails. With BTreeSet it passes.
+    #[test]
+    fn nested_type_emission_order_stable_when_set_shrinks() {
+        use std::str::FromStr;
+
+        use ir::AccessLevel;
+
+        let version = ProtocolVersion::from_str("30.0.0").unwrap();
+        let gen = VersionSpecificResponseTypeGenerator::new(version, "bitcoin_core".to_string());
+
+        fn object_type(name: &str) -> TypeDef {
+            let string_ty = TypeDef {
+                name: "string".to_string(),
+                description: String::new(),
+                kind: TypeKind::Primitive,
+                fields: None,
+                variants: None,
+                union_variants: None,
+                base_type: None,
+                protocol_type: Some("string".to_string()),
+                canonical_name: None,
+                condition: None,
+            };
+            TypeDef {
+                name: name.to_string(),
+                description: String::new(),
+                kind: TypeKind::Object,
+                fields: Some(vec![ir::FieldDef {
+                    key: ir::FieldKey::Named("x".to_string()),
+                    field_type: string_ty,
+                    required: true,
+                    description: String::new(),
+                    default_value: None,
+                    version_added: None,
+                    version_removed: None,
+                }]),
+                variants: None,
+                union_variants: None,
+                base_type: None,
+                protocol_type: None,
+                canonical_name: None,
+                condition: None,
+            }
+        }
+
+        fn rpc_method(name: &str, result: TypeDef) -> RpcDef {
+            RpcDef {
+                name: name.to_string(),
+                description: String::new(),
+                params: Vec::new(),
+                result: Some(result),
+                category: String::new(),
+                access_level: AccessLevel::Public,
+                requires_private_keys: false,
+                version_added: None,
+                version_removed: None,
+                examples: None,
+                hidden: None,
+            }
+        }
+
+        // Use short names with spread hash values so HashSet iteration order is more likely
+        // to differ when set size changes (3 → 2), reproducing the bug with hash-based collections.
+        let type_a = object_type("Aa");
+        let type_b = object_type("Bb");
+        let type_c = object_type("Cc");
+
+        let method_a = rpc_method("method_a", type_a.clone());
+        let method_b = rpc_method("method_b", type_b.clone());
+        let method_c = rpc_method("method_c", type_c);
+
+        // Run 1: all three methods → nested set {Aa, Bb, Cc}
+        let out1 = gen
+            .generate(&[method_a.clone(), method_b.clone(), method_c.clone()])
+            .expect("generate must succeed");
+        let content1 = &out1[0].1;
+
+        // Run 2: remove method_c → nested set {Aa, Bb} (set shrank)
+        let out2 = gen.generate(&[method_a, method_b]).expect("generate must succeed");
+        let content2 = &out2[0].1;
+
+        fn order_of(content: &str, names: &[&str]) -> Vec<usize> {
+            names
+                .iter()
+                .map(|n| {
+                    content
+                        .find(&format!("pub struct {}", n))
+                        .unwrap_or_else(|| panic!("struct {} not found in output", n))
+                })
+                .collect()
+        }
+
+        let names = ["Aa", "Bb"];
+        let positions1 = order_of(content1, &names);
+        let positions2 = order_of(content2, &names);
+
+        // With BTreeSet: order is deterministic (sorted). So NestedTypeA < NestedTypeB in both runs.
+        // With HashSet: when set shrinks from 3 to 2, iteration order can change, so NestedTypeA and
+        // NestedTypeB might swap → relative order in run2 would differ from run1 → assertion fails.
+        let order_a_before_b_run1 = positions1[0] < positions1[1];
+        let order_a_before_b_run2 = positions2[0] < positions2[1];
+        assert!(
+            order_a_before_b_run1 == order_a_before_b_run2,
+            "nested type emission order must be stable when the set shrinks (use BTreeSet, not HashSet). \
+             Run1 order: {:?}, run2 order: {:?}",
+            positions1,
+            positions2
         );
     }
 }
