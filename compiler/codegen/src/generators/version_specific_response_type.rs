@@ -2061,7 +2061,15 @@ impl VersionSpecificResponseTypeGenerator {
         let rust_type = match type_name {
             "Bip125Replaceable" => "bool", // Boolean for replaceable status
             "ScriptPubkey" => "bitcoin::ScriptBuf", // Hex-encoded script pubkey
-            _ => "String",                 // Default to String
+            _ => {
+                let normalized = type_name.to_ascii_lowercase();
+                match normalized.as_str() {
+                    "amount" => "bitcoin::Amount",
+                    "blockhash" => "bitcoin::BlockHash",
+                    "txid" => "bitcoin::Txid",
+                    _ => "String",
+                }
+            }
         };
 
         let mut output = String::new();
