@@ -13,6 +13,7 @@ use ir::{ProtocolIR, RpcDef, TypeDef, TypeKind};
 use types::{Implementation, ProtocolVersion};
 
 use super::doc_comment::{write_doc_comment, write_doc_line};
+use crate::utils::sanitize_type_name_for_rust;
 use crate::Result;
 
 // Type alias to reduce type complexity
@@ -406,7 +407,7 @@ impl VersionSpecificResponseTypeGenerator {
         let mut reg = BTreeMap::new();
         fn visit(ty: &TypeDef, reg: &mut BTreeMap<String, TypeDef>) {
             if matches!(ty.kind, TypeKind::Object) && ty.name != "object" && ty.name != "array" {
-                reg.entry(ty.name.clone()).or_insert_with(|| ty.clone());
+                reg.entry(sanitize_type_name_for_rust(&ty.name)).or_insert_with(|| ty.clone());
             }
             if let Some(fields) = &ty.fields {
                 for f in fields {
@@ -904,14 +905,15 @@ impl VersionSpecificResponseTypeGenerator {
     /// not include fields that are not present in this release.
     fn generate_struct_from_type_def(&self, type_def: &TypeDef, buf: &mut String) -> Result<()> {
         let type_def = self.filter_type_def_for_version(type_def);
+        let struct_name = sanitize_type_name_for_rust(&type_def.name);
         if !type_def.description.is_empty() {
             write_doc_comment(buf, &type_def.description, "")?;
         }
         writeln!(buf, "#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]")?;
-        writeln!(buf, "pub struct {} {{", type_def.name)?;
+        writeln!(buf, "pub struct {} {{", struct_name)?;
         if let Some(fields) = &type_def.fields {
             for field in fields.iter().filter(|f| !Self::is_elision_field(f)) {
-                self.generate_ir_field(buf, field, &type_def.name, "", false)?;
+                self.generate_ir_field(buf, field, &struct_name, "", false)?;
             }
         }
         writeln!(buf, "}}")?;
@@ -2011,7 +2013,7 @@ impl VersionSpecificResponseTypeGenerator {
                     }
                     _ => {
                         // Collect nested types - simplified since IR doesn't track per-type versions
-                        nested_types.insert(word.to_string());
+                        nested_types.insert(sanitize_type_name_for_rust(word));
                     }
                 }
             }
@@ -2035,7 +2037,8 @@ impl VersionSpecificResponseTypeGenerator {
         type_name: &str,
         type_registry: &BTreeMap<String, TypeDef>,
     ) -> Result<Option<String>> {
-        if let Some(type_def) = type_registry.get(type_name) {
+        let lookup_name = sanitize_type_name_for_rust(type_name);
+        if let Some(type_def) = type_registry.get(&lookup_name) {
             if matches!(type_def.kind, TypeKind::Object) && type_def.fields.is_some() {
                 let mut buf = String::new();
                 self.generate_struct_from_type_def(type_def, &mut buf)?;
@@ -2074,7 +2077,7 @@ impl VersionSpecificResponseTypeGenerator {
 
         let mut output = String::new();
         write_doc_line(&mut output, &format!("Type alias for {}", type_name), "")?;
-        writeln!(output, "pub type {} = {};", type_name, rust_type)?;
+        writeln!(output, "pub type {} = {};", sanitize_type_name_for_rust(type_name), rust_type)?;
         Ok(output)
     }
 
