@@ -13,6 +13,7 @@ use ir::{ProtocolIR, RpcDef, TypeDef, TypeKind};
 use types::{Implementation, ProtocolVersion};
 
 use super::doc_comment::{write_doc_comment, write_doc_line};
+use crate::utils::sanitize_type_name_for_rust;
 use crate::Result;
 
 // Type alias to reduce type complexity
@@ -96,6 +97,27 @@ impl VersionSpecificResponseTypeGenerator {
                 self.collect_nested_types_from_type_def(result, &mut nested_types);
             }
         }
+        // Also collect nested types from the actual Rust type strings we will emit for fields.
+        // Some types are introduced by adapter type-mapping (BitcoinCoreTypeRegistry) or
+        // by response_field_type_override and therefore do not appear as IR TypeDef names.
+        for method in methods {
+            if let Some(result) = &method.result {
+                let result = self.filter_type_def_for_version(result);
+                if let Some(fields) = &result.fields {
+                    for field in fields {
+                        let rust_type = Self::response_field_type_override(
+                            method.name.as_str(),
+                            &field.key.as_ident(),
+                        )
+                        .map(String::from)
+                        .unwrap_or_else(|| {
+                            self.map_ir_type_to_rust(&field.field_type, &field.key.as_ident())
+                        });
+                        self.collect_nested_types(&rust_type, &mut nested_types);
+                    }
+                }
+            }
+        }
 
         // Add imports
         out.push_str("use serde::{Deserialize, Serialize};\n");
@@ -146,7 +168,7 @@ impl VersionSpecificResponseTypeGenerator {
                             needs_transaction = true;
                         }
                         // Only import bitcoin::TxOut when the resolved Rust type actually uses it
-                        if rust_type.contains("TxOut") {
+                        if rust_type == "bitcoin::TxOut" || rust_type.contains("bitcoin::TxOut") {
                             needs_txout = true;
                         }
                         if field_type.contains("TapTree") {
@@ -406,7 +428,7 @@ impl VersionSpecificResponseTypeGenerator {
         let mut reg = BTreeMap::new();
         fn visit(ty: &TypeDef, reg: &mut BTreeMap<String, TypeDef>) {
             if matches!(ty.kind, TypeKind::Object) && ty.name != "object" && ty.name != "array" {
-                reg.entry(ty.name.clone()).or_insert_with(|| ty.clone());
+                reg.entry(sanitize_type_name_for_rust(&ty.name)).or_insert_with(|| ty.clone());
             }
             if let Some(fields) = &ty.fields {
                 for f in fields {
@@ -437,9 +459,9 @@ impl VersionSpecificResponseTypeGenerator {
             ("getblocktemplate", "coinbaseaux") => Some("HashMap<String, String>"),
             ("getblocktemplate", "transactions") => Some("Vec<GetBlockTemplateTransaction>"),
             // decodepsbt-style response: use IR-driven nested types instead of serde_json::Value
-            ("decodepsbt", "tx") => Some("DecodepsbtTx"),
-            ("decodepsbt", "inputs") => Some("Vec<DecodepsbtInput>"),
-            ("decodepsbt", "outputs") => Some("Vec<DecodepsbtOutput>"),
+            ("decodepsbt", "tx") => Some("DecodePsbtTx"),
+            ("decodepsbt", "inputs") => Some("Vec<DecodePsbtInput>"),
+            ("decodepsbt", "outputs") => Some("Vec<DecodePsbtOutput>"),
             (_, "transactionid") => Some("bitcoin::Txid"),
             _ => None,
         }
@@ -904,14 +926,15 @@ impl VersionSpecificResponseTypeGenerator {
     /// not include fields that are not present in this release.
     fn generate_struct_from_type_def(&self, type_def: &TypeDef, buf: &mut String) -> Result<()> {
         let type_def = self.filter_type_def_for_version(type_def);
+        let struct_name = sanitize_type_name_for_rust(&type_def.name);
         if !type_def.description.is_empty() {
             write_doc_comment(buf, &type_def.description, "")?;
         }
         writeln!(buf, "#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]")?;
-        writeln!(buf, "pub struct {} {{", type_def.name)?;
+        writeln!(buf, "pub struct {} {{", struct_name)?;
         if let Some(fields) = &type_def.fields {
             for field in fields.iter().filter(|f| !Self::is_elision_field(f)) {
-                self.generate_ir_field(buf, field, &type_def.name, "", false)?;
+                self.generate_ir_field(buf, field, &struct_name, "", false)?;
             }
         }
         writeln!(buf, "}}")?;
@@ -1046,6 +1069,44 @@ impl VersionSpecificResponseTypeGenerator {
                             return "std::collections::HashMap<String, u64>".to_string();
                         }
                     }
+                }
+
+                // Arrays encoded as objects with `protocol_type: "array"` and a single
+                // nested element field (as used by decodepsbt-style responses).
+                if type_def.protocol_type.as_deref() == Some("array") {
+                    if let Some(fields) = &type_def.fields {
+                        if fields.len() == 1 {
+                            let outer = &fields[0].field_type;
+                            if let Some(outer_fields) = &outer.fields {
+                                if outer_fields.len() == 1 {
+                                    let elem = &outer_fields[0].field_type;
+                                    // When the innermost element has a concrete name
+                                    // (e.g. DecodepsbtInput / DecodepsbtOutput), map to
+                                    // a typed Vec rather than serde_json::Value.
+                                    if !elem.name.is_empty()
+                                        && elem.name != "object"
+                                        && elem.name != "array"
+                                    {
+                                        return format!(
+                                            "Vec<{}>",
+                                            sanitize_type_name_for_rust(&elem.name)
+                                        );
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Named object types (non-generic) should map to their own struct
+                // instead of falling back to serde_json::Value. This allows IR-
+                // defined nested types like DecodePsbtTx to propagate into the
+                // generated response struct.
+                if !type_def.name.is_empty()
+                    && type_def.name != "object"
+                    && type_def.name != "array"
+                {
+                    return sanitize_type_name_for_rust(&type_def.name);
                 }
 
                 match field_name {
@@ -1989,6 +2050,18 @@ impl VersionSpecificResponseTypeGenerator {
         type_def: &ir::TypeDef,
         nested_types: &mut BTreeSet<String>,
     ) {
+        // Prefer the full IR type name (sanitized) when it looks like a custom type.
+        // This avoids losing information for names containing separators like `/`
+        // (e.g. `GetRawAddrManBucket/position`).
+        if !type_def.name.is_empty()
+            && type_def.name != "object"
+            && type_def.name != "array"
+            && type_def.name.chars().next().is_some_and(|c| c.is_uppercase())
+        {
+            nested_types.insert(sanitize_type_name_for_rust(&type_def.name));
+        }
+
+        // Also parse the name as a type string (covers generic Rust-like strings).
         self.collect_nested_types(&type_def.name, nested_types);
         if let Some(ref fields) = type_def.fields {
             for field in fields {
@@ -2011,7 +2084,7 @@ impl VersionSpecificResponseTypeGenerator {
                     }
                     _ => {
                         // Collect nested types - simplified since IR doesn't track per-type versions
-                        nested_types.insert(word.to_string());
+                        nested_types.insert(sanitize_type_name_for_rust(word));
                     }
                 }
             }
@@ -2035,7 +2108,8 @@ impl VersionSpecificResponseTypeGenerator {
         type_name: &str,
         type_registry: &BTreeMap<String, TypeDef>,
     ) -> Result<Option<String>> {
-        if let Some(type_def) = type_registry.get(type_name) {
+        let lookup_name = sanitize_type_name_for_rust(type_name);
+        if let Some(type_def) = type_registry.get(&lookup_name) {
             if matches!(type_def.kind, TypeKind::Object) && type_def.fields.is_some() {
                 let mut buf = String::new();
                 self.generate_struct_from_type_def(type_def, &mut buf)?;
@@ -2061,12 +2135,20 @@ impl VersionSpecificResponseTypeGenerator {
         let rust_type = match type_name {
             "Bip125Replaceable" => "bool", // Boolean for replaceable status
             "ScriptPubkey" => "bitcoin::ScriptBuf", // Hex-encoded script pubkey
-            _ => "String",                 // Default to String
+            _ => {
+                let normalized = type_name.to_ascii_lowercase();
+                match normalized.as_str() {
+                    "amount" => "bitcoin::Amount",
+                    "blockhash" => "bitcoin::BlockHash",
+                    "txid" => "bitcoin::Txid",
+                    _ => "String",
+                }
+            }
         };
 
         let mut output = String::new();
         write_doc_line(&mut output, &format!("Type alias for {}", type_name), "")?;
-        writeln!(output, "pub type {} = {};", type_name, rust_type)?;
+        writeln!(output, "pub type {} = {};", sanitize_type_name_for_rust(type_name), rust_type)?;
         Ok(output)
     }
 
@@ -2082,6 +2164,26 @@ impl VersionSpecificResponseTypeGenerator {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn scalar_type_aliases_use_bitcoin_types() {
+        let version = ProtocolVersion::from_str("30.0.0").unwrap();
+        let gen = VersionSpecificResponseTypeGenerator::new(version, "bitcoin_core".to_string());
+
+        let amount_alias = gen.generate_type_alias("amount").unwrap();
+        assert!(amount_alias.contains("pub type Amount = bitcoin::Amount;"));
+
+        let blockhash_alias = gen.generate_type_alias("BlockHash").unwrap();
+        assert!(blockhash_alias.contains("pub type BlockHash = bitcoin::BlockHash;"));
+
+        // Also accept lowercase input; left-side casing is derived from `sanitize_type_name_for_rust`.
+        let blockhash_alias_lower = gen.generate_type_alias("blockhash").unwrap();
+        assert!(blockhash_alias_lower.contains("pub type Blockhash = bitcoin::BlockHash;"));
+
+        // `Txid` must be mapped (it was previously missing and defaulted to `String`)
+        let txid_alias = gen.generate_type_alias("Txid").unwrap();
+        assert!(txid_alias.contains("pub type Txid = bitcoin::Txid;"));
+    }
 
     #[test]
     fn array_wrapper_uses_ir_element_type() {
@@ -2216,7 +2318,8 @@ mod tests {
         );
     }
 
-    /// Asserts that decodepsbt-style response uses IR-driven nested types (DecodepsbtTx, Vec<DecodepsbtInput>, Vec<DecodepsbtOutput>)
+    /// Asserts that decodepsbt-style response uses IR-driven nested types
+    /// (DecodePsbtTx, Vec<DecodePsbtInput>, Vec<DecodePsbtOutput>)
     /// rather than serde_json::Value, so schema changes propagate.
     #[test]
     fn decodepsbt_response_uses_ir_nested_types() {
@@ -2224,7 +2327,7 @@ mod tests {
         let gen = VersionSpecificResponseTypeGenerator::new(version, "bitcoin_core".to_string());
 
         let tx_obj = TypeDef {
-            name: "DecodepsbtTx".to_string(),
+            name: "DecodePsbtTx".to_string(),
             description: String::new(),
             kind: TypeKind::Object,
             fields: Some(vec![ir::FieldDef {
@@ -2256,7 +2359,7 @@ mod tests {
         };
 
         let input_elem = TypeDef {
-            name: "DecodepsbtInput".to_string(),
+            name: "DecodePsbtInput".to_string(),
             description: String::new(),
             kind: TypeKind::Object,
             fields: Some(vec![]),
@@ -2269,7 +2372,7 @@ mod tests {
         };
 
         let output_elem = TypeDef {
-            name: "DecodepsbtOutput".to_string(),
+            name: "DecodePsbtOutput".to_string(),
             description: String::new(),
             kind: TypeKind::Object,
             fields: Some(vec![]),
@@ -2385,16 +2488,16 @@ mod tests {
             .expect("response must be generated");
 
         assert!(
-            code.contains("DecodepsbtTx"),
-            "decodepsbt response must use IR type DecodepsbtTx, got:\n{code}"
+            code.contains("DecodePsbtTx"),
+            "decodepsbt response must use IR type DecodePsbtTx, got:\n{code}"
         );
         assert!(
-            code.contains("Vec<DecodepsbtInput>"),
-            "decodepsbt response must use Vec<DecodepsbtInput> from IR, got:\n{code}"
+            code.contains("Vec<DecodePsbtInput>"),
+            "decodepsbt response must use Vec<DecodePsbtInput> from IR, got:\n{code}"
         );
         assert!(
-            code.contains("Vec<DecodepsbtOutput>"),
-            "decodepsbt response must use Vec<DecodepsbtOutput> from IR, got:\n{code}"
+            code.contains("Vec<DecodePsbtOutput>"),
+            "decodepsbt response must use Vec<DecodePsbtOutput> from IR, got:\n{code}"
         );
     }
 
