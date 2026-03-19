@@ -591,7 +591,9 @@ pub fn sanitize_external_identifier(name: &str) -> String {
 /// `GetrawaddrmanBucket/position` -> `GetrawaddrmanBucketPosition` and we avoid non_camel_case_types warnings.
 pub fn sanitize_type_name_for_rust(name: &str) -> String {
     let mut with_underscores = name.replace('/', "_").replace('-', "_");
-    with_underscores = with_underscores.replace("Lastprocessedblock", "Last_Processed_Block");
+    with_underscores = with_underscores
+        .replace("Lastprocessedblock", "Last_Processed_Block")
+        .replace("Pubnonces", "Pub_Nonces");
     // Convert to PascalCase: split on _, capitalize each segment, join
     with_underscores
         .split('_')
@@ -955,6 +957,10 @@ mod tests {
         assert_eq!(
             sanitize_type_name_for_rust("GetBalancesLastprocessedblock"),
             "GetBalancesLastProcessedBlock"
+        );
+        assert_eq!(
+            sanitize_type_name_for_rust("DecodePsbtMusig2Pubnonces"),
+            "DecodePsbtMusig2PubNonces"
         );
     }
 }
