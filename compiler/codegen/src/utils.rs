@@ -103,6 +103,7 @@ const METHOD_WORDS: &[&str] = &[
     "multisig",
     "precious",
     "received",
+    "processed",
     "simulate",
     "spending",
     "template",
@@ -589,8 +590,9 @@ pub fn sanitize_external_identifier(name: &str) -> String {
 /// Replaces `/` and `-` with `_`, then converts to upper camel case (PascalCase) so
 /// `GetrawaddrmanBucket/position` -> `GetrawaddrmanBucketPosition` and we avoid non_camel_case_types warnings.
 pub fn sanitize_type_name_for_rust(name: &str) -> String {
-    let with_underscores = name.replace('/', "_").replace('-', "_");
-    // Convert to PascalCase: split on _, capitalize each segment, join (e.g. GetrawaddrmanBucket_position -> GetrawaddrmanBucketPosition)
+    let mut with_underscores = name.replace('/', "_").replace('-', "_");
+    with_underscores = with_underscores.replace("Lastprocessedblock", "Last_Processed_Block");
+    // Convert to PascalCase: split on _, capitalize each segment, join
     with_underscores
         .split('_')
         .filter(|s| !s.is_empty())
@@ -950,5 +952,9 @@ mod tests {
             "SubmitpackageTxResults"
         );
         assert_eq!(sanitize_type_name_for_rust("DecodepsbtTx"), "DecodepsbtTx");
+        assert_eq!(
+            sanitize_type_name_for_rust("GetBalancesLastprocessedblock"),
+            "GetBalancesLastProcessedBlock"
+        );
     }
 }
