@@ -10,7 +10,7 @@ _default:
 # Use dev-fast by default (incremental + opt-level 1) for fast iteration; full release is slower to compile.
 # Set FAST=0 for full release builds (e.g. CI or when compiler runtime matters).
 RELEASE := if env_var_or_default('FAST', '1') == '1' { "--profile dev-fast" } else { "--release" }
-LATEST_VERSION := "v30.2.10"
+LATEST_VERSION := "v30.2.11"
 
 # Process OpenRPC document (or version) into canonical IR. Input = path to OpenRPC JSON or version (e.g. {{LATEST_VERSION}}) to extract from canonical IR.
 # Example: just process-openrpc resources/ir/openrpc.json  |  just process-openrpc {{LATEST_VERSION}} out.ir.json

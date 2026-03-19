@@ -29,7 +29,7 @@ async fn main() {
         println!("FLAGS:");
         println!("    --input <ir_file>             Load ProtocolIR directly from .ir.json file (optional if --implementation is provided)");
         println!("    --implementation <impl>       Implementation to generate (bitcoin_core) [REQUIRED]");
-        println!("    --version <version>           Override version (e.g., v30.2.10)");
+        println!("    --version <version>           Override version (e.g., v30.2.11)");
         println!("    --output <path>               Write generated crate to <path> (e.g. a separate git repo). Preserves .git for easier diff review.");
         println!("    --exclude-hidden-rpcs         Do not generate code for hidden/testing-only RPCs (default: include them).");
         println!();
