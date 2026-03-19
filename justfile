@@ -35,10 +35,44 @@ generate-from-ir input_file="" output_path="" version="" *pipeline_flags:
     set -- "$@" {{pipeline_flags}}; \
     cargo run {{RELEASE}} --package ethos-cli --bin ethos-compiler -- pipeline --implementation bitcoin_core "$@"
 
+# After codegen: stage everything in the downstream repo, write ethos HEAD's subject to `.git/SUGGESTED_COMMIT_MSG`, and copy that subject to the clipboard (macOS `pbcopy` only).
+_stage-downstream output_path:
+    @bash -c 'set -euo pipefail; \
+      ethos_root="{{justfile_directory()}}"; out="{{output_path}}"; \
+      if ! git -C "$out" rev-parse --git-dir >/dev/null 2>&1; then \
+        echo "error: not a git repository: $out" >&2; exit 1; \
+      fi; \
+      if [ -z "$(git -C "$out" status --porcelain)" ]; then \
+        echo "No changes in $out; nothing to stage."; exit 0; \
+      fi; \
+      git -C "$out" add -A; \
+      msg_file="$(git -C "$out" rev-parse --git-dir)/SUGGESTED_COMMIT_MSG"; \
+      if ! subj=$(git -C "$ethos_root" log -1 --format=%s 2>/dev/null); then \
+        subj="codegen: sync from ethos"; \
+      fi; \
+      printf "%s\n" "$subj" > "$msg_file"; \
+      clip_ok=0; \
+      if command -v pbcopy >/dev/null 2>&1; then printf "%s" "$subj" | pbcopy && clip_ok=1; fi; \
+      echo ""; \
+      ethos_h=$(git -C "$ethos_root" rev-parse --short HEAD 2>/dev/null || echo "?"); \
+      echo "Staged all changes in $out (ethos $ethos_h)."; \
+      echo "Suggested subject: $subj"; \
+      if [ "$clip_ok" = 1 ]; then echo "Copied suggested subject to clipboard (pbcopy)."; \
+      else echo "Clipboard skipped (pbcopy not found; macOS only)."; fi; \
+      echo "Commit after review: git -C \"$out\" commit -e -F \"$msg_file\""; \
+    '
+
 # Process OpenRPC → IR → generate client into repo.
 # Uses the default OpenRPC file; extra flags (e.g. --exclude-hidden-rpcs) are forwarded only to the pipeline (not to OpenRPC processing).
+# Set STAGE_DOWNSTREAM=1 to run `_stage-downstream` afterward (same as `process-openrpc-and-generate-stage`).
 process-openrpc-and-generate output_path version="" *pipeline_flags:
     just process-openrpc resources/ir/openrpc.json resources/ir/bitcoin.ir.json && just generate-from-ir resources/ir/bitcoin.ir.json {{output_path}} {{version}} {{pipeline_flags}}
+    @if [ "${STAGE_DOWNSTREAM:-0}" = 1 ]; then just _stage-downstream "{{output_path}}"; fi
+
+# Same as process-openrpc-and-generate + `_stage-downstream`. Review with `git diff --cached` in the downstream repo, then commit.
+process-openrpc-and-generate-stage output_path version="" *pipeline_flags:
+    just process-openrpc-and-generate {{output_path}} {{version}} {{pipeline_flags}}
+    just _stage-downstream "{{output_path}}"
 
 
 # Code quality
@@ -112,4 +146,6 @@ examples:
     @echo "  just generate-from-ir ../ethos-bitcoind {{LATEST_VERSION}} --exclude-hidden-rpcs   # Generate without hidden/testing-only RPCs"
     @echo "  just process-openrpc resources/ir/openrpc.json resources/ir/bitcoin.ir.json"
     @echo "  just process-openrpc-and-generate ../ethos-bitcoind   # OpenRPC → IR → generate into repo"
+    @echo "  just process-openrpc-and-generate-stage ../ethos-bitcoind {{LATEST_VERSION}}   # …then stage + ethos HEAD subject as suggested commit"
+    @echo "  STAGE_DOWNSTREAM=1 just process-openrpc-and-generate ../ethos-bitcoind {{LATEST_VERSION}}   # same as -stage"
     @echo "  just corpus-pull         # Pull all corpus repositories"
