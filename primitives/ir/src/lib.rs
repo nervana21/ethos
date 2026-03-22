@@ -8,6 +8,7 @@
 //! protocol specifications at different stages of compilation. The IR serves as the bridge between
 //! raw protocol specifications and backend code generation.
 
+pub mod json_golden;
 pub mod protocol_ir;
 
 #[cfg(feature = "test-utils")]

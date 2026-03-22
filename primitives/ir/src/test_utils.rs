@@ -16,7 +16,10 @@ pub fn type_def(name: &str, kind: TypeKind) -> TypeDef {
         base_type: None,
         protocol_type: None,
         canonical_name: None,
+        type_identity: None,
         condition: None,
+        map_value: None,
+        map_key_protocol_type: None,
     }
 }
 
@@ -32,7 +35,10 @@ pub fn primitive_type(name: &str, protocol_type: Option<String>) -> TypeDef {
         base_type: None,
         protocol_type,
         canonical_name: None,
+        type_identity: None,
         condition: None,
+        map_value: None,
+        map_key_protocol_type: None,
     }
 }
 

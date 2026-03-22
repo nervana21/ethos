@@ -55,6 +55,11 @@ pub fn render_type_from_ir(type_def: &TypeDef) -> String {
         TypeKind::Array => render_array(type_def),
         TypeKind::Enum => render_enum(type_def),
         TypeKind::Union => render_union(type_def),
+        TypeKind::Map => type_def
+            .map_value
+            .as_ref()
+            .map(|v| format!("Map<{}>", render_type_from_ir(v)))
+            .unwrap_or_else(|| "serde_json::Value".to_string()),
         TypeKind::Optional => {
             // Handle optional types
             if let Some(base_type) = &type_def.base_type {

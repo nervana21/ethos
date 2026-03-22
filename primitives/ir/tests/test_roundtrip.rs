@@ -8,6 +8,18 @@ use ethos_ir::{FieldDef, FieldKey, ProtocolDef, ProtocolIR, ProtocolModule, Type
 fn minimal_type_def() -> TypeDef { type_def("", TypeKind::Primitive) }
 
 #[test]
+fn test_rust_emit_name_prefers_type_identity() {
+    let mut td = type_def("WrongLabel", TypeKind::Object);
+    td.type_identity = Some("RightLabel".to_string());
+    assert_eq!(td.rust_emit_name(), "RightLabel");
+
+    let json = serde_json::to_string(&td).expect("serialize");
+    let loaded: TypeDef = serde_json::from_str(&json).expect("deserialize");
+    assert_eq!(loaded.rust_emit_name(), "RightLabel");
+    assert_eq!(loaded.name, "WrongLabel");
+}
+
+#[test]
 fn test_field_key_roundtrip() {
     // Roundtrip `FieldKey` Named and Anonymous through JSON.
     let type_with_keys = TypeDef {
@@ -23,6 +35,8 @@ fn test_field_key_roundtrip() {
                 default_value: None,
                 version_added: None,
                 version_removed: None,
+                emit_in_struct: None,
+                force_optional: None,
             },
             FieldDef {
                 key: FieldKey::Anonymous(1),
@@ -32,6 +46,8 @@ fn test_field_key_roundtrip() {
                 default_value: None,
                 version_added: None,
                 version_removed: None,
+                emit_in_struct: None,
+                force_optional: None,
             },
         ]),
         variants: None,
@@ -40,6 +56,7 @@ fn test_field_key_roundtrip() {
         protocol_type: None,
         canonical_name: None,
         condition: None,
+        ..Default::default()
     };
     let json = serde_json::to_string_pretty(&type_with_keys).expect("serialize");
     let loaded: TypeDef = serde_json::from_str(&json).expect("deserialize");
@@ -66,6 +83,8 @@ fn array_element_type_helper_supports_anonymous_and_named_field_0() {
             default_value: None,
             version_added: None,
             version_removed: None,
+            emit_in_struct: None,
+            force_optional: None,
         }]),
         variants: None,
         union_variants: None,
@@ -73,6 +92,7 @@ fn array_element_type_helper_supports_anonymous_and_named_field_0() {
         protocol_type: Some("array".to_string()),
         canonical_name: None,
         condition: None,
+        ..Default::default()
     };
 
     let elem =
@@ -92,6 +112,8 @@ fn array_element_type_helper_supports_anonymous_and_named_field_0() {
             default_value: None,
             version_added: None,
             version_removed: None,
+            emit_in_struct: None,
+            force_optional: None,
         }]),
         variants: None,
         union_variants: None,
@@ -99,6 +121,7 @@ fn array_element_type_helper_supports_anonymous_and_named_field_0() {
         protocol_type: Some("array".to_string()),
         canonical_name: None,
         condition: None,
+        ..Default::default()
     };
 
     let elem2 = array_with_named
@@ -123,6 +146,8 @@ fn array_element_type_helper_supports_anonymous_and_named_field_0() {
                 default_value: None,
                 version_added: None,
                 version_removed: None,
+                emit_in_struct: None,
+                force_optional: None,
             },
             FieldDef {
                 key: FieldKey::Anonymous(1),
@@ -132,6 +157,8 @@ fn array_element_type_helper_supports_anonymous_and_named_field_0() {
                 default_value: None,
                 version_added: None,
                 version_removed: None,
+                emit_in_struct: None,
+                force_optional: None,
             },
         ]),
         variants: None,
@@ -140,8 +167,36 @@ fn array_element_type_helper_supports_anonymous_and_named_field_0() {
         protocol_type: Some("array".to_string()),
         canonical_name: None,
         condition: None,
+        ..Default::default()
     };
     assert!(multi_field_array.array_element_type().is_none());
+}
+
+#[test]
+fn test_typekind_map_json_roundtrip() {
+    let value_ty = minimal_type_def();
+    let map_ty = TypeDef {
+        name: "TxMetaMap".to_string(),
+        description: "dynamic-key object".to_string(),
+        kind: TypeKind::Map,
+        fields: None,
+        variants: None,
+        union_variants: None,
+        base_type: None,
+        protocol_type: None,
+        canonical_name: None,
+        type_identity: None,
+        condition: None,
+        map_value: Some(Box::new(value_ty.clone())),
+        map_key_protocol_type: Some("hex".to_string()),
+    };
+
+    let json = serde_json::to_string_pretty(&map_ty).expect("serialize");
+    let loaded: TypeDef = serde_json::from_str(&json).expect("deserialize");
+    assert_eq!(loaded.kind, TypeKind::Map);
+    assert_eq!(loaded.map_key_protocol_type.as_deref(), Some("hex"));
+    let inner = loaded.map_value_type().expect("map value");
+    assert_eq!(inner.name, value_ty.name);
 }
 
 #[test]

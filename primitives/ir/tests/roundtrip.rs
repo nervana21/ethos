@@ -23,6 +23,7 @@ fn create_sample_ir() -> ProtocolIR {
             protocol_type: Some("object".to_string()),
             canonical_name: None,
             condition: None,
+            ..Default::default()
         }),
         category: "node".to_string(),
         access_level: AccessLevel::default(),
@@ -31,6 +32,7 @@ fn create_sample_ir() -> ProtocolIR {
         hidden: None,
         version_added: None,
         version_removed: None,
+        result_discriminator: None,
     };
 
     let module = ProtocolModule::from_source(

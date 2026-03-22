@@ -39,6 +39,22 @@ pub enum ProtocolDef {
     Constant(ConstantDef),
 }
 
+/// When an RPC result is a `oneOf` keyed by a parameter (e.g. `verbosity`), as in Bitcoin Core OpenRPC
+/// `x-bitcoin-discriminatedResult` / help `result_discriminator`.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct RpcResultDiscriminator {
+    /// Primary parameter name (may be a pipe-joined alias in Core docs, e.g. `verbosity|verbose`).
+    pub parameter: String,
+    /// Zero-based index into JSON-RPC `params`.
+    #[serde(rename = "parameterIndex")]
+    pub parameter_index: u32,
+    /// Discriminant values; parallel to `oneOf` arms where Core provides them (int, string, or JSON null).
+    pub values: Vec<serde_json::Value>,
+    /// When the discriminant is nested inside an object parameter (e.g. `template_request.mode`).
+    #[serde(default, skip_serializing_if = "Option::is_none", rename = "nestedParameterKey")]
+    pub nested_parameter_key: Option<String>,
+}
+
 /// RPC method definition
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct RpcDef {
@@ -70,6 +86,9 @@ pub struct RpcDef {
     /// Whether this method is hidden from documentation (preserved from schema)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub hidden: Option<bool>,
+    /// Structured linkage when the result is a discriminated `oneOf` (OpenRPC extension).
+    #[serde(default, skip_serializing_if = "Option::is_none", rename = "result_discriminator")]
+    pub result_discriminator: Option<RpcResultDiscriminator>,
 }
 
 /// Network message definition
@@ -119,9 +138,21 @@ pub struct TypeDef {
     /// Canonical name for this type if it is an alias or duplicate
     #[serde(skip_serializing_if = "Option::is_none")]
     pub canonical_name: Option<String>,
+    /// When set, overrides [`Self::name`] for Rust struct emission and type-registry keys in codegen.
+    ///
+    /// Used when OpenRPC reuses one component title for different JSON shapes (e.g. multiple
+    /// `DecodePsbtRow` objects). Optional for backward compatibility with older IR files.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub type_identity: Option<String>,
     /// Condition under which this type/field is present (preserved from schema)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub condition: Option<String>,
+    /// Homogeneous JSON object with dynamic keys mapping to `map_value` (for `TypeKind::Map`).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub map_value: Option<Box<TypeDef>>,
+    /// Protocol type for map keys before Rust mapping (e.g. `"hex"` for transaction ids).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub map_key_protocol_type: Option<String>,
 }
 
 impl TypeDef {
@@ -154,6 +185,21 @@ impl TypeDef {
         }
 
         Some(&field.field_type)
+    }
+
+    /// Value type for a `TypeKind::Map` (dynamic JSON object keys).
+    pub fn map_value_type(&self) -> Option<&TypeDef> {
+        if !matches!(self.kind, TypeKind::Map) {
+            return None;
+        }
+        self.map_value.as_deref()
+    }
+
+    /// Name used for Rust struct emission and codegen type-registry keys.
+    ///
+    /// Returns [`Self::type_identity`] when set, otherwise [`Self::name`].
+    pub fn rust_emit_name(&self) -> &str {
+        self.type_identity.as_deref().unwrap_or(self.name.as_str())
     }
 }
 
@@ -284,6 +330,13 @@ pub struct FieldDef {
     /// Version when this field was removed (None = still present)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub version_removed: Option<String>,
+    /// When `Some(false)`, this field is omitted from generated response structs (OpenRPC verbosity
+    /// scaffolding that is not a separate JSON key on the wire). `None` means emit (default).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub emit_in_struct: Option<bool>,
+    /// When `true`, generated Rust uses `Option<T>` even if `required` is true (Core may omit).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub force_optional: Option<bool>,
 }
 
 // Custom deserializer to support both legacy IR field shape (with `key`) and
@@ -308,6 +361,10 @@ impl<'de> Deserialize<'de> for FieldDef {
             version_added: Option<String>,
             #[serde(default)]
             version_removed: Option<String>,
+            #[serde(default)]
+            emit_in_struct: Option<bool>,
+            #[serde(default)]
+            force_optional: Option<bool>,
         }
 
         #[derive(Deserialize)]
@@ -358,6 +415,8 @@ impl<'de> Deserialize<'de> for FieldDef {
             default_value: helper.default_value,
             version_added: helper.version_added,
             version_removed: helper.version_removed,
+            emit_in_struct: helper.emit_in_struct,
+            force_optional: helper.force_optional,
         })
     }
 }
@@ -409,6 +468,8 @@ pub enum TypeKind {
     Custom,
     /// Union / one-of type composed of multiple variants.
     Union,
+    /// JSON object with dynamic keys and homogeneous values (e.g. mempool txid → entry).
+    Map,
 }
 
 /// Message types

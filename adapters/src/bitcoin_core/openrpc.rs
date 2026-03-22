@@ -374,6 +374,8 @@ fn build_array_of_objects_wrapper(inner_fields: Vec<FieldDef>) -> Vec<FieldDef> 
         default_value: None,
         version_added: None,
         version_removed: None,
+        emit_in_struct: None,
+        force_optional: None,
     }]
 }
 
@@ -722,6 +724,8 @@ fn convert_argument_to_type_def(raw: &RawArgument) -> TypeDef {
             default_value: inner.default_value(),
             version_added: None,
             version_removed: None,
+            emit_in_struct: None,
+            force_optional: None,
         });
 
         type_def.fields = Some(if raw.r#type == "array" {
@@ -771,6 +775,8 @@ fn convert_result(raw: &RawResult, parent_key: Option<&str>, method_name: Option
                     default_value: inner.default_value(),
                     version_added: None,
                     version_removed: None,
+                    emit_in_struct: None,
+                    force_optional: None,
                 }
             })
             .collect();
@@ -892,6 +898,8 @@ fn merge_results_to_object(results: &[RawResult], method_name: &str) -> TypeDef 
                     default_value: None,
                     version_added: None,
                     version_removed: None,
+                    emit_in_struct: None,
+                    force_optional: None,
                 });
             }
         } else {
@@ -935,6 +943,8 @@ fn merge_results_to_object(results: &[RawResult], method_name: &str) -> TypeDef 
                 default_value: None,
                 version_added: None,
                 version_removed: None,
+                emit_in_struct: None,
+                force_optional: None,
             });
         }
     }
@@ -1021,6 +1031,8 @@ fn convert_openrpc_method(method: OpenRpcMethod, version_added: Option<String>) 
                 default_value: None,
                 version_added: None,
                 version_removed: None,
+                emit_in_struct: None,
+                force_optional: None,
             }]),
             protocol_type: Some("array".to_string()),
             ..Default::default()
@@ -1079,6 +1091,7 @@ fn convert_openrpc_method(method: OpenRpcMethod, version_added: Option<String>) 
         } else {
             None
         },
+        result_discriminator: None,
     }
 }
 
