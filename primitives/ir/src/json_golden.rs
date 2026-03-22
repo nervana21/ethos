@@ -13,6 +13,22 @@ pub fn validate_json_matches_type(ty: &TypeDef, value: &Value) -> Result<(), Str
 }
 
 fn validate_json_matches_type_at(ty: &TypeDef, value: &Value, path: &str) -> Result<(), String> {
+    // OpenRPC often encodes a JSON array as `kind: Object` with `protocol_type: "array"` and one
+    // inner field (`field`, `field_0`, …) for the element prototype. On the wire it is still a
+    // JSON array, so validate like an array when we see that shape.
+    if ty.kind == TypeKind::Object
+        && ty.protocol_type.as_deref() == Some("array")
+        && value.as_array().is_some()
+    {
+        if let Some(elem_ty) = object_wrapped_array_element_type(ty) {
+            let arr = value.as_array().expect("checked is_array");
+            if let Some(first) = arr.first() {
+                validate_json_matches_type_at(elem_ty, first, &format!("{path}[0]"))?;
+            }
+            return Ok(());
+        }
+    }
+
     match ty.kind {
         TypeKind::Object => validate_object(ty, value, path),
         TypeKind::Array => validate_array(ty, value, path),
@@ -32,6 +48,16 @@ fn validate_json_matches_type_at(ty: &TypeDef, value: &Value, path: &str) -> Res
         TypeKind::Primitive | TypeKind::Enum | TypeKind::Alias | TypeKind::Custom =>
             validate_primitive_loose(ty, value, path),
     }
+}
+
+/// Element type for `Object` + `protocol_type: "array"` wrappers (see `validate_json_matches_type_at`).
+fn object_wrapped_array_element_type(ty: &TypeDef) -> Option<&TypeDef> {
+    let fields = ty.fields.as_ref()?;
+    fields
+        .iter()
+        .find(|f| f.key.is_positional_zero() || f.key.as_ident() == "field_0")
+        .map(|f| &f.field_type)
+        .or_else(|| fields.first().map(|f| &f.field_type))
 }
 
 fn validate_primitive_loose(ty: &TypeDef, value: &Value, path: &str) -> Result<(), String> {
@@ -55,8 +81,24 @@ fn validate_object(ty: &TypeDef, value: &Value, path: &str) -> Result<(), String
         .ok_or_else(|| format!("{path}: expected JSON object for IR Object, got {value}"))?;
     let fields = ty.fields.as_ref().ok_or_else(|| format!("{path}: IR Object missing fields"))?;
 
+    // OpenRPC array rows are sometimes modeled as an object whose only child is synthetic
+    // `field_0` pointing at the real row type. JSON array elements are the row object itself
+    // and do not contain a `field_0` key.
+    if fields.len() == 1 {
+        let f = &fields[0];
+        if f.key.as_ident() == "field_0"
+            && f.emit_in_struct != Some(false)
+            && !obj.contains_key("field_0")
+        {
+            return validate_json_matches_type_at(&f.field_type, value, path);
+        }
+    }
+
     for field in fields {
         if field.emit_in_struct == Some(false) {
+            continue;
+        }
+        if field.field_type.protocol_type.as_deref() == Some("elision") {
             continue;
         }
         if !field_wire_required(field) {
@@ -79,11 +121,10 @@ fn validate_array(ty: &TypeDef, value: &Value, path: &str) -> Result<(), String>
     let arr = value
         .as_array()
         .ok_or_else(|| format!("{path}: expected JSON array for IR Array, got {value}"))?;
-    let elem_ty = ty.array_element_type().ok_or_else(|| {
-        format!("{path}: IR Array must use a single positional element field per TypeDef::array_element_type")
-    })?;
-    if let Some(first) = arr.first() {
-        validate_json_matches_type_at(elem_ty, first, &format!("{path}[0]"))?;
+    if let Some(elem_ty) = ty.array_element_type() {
+        if let Some(first) = arr.first() {
+            validate_json_matches_type_at(elem_ty, first, &format!("{path}[0]"))?;
+        }
     }
     Ok(())
 }
