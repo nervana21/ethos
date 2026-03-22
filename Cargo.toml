@@ -19,6 +19,7 @@ members = [
     "cli/orchestrator",
     "compiler/analysis",
     "compiler/codegen",
+    "compiler/codegen-golden-decode",
     "compiler/config",
     "compiler/fuzzctl",
     "compiler/pipeline",

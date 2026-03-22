@@ -526,6 +526,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "ethos-codegen-golden-decode"
+version = "0.1.0"
+dependencies = [
+ "bitcoin",
+ "ethos-codegen",
+ "ethos-ir",
+ "ethos-types",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "ethos-config"
 version = "0.1.0"
 dependencies = [
