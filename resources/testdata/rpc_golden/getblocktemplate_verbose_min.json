@@ -1,0 +1,22 @@
+{
+  "field_0_1": null,
+  "version": 536870912,
+  "rules": ["segwit"],
+  "vbavailable": {},
+  "capabilities": ["proposal"],
+  "vbrequired": 0,
+  "previousblockhash": "0000000000000000000000000000000000000000000000000000000000000000",
+  "transactions": [],
+  "coinbaseaux": {},
+  "coinbasevalue": 312500000,
+  "longpollid": "0",
+  "target": "7fffff0000000000000000000000000000000000000000000000000000000000",
+  "mintime": 0,
+  "mutable": ["time", "transactions"],
+  "noncerange": "00000000ffffffff",
+  "sigoplimit": 80000,
+  "sizelimit": 1000000,
+  "curtime": 1231006505,
+  "bits": "1d00ffff",
+  "height": 1
+}

@@ -1,0 +1,10 @@
+{
+  "wallet_name": "default",
+  "descriptors": [
+    {
+      "desc": "wpkh([00000000/84h/0h/0h]xpub.../0/*)#checksum",
+      "timestamp": 0,
+      "active": true
+    }
+  ]
+}

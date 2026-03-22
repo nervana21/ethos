@@ -1,0 +1,92 @@
+{
+  "version": 1,
+  "rpcs": {
+    "decodepsbt": {
+      "row_source_name": "DecodePsbtRow",
+      "sorted_field_equals": [
+        { "fields": ["field_0"], "type_identity": "DecodePsbtNonWitnessUtxo" },
+        { "fields": ["amount", "scriptPubKey"], "type_identity": "DecodePsbtWitnessUtxo" },
+        { "fields": ["pubkey"], "type_identity": "DecodePsbtPartialSignatures" },
+        { "fields": ["asm", "hex", "type"], "type_identity": "DecodePsbtScriptAsmHexType" },
+        { "fields": ["asm", "hex"], "type_identity": "DecodePsbtFinalScriptSig" },
+        { "fields": ["hash"], "type_identity": "DecodePsbtHashPreimage" },
+        {
+          "fields": ["identifier", "key", "subtype", "value"],
+          "type_identity": "DecodePsbtProprietary"
+        },
+        {
+          "fields": ["master_fingerprint", "path", "pubkey"],
+          "type_identity": "DecodePsbtBip32Derivs"
+        },
+        {
+          "fields": ["master_fingerprint", "path", "xpub"],
+          "type_identity": "DecodePsbtGlobalXpub"
+        },
+        {
+          "fields": ["leaf_hash", "pubkey", "sig"],
+          "type_identity": "DecodePsbtTaprootScriptPathSig"
+        },
+        {
+          "fields": ["control_blocks", "leaf_ver", "script"],
+          "type_identity": "DecodePsbtTaprootScripts"
+        },
+        {
+          "fields": ["leaf_hashes", "master_fingerprint", "path", "pubkey"],
+          "type_identity": "DecodePsbtTaprootBip32Derivs"
+        },
+        {
+          "fields": ["aggregate_pubkey", "participant_pubkeys"],
+          "type_identity": "DecodePsbtMusig2ParticipantPubkeys"
+        },
+        {
+          "fields": ["aggregate_pubkey", "leaf_hash", "participant_pubkey", "pubnonce"],
+          "type_identity": "DecodePsbtMusig2PubNonces"
+        },
+        {
+          "fields": ["aggregate_pubkey", "leaf_hash", "partial_sig", "participant_pubkey"],
+          "type_identity": "DecodePsbtMusig2PartialSigs"
+        },
+        { "fields": ["key"], "type_identity": "DecodePsbtUnknownField" },
+        {
+          "fields": ["depth", "leaf_ver", "script"],
+          "type_identity": "DecodePsbtTaprootTreeLeaf"
+        }
+      ],
+      "key_set_rules": [
+        {
+          "kind": "any_of",
+          "fields": [
+            "non_witness_utxo",
+            "partial_signatures",
+            "taproot_script_path_sigs"
+          ],
+          "type_identity": "DecodePsbtInput"
+        },
+        {
+          "kind": "all_of_unless",
+          "fields": ["taproot_tree"],
+          "unless_any_of": ["non_witness_utxo"],
+          "type_identity": "DecodePsbtOutput"
+        }
+      ]
+    },
+    "analyzepsbt": {
+      "field_object_renames": [
+        {
+          "parent_field": "missing",
+          "when_object_name": "AnalyzePsbtRow",
+          "type_identity": "AnalyzePsbtMissing"
+        }
+      ]
+    },
+    "listdescriptors": {
+      "field_object_renames": [
+        {
+          "parent_field": "range",
+          "when_object_name": "ListDescriptorsRow",
+          "type_identity": "ListDescriptorsRange"
+        }
+      ]
+    }
+  }
+}
