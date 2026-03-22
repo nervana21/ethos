@@ -500,10 +500,15 @@ impl VersionSpecificResponseTypeGenerator {
         }
 
         if rpc_name == "getblock" {
-            return matches!(
-                field.key.as_ident().as_str(),
-                "tx_1" | "tx_2" | "field_21" | "field_23"
-            );
+            let id = field.key.as_ident();
+            // IR encodes verbosity 2/3 result shapes with _1/_2 suffixes so union branches do not
+            // collide in the flat object model. On the wire, Core still uses unsuffixed keys once
+            // (hash, tx, coinbase_tx, …); emitting these as serde fields would expect "hash_1" etc.
+            // and/or duplicate the same JSON key. Skip all such disambiguation fields; see tx_1/tx_2.
+            if id.ends_with("_1") || id.ends_with("_2") {
+                return true;
+            }
+            return matches!(id.as_str(), "field_21" | "field_23");
         }
 
         false
@@ -2658,6 +2663,85 @@ mod tests {
         assert!(
             code.contains("pub field_0: Option<()>"),
             "expected optional unit placeholder field, got:\n{code}"
+        );
+    }
+
+    #[test]
+    fn getblock_skips_ir_union_suffix_duplicate_fields() {
+        let version = ProtocolVersion::from_str("30.0.0").unwrap();
+        let gen = VersionSpecificResponseTypeGenerator::new(version, "bitcoin_core".to_string());
+
+        let hex_ty = TypeDef {
+            name: "hex".to_string(),
+            description: String::new(),
+            kind: TypeKind::Primitive,
+            fields: None,
+            variants: None,
+            union_variants: None,
+            base_type: None,
+            protocol_type: Some("hex".to_string()),
+            canonical_name: None,
+            condition: None,
+        };
+
+        let result_ty = TypeDef {
+            name: "object".to_string(),
+            description: String::new(),
+            kind: TypeKind::Object,
+            fields: Some(vec![
+                ir::FieldDef {
+                    key: ir::FieldKey::Named("hash".to_string()),
+                    field_type: hex_ty.clone(),
+                    required: true,
+                    description: String::new(),
+                    default_value: None,
+                    version_added: None,
+                    version_removed: None,
+                },
+                ir::FieldDef {
+                    key: ir::FieldKey::Named("hash_1".to_string()),
+                    field_type: hex_ty,
+                    required: true,
+                    description: String::new(),
+                    default_value: None,
+                    version_added: None,
+                    version_removed: None,
+                },
+            ]),
+            variants: None,
+            union_variants: None,
+            base_type: None,
+            protocol_type: Some("object".to_string()),
+            canonical_name: None,
+            condition: None,
+        };
+
+        let method = RpcDef {
+            name: "getblock".to_string(),
+            description: String::new(),
+            params: Vec::new(),
+            result: Some(result_ty),
+            category: String::new(),
+            access_level: ir::AccessLevel::Public,
+            requires_private_keys: false,
+            version_added: None,
+            version_removed: None,
+            examples: None,
+            hidden: None,
+        };
+
+        let code = gen
+            .generate_method_response(&method)
+            .expect("generation must succeed")
+            .expect("response must be generated");
+
+        assert!(
+            code.contains("pub hash:"),
+            "expected single hash field for wire JSON key `hash`, got:\n{code}"
+        );
+        assert!(
+            !code.contains("hash_1"),
+            "must not emit IR disambiguation key hash_1 as a struct field, got:\n{code}"
         );
     }
 
