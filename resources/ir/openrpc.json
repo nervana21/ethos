@@ -11799,39 +11799,484 @@
             {
               "type": "object",
               "properties": {
+                "hash": {
+                  "type": "string",
+                  "pattern": "^[0-9a-fA-F]*$",
+                  "description": "the block hash (same as provided)"
+                },
+                "confirmations": {
+                  "type": "number",
+                  "description": "The number of confirmations, or -1 if the block is not on the main chain"
+                },
+                "size": {
+                  "type": "number",
+                  "description": "The block size"
+                },
+                "strippedsize": {
+                  "type": "number",
+                  "description": "The block size excluding witness data"
+                },
+                "weight": {
+                  "type": "number",
+                  "description": "The block weight as defined in BIP 141"
+                },
+                "coinbase_tx": {
+                  "type": "object",
+                  "properties": {
+                    "version": {
+                      "type": "number",
+                      "description": "The coinbase transaction version"
+                    },
+                    "locktime": {
+                      "type": "number",
+                      "description": "The coinbase transaction's locktime (nLockTime)"
+                    },
+                    "sequence": {
+                      "type": "number",
+                      "description": "The coinbase input's sequence number (nSequence)"
+                    },
+                    "coinbase": {
+                      "type": "string",
+                      "pattern": "^[0-9a-fA-F]*$",
+                      "description": "The coinbase input's script"
+                    },
+                    "witness": {
+                      "type": "string",
+                      "pattern": "^[0-9a-fA-F]*$",
+                      "description": "The coinbase input's first (and only) witness stack element, if present"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "version",
+                    "locktime",
+                    "sequence",
+                    "coinbase"
+                  ],
+                  "description": "Coinbase transaction metadata"
+                },
+                "height": {
+                  "type": "number",
+                  "description": "The block height or index"
+                },
+                "version": {
+                  "type": "number",
+                  "description": "The block version"
+                },
+                "versionHex": {
+                  "type": "string",
+                  "pattern": "^[0-9a-fA-F]*$",
+                  "description": "The block version formatted in hexadecimal"
+                },
+                "merkleroot": {
+                  "type": "string",
+                  "pattern": "^[0-9a-fA-F]*$",
+                  "description": "The merkle root"
+                },
                 "tx": {
                   "type": "array",
                   "items": {
                     "type": "object",
                     "properties": {
+                      "txid": {
+                        "type": "string",
+                        "pattern": "^[0-9a-fA-F]*$",
+                        "description": "The transaction id"
+                      },
+                      "hash": {
+                        "type": "string",
+                        "pattern": "^[0-9a-fA-F]*$",
+                        "description": "The transaction hash (differs from txid for witness transactions)"
+                      },
+                      "size": {
+                        "type": "number",
+                        "description": "The serialized transaction size"
+                      },
+                      "vsize": {
+                        "type": "number",
+                        "description": "The virtual transaction size (differs from size for witness transactions)"
+                      },
+                      "weight": {
+                        "type": "number",
+                        "description": "The transaction's weight (between vsize*4-3 and vsize*4)"
+                      },
+                      "version": {
+                        "type": "number",
+                        "description": "The version"
+                      },
+                      "locktime": {
+                        "type": "number",
+                        "x-bitcoin-unit": "unix-time",
+                        "description": "The lock time"
+                      },
+                      "vin": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "coinbase": {
+                              "type": "string",
+                              "pattern": "^[0-9a-fA-F]*$",
+                              "description": "The coinbase value (only if coinbase transaction)"
+                            },
+                            "txid": {
+                              "type": "string",
+                              "pattern": "^[0-9a-fA-F]*$",
+                              "description": "The transaction id (if not coinbase transaction)"
+                            },
+                            "vout": {
+                              "type": "number",
+                              "description": "The output number (if not coinbase transaction)"
+                            },
+                            "scriptSig": {
+                              "type": "object",
+                              "properties": {
+                                "asm": {
+                                  "type": "string",
+                                  "description": "Disassembly of the signature script"
+                                },
+                                "hex": {
+                                  "type": "string",
+                                  "pattern": "^[0-9a-fA-F]*$",
+                                  "description": "The raw signature script bytes, hex-encoded"
+                                }
+                              },
+                              "additionalProperties": false,
+                              "required": [
+                                "asm",
+                                "hex"
+                              ],
+                              "description": "The script (if not coinbase transaction)"
+                            },
+                            "txinwitness": {
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "pattern": "^[0-9a-fA-F]*$"
+                              }
+                            },
+                            "sequence": {
+                              "type": "number",
+                              "description": "The script sequence number"
+                            }
+                          },
+                          "additionalProperties": false,
+                          "required": [
+                            "sequence"
+                          ]
+                        }
+                      },
+                      "vout": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "value": {
+                              "type": "string",
+                              "description": "The value in BTC"
+                            },
+                            "n": {
+                              "type": "number",
+                              "description": "index"
+                            },
+                            "scriptPubKey": {
+                              "type": "object",
+                              "properties": {
+                                "asm": {
+                                  "type": "string",
+                                  "description": "Disassembly of the output script"
+                                },
+                                "desc": {
+                                  "type": "string",
+                                  "description": "Inferred descriptor for the output"
+                                },
+                                "hex": {
+                                  "type": "string",
+                                  "pattern": "^[0-9a-fA-F]*$",
+                                  "description": "The raw output script bytes, hex-encoded"
+                                },
+                                "address": {
+                                  "type": "string",
+                                  "description": "The Bitcoin address (only if a well-defined address exists)"
+                                },
+                                "type": {
+                                  "type": "string",
+                                  "description": "The type (one of: nonstandard, anchor, pubkey, pubkeyhash, scripthash, multisig, nulldata, witness_v0_scripthash, witness_v0_keyhash, witness_v1_taproot, witness_unknown)"
+                                }
+                              },
+                              "additionalProperties": false,
+                              "required": [
+                                "asm",
+                                "desc",
+                                "hex",
+                                "type"
+                              ]
+                            }
+                          },
+                          "additionalProperties": false,
+                          "required": [
+                            "value",
+                            "n",
+                            "scriptPubKey"
+                          ]
+                        }
+                      },
                       "fee": {
                         "type": "number",
                         "description": "The transaction fee in BTC, omitted if block undo data is not available"
+                      },
+                      "hex": {
+                        "type": "string",
+                        "pattern": "^[0-9a-fA-F]*$",
+                        "description": "The serialized, hex-encoded data for the transaction"
                       }
                     },
-                    "additionalProperties": true
+                    "additionalProperties": false,
+                    "required": [
+                      "txid",
+                      "hash",
+                      "size",
+                      "vsize",
+                      "weight",
+                      "version",
+                      "locktime",
+                      "vin",
+                      "vout",
+                      "hex"
+                    ]
                   }
+                },
+                "time": {
+                  "type": "number",
+                  "x-bitcoin-unit": "unix-time",
+                  "description": "The block time expressed in UNIX epoch time"
+                },
+                "mediantime": {
+                  "type": "number",
+                  "x-bitcoin-unit": "unix-time",
+                  "description": "The median block time expressed in UNIX epoch time"
+                },
+                "nonce": {
+                  "type": "number",
+                  "description": "The nonce"
+                },
+                "bits": {
+                  "type": "string",
+                  "pattern": "^[0-9a-fA-F]*$",
+                  "description": "nBits: compact representation of the block difficulty target"
+                },
+                "target": {
+                  "type": "string",
+                  "pattern": "^[0-9a-fA-F]*$",
+                  "description": "The difficulty target"
+                },
+                "difficulty": {
+                  "type": "number",
+                  "description": "The difficulty"
+                },
+                "chainwork": {
+                  "type": "string",
+                  "pattern": "^[0-9a-fA-F]*$",
+                  "description": "Expected number of hashes required to produce the chain up to this block (in hex)"
+                },
+                "nTx": {
+                  "type": "number",
+                  "description": "The number of transactions in the block"
+                },
+                "previousblockhash": {
+                  "type": "string",
+                  "pattern": "^[0-9a-fA-F]*$",
+                  "description": "The hash of the previous block (if available)"
+                },
+                "nextblockhash": {
+                  "type": "string",
+                  "pattern": "^[0-9a-fA-F]*$",
+                  "description": "The hash of the next block (if available)"
                 }
               },
-              "additionalProperties": true,
+              "additionalProperties": false,
               "required": [
-                "tx"
+                "hash",
+                "confirmations",
+                "size",
+                "strippedsize",
+                "weight",
+                "coinbase_tx",
+                "height",
+                "version",
+                "versionHex",
+                "merkleroot",
+                "tx",
+                "time",
+                "mediantime",
+                "nonce",
+                "bits",
+                "target",
+                "difficulty",
+                "chainwork",
+                "nTx"
               ],
               "description": "for verbosity = 2"
             },
             {
               "type": "object",
               "properties": {
+                "hash": {
+                  "type": "string",
+                  "pattern": "^[0-9a-fA-F]*$",
+                  "description": "the block hash (same as provided)"
+                },
+                "confirmations": {
+                  "type": "number",
+                  "description": "The number of confirmations, or -1 if the block is not on the main chain"
+                },
+                "size": {
+                  "type": "number",
+                  "description": "The block size"
+                },
+                "strippedsize": {
+                  "type": "number",
+                  "description": "The block size excluding witness data"
+                },
+                "weight": {
+                  "type": "number",
+                  "description": "The block weight as defined in BIP 141"
+                },
+                "coinbase_tx": {
+                  "type": "object",
+                  "properties": {
+                    "version": {
+                      "type": "number",
+                      "description": "The coinbase transaction version"
+                    },
+                    "locktime": {
+                      "type": "number",
+                      "description": "The coinbase transaction's locktime (nLockTime)"
+                    },
+                    "sequence": {
+                      "type": "number",
+                      "description": "The coinbase input's sequence number (nSequence)"
+                    },
+                    "coinbase": {
+                      "type": "string",
+                      "pattern": "^[0-9a-fA-F]*$",
+                      "description": "The coinbase input's script"
+                    },
+                    "witness": {
+                      "type": "string",
+                      "pattern": "^[0-9a-fA-F]*$",
+                      "description": "The coinbase input's first (and only) witness stack element, if present"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "version",
+                    "locktime",
+                    "sequence",
+                    "coinbase"
+                  ],
+                  "description": "Coinbase transaction metadata"
+                },
+                "height": {
+                  "type": "number",
+                  "description": "The block height or index"
+                },
+                "version": {
+                  "type": "number",
+                  "description": "The block version"
+                },
+                "versionHex": {
+                  "type": "string",
+                  "pattern": "^[0-9a-fA-F]*$",
+                  "description": "The block version formatted in hexadecimal"
+                },
+                "merkleroot": {
+                  "type": "string",
+                  "pattern": "^[0-9a-fA-F]*$",
+                  "description": "The merkle root"
+                },
                 "tx": {
                   "type": "array",
                   "items": {
                     "type": "object",
                     "properties": {
+                      "txid": {
+                        "type": "string",
+                        "pattern": "^[0-9a-fA-F]*$",
+                        "description": "The transaction id"
+                      },
+                      "hash": {
+                        "type": "string",
+                        "pattern": "^[0-9a-fA-F]*$",
+                        "description": "The transaction hash (differs from txid for witness transactions)"
+                      },
+                      "size": {
+                        "type": "number",
+                        "description": "The serialized transaction size"
+                      },
+                      "vsize": {
+                        "type": "number",
+                        "description": "The virtual transaction size (differs from size for witness transactions)"
+                      },
+                      "weight": {
+                        "type": "number",
+                        "description": "The transaction's weight (between vsize*4-3 and vsize*4)"
+                      },
+                      "version": {
+                        "type": "number",
+                        "description": "The version"
+                      },
+                      "locktime": {
+                        "type": "number",
+                        "x-bitcoin-unit": "unix-time",
+                        "description": "The lock time"
+                      },
                       "vin": {
                         "type": "array",
                         "items": {
                           "type": "object",
                           "properties": {
+                            "coinbase": {
+                              "type": "string",
+                              "pattern": "^[0-9a-fA-F]*$",
+                              "description": "The coinbase value (only if coinbase transaction)"
+                            },
+                            "txid": {
+                              "type": "string",
+                              "pattern": "^[0-9a-fA-F]*$",
+                              "description": "The transaction id (if not coinbase transaction)"
+                            },
+                            "vout": {
+                              "type": "number",
+                              "description": "The output number (if not coinbase transaction)"
+                            },
+                            "scriptSig": {
+                              "type": "object",
+                              "properties": {
+                                "asm": {
+                                  "type": "string",
+                                  "description": "Disassembly of the signature script"
+                                },
+                                "hex": {
+                                  "type": "string",
+                                  "pattern": "^[0-9a-fA-F]*$",
+                                  "description": "The raw signature script bytes, hex-encoded"
+                                }
+                              },
+                              "additionalProperties": false,
+                              "required": [
+                                "asm",
+                                "hex"
+                              ],
+                              "description": "The script (if not coinbase transaction)"
+                            },
+                            "txinwitness": {
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "pattern": "^[0-9a-fA-F]*$"
+                              }
+                            },
                             "prevout": {
                               "type": "object",
                               "properties": {
@@ -11888,30 +12333,182 @@
                                 "value",
                                 "scriptPubKey"
                               ],
-                              "description": "(Only if undo information is available)"
+                              "description": "The previous output, omitted if block undo data is not available"
+                            },
+                            "sequence": {
+                              "type": "number",
+                              "description": "The script sequence number"
                             }
                           },
-                          "additionalProperties": true,
+                          "additionalProperties": false,
                           "required": [
-                            "prevout"
+                            "sequence"
                           ]
                         }
+                      },
+                      "vout": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "value": {
+                              "type": "string",
+                              "description": "The value in BTC"
+                            },
+                            "n": {
+                              "type": "number",
+                              "description": "index"
+                            },
+                            "scriptPubKey": {
+                              "type": "object",
+                              "properties": {
+                                "asm": {
+                                  "type": "string",
+                                  "description": "Disassembly of the output script"
+                                },
+                                "desc": {
+                                  "type": "string",
+                                  "description": "Inferred descriptor for the output"
+                                },
+                                "hex": {
+                                  "type": "string",
+                                  "pattern": "^[0-9a-fA-F]*$",
+                                  "description": "The raw output script bytes, hex-encoded"
+                                },
+                                "address": {
+                                  "type": "string",
+                                  "description": "The Bitcoin address (only if a well-defined address exists)"
+                                },
+                                "type": {
+                                  "type": "string",
+                                  "description": "The type (one of: nonstandard, anchor, pubkey, pubkeyhash, scripthash, multisig, nulldata, witness_v0_scripthash, witness_v0_keyhash, witness_v1_taproot, witness_unknown)"
+                                }
+                              },
+                              "additionalProperties": false,
+                              "required": [
+                                "asm",
+                                "desc",
+                                "hex",
+                                "type"
+                              ]
+                            }
+                          },
+                          "additionalProperties": false,
+                          "required": [
+                            "value",
+                            "n",
+                            "scriptPubKey"
+                          ]
+                        }
+                      },
+                      "fee": {
+                        "type": "number",
+                        "description": "The transaction fee in BTC, omitted if block undo data is not available"
+                      },
+                      "hex": {
+                        "type": "string",
+                        "pattern": "^[0-9a-fA-F]*$",
+                        "description": "The serialized, hex-encoded data for the transaction"
                       }
                     },
                     "additionalProperties": false,
                     "required": [
-                      "vin"
+                      "txid",
+                      "hash",
+                      "size",
+                      "vsize",
+                      "weight",
+                      "version",
+                      "locktime",
+                      "vin",
+                      "vout",
+                      "hex"
                     ]
                   }
+                },
+                "time": {
+                  "type": "number",
+                  "x-bitcoin-unit": "unix-time",
+                  "description": "The block time expressed in UNIX epoch time"
+                },
+                "mediantime": {
+                  "type": "number",
+                  "x-bitcoin-unit": "unix-time",
+                  "description": "The median block time expressed in UNIX epoch time"
+                },
+                "nonce": {
+                  "type": "number",
+                  "description": "The nonce"
+                },
+                "bits": {
+                  "type": "string",
+                  "pattern": "^[0-9a-fA-F]*$",
+                  "description": "nBits: compact representation of the block difficulty target"
+                },
+                "target": {
+                  "type": "string",
+                  "pattern": "^[0-9a-fA-F]*$",
+                  "description": "The difficulty target"
+                },
+                "difficulty": {
+                  "type": "number",
+                  "description": "The difficulty"
+                },
+                "chainwork": {
+                  "type": "string",
+                  "pattern": "^[0-9a-fA-F]*$",
+                  "description": "Expected number of hashes required to produce the chain up to this block (in hex)"
+                },
+                "nTx": {
+                  "type": "number",
+                  "description": "The number of transactions in the block"
+                },
+                "previousblockhash": {
+                  "type": "string",
+                  "pattern": "^[0-9a-fA-F]*$",
+                  "description": "The hash of the previous block (if available)"
+                },
+                "nextblockhash": {
+                  "type": "string",
+                  "pattern": "^[0-9a-fA-F]*$",
+                  "description": "The hash of the next block (if available)"
                 }
               },
-              "additionalProperties": true,
+              "additionalProperties": false,
               "required": [
-                "tx"
+                "hash",
+                "confirmations",
+                "size",
+                "strippedsize",
+                "weight",
+                "coinbase_tx",
+                "height",
+                "version",
+                "versionHex",
+                "merkleroot",
+                "tx",
+                "time",
+                "mediantime",
+                "nonce",
+                "bits",
+                "target",
+                "difficulty",
+                "chainwork",
+                "nTx"
               ],
               "description": "for verbosity = 3"
             }
-          ]
+          ],
+          "x-bitcoin-discriminatedResult": {
+            "parameter": "verbosity",
+            "parameterIndex": 1,
+            "values": [
+              0,
+              1,
+              2,
+              3
+            ]
+          }
         },
         "x-bitcoin-results": [
           {
@@ -12161,11 +12758,125 @@
             "condition": "for verbosity = 2",
             "inner": [
               {
-                "type": "elision",
+                "type": "hex",
                 "optional": false,
-                "description": "Same output as verbosity = 1",
+                "description": "the block hash (same as provided)",
                 "skip_type_check": false,
-                "key_name": "",
+                "key_name": "hash",
+                "condition": ""
+              },
+              {
+                "type": "number",
+                "optional": false,
+                "description": "The number of confirmations, or -1 if the block is not on the main chain",
+                "skip_type_check": false,
+                "key_name": "confirmations",
+                "condition": ""
+              },
+              {
+                "type": "number",
+                "optional": false,
+                "description": "The block size",
+                "skip_type_check": false,
+                "key_name": "size",
+                "condition": ""
+              },
+              {
+                "type": "number",
+                "optional": false,
+                "description": "The block size excluding witness data",
+                "skip_type_check": false,
+                "key_name": "strippedsize",
+                "condition": ""
+              },
+              {
+                "type": "number",
+                "optional": false,
+                "description": "The block weight as defined in BIP 141",
+                "skip_type_check": false,
+                "key_name": "weight",
+                "condition": ""
+              },
+              {
+                "type": "object",
+                "optional": false,
+                "description": "Coinbase transaction metadata",
+                "skip_type_check": false,
+                "key_name": "coinbase_tx",
+                "condition": "",
+                "inner": [
+                  {
+                    "type": "number",
+                    "optional": false,
+                    "description": "The coinbase transaction version",
+                    "skip_type_check": false,
+                    "key_name": "version",
+                    "condition": ""
+                  },
+                  {
+                    "type": "number",
+                    "optional": false,
+                    "description": "The coinbase transaction's locktime (nLockTime)",
+                    "skip_type_check": false,
+                    "key_name": "locktime",
+                    "condition": ""
+                  },
+                  {
+                    "type": "number",
+                    "optional": false,
+                    "description": "The coinbase input's sequence number (nSequence)",
+                    "skip_type_check": false,
+                    "key_name": "sequence",
+                    "condition": ""
+                  },
+                  {
+                    "type": "hex",
+                    "optional": false,
+                    "description": "The coinbase input's script",
+                    "skip_type_check": false,
+                    "key_name": "coinbase",
+                    "condition": ""
+                  },
+                  {
+                    "type": "hex",
+                    "optional": true,
+                    "description": "The coinbase input's first (and only) witness stack element, if present",
+                    "skip_type_check": false,
+                    "key_name": "witness",
+                    "condition": ""
+                  }
+                ]
+              },
+              {
+                "type": "number",
+                "optional": false,
+                "description": "The block height or index",
+                "skip_type_check": false,
+                "key_name": "height",
+                "condition": ""
+              },
+              {
+                "type": "number",
+                "optional": false,
+                "description": "The block version",
+                "skip_type_check": false,
+                "key_name": "version",
+                "condition": ""
+              },
+              {
+                "type": "hex",
+                "optional": false,
+                "description": "The block version formatted in hexadecimal",
+                "skip_type_check": false,
+                "key_name": "versionHex",
+                "condition": ""
+              },
+              {
+                "type": "hex",
+                "optional": false,
+                "description": "The merkle root",
+                "skip_type_check": false,
+                "key_name": "merkleroot",
                 "condition": ""
               },
               {
@@ -12185,59 +12896,61 @@
                     "condition": "",
                     "inner": [
                       {
-                        "type": "elision",
+                        "type": "hex",
                         "optional": false,
-                        "description": "The transactions in the format of the getrawtransaction RPC. Different from verbosity = 1 \"tx\" result",
+                        "description": "The transaction id",
                         "skip_type_check": false,
-                        "key_name": "",
+                        "key_name": "txid",
+                        "condition": ""
+                      },
+                      {
+                        "type": "hex",
+                        "optional": false,
+                        "description": "The transaction hash (differs from txid for witness transactions)",
+                        "skip_type_check": false,
+                        "key_name": "hash",
                         "condition": ""
                       },
                       {
                         "type": "number",
-                        "optional": true,
-                        "description": "The transaction fee in BTC, omitted if block undo data is not available",
+                        "optional": false,
+                        "description": "The serialized transaction size",
                         "skip_type_check": false,
-                        "key_name": "fee",
+                        "key_name": "size",
                         "condition": ""
-                      }
-                    ]
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "type": "object",
-            "optional": false,
-            "description": "",
-            "skip_type_check": false,
-            "key_name": "",
-            "condition": "for verbosity = 3",
-            "inner": [
-              {
-                "type": "elision",
-                "optional": false,
-                "description": "Same output as verbosity = 2",
-                "skip_type_check": false,
-                "key_name": "",
-                "condition": ""
-              },
-              {
-                "type": "array",
-                "optional": false,
-                "description": "",
-                "skip_type_check": false,
-                "key_name": "tx",
-                "condition": "",
-                "inner": [
-                  {
-                    "type": "object",
-                    "optional": false,
-                    "description": "",
-                    "skip_type_check": false,
-                    "key_name": "",
-                    "condition": "",
-                    "inner": [
+                      },
+                      {
+                        "type": "number",
+                        "optional": false,
+                        "description": "The virtual transaction size (differs from size for witness transactions)",
+                        "skip_type_check": false,
+                        "key_name": "vsize",
+                        "condition": ""
+                      },
+                      {
+                        "type": "number",
+                        "optional": false,
+                        "description": "The transaction's weight (between vsize*4-3 and vsize*4)",
+                        "skip_type_check": false,
+                        "key_name": "weight",
+                        "condition": ""
+                      },
+                      {
+                        "type": "number",
+                        "optional": false,
+                        "description": "The version",
+                        "skip_type_check": false,
+                        "key_name": "version",
+                        "condition": ""
+                      },
+                      {
+                        "type": "timestamp",
+                        "optional": false,
+                        "description": "The lock time",
+                        "skip_type_check": false,
+                        "key_name": "locktime",
+                        "condition": ""
+                      },
                       {
                         "type": "array",
                         "optional": false,
@@ -12255,17 +12968,563 @@
                             "condition": "",
                             "inner": [
                               {
-                                "type": "elision",
-                                "optional": false,
-                                "description": "The same output as verbosity = 2",
+                                "type": "hex",
+                                "optional": true,
+                                "description": "The coinbase value (only if coinbase transaction)",
                                 "skip_type_check": false,
-                                "key_name": "",
+                                "key_name": "coinbase",
+                                "condition": ""
+                              },
+                              {
+                                "type": "hex",
+                                "optional": true,
+                                "description": "The transaction id (if not coinbase transaction)",
+                                "skip_type_check": false,
+                                "key_name": "txid",
+                                "condition": ""
+                              },
+                              {
+                                "type": "number",
+                                "optional": true,
+                                "description": "The output number (if not coinbase transaction)",
+                                "skip_type_check": false,
+                                "key_name": "vout",
+                                "condition": ""
+                              },
+                              {
+                                "type": "object",
+                                "optional": true,
+                                "description": "The script (if not coinbase transaction)",
+                                "skip_type_check": false,
+                                "key_name": "scriptSig",
+                                "condition": "",
+                                "inner": [
+                                  {
+                                    "type": "string",
+                                    "optional": false,
+                                    "description": "Disassembly of the signature script",
+                                    "skip_type_check": false,
+                                    "key_name": "asm",
+                                    "condition": ""
+                                  },
+                                  {
+                                    "type": "hex",
+                                    "optional": false,
+                                    "description": "The raw signature script bytes, hex-encoded",
+                                    "skip_type_check": false,
+                                    "key_name": "hex",
+                                    "condition": ""
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "array",
+                                "optional": true,
+                                "description": "",
+                                "skip_type_check": false,
+                                "key_name": "txinwitness",
+                                "condition": "",
+                                "inner": [
+                                  {
+                                    "type": "hex",
+                                    "optional": false,
+                                    "description": "hex-encoded witness data (if any)",
+                                    "skip_type_check": false,
+                                    "key_name": "hex",
+                                    "condition": ""
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "number",
+                                "optional": false,
+                                "description": "The script sequence number",
+                                "skip_type_check": false,
+                                "key_name": "sequence",
+                                "condition": ""
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "array",
+                        "optional": false,
+                        "description": "",
+                        "skip_type_check": false,
+                        "key_name": "vout",
+                        "condition": "",
+                        "inner": [
+                          {
+                            "type": "object",
+                            "optional": false,
+                            "description": "",
+                            "skip_type_check": false,
+                            "key_name": "",
+                            "condition": "",
+                            "inner": [
+                              {
+                                "type": "amount",
+                                "optional": false,
+                                "description": "The value in BTC",
+                                "skip_type_check": false,
+                                "key_name": "value",
+                                "condition": ""
+                              },
+                              {
+                                "type": "number",
+                                "optional": false,
+                                "description": "index",
+                                "skip_type_check": false,
+                                "key_name": "n",
                                 "condition": ""
                               },
                               {
                                 "type": "object",
                                 "optional": false,
-                                "description": "(Only if undo information is available)",
+                                "description": "",
+                                "skip_type_check": false,
+                                "key_name": "scriptPubKey",
+                                "condition": "",
+                                "inner": [
+                                  {
+                                    "type": "string",
+                                    "optional": false,
+                                    "description": "Disassembly of the output script",
+                                    "skip_type_check": false,
+                                    "key_name": "asm",
+                                    "condition": ""
+                                  },
+                                  {
+                                    "type": "string",
+                                    "optional": false,
+                                    "description": "Inferred descriptor for the output",
+                                    "skip_type_check": false,
+                                    "key_name": "desc",
+                                    "condition": ""
+                                  },
+                                  {
+                                    "type": "hex",
+                                    "optional": false,
+                                    "description": "The raw output script bytes, hex-encoded",
+                                    "skip_type_check": false,
+                                    "key_name": "hex",
+                                    "condition": ""
+                                  },
+                                  {
+                                    "type": "string",
+                                    "optional": true,
+                                    "description": "The Bitcoin address (only if a well-defined address exists)",
+                                    "skip_type_check": false,
+                                    "key_name": "address",
+                                    "condition": ""
+                                  },
+                                  {
+                                    "type": "string",
+                                    "optional": false,
+                                    "description": "The type (one of: nonstandard, anchor, pubkey, pubkeyhash, scripthash, multisig, nulldata, witness_v0_scripthash, witness_v0_keyhash, witness_v1_taproot, witness_unknown)",
+                                    "skip_type_check": false,
+                                    "key_name": "type",
+                                    "condition": ""
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "number",
+                        "optional": true,
+                        "description": "The transaction fee in BTC, omitted if block undo data is not available",
+                        "skip_type_check": false,
+                        "key_name": "fee",
+                        "condition": ""
+                      },
+                      {
+                        "type": "hex",
+                        "optional": false,
+                        "description": "The serialized, hex-encoded data for the transaction",
+                        "skip_type_check": false,
+                        "key_name": "hex",
+                        "condition": ""
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "timestamp",
+                "optional": false,
+                "description": "The block time expressed in UNIX epoch time",
+                "skip_type_check": false,
+                "key_name": "time",
+                "condition": ""
+              },
+              {
+                "type": "timestamp",
+                "optional": false,
+                "description": "The median block time expressed in UNIX epoch time",
+                "skip_type_check": false,
+                "key_name": "mediantime",
+                "condition": ""
+              },
+              {
+                "type": "number",
+                "optional": false,
+                "description": "The nonce",
+                "skip_type_check": false,
+                "key_name": "nonce",
+                "condition": ""
+              },
+              {
+                "type": "hex",
+                "optional": false,
+                "description": "nBits: compact representation of the block difficulty target",
+                "skip_type_check": false,
+                "key_name": "bits",
+                "condition": ""
+              },
+              {
+                "type": "hex",
+                "optional": false,
+                "description": "The difficulty target",
+                "skip_type_check": false,
+                "key_name": "target",
+                "condition": ""
+              },
+              {
+                "type": "number",
+                "optional": false,
+                "description": "The difficulty",
+                "skip_type_check": false,
+                "key_name": "difficulty",
+                "condition": ""
+              },
+              {
+                "type": "hex",
+                "optional": false,
+                "description": "Expected number of hashes required to produce the chain up to this block (in hex)",
+                "skip_type_check": false,
+                "key_name": "chainwork",
+                "condition": ""
+              },
+              {
+                "type": "number",
+                "optional": false,
+                "description": "The number of transactions in the block",
+                "skip_type_check": false,
+                "key_name": "nTx",
+                "condition": ""
+              },
+              {
+                "type": "hex",
+                "optional": true,
+                "description": "The hash of the previous block (if available)",
+                "skip_type_check": false,
+                "key_name": "previousblockhash",
+                "condition": ""
+              },
+              {
+                "type": "hex",
+                "optional": true,
+                "description": "The hash of the next block (if available)",
+                "skip_type_check": false,
+                "key_name": "nextblockhash",
+                "condition": ""
+              }
+            ]
+          },
+          {
+            "type": "object",
+            "optional": false,
+            "description": "",
+            "skip_type_check": false,
+            "key_name": "",
+            "condition": "for verbosity = 3",
+            "inner": [
+              {
+                "type": "hex",
+                "optional": false,
+                "description": "the block hash (same as provided)",
+                "skip_type_check": false,
+                "key_name": "hash",
+                "condition": ""
+              },
+              {
+                "type": "number",
+                "optional": false,
+                "description": "The number of confirmations, or -1 if the block is not on the main chain",
+                "skip_type_check": false,
+                "key_name": "confirmations",
+                "condition": ""
+              },
+              {
+                "type": "number",
+                "optional": false,
+                "description": "The block size",
+                "skip_type_check": false,
+                "key_name": "size",
+                "condition": ""
+              },
+              {
+                "type": "number",
+                "optional": false,
+                "description": "The block size excluding witness data",
+                "skip_type_check": false,
+                "key_name": "strippedsize",
+                "condition": ""
+              },
+              {
+                "type": "number",
+                "optional": false,
+                "description": "The block weight as defined in BIP 141",
+                "skip_type_check": false,
+                "key_name": "weight",
+                "condition": ""
+              },
+              {
+                "type": "object",
+                "optional": false,
+                "description": "Coinbase transaction metadata",
+                "skip_type_check": false,
+                "key_name": "coinbase_tx",
+                "condition": "",
+                "inner": [
+                  {
+                    "type": "number",
+                    "optional": false,
+                    "description": "The coinbase transaction version",
+                    "skip_type_check": false,
+                    "key_name": "version",
+                    "condition": ""
+                  },
+                  {
+                    "type": "number",
+                    "optional": false,
+                    "description": "The coinbase transaction's locktime (nLockTime)",
+                    "skip_type_check": false,
+                    "key_name": "locktime",
+                    "condition": ""
+                  },
+                  {
+                    "type": "number",
+                    "optional": false,
+                    "description": "The coinbase input's sequence number (nSequence)",
+                    "skip_type_check": false,
+                    "key_name": "sequence",
+                    "condition": ""
+                  },
+                  {
+                    "type": "hex",
+                    "optional": false,
+                    "description": "The coinbase input's script",
+                    "skip_type_check": false,
+                    "key_name": "coinbase",
+                    "condition": ""
+                  },
+                  {
+                    "type": "hex",
+                    "optional": true,
+                    "description": "The coinbase input's first (and only) witness stack element, if present",
+                    "skip_type_check": false,
+                    "key_name": "witness",
+                    "condition": ""
+                  }
+                ]
+              },
+              {
+                "type": "number",
+                "optional": false,
+                "description": "The block height or index",
+                "skip_type_check": false,
+                "key_name": "height",
+                "condition": ""
+              },
+              {
+                "type": "number",
+                "optional": false,
+                "description": "The block version",
+                "skip_type_check": false,
+                "key_name": "version",
+                "condition": ""
+              },
+              {
+                "type": "hex",
+                "optional": false,
+                "description": "The block version formatted in hexadecimal",
+                "skip_type_check": false,
+                "key_name": "versionHex",
+                "condition": ""
+              },
+              {
+                "type": "hex",
+                "optional": false,
+                "description": "The merkle root",
+                "skip_type_check": false,
+                "key_name": "merkleroot",
+                "condition": ""
+              },
+              {
+                "type": "array",
+                "optional": false,
+                "description": "",
+                "skip_type_check": false,
+                "key_name": "tx",
+                "condition": "",
+                "inner": [
+                  {
+                    "type": "object",
+                    "optional": false,
+                    "description": "",
+                    "skip_type_check": false,
+                    "key_name": "",
+                    "condition": "",
+                    "inner": [
+                      {
+                        "type": "hex",
+                        "optional": false,
+                        "description": "The transaction id",
+                        "skip_type_check": false,
+                        "key_name": "txid",
+                        "condition": ""
+                      },
+                      {
+                        "type": "hex",
+                        "optional": false,
+                        "description": "The transaction hash (differs from txid for witness transactions)",
+                        "skip_type_check": false,
+                        "key_name": "hash",
+                        "condition": ""
+                      },
+                      {
+                        "type": "number",
+                        "optional": false,
+                        "description": "The serialized transaction size",
+                        "skip_type_check": false,
+                        "key_name": "size",
+                        "condition": ""
+                      },
+                      {
+                        "type": "number",
+                        "optional": false,
+                        "description": "The virtual transaction size (differs from size for witness transactions)",
+                        "skip_type_check": false,
+                        "key_name": "vsize",
+                        "condition": ""
+                      },
+                      {
+                        "type": "number",
+                        "optional": false,
+                        "description": "The transaction's weight (between vsize*4-3 and vsize*4)",
+                        "skip_type_check": false,
+                        "key_name": "weight",
+                        "condition": ""
+                      },
+                      {
+                        "type": "number",
+                        "optional": false,
+                        "description": "The version",
+                        "skip_type_check": false,
+                        "key_name": "version",
+                        "condition": ""
+                      },
+                      {
+                        "type": "timestamp",
+                        "optional": false,
+                        "description": "The lock time",
+                        "skip_type_check": false,
+                        "key_name": "locktime",
+                        "condition": ""
+                      },
+                      {
+                        "type": "array",
+                        "optional": false,
+                        "description": "",
+                        "skip_type_check": false,
+                        "key_name": "vin",
+                        "condition": "",
+                        "inner": [
+                          {
+                            "type": "object",
+                            "optional": false,
+                            "description": "",
+                            "skip_type_check": false,
+                            "key_name": "",
+                            "condition": "",
+                            "inner": [
+                              {
+                                "type": "hex",
+                                "optional": true,
+                                "description": "The coinbase value (only if coinbase transaction)",
+                                "skip_type_check": false,
+                                "key_name": "coinbase",
+                                "condition": ""
+                              },
+                              {
+                                "type": "hex",
+                                "optional": true,
+                                "description": "The transaction id (if not coinbase transaction)",
+                                "skip_type_check": false,
+                                "key_name": "txid",
+                                "condition": ""
+                              },
+                              {
+                                "type": "number",
+                                "optional": true,
+                                "description": "The output number (if not coinbase transaction)",
+                                "skip_type_check": false,
+                                "key_name": "vout",
+                                "condition": ""
+                              },
+                              {
+                                "type": "object",
+                                "optional": true,
+                                "description": "The script (if not coinbase transaction)",
+                                "skip_type_check": false,
+                                "key_name": "scriptSig",
+                                "condition": "",
+                                "inner": [
+                                  {
+                                    "type": "string",
+                                    "optional": false,
+                                    "description": "Disassembly of the signature script",
+                                    "skip_type_check": false,
+                                    "key_name": "asm",
+                                    "condition": ""
+                                  },
+                                  {
+                                    "type": "hex",
+                                    "optional": false,
+                                    "description": "The raw signature script bytes, hex-encoded",
+                                    "skip_type_check": false,
+                                    "key_name": "hex",
+                                    "condition": ""
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "array",
+                                "optional": true,
+                                "description": "",
+                                "skip_type_check": false,
+                                "key_name": "txinwitness",
+                                "condition": "",
+                                "inner": [
+                                  {
+                                    "type": "hex",
+                                    "optional": false,
+                                    "description": "hex-encoded witness data (if any)",
+                                    "skip_type_check": false,
+                                    "key_name": "hex",
+                                    "condition": ""
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "object",
+                                "optional": true,
+                                "description": "The previous output, omitted if block undo data is not available",
                                 "skip_type_check": false,
                                 "key_name": "prevout",
                                 "condition": "",
@@ -12345,21 +13604,211 @@
                                     ]
                                   }
                                 ]
+                              },
+                              {
+                                "type": "number",
+                                "optional": false,
+                                "description": "The script sequence number",
+                                "skip_type_check": false,
+                                "key_name": "sequence",
+                                "condition": ""
                               }
                             ]
                           }
                         ]
+                      },
+                      {
+                        "type": "array",
+                        "optional": false,
+                        "description": "",
+                        "skip_type_check": false,
+                        "key_name": "vout",
+                        "condition": "",
+                        "inner": [
+                          {
+                            "type": "object",
+                            "optional": false,
+                            "description": "",
+                            "skip_type_check": false,
+                            "key_name": "",
+                            "condition": "",
+                            "inner": [
+                              {
+                                "type": "amount",
+                                "optional": false,
+                                "description": "The value in BTC",
+                                "skip_type_check": false,
+                                "key_name": "value",
+                                "condition": ""
+                              },
+                              {
+                                "type": "number",
+                                "optional": false,
+                                "description": "index",
+                                "skip_type_check": false,
+                                "key_name": "n",
+                                "condition": ""
+                              },
+                              {
+                                "type": "object",
+                                "optional": false,
+                                "description": "",
+                                "skip_type_check": false,
+                                "key_name": "scriptPubKey",
+                                "condition": "",
+                                "inner": [
+                                  {
+                                    "type": "string",
+                                    "optional": false,
+                                    "description": "Disassembly of the output script",
+                                    "skip_type_check": false,
+                                    "key_name": "asm",
+                                    "condition": ""
+                                  },
+                                  {
+                                    "type": "string",
+                                    "optional": false,
+                                    "description": "Inferred descriptor for the output",
+                                    "skip_type_check": false,
+                                    "key_name": "desc",
+                                    "condition": ""
+                                  },
+                                  {
+                                    "type": "hex",
+                                    "optional": false,
+                                    "description": "The raw output script bytes, hex-encoded",
+                                    "skip_type_check": false,
+                                    "key_name": "hex",
+                                    "condition": ""
+                                  },
+                                  {
+                                    "type": "string",
+                                    "optional": true,
+                                    "description": "The Bitcoin address (only if a well-defined address exists)",
+                                    "skip_type_check": false,
+                                    "key_name": "address",
+                                    "condition": ""
+                                  },
+                                  {
+                                    "type": "string",
+                                    "optional": false,
+                                    "description": "The type (one of: nonstandard, anchor, pubkey, pubkeyhash, scripthash, multisig, nulldata, witness_v0_scripthash, witness_v0_keyhash, witness_v1_taproot, witness_unknown)",
+                                    "skip_type_check": false,
+                                    "key_name": "type",
+                                    "condition": ""
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "number",
+                        "optional": true,
+                        "description": "The transaction fee in BTC, omitted if block undo data is not available",
+                        "skip_type_check": false,
+                        "key_name": "fee",
+                        "condition": ""
+                      },
+                      {
+                        "type": "hex",
+                        "optional": false,
+                        "description": "The serialized, hex-encoded data for the transaction",
+                        "skip_type_check": false,
+                        "key_name": "hex",
+                        "condition": ""
                       }
                     ]
                   }
                 ]
+              },
+              {
+                "type": "timestamp",
+                "optional": false,
+                "description": "The block time expressed in UNIX epoch time",
+                "skip_type_check": false,
+                "key_name": "time",
+                "condition": ""
+              },
+              {
+                "type": "timestamp",
+                "optional": false,
+                "description": "The median block time expressed in UNIX epoch time",
+                "skip_type_check": false,
+                "key_name": "mediantime",
+                "condition": ""
+              },
+              {
+                "type": "number",
+                "optional": false,
+                "description": "The nonce",
+                "skip_type_check": false,
+                "key_name": "nonce",
+                "condition": ""
+              },
+              {
+                "type": "hex",
+                "optional": false,
+                "description": "nBits: compact representation of the block difficulty target",
+                "skip_type_check": false,
+                "key_name": "bits",
+                "condition": ""
+              },
+              {
+                "type": "hex",
+                "optional": false,
+                "description": "The difficulty target",
+                "skip_type_check": false,
+                "key_name": "target",
+                "condition": ""
+              },
+              {
+                "type": "number",
+                "optional": false,
+                "description": "The difficulty",
+                "skip_type_check": false,
+                "key_name": "difficulty",
+                "condition": ""
+              },
+              {
+                "type": "hex",
+                "optional": false,
+                "description": "Expected number of hashes required to produce the chain up to this block (in hex)",
+                "skip_type_check": false,
+                "key_name": "chainwork",
+                "condition": ""
+              },
+              {
+                "type": "number",
+                "optional": false,
+                "description": "The number of transactions in the block",
+                "skip_type_check": false,
+                "key_name": "nTx",
+                "condition": ""
+              },
+              {
+                "type": "hex",
+                "optional": true,
+                "description": "The hash of the previous block (if available)",
+                "skip_type_check": false,
+                "key_name": "previousblockhash",
+                "condition": ""
+              },
+              {
+                "type": "hex",
+                "optional": true,
+                "description": "The hash of the next block (if available)",
+                "skip_type_check": false,
+                "key_name": "nextblockhash",
+                "condition": ""
               }
             ]
           }
         ]
       },
       "x-bitcoin-category": "blockchain",
-      "x-bitcoin-examples": "getblock \"blockhash\" ( verbosity )\n\nIf verbosity is 0, returns a string that is serialized, hex-encoded data for block 'hash'.\nIf verbosity is 1, returns an Object with information about block <hash>.\nIf verbosity is 2, returns an Object with information about block <hash> and information about each transaction.\nIf verbosity is 3, returns an Object with information about block <hash> and information about each transaction, including prevout information for inputs (only for unpruned blocks in the current best chain).\n\nArguments:\n1. blockhash    (string, required) The block hash\n2. verbosity    (numeric, optional, default=1) 0 for hex-encoded data, 1 for a JSON object, 2 for JSON object with transaction data, and 3 for JSON object with transaction data including prevout information for inputs\n\nResult (for verbosity = 0):\n\"hex\"    (string) A string that is serialized, hex-encoded data for block 'hash'\n\nResult (for verbosity = 1):\n{                                 (json object)\n  \"hash\" : \"hex\",                 (string) the block hash (same as provided)\n  \"confirmations\" : n,            (numeric) The number of confirmations, or -1 if the block is not on the main chain\n  \"size\" : n,                     (numeric) The block size\n  \"strippedsize\" : n,             (numeric) The block size excluding witness data\n  \"weight\" : n,                   (numeric) The block weight as defined in BIP 141\n  \"coinbase_tx\" : {               (json object) Coinbase transaction metadata\n    \"version\" : n,                (numeric) The coinbase transaction version\n    \"locktime\" : n,               (numeric) The coinbase transaction's locktime (nLockTime)\n    \"sequence\" : n,               (numeric) The coinbase input's sequence number (nSequence)\n    \"coinbase\" : \"hex\",           (string) The coinbase input's script\n    \"witness\" : \"hex\"             (string, optional) The coinbase input's first (and only) witness stack element, if present\n  },\n  \"height\" : n,                   (numeric) The block height or index\n  \"version\" : n,                  (numeric) The block version\n  \"versionHex\" : \"hex\",           (string) The block version formatted in hexadecimal\n  \"merkleroot\" : \"hex\",           (string) The merkle root\n  \"tx\" : [                        (json array) The transaction ids\n    \"hex\",                        (string) The transaction id\n    ...\n  ],\n  \"time\" : xxx,                   (numeric) The block time expressed in UNIX epoch time\n  \"mediantime\" : xxx,             (numeric) The median block time expressed in UNIX epoch time\n  \"nonce\" : n,                    (numeric) The nonce\n  \"bits\" : \"hex\",                 (string) nBits: compact representation of the block difficulty target\n  \"target\" : \"hex\",               (string) The difficulty target\n  \"difficulty\" : n,               (numeric) The difficulty\n  \"chainwork\" : \"hex\",            (string) Expected number of hashes required to produce the chain up to this block (in hex)\n  \"nTx\" : n,                      (numeric) The number of transactions in the block\n  \"previousblockhash\" : \"hex\",    (string, optional) The hash of the previous block (if available)\n  \"nextblockhash\" : \"hex\"         (string, optional) The hash of the next block (if available)\n}\n\nResult (for verbosity = 2):\n{                   (json object)\n  ...,              Same output as verbosity = 1\n  \"tx\" : [          (json array)\n    {               (json object)\n      ...,          The transactions in the format of the getrawtransaction RPC. Different from verbosity = 1 \"tx\" result\n      \"fee\" : n     (numeric, optional) The transaction fee in BTC, omitted if block undo data is not available\n    },\n    ...\n  ]\n}\n\nResult (for verbosity = 3):\n{                                        (json object)\n  ...,                                   Same output as verbosity = 2\n  \"tx\" : [                               (json array)\n    {                                    (json object)\n      \"vin\" : [                          (json array)\n        {                                (json object)\n          ...,                           The same output as verbosity = 2\n          \"prevout\" : {                  (json object) (Only if undo information is available)\n            \"generated\" : true|false,    (boolean) Coinbase or not\n            \"height\" : n,                (numeric) The height of the prevout\n            \"value\" : n,                 (numeric) The value in BTC\n            \"scriptPubKey\" : {           (json object)\n              \"asm\" : \"str\",             (string) Disassembly of the output script\n              \"desc\" : \"str\",            (string) Inferred descriptor for the output\n              \"hex\" : \"hex\",             (string) The raw output script bytes, hex-encoded\n              \"address\" : \"str\",         (string, optional) The Bitcoin address (only if a well-defined address exists)\n              \"type\" : \"str\"             (string) The type (one of: nonstandard, anchor, pubkey, pubkeyhash, scripthash, multisig, nulldata, witness_v0_scripthash, witness_v0_keyhash, witness_v1_taproot, witness_unknown)\n            }\n          }\n        },\n        ...\n      ]\n    },\n    ...\n  ]\n}\n\nExamples:\n> bitcoin-cli getblock \"00000000c937983704a73af28acdec37b049d214adbda81d7e2a3dd146f6ed09\"\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"getblock\", \"params\": [\"00000000c937983704a73af28acdec37b049d214adbda81d7e2a3dd146f6ed09\"]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n",
+      "x-bitcoin-examples": "getblock \"blockhash\" ( verbosity )\n\nIf verbosity is 0, returns a string that is serialized, hex-encoded data for block 'hash'.\nIf verbosity is 1, returns an Object with information about block <hash>.\nIf verbosity is 2, returns an Object with information about block <hash> and information about each transaction.\nIf verbosity is 3, returns an Object with information about block <hash> and information about each transaction, including prevout information for inputs (only for unpruned blocks in the current best chain).\n\nArguments:\n1. blockhash    (string, required) The block hash\n2. verbosity    (numeric, optional, default=1) 0 for hex-encoded data, 1 for a JSON object, 2 for JSON object with transaction data, and 3 for JSON object with transaction data including prevout information for inputs\n\nResult (for verbosity = 0):\n\"hex\"    (string) A string that is serialized, hex-encoded data for block 'hash'\n\nResult (for verbosity = 1):\n{                                 (json object)\n  \"hash\" : \"hex\",                 (string) the block hash (same as provided)\n  \"confirmations\" : n,            (numeric) The number of confirmations, or -1 if the block is not on the main chain\n  \"size\" : n,                     (numeric) The block size\n  \"strippedsize\" : n,             (numeric) The block size excluding witness data\n  \"weight\" : n,                   (numeric) The block weight as defined in BIP 141\n  \"coinbase_tx\" : {               (json object) Coinbase transaction metadata\n    \"version\" : n,                (numeric) The coinbase transaction version\n    \"locktime\" : n,               (numeric) The coinbase transaction's locktime (nLockTime)\n    \"sequence\" : n,               (numeric) The coinbase input's sequence number (nSequence)\n    \"coinbase\" : \"hex\",           (string) The coinbase input's script\n    \"witness\" : \"hex\"             (string, optional) The coinbase input's first (and only) witness stack element, if present\n  },\n  \"height\" : n,                   (numeric) The block height or index\n  \"version\" : n,                  (numeric) The block version\n  \"versionHex\" : \"hex\",           (string) The block version formatted in hexadecimal\n  \"merkleroot\" : \"hex\",           (string) The merkle root\n  \"tx\" : [                        (json array) The transaction ids\n    \"hex\",                        (string) The transaction id\n    ...\n  ],\n  \"time\" : xxx,                   (numeric) The block time expressed in UNIX epoch time\n  \"mediantime\" : xxx,             (numeric) The median block time expressed in UNIX epoch time\n  \"nonce\" : n,                    (numeric) The nonce\n  \"bits\" : \"hex\",                 (string) nBits: compact representation of the block difficulty target\n  \"target\" : \"hex\",               (string) The difficulty target\n  \"difficulty\" : n,               (numeric) The difficulty\n  \"chainwork\" : \"hex\",            (string) Expected number of hashes required to produce the chain up to this block (in hex)\n  \"nTx\" : n,                      (numeric) The number of transactions in the block\n  \"previousblockhash\" : \"hex\",    (string, optional) The hash of the previous block (if available)\n  \"nextblockhash\" : \"hex\"         (string, optional) The hash of the next block (if available)\n}\n\nResult (for verbosity = 2):\n{                                 (json object)\n  \"hash\" : \"hex\",                 (string) the block hash (same as provided)\n  \"confirmations\" : n,            (numeric) The number of confirmations, or -1 if the block is not on the main chain\n  \"size\" : n,                     (numeric) The block size\n  \"strippedsize\" : n,             (numeric) The block size excluding witness data\n  \"weight\" : n,                   (numeric) The block weight as defined in BIP 141\n  \"coinbase_tx\" : {               (json object) Coinbase transaction metadata\n    \"version\" : n,                (numeric) The coinbase transaction version\n    \"locktime\" : n,               (numeric) The coinbase transaction's locktime (nLockTime)\n    \"sequence\" : n,               (numeric) The coinbase input's sequence number (nSequence)\n    \"coinbase\" : \"hex\",           (string) The coinbase input's script\n    \"witness\" : \"hex\"             (string, optional) The coinbase input's first (and only) witness stack element, if present\n  },\n  \"height\" : n,                   (numeric) The block height or index\n  \"version\" : n,                  (numeric) The block version\n  \"versionHex\" : \"hex\",           (string) The block version formatted in hexadecimal\n  \"merkleroot\" : \"hex\",           (string) The merkle root\n  \"tx\" : [                        (json array)\n    {                             (json object)\n      \"txid\" : \"hex\",             (string) The transaction id\n      \"hash\" : \"hex\",             (string) The transaction hash (differs from txid for witness transactions)\n      \"size\" : n,                 (numeric) The serialized transaction size\n      \"vsize\" : n,                (numeric) The virtual transaction size (differs from size for witness transactions)\n      \"weight\" : n,               (numeric) The transaction's weight (between vsize*4-3 and vsize*4)\n      \"version\" : n,              (numeric) The version\n      \"locktime\" : xxx,           (numeric) The lock time\n      \"vin\" : [                   (json array)\n        {                         (json object)\n          \"coinbase\" : \"hex\",     (string, optional) The coinbase value (only if coinbase transaction)\n          \"txid\" : \"hex\",         (string, optional) The transaction id (if not coinbase transaction)\n          \"vout\" : n,             (numeric, optional) The output number (if not coinbase transaction)\n          \"scriptSig\" : {         (json object, optional) The script (if not coinbase transaction)\n            \"asm\" : \"str\",        (string) Disassembly of the signature script\n            \"hex\" : \"hex\"         (string) The raw signature script bytes, hex-encoded\n          },\n          \"txinwitness\" : [       (json array, optional)\n            \"hex\",                (string) hex-encoded witness data (if any)\n            ...\n          ],\n          \"sequence\" : n          (numeric) The script sequence number\n        },\n        ...\n      ],\n      \"vout\" : [                  (json array)\n        {                         (json object)\n          \"value\" : n,            (numeric) The value in BTC\n          \"n\" : n,                (numeric) index\n          \"scriptPubKey\" : {      (json object)\n            \"asm\" : \"str\",        (string) Disassembly of the output script\n            \"desc\" : \"str\",       (string) Inferred descriptor for the output\n            \"hex\" : \"hex\",        (string) The raw output script bytes, hex-encoded\n            \"address\" : \"str\",    (string, optional) The Bitcoin address (only if a well-defined address exists)\n            \"type\" : \"str\"        (string) The type (one of: nonstandard, anchor, pubkey, pubkeyhash, scripthash, multisig, nulldata, witness_v0_scripthash, witness_v0_keyhash, witness_v1_taproot, witness_unknown)\n          }\n        },\n        ...\n      ],\n      \"fee\" : n,                  (numeric, optional) The transaction fee in BTC, omitted if block undo data is not available\n      \"hex\" : \"hex\"               (string) The serialized, hex-encoded data for the transaction\n    },\n    ...\n  ],\n  \"time\" : xxx,                   (numeric) The block time expressed in UNIX epoch time\n  \"mediantime\" : xxx,             (numeric) The median block time expressed in UNIX epoch time\n  \"nonce\" : n,                    (numeric) The nonce\n  \"bits\" : \"hex\",                 (string) nBits: compact representation of the block difficulty target\n  \"target\" : \"hex\",               (string) The difficulty target\n  \"difficulty\" : n,               (numeric) The difficulty\n  \"chainwork\" : \"hex\",            (string) Expected number of hashes required to produce the chain up to this block (in hex)\n  \"nTx\" : n,                      (numeric) The number of transactions in the block\n  \"previousblockhash\" : \"hex\",    (string, optional) The hash of the previous block (if available)\n  \"nextblockhash\" : \"hex\"         (string, optional) The hash of the next block (if available)\n}\n\nResult (for verbosity = 3):\n{                                        (json object)\n  \"hash\" : \"hex\",                        (string) the block hash (same as provided)\n  \"confirmations\" : n,                   (numeric) The number of confirmations, or -1 if the block is not on the main chain\n  \"size\" : n,                            (numeric) The block size\n  \"strippedsize\" : n,                    (numeric) The block size excluding witness data\n  \"weight\" : n,                          (numeric) The block weight as defined in BIP 141\n  \"coinbase_tx\" : {                      (json object) Coinbase transaction metadata\n    \"version\" : n,                       (numeric) The coinbase transaction version\n    \"locktime\" : n,                      (numeric) The coinbase transaction's locktime (nLockTime)\n    \"sequence\" : n,                      (numeric) The coinbase input's sequence number (nSequence)\n    \"coinbase\" : \"hex\",                  (string) The coinbase input's script\n    \"witness\" : \"hex\"                    (string, optional) The coinbase input's first (and only) witness stack element, if present\n  },\n  \"height\" : n,                          (numeric) The block height or index\n  \"version\" : n,                         (numeric) The block version\n  \"versionHex\" : \"hex\",                  (string) The block version formatted in hexadecimal\n  \"merkleroot\" : \"hex\",                  (string) The merkle root\n  \"tx\" : [                               (json array)\n    {                                    (json object)\n      \"txid\" : \"hex\",                    (string) The transaction id\n      \"hash\" : \"hex\",                    (string) The transaction hash (differs from txid for witness transactions)\n      \"size\" : n,                        (numeric) The serialized transaction size\n      \"vsize\" : n,                       (numeric) The virtual transaction size (differs from size for witness transactions)\n      \"weight\" : n,                      (numeric) The transaction's weight (between vsize*4-3 and vsize*4)\n      \"version\" : n,                     (numeric) The version\n      \"locktime\" : xxx,                  (numeric) The lock time\n      \"vin\" : [                          (json array)\n        {                                (json object)\n          \"coinbase\" : \"hex\",            (string, optional) The coinbase value (only if coinbase transaction)\n          \"txid\" : \"hex\",                (string, optional) The transaction id (if not coinbase transaction)\n          \"vout\" : n,                    (numeric, optional) The output number (if not coinbase transaction)\n          \"scriptSig\" : {                (json object, optional) The script (if not coinbase transaction)\n            \"asm\" : \"str\",               (string) Disassembly of the signature script\n            \"hex\" : \"hex\"                (string) The raw signature script bytes, hex-encoded\n          },\n          \"txinwitness\" : [              (json array, optional)\n            \"hex\",                       (string) hex-encoded witness data (if any)\n            ...\n          ],\n          \"prevout\" : {                  (json object, optional) The previous output, omitted if block undo data is not available\n            \"generated\" : true|false,    (boolean) Coinbase or not\n            \"height\" : n,                (numeric) The height of the prevout\n            \"value\" : n,                 (numeric) The value in BTC\n            \"scriptPubKey\" : {           (json object)\n              \"asm\" : \"str\",             (string) Disassembly of the output script\n              \"desc\" : \"str\",            (string) Inferred descriptor for the output\n              \"hex\" : \"hex\",             (string) The raw output script bytes, hex-encoded\n              \"address\" : \"str\",         (string, optional) The Bitcoin address (only if a well-defined address exists)\n              \"type\" : \"str\"             (string) The type (one of: nonstandard, anchor, pubkey, pubkeyhash, scripthash, multisig, nulldata, witness_v0_scripthash, witness_v0_keyhash, witness_v1_taproot, witness_unknown)\n            }\n          },\n          \"sequence\" : n                 (numeric) The script sequence number\n        },\n        ...\n      ],\n      \"vout\" : [                         (json array)\n        {                                (json object)\n          \"value\" : n,                   (numeric) The value in BTC\n          \"n\" : n,                       (numeric) index\n          \"scriptPubKey\" : {             (json object)\n            \"asm\" : \"str\",               (string) Disassembly of the output script\n            \"desc\" : \"str\",              (string) Inferred descriptor for the output\n            \"hex\" : \"hex\",               (string) The raw output script bytes, hex-encoded\n            \"address\" : \"str\",           (string, optional) The Bitcoin address (only if a well-defined address exists)\n            \"type\" : \"str\"               (string) The type (one of: nonstandard, anchor, pubkey, pubkeyhash, scripthash, multisig, nulldata, witness_v0_scripthash, witness_v0_keyhash, witness_v1_taproot, witness_unknown)\n          }\n        },\n        ...\n      ],\n      \"fee\" : n,                         (numeric, optional) The transaction fee in BTC, omitted if block undo data is not available\n      \"hex\" : \"hex\"                      (string) The serialized, hex-encoded data for the transaction\n    },\n    ...\n  ],\n  \"time\" : xxx,                          (numeric) The block time expressed in UNIX epoch time\n  \"mediantime\" : xxx,                    (numeric) The median block time expressed in UNIX epoch time\n  \"nonce\" : n,                           (numeric) The nonce\n  \"bits\" : \"hex\",                        (string) nBits: compact representation of the block difficulty target\n  \"target\" : \"hex\",                      (string) The difficulty target\n  \"difficulty\" : n,                      (numeric) The difficulty\n  \"chainwork\" : \"hex\",                   (string) Expected number of hashes required to produce the chain up to this block (in hex)\n  \"nTx\" : n,                             (numeric) The number of transactions in the block\n  \"previousblockhash\" : \"hex\",           (string, optional) The hash of the previous block (if available)\n  \"nextblockhash\" : \"hex\"                (string, optional) The hash of the next block (if available)\n}\n\nExamples:\n> bitcoin-cli getblock \"00000000c937983704a73af28acdec37b049d214adbda81d7e2a3dd146f6ed09\"\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"getblock\", \"params\": [\"00000000c937983704a73af28acdec37b049d214adbda81d7e2a3dd146f6ed09\"]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n",
       "x-bitcoin-argument-names": [
         "blockhash",
         "verbosity|verbose"

@@ -10915,19 +10915,258 @@
                 },
                 {
                   "key": {
-                    "Named": "field_2_1"
+                    "Named": "hash_1"
                   },
                   "field_type": {
-                    "name": "elision",
-                    "description": "Same output as verbosity = 1",
+                    "name": "hex",
+                    "description": "the block hash (same as provided)",
                     "kind": "Primitive",
                     "fields": null,
                     "variants": null,
                     "base_type": null,
-                    "protocol_type": "elision"
+                    "protocol_type": "hex"
                   },
                   "required": true,
-                  "description": "Same output as verbosity = 1",
+                  "description": "the block hash (same as provided)",
+                  "default_value": null
+                },
+                {
+                  "key": {
+                    "Named": "confirmations_1"
+                  },
+                  "field_type": {
+                    "name": "number",
+                    "description": "The number of confirmations, or -1 if the block is not on the main chain",
+                    "kind": "Primitive",
+                    "fields": null,
+                    "variants": null,
+                    "base_type": null,
+                    "protocol_type": "number"
+                  },
+                  "required": true,
+                  "description": "The number of confirmations, or -1 if the block is not on the main chain",
+                  "default_value": null
+                },
+                {
+                  "key": {
+                    "Named": "size_1"
+                  },
+                  "field_type": {
+                    "name": "number",
+                    "description": "The block size",
+                    "kind": "Primitive",
+                    "fields": null,
+                    "variants": null,
+                    "base_type": null,
+                    "protocol_type": "number"
+                  },
+                  "required": true,
+                  "description": "The block size",
+                  "default_value": null
+                },
+                {
+                  "key": {
+                    "Named": "strippedsize_1"
+                  },
+                  "field_type": {
+                    "name": "number",
+                    "description": "The block size excluding witness data",
+                    "kind": "Primitive",
+                    "fields": null,
+                    "variants": null,
+                    "base_type": null,
+                    "protocol_type": "number"
+                  },
+                  "required": true,
+                  "description": "The block size excluding witness data",
+                  "default_value": null
+                },
+                {
+                  "key": {
+                    "Named": "weight_1"
+                  },
+                  "field_type": {
+                    "name": "number",
+                    "description": "The block weight as defined in BIP 141",
+                    "kind": "Primitive",
+                    "fields": null,
+                    "variants": null,
+                    "base_type": null,
+                    "protocol_type": "number"
+                  },
+                  "required": true,
+                  "description": "The block weight as defined in BIP 141",
+                  "default_value": null
+                },
+                {
+                  "key": {
+                    "Named": "coinbase_tx_1"
+                  },
+                  "field_type": {
+                    "name": "GetBlockCoinbase_tx",
+                    "description": "Coinbase transaction metadata",
+                    "kind": "Object",
+                    "fields": [
+                      {
+                        "key": {
+                          "Named": "version"
+                        },
+                        "field_type": {
+                          "name": "number",
+                          "description": "The coinbase transaction version",
+                          "kind": "Primitive",
+                          "fields": null,
+                          "variants": null,
+                          "base_type": null,
+                          "protocol_type": "number"
+                        },
+                        "required": true,
+                        "description": "The coinbase transaction version",
+                        "default_value": null
+                      },
+                      {
+                        "key": {
+                          "Named": "locktime"
+                        },
+                        "field_type": {
+                          "name": "number",
+                          "description": "The coinbase transaction's locktime (nLockTime)",
+                          "kind": "Primitive",
+                          "fields": null,
+                          "variants": null,
+                          "base_type": null,
+                          "protocol_type": "number"
+                        },
+                        "required": true,
+                        "description": "The coinbase transaction's locktime (nLockTime)",
+                        "default_value": null
+                      },
+                      {
+                        "key": {
+                          "Named": "sequence"
+                        },
+                        "field_type": {
+                          "name": "number",
+                          "description": "The coinbase input's sequence number (nSequence)",
+                          "kind": "Primitive",
+                          "fields": null,
+                          "variants": null,
+                          "base_type": null,
+                          "protocol_type": "number"
+                        },
+                        "required": true,
+                        "description": "The coinbase input's sequence number (nSequence)",
+                        "default_value": null
+                      },
+                      {
+                        "key": {
+                          "Named": "coinbase"
+                        },
+                        "field_type": {
+                          "name": "hex",
+                          "description": "The coinbase input's script",
+                          "kind": "Primitive",
+                          "fields": null,
+                          "variants": null,
+                          "base_type": null,
+                          "protocol_type": "hex"
+                        },
+                        "required": true,
+                        "description": "The coinbase input's script",
+                        "default_value": null
+                      },
+                      {
+                        "key": {
+                          "Named": "witness"
+                        },
+                        "field_type": {
+                          "name": "hex",
+                          "description": "The coinbase input's first (and only) witness stack element, if present",
+                          "kind": "Primitive",
+                          "fields": null,
+                          "variants": null,
+                          "base_type": null,
+                          "protocol_type": "hex"
+                        },
+                        "required": false,
+                        "description": "The coinbase input's first (and only) witness stack element, if present",
+                        "default_value": null
+                      }
+                    ],
+                    "variants": null,
+                    "base_type": null,
+                    "protocol_type": "object"
+                  },
+                  "required": true,
+                  "description": "Coinbase transaction metadata",
+                  "default_value": null
+                },
+                {
+                  "key": {
+                    "Named": "height_1"
+                  },
+                  "field_type": {
+                    "name": "number",
+                    "description": "The block height or index",
+                    "kind": "Primitive",
+                    "fields": null,
+                    "variants": null,
+                    "base_type": null,
+                    "protocol_type": "number"
+                  },
+                  "required": true,
+                  "description": "The block height or index",
+                  "default_value": null
+                },
+                {
+                  "key": {
+                    "Named": "version_1"
+                  },
+                  "field_type": {
+                    "name": "number",
+                    "description": "The block version",
+                    "kind": "Primitive",
+                    "fields": null,
+                    "variants": null,
+                    "base_type": null,
+                    "protocol_type": "number"
+                  },
+                  "required": true,
+                  "description": "The block version",
+                  "default_value": null
+                },
+                {
+                  "key": {
+                    "Named": "versionHex_1"
+                  },
+                  "field_type": {
+                    "name": "hex",
+                    "description": "The block version formatted in hexadecimal",
+                    "kind": "Primitive",
+                    "fields": null,
+                    "variants": null,
+                    "base_type": null,
+                    "protocol_type": "hex"
+                  },
+                  "required": true,
+                  "description": "The block version formatted in hexadecimal",
+                  "default_value": null
+                },
+                {
+                  "key": {
+                    "Named": "merkleroot_1"
+                  },
+                  "field_type": {
+                    "name": "hex",
+                    "description": "The merkle root",
+                    "kind": "Primitive",
+                    "fields": null,
+                    "variants": null,
+                    "base_type": null,
+                    "protocol_type": "hex"
+                  },
+                  "required": true,
+                  "description": "The merkle root",
                   "default_value": null
                 },
                 {
@@ -10959,19 +11198,503 @@
                                 "fields": [
                                   {
                                     "key": {
-                                      "Named": "field_0"
+                                      "Named": "txid"
                                     },
                                     "field_type": {
-                                      "name": "elision",
-                                      "description": "The transactions in the format of the getrawtransaction RPC. Different from verbosity = 1 \"tx\" result",
+                                      "name": "hex",
+                                      "description": "The transaction id",
                                       "kind": "Primitive",
                                       "fields": null,
                                       "variants": null,
                                       "base_type": null,
-                                      "protocol_type": "elision"
+                                      "protocol_type": "hex"
                                     },
                                     "required": true,
-                                    "description": "The transactions in the format of the getrawtransaction RPC. Different from verbosity = 1 \"tx\" result",
+                                    "description": "The transaction id",
+                                    "default_value": null
+                                  },
+                                  {
+                                    "key": {
+                                      "Named": "hash"
+                                    },
+                                    "field_type": {
+                                      "name": "hex",
+                                      "description": "The transaction hash (differs from txid for witness transactions)",
+                                      "kind": "Primitive",
+                                      "fields": null,
+                                      "variants": null,
+                                      "base_type": null,
+                                      "protocol_type": "hex"
+                                    },
+                                    "required": true,
+                                    "description": "The transaction hash (differs from txid for witness transactions)",
+                                    "default_value": null
+                                  },
+                                  {
+                                    "key": {
+                                      "Named": "size"
+                                    },
+                                    "field_type": {
+                                      "name": "number",
+                                      "description": "The serialized transaction size",
+                                      "kind": "Primitive",
+                                      "fields": null,
+                                      "variants": null,
+                                      "base_type": null,
+                                      "protocol_type": "number"
+                                    },
+                                    "required": true,
+                                    "description": "The serialized transaction size",
+                                    "default_value": null
+                                  },
+                                  {
+                                    "key": {
+                                      "Named": "vsize"
+                                    },
+                                    "field_type": {
+                                      "name": "number",
+                                      "description": "The virtual transaction size (differs from size for witness transactions)",
+                                      "kind": "Primitive",
+                                      "fields": null,
+                                      "variants": null,
+                                      "base_type": null,
+                                      "protocol_type": "number"
+                                    },
+                                    "required": true,
+                                    "description": "The virtual transaction size (differs from size for witness transactions)",
+                                    "default_value": null
+                                  },
+                                  {
+                                    "key": {
+                                      "Named": "weight"
+                                    },
+                                    "field_type": {
+                                      "name": "number",
+                                      "description": "The transaction's weight (between vsize*4-3 and vsize*4)",
+                                      "kind": "Primitive",
+                                      "fields": null,
+                                      "variants": null,
+                                      "base_type": null,
+                                      "protocol_type": "number"
+                                    },
+                                    "required": true,
+                                    "description": "The transaction's weight (between vsize*4-3 and vsize*4)",
+                                    "default_value": null
+                                  },
+                                  {
+                                    "key": {
+                                      "Named": "version"
+                                    },
+                                    "field_type": {
+                                      "name": "number",
+                                      "description": "The version",
+                                      "kind": "Primitive",
+                                      "fields": null,
+                                      "variants": null,
+                                      "base_type": null,
+                                      "protocol_type": "number"
+                                    },
+                                    "required": true,
+                                    "description": "The version",
+                                    "default_value": null
+                                  },
+                                  {
+                                    "key": {
+                                      "Named": "locktime"
+                                    },
+                                    "field_type": {
+                                      "name": "timestamp",
+                                      "description": "The lock time",
+                                      "kind": "Primitive",
+                                      "fields": null,
+                                      "variants": null,
+                                      "base_type": null,
+                                      "protocol_type": "timestamp"
+                                    },
+                                    "required": true,
+                                    "description": "The lock time",
+                                    "default_value": null
+                                  },
+                                  {
+                                    "key": {
+                                      "Named": "vin"
+                                    },
+                                    "field_type": {
+                                      "name": "array",
+                                      "description": "",
+                                      "kind": "Object",
+                                      "fields": [
+                                        {
+                                          "key": {
+                                            "Named": "field"
+                                          },
+                                          "field_type": {
+                                            "name": "object",
+                                            "description": "",
+                                            "kind": "Object",
+                                            "fields": [
+                                              {
+                                                "key": {
+                                                  "Named": "field_0"
+                                                },
+                                                "field_type": {
+                                                  "name": "DecodedVin",
+                                                  "description": "",
+                                                  "kind": "Object",
+                                                  "fields": [
+                                                    {
+                                                      "key": {
+                                                        "Named": "coinbase"
+                                                      },
+                                                      "field_type": {
+                                                        "name": "hex",
+                                                        "description": "The coinbase value (only if coinbase transaction)",
+                                                        "kind": "Primitive",
+                                                        "fields": null,
+                                                        "variants": null,
+                                                        "base_type": null,
+                                                        "protocol_type": "hex"
+                                                      },
+                                                      "required": false,
+                                                      "description": "The coinbase value (only if coinbase transaction)",
+                                                      "default_value": null
+                                                    },
+                                                    {
+                                                      "key": {
+                                                        "Named": "txid"
+                                                      },
+                                                      "field_type": {
+                                                        "name": "hex",
+                                                        "description": "The transaction id (if not coinbase transaction)",
+                                                        "kind": "Primitive",
+                                                        "fields": null,
+                                                        "variants": null,
+                                                        "base_type": null,
+                                                        "protocol_type": "hex"
+                                                      },
+                                                      "required": false,
+                                                      "description": "The transaction id (if not coinbase transaction)",
+                                                      "default_value": null
+                                                    },
+                                                    {
+                                                      "key": {
+                                                        "Named": "vout"
+                                                      },
+                                                      "field_type": {
+                                                        "name": "number",
+                                                        "description": "The output number (if not coinbase transaction)",
+                                                        "kind": "Primitive",
+                                                        "fields": null,
+                                                        "variants": null,
+                                                        "base_type": null,
+                                                        "protocol_type": "number"
+                                                      },
+                                                      "required": false,
+                                                      "description": "The output number (if not coinbase transaction)",
+                                                      "default_value": null
+                                                    },
+                                                    {
+                                                      "key": {
+                                                        "Named": "scriptSig"
+                                                      },
+                                                      "field_type": {
+                                                        "name": "DecodedVin",
+                                                        "description": "The script (if not coinbase transaction)",
+                                                        "kind": "Object",
+                                                        "fields": [
+                                                          {
+                                                            "key": {
+                                                              "Named": "asm"
+                                                            },
+                                                            "field_type": {
+                                                              "name": "string",
+                                                              "description": "Disassembly of the signature script",
+                                                              "kind": "Primitive",
+                                                              "fields": null,
+                                                              "variants": null,
+                                                              "base_type": null,
+                                                              "protocol_type": "string"
+                                                            },
+                                                            "required": true,
+                                                            "description": "Disassembly of the signature script",
+                                                            "default_value": null
+                                                          },
+                                                          {
+                                                            "key": {
+                                                              "Named": "hex"
+                                                            },
+                                                            "field_type": {
+                                                              "name": "hex",
+                                                              "description": "The raw signature script bytes, hex-encoded",
+                                                              "kind": "Primitive",
+                                                              "fields": null,
+                                                              "variants": null,
+                                                              "base_type": null,
+                                                              "protocol_type": "hex"
+                                                            },
+                                                            "required": true,
+                                                            "description": "The raw signature script bytes, hex-encoded",
+                                                            "default_value": null
+                                                          }
+                                                        ],
+                                                        "variants": null,
+                                                        "base_type": null,
+                                                        "protocol_type": "object"
+                                                      },
+                                                      "required": false,
+                                                      "description": "The script (if not coinbase transaction)",
+                                                      "default_value": null
+                                                    },
+                                                    {
+                                                      "key": {
+                                                        "Named": "txinwitness"
+                                                      },
+                                                      "field_type": {
+                                                        "name": "array",
+                                                        "description": "",
+                                                        "kind": "Array",
+                                                        "fields": null,
+                                                        "variants": null,
+                                                        "base_type": null,
+                                                        "protocol_type": "array"
+                                                      },
+                                                      "required": false,
+                                                      "description": "",
+                                                      "default_value": null
+                                                    },
+                                                    {
+                                                      "key": {
+                                                        "Named": "sequence"
+                                                      },
+                                                      "field_type": {
+                                                        "name": "number",
+                                                        "description": "The script sequence number",
+                                                        "kind": "Primitive",
+                                                        "fields": null,
+                                                        "variants": null,
+                                                        "base_type": null,
+                                                        "protocol_type": "number"
+                                                      },
+                                                      "required": true,
+                                                      "description": "The script sequence number",
+                                                      "default_value": null
+                                                    }
+                                                  ],
+                                                  "variants": null,
+                                                  "base_type": null,
+                                                  "protocol_type": "object"
+                                                },
+                                                "required": true,
+                                                "description": "",
+                                                "default_value": null
+                                              }
+                                            ],
+                                            "variants": null,
+                                            "base_type": null,
+                                            "protocol_type": "object"
+                                          },
+                                          "required": true,
+                                          "description": "",
+                                          "default_value": null
+                                        }
+                                      ],
+                                      "variants": null,
+                                      "base_type": null,
+                                      "protocol_type": "array"
+                                    },
+                                    "required": true,
+                                    "description": "",
+                                    "default_value": null
+                                  },
+                                  {
+                                    "key": {
+                                      "Named": "vout"
+                                    },
+                                    "field_type": {
+                                      "name": "array",
+                                      "description": "",
+                                      "kind": "Object",
+                                      "fields": [
+                                        {
+                                          "key": {
+                                            "Named": "field"
+                                          },
+                                          "field_type": {
+                                            "name": "object",
+                                            "description": "",
+                                            "kind": "Object",
+                                            "fields": [
+                                              {
+                                                "key": {
+                                                  "Named": "field_0"
+                                                },
+                                                "field_type": {
+                                                  "name": "DecodedVout",
+                                                  "description": "",
+                                                  "kind": "Object",
+                                                  "fields": [
+                                                    {
+                                                      "key": {
+                                                        "Named": "value"
+                                                      },
+                                                      "field_type": {
+                                                        "name": "amount",
+                                                        "description": "The value in BTC",
+                                                        "kind": "Primitive",
+                                                        "fields": null,
+                                                        "variants": null,
+                                                        "base_type": null,
+                                                        "protocol_type": "amount"
+                                                      },
+                                                      "required": true,
+                                                      "description": "The value in BTC",
+                                                      "default_value": null
+                                                    },
+                                                    {
+                                                      "key": {
+                                                        "Named": "n"
+                                                      },
+                                                      "field_type": {
+                                                        "name": "number",
+                                                        "description": "index",
+                                                        "kind": "Primitive",
+                                                        "fields": null,
+                                                        "variants": null,
+                                                        "base_type": null,
+                                                        "protocol_type": "number"
+                                                      },
+                                                      "required": true,
+                                                      "description": "index",
+                                                      "default_value": null
+                                                    },
+                                                    {
+                                                      "key": {
+                                                        "Named": "scriptPubKey"
+                                                      },
+                                                      "field_type": {
+                                                        "name": "DecodedVout",
+                                                        "description": "",
+                                                        "kind": "Object",
+                                                        "fields": [
+                                                          {
+                                                            "key": {
+                                                              "Named": "asm"
+                                                            },
+                                                            "field_type": {
+                                                              "name": "string",
+                                                              "description": "Disassembly of the output script",
+                                                              "kind": "Primitive",
+                                                              "fields": null,
+                                                              "variants": null,
+                                                              "base_type": null,
+                                                              "protocol_type": "string"
+                                                            },
+                                                            "required": true,
+                                                            "description": "Disassembly of the output script",
+                                                            "default_value": null
+                                                          },
+                                                          {
+                                                            "key": {
+                                                              "Named": "desc"
+                                                            },
+                                                            "field_type": {
+                                                              "name": "string",
+                                                              "description": "Inferred descriptor for the output",
+                                                              "kind": "Primitive",
+                                                              "fields": null,
+                                                              "variants": null,
+                                                              "base_type": null,
+                                                              "protocol_type": "string"
+                                                            },
+                                                            "required": true,
+                                                            "description": "Inferred descriptor for the output",
+                                                            "default_value": null
+                                                          },
+                                                          {
+                                                            "key": {
+                                                              "Named": "hex"
+                                                            },
+                                                            "field_type": {
+                                                              "name": "hex",
+                                                              "description": "The raw output script bytes, hex-encoded",
+                                                              "kind": "Primitive",
+                                                              "fields": null,
+                                                              "variants": null,
+                                                              "base_type": null,
+                                                              "protocol_type": "hex"
+                                                            },
+                                                            "required": true,
+                                                            "description": "The raw output script bytes, hex-encoded",
+                                                            "default_value": null
+                                                          },
+                                                          {
+                                                            "key": {
+                                                              "Named": "address"
+                                                            },
+                                                            "field_type": {
+                                                              "name": "string",
+                                                              "description": "The Bitcoin address (only if a well-defined address exists)",
+                                                              "kind": "Primitive",
+                                                              "fields": null,
+                                                              "variants": null,
+                                                              "base_type": null,
+                                                              "protocol_type": "string"
+                                                            },
+                                                            "required": false,
+                                                            "description": "The Bitcoin address (only if a well-defined address exists)",
+                                                            "default_value": null
+                                                          },
+                                                          {
+                                                            "key": {
+                                                              "Named": "type"
+                                                            },
+                                                            "field_type": {
+                                                              "name": "string",
+                                                              "description": "The type (one of: nonstandard, anchor, pubkey, pubkeyhash, scripthash, multisig, nulldata, witness_v0_scripthash, witness_v0_keyhash, witness_v1_taproot, witness_unknown)",
+                                                              "kind": "Primitive",
+                                                              "fields": null,
+                                                              "variants": null,
+                                                              "base_type": null,
+                                                              "protocol_type": "string"
+                                                            },
+                                                            "required": true,
+                                                            "description": "The type (one of: nonstandard, anchor, pubkey, pubkeyhash, scripthash, multisig, nulldata, witness_v0_scripthash, witness_v0_keyhash, witness_v1_taproot, witness_unknown)",
+                                                            "default_value": null
+                                                          }
+                                                        ],
+                                                        "variants": null,
+                                                        "base_type": null,
+                                                        "protocol_type": "object"
+                                                      },
+                                                      "required": true,
+                                                      "description": "",
+                                                      "default_value": null
+                                                    }
+                                                  ],
+                                                  "variants": null,
+                                                  "base_type": null,
+                                                  "protocol_type": "object"
+                                                },
+                                                "required": true,
+                                                "description": "",
+                                                "default_value": null
+                                              }
+                                            ],
+                                            "variants": null,
+                                            "base_type": null,
+                                            "protocol_type": "object"
+                                          },
+                                          "required": true,
+                                          "description": "",
+                                          "default_value": null
+                                        }
+                                      ],
+                                      "variants": null,
+                                      "base_type": null,
+                                      "protocol_type": "array"
+                                    },
+                                    "required": true,
+                                    "description": "",
                                     "default_value": null
                                   },
                                   {
@@ -10989,6 +11712,23 @@
                                     },
                                     "required": false,
                                     "description": "The transaction fee in BTC, omitted if block undo data is not available",
+                                    "default_value": null
+                                  },
+                                  {
+                                    "key": {
+                                      "Named": "hex"
+                                    },
+                                    "field_type": {
+                                      "name": "hex",
+                                      "description": "The serialized, hex-encoded data for the transaction",
+                                      "kind": "Primitive",
+                                      "fields": null,
+                                      "variants": null,
+                                      "base_type": null,
+                                      "protocol_type": "hex"
+                                    },
+                                    "required": true,
+                                    "description": "The serialized, hex-encoded data for the transaction",
                                     "default_value": null
                                   }
                                 ],
@@ -11020,19 +11760,428 @@
                 },
                 {
                   "key": {
-                    "Named": "field_3_1"
+                    "Named": "time_1"
                   },
                   "field_type": {
-                    "name": "elision",
-                    "description": "Same output as verbosity = 2",
+                    "name": "timestamp",
+                    "description": "The block time expressed in UNIX epoch time",
                     "kind": "Primitive",
                     "fields": null,
                     "variants": null,
                     "base_type": null,
-                    "protocol_type": "elision"
+                    "protocol_type": "timestamp"
                   },
                   "required": true,
-                  "description": "Same output as verbosity = 2",
+                  "description": "The block time expressed in UNIX epoch time",
+                  "default_value": null
+                },
+                {
+                  "key": {
+                    "Named": "mediantime_1"
+                  },
+                  "field_type": {
+                    "name": "timestamp",
+                    "description": "The median block time expressed in UNIX epoch time",
+                    "kind": "Primitive",
+                    "fields": null,
+                    "variants": null,
+                    "base_type": null,
+                    "protocol_type": "timestamp"
+                  },
+                  "required": true,
+                  "description": "The median block time expressed in UNIX epoch time",
+                  "default_value": null
+                },
+                {
+                  "key": {
+                    "Named": "nonce_1"
+                  },
+                  "field_type": {
+                    "name": "number",
+                    "description": "The nonce",
+                    "kind": "Primitive",
+                    "fields": null,
+                    "variants": null,
+                    "base_type": null,
+                    "protocol_type": "number"
+                  },
+                  "required": true,
+                  "description": "The nonce",
+                  "default_value": null
+                },
+                {
+                  "key": {
+                    "Named": "bits_1"
+                  },
+                  "field_type": {
+                    "name": "hex",
+                    "description": "nBits: compact representation of the block difficulty target",
+                    "kind": "Primitive",
+                    "fields": null,
+                    "variants": null,
+                    "base_type": null,
+                    "protocol_type": "hex"
+                  },
+                  "required": true,
+                  "description": "nBits: compact representation of the block difficulty target",
+                  "default_value": null
+                },
+                {
+                  "key": {
+                    "Named": "target_1"
+                  },
+                  "field_type": {
+                    "name": "hex",
+                    "description": "The difficulty target",
+                    "kind": "Primitive",
+                    "fields": null,
+                    "variants": null,
+                    "base_type": null,
+                    "protocol_type": "hex"
+                  },
+                  "required": true,
+                  "description": "The difficulty target",
+                  "default_value": null
+                },
+                {
+                  "key": {
+                    "Named": "difficulty_1"
+                  },
+                  "field_type": {
+                    "name": "number",
+                    "description": "The difficulty",
+                    "kind": "Primitive",
+                    "fields": null,
+                    "variants": null,
+                    "base_type": null,
+                    "protocol_type": "number"
+                  },
+                  "required": true,
+                  "description": "The difficulty",
+                  "default_value": null
+                },
+                {
+                  "key": {
+                    "Named": "chainwork_1"
+                  },
+                  "field_type": {
+                    "name": "hex",
+                    "description": "Expected number of hashes required to produce the chain up to this block (in hex)",
+                    "kind": "Primitive",
+                    "fields": null,
+                    "variants": null,
+                    "base_type": null,
+                    "protocol_type": "hex"
+                  },
+                  "required": true,
+                  "description": "Expected number of hashes required to produce the chain up to this block (in hex)",
+                  "default_value": null
+                },
+                {
+                  "key": {
+                    "Named": "nTx_1"
+                  },
+                  "field_type": {
+                    "name": "number",
+                    "description": "The number of transactions in the block",
+                    "kind": "Primitive",
+                    "fields": null,
+                    "variants": null,
+                    "base_type": null,
+                    "protocol_type": "number"
+                  },
+                  "required": true,
+                  "description": "The number of transactions in the block",
+                  "default_value": null
+                },
+                {
+                  "key": {
+                    "Named": "previousblockhash_1"
+                  },
+                  "field_type": {
+                    "name": "hex",
+                    "description": "The hash of the previous block (if available)",
+                    "kind": "Primitive",
+                    "fields": null,
+                    "variants": null,
+                    "base_type": null,
+                    "protocol_type": "hex"
+                  },
+                  "required": false,
+                  "description": "The hash of the previous block (if available)",
+                  "default_value": null
+                },
+                {
+                  "key": {
+                    "Named": "nextblockhash_1"
+                  },
+                  "field_type": {
+                    "name": "hex",
+                    "description": "The hash of the next block (if available)",
+                    "kind": "Primitive",
+                    "fields": null,
+                    "variants": null,
+                    "base_type": null,
+                    "protocol_type": "hex"
+                  },
+                  "required": false,
+                  "description": "The hash of the next block (if available)",
+                  "default_value": null
+                },
+                {
+                  "key": {
+                    "Named": "hash_2"
+                  },
+                  "field_type": {
+                    "name": "hex",
+                    "description": "the block hash (same as provided)",
+                    "kind": "Primitive",
+                    "fields": null,
+                    "variants": null,
+                    "base_type": null,
+                    "protocol_type": "hex"
+                  },
+                  "required": true,
+                  "description": "the block hash (same as provided)",
+                  "default_value": null
+                },
+                {
+                  "key": {
+                    "Named": "confirmations_2"
+                  },
+                  "field_type": {
+                    "name": "number",
+                    "description": "The number of confirmations, or -1 if the block is not on the main chain",
+                    "kind": "Primitive",
+                    "fields": null,
+                    "variants": null,
+                    "base_type": null,
+                    "protocol_type": "number"
+                  },
+                  "required": true,
+                  "description": "The number of confirmations, or -1 if the block is not on the main chain",
+                  "default_value": null
+                },
+                {
+                  "key": {
+                    "Named": "size_2"
+                  },
+                  "field_type": {
+                    "name": "number",
+                    "description": "The block size",
+                    "kind": "Primitive",
+                    "fields": null,
+                    "variants": null,
+                    "base_type": null,
+                    "protocol_type": "number"
+                  },
+                  "required": true,
+                  "description": "The block size",
+                  "default_value": null
+                },
+                {
+                  "key": {
+                    "Named": "strippedsize_2"
+                  },
+                  "field_type": {
+                    "name": "number",
+                    "description": "The block size excluding witness data",
+                    "kind": "Primitive",
+                    "fields": null,
+                    "variants": null,
+                    "base_type": null,
+                    "protocol_type": "number"
+                  },
+                  "required": true,
+                  "description": "The block size excluding witness data",
+                  "default_value": null
+                },
+                {
+                  "key": {
+                    "Named": "weight_2"
+                  },
+                  "field_type": {
+                    "name": "number",
+                    "description": "The block weight as defined in BIP 141",
+                    "kind": "Primitive",
+                    "fields": null,
+                    "variants": null,
+                    "base_type": null,
+                    "protocol_type": "number"
+                  },
+                  "required": true,
+                  "description": "The block weight as defined in BIP 141",
+                  "default_value": null
+                },
+                {
+                  "key": {
+                    "Named": "coinbase_tx_2"
+                  },
+                  "field_type": {
+                    "name": "GetBlockCoinbase_tx",
+                    "description": "Coinbase transaction metadata",
+                    "kind": "Object",
+                    "fields": [
+                      {
+                        "key": {
+                          "Named": "version"
+                        },
+                        "field_type": {
+                          "name": "number",
+                          "description": "The coinbase transaction version",
+                          "kind": "Primitive",
+                          "fields": null,
+                          "variants": null,
+                          "base_type": null,
+                          "protocol_type": "number"
+                        },
+                        "required": true,
+                        "description": "The coinbase transaction version",
+                        "default_value": null
+                      },
+                      {
+                        "key": {
+                          "Named": "locktime"
+                        },
+                        "field_type": {
+                          "name": "number",
+                          "description": "The coinbase transaction's locktime (nLockTime)",
+                          "kind": "Primitive",
+                          "fields": null,
+                          "variants": null,
+                          "base_type": null,
+                          "protocol_type": "number"
+                        },
+                        "required": true,
+                        "description": "The coinbase transaction's locktime (nLockTime)",
+                        "default_value": null
+                      },
+                      {
+                        "key": {
+                          "Named": "sequence"
+                        },
+                        "field_type": {
+                          "name": "number",
+                          "description": "The coinbase input's sequence number (nSequence)",
+                          "kind": "Primitive",
+                          "fields": null,
+                          "variants": null,
+                          "base_type": null,
+                          "protocol_type": "number"
+                        },
+                        "required": true,
+                        "description": "The coinbase input's sequence number (nSequence)",
+                        "default_value": null
+                      },
+                      {
+                        "key": {
+                          "Named": "coinbase"
+                        },
+                        "field_type": {
+                          "name": "hex",
+                          "description": "The coinbase input's script",
+                          "kind": "Primitive",
+                          "fields": null,
+                          "variants": null,
+                          "base_type": null,
+                          "protocol_type": "hex"
+                        },
+                        "required": true,
+                        "description": "The coinbase input's script",
+                        "default_value": null
+                      },
+                      {
+                        "key": {
+                          "Named": "witness"
+                        },
+                        "field_type": {
+                          "name": "hex",
+                          "description": "The coinbase input's first (and only) witness stack element, if present",
+                          "kind": "Primitive",
+                          "fields": null,
+                          "variants": null,
+                          "base_type": null,
+                          "protocol_type": "hex"
+                        },
+                        "required": false,
+                        "description": "The coinbase input's first (and only) witness stack element, if present",
+                        "default_value": null
+                      }
+                    ],
+                    "variants": null,
+                    "base_type": null,
+                    "protocol_type": "object"
+                  },
+                  "required": true,
+                  "description": "Coinbase transaction metadata",
+                  "default_value": null
+                },
+                {
+                  "key": {
+                    "Named": "height_2"
+                  },
+                  "field_type": {
+                    "name": "number",
+                    "description": "The block height or index",
+                    "kind": "Primitive",
+                    "fields": null,
+                    "variants": null,
+                    "base_type": null,
+                    "protocol_type": "number"
+                  },
+                  "required": true,
+                  "description": "The block height or index",
+                  "default_value": null
+                },
+                {
+                  "key": {
+                    "Named": "version_2"
+                  },
+                  "field_type": {
+                    "name": "number",
+                    "description": "The block version",
+                    "kind": "Primitive",
+                    "fields": null,
+                    "variants": null,
+                    "base_type": null,
+                    "protocol_type": "number"
+                  },
+                  "required": true,
+                  "description": "The block version",
+                  "default_value": null
+                },
+                {
+                  "key": {
+                    "Named": "versionHex_2"
+                  },
+                  "field_type": {
+                    "name": "hex",
+                    "description": "The block version formatted in hexadecimal",
+                    "kind": "Primitive",
+                    "fields": null,
+                    "variants": null,
+                    "base_type": null,
+                    "protocol_type": "hex"
+                  },
+                  "required": true,
+                  "description": "The block version formatted in hexadecimal",
+                  "default_value": null
+                },
+                {
+                  "key": {
+                    "Named": "merkleroot_2"
+                  },
+                  "field_type": {
+                    "name": "hex",
+                    "description": "The merkle root",
+                    "kind": "Primitive",
+                    "fields": null,
+                    "variants": null,
+                    "base_type": null,
+                    "protocol_type": "hex"
+                  },
+                  "required": true,
+                  "description": "The merkle root",
                   "default_value": null
                 },
                 {
@@ -11064,6 +12213,125 @@
                                 "fields": [
                                   {
                                     "key": {
+                                      "Named": "txid"
+                                    },
+                                    "field_type": {
+                                      "name": "hex",
+                                      "description": "The transaction id",
+                                      "kind": "Primitive",
+                                      "fields": null,
+                                      "variants": null,
+                                      "base_type": null,
+                                      "protocol_type": "hex"
+                                    },
+                                    "required": true,
+                                    "description": "The transaction id",
+                                    "default_value": null
+                                  },
+                                  {
+                                    "key": {
+                                      "Named": "hash"
+                                    },
+                                    "field_type": {
+                                      "name": "hex",
+                                      "description": "The transaction hash (differs from txid for witness transactions)",
+                                      "kind": "Primitive",
+                                      "fields": null,
+                                      "variants": null,
+                                      "base_type": null,
+                                      "protocol_type": "hex"
+                                    },
+                                    "required": true,
+                                    "description": "The transaction hash (differs from txid for witness transactions)",
+                                    "default_value": null
+                                  },
+                                  {
+                                    "key": {
+                                      "Named": "size"
+                                    },
+                                    "field_type": {
+                                      "name": "number",
+                                      "description": "The serialized transaction size",
+                                      "kind": "Primitive",
+                                      "fields": null,
+                                      "variants": null,
+                                      "base_type": null,
+                                      "protocol_type": "number"
+                                    },
+                                    "required": true,
+                                    "description": "The serialized transaction size",
+                                    "default_value": null
+                                  },
+                                  {
+                                    "key": {
+                                      "Named": "vsize"
+                                    },
+                                    "field_type": {
+                                      "name": "number",
+                                      "description": "The virtual transaction size (differs from size for witness transactions)",
+                                      "kind": "Primitive",
+                                      "fields": null,
+                                      "variants": null,
+                                      "base_type": null,
+                                      "protocol_type": "number"
+                                    },
+                                    "required": true,
+                                    "description": "The virtual transaction size (differs from size for witness transactions)",
+                                    "default_value": null
+                                  },
+                                  {
+                                    "key": {
+                                      "Named": "weight"
+                                    },
+                                    "field_type": {
+                                      "name": "number",
+                                      "description": "The transaction's weight (between vsize*4-3 and vsize*4)",
+                                      "kind": "Primitive",
+                                      "fields": null,
+                                      "variants": null,
+                                      "base_type": null,
+                                      "protocol_type": "number"
+                                    },
+                                    "required": true,
+                                    "description": "The transaction's weight (between vsize*4-3 and vsize*4)",
+                                    "default_value": null
+                                  },
+                                  {
+                                    "key": {
+                                      "Named": "version"
+                                    },
+                                    "field_type": {
+                                      "name": "number",
+                                      "description": "The version",
+                                      "kind": "Primitive",
+                                      "fields": null,
+                                      "variants": null,
+                                      "base_type": null,
+                                      "protocol_type": "number"
+                                    },
+                                    "required": true,
+                                    "description": "The version",
+                                    "default_value": null
+                                  },
+                                  {
+                                    "key": {
+                                      "Named": "locktime"
+                                    },
+                                    "field_type": {
+                                      "name": "timestamp",
+                                      "description": "The lock time",
+                                      "kind": "Primitive",
+                                      "fields": null,
+                                      "variants": null,
+                                      "base_type": null,
+                                      "protocol_type": "timestamp"
+                                    },
+                                    "required": true,
+                                    "description": "The lock time",
+                                    "default_value": null
+                                  },
+                                  {
+                                    "key": {
                                       "Named": "vin"
                                     },
                                     "field_type": {
@@ -11091,19 +12359,122 @@
                                                   "fields": [
                                                     {
                                                       "key": {
-                                                        "Named": "field_0"
+                                                        "Named": "coinbase"
                                                       },
                                                       "field_type": {
-                                                        "name": "elision",
-                                                        "description": "The same output as verbosity = 2",
+                                                        "name": "hex",
+                                                        "description": "The coinbase value (only if coinbase transaction)",
                                                         "kind": "Primitive",
                                                         "fields": null,
                                                         "variants": null,
                                                         "base_type": null,
-                                                        "protocol_type": "elision"
+                                                        "protocol_type": "hex"
                                                       },
-                                                      "required": true,
-                                                      "description": "The same output as verbosity = 2",
+                                                      "required": false,
+                                                      "description": "The coinbase value (only if coinbase transaction)",
+                                                      "default_value": null
+                                                    },
+                                                    {
+                                                      "key": {
+                                                        "Named": "txid"
+                                                      },
+                                                      "field_type": {
+                                                        "name": "hex",
+                                                        "description": "The transaction id (if not coinbase transaction)",
+                                                        "kind": "Primitive",
+                                                        "fields": null,
+                                                        "variants": null,
+                                                        "base_type": null,
+                                                        "protocol_type": "hex"
+                                                      },
+                                                      "required": false,
+                                                      "description": "The transaction id (if not coinbase transaction)",
+                                                      "default_value": null
+                                                    },
+                                                    {
+                                                      "key": {
+                                                        "Named": "vout"
+                                                      },
+                                                      "field_type": {
+                                                        "name": "number",
+                                                        "description": "The output number (if not coinbase transaction)",
+                                                        "kind": "Primitive",
+                                                        "fields": null,
+                                                        "variants": null,
+                                                        "base_type": null,
+                                                        "protocol_type": "number"
+                                                      },
+                                                      "required": false,
+                                                      "description": "The output number (if not coinbase transaction)",
+                                                      "default_value": null
+                                                    },
+                                                    {
+                                                      "key": {
+                                                        "Named": "scriptSig"
+                                                      },
+                                                      "field_type": {
+                                                        "name": "DecodedVin",
+                                                        "description": "The script (if not coinbase transaction)",
+                                                        "kind": "Object",
+                                                        "fields": [
+                                                          {
+                                                            "key": {
+                                                              "Named": "asm"
+                                                            },
+                                                            "field_type": {
+                                                              "name": "string",
+                                                              "description": "Disassembly of the signature script",
+                                                              "kind": "Primitive",
+                                                              "fields": null,
+                                                              "variants": null,
+                                                              "base_type": null,
+                                                              "protocol_type": "string"
+                                                            },
+                                                            "required": true,
+                                                            "description": "Disassembly of the signature script",
+                                                            "default_value": null
+                                                          },
+                                                          {
+                                                            "key": {
+                                                              "Named": "hex"
+                                                            },
+                                                            "field_type": {
+                                                              "name": "hex",
+                                                              "description": "The raw signature script bytes, hex-encoded",
+                                                              "kind": "Primitive",
+                                                              "fields": null,
+                                                              "variants": null,
+                                                              "base_type": null,
+                                                              "protocol_type": "hex"
+                                                            },
+                                                            "required": true,
+                                                            "description": "The raw signature script bytes, hex-encoded",
+                                                            "default_value": null
+                                                          }
+                                                        ],
+                                                        "variants": null,
+                                                        "base_type": null,
+                                                        "protocol_type": "object"
+                                                      },
+                                                      "required": false,
+                                                      "description": "The script (if not coinbase transaction)",
+                                                      "default_value": null
+                                                    },
+                                                    {
+                                                      "key": {
+                                                        "Named": "txinwitness"
+                                                      },
+                                                      "field_type": {
+                                                        "name": "array",
+                                                        "description": "",
+                                                        "kind": "Array",
+                                                        "fields": null,
+                                                        "variants": null,
+                                                        "base_type": null,
+                                                        "protocol_type": "array"
+                                                      },
+                                                      "required": false,
+                                                      "description": "",
                                                       "default_value": null
                                                     },
                                                     {
@@ -11112,7 +12483,7 @@
                                                       },
                                                       "field_type": {
                                                         "name": "DecodedVin",
-                                                        "description": "(Only if undo information is available)",
+                                                        "description": "The previous output, omitted if block undo data is not available",
                                                         "kind": "Object",
                                                         "fields": [
                                                           {
@@ -11274,8 +12645,25 @@
                                                         "base_type": null,
                                                         "protocol_type": "object"
                                                       },
+                                                      "required": false,
+                                                      "description": "The previous output, omitted if block undo data is not available",
+                                                      "default_value": null
+                                                    },
+                                                    {
+                                                      "key": {
+                                                        "Named": "sequence"
+                                                      },
+                                                      "field_type": {
+                                                        "name": "number",
+                                                        "description": "The script sequence number",
+                                                        "kind": "Primitive",
+                                                        "fields": null,
+                                                        "variants": null,
+                                                        "base_type": null,
+                                                        "protocol_type": "number"
+                                                      },
                                                       "required": true,
-                                                      "description": "(Only if undo information is available)",
+                                                      "description": "The script sequence number",
                                                       "default_value": null
                                                     }
                                                   ],
@@ -11304,6 +12692,231 @@
                                     "required": true,
                                     "description": "",
                                     "default_value": null
+                                  },
+                                  {
+                                    "key": {
+                                      "Named": "vout"
+                                    },
+                                    "field_type": {
+                                      "name": "array",
+                                      "description": "",
+                                      "kind": "Object",
+                                      "fields": [
+                                        {
+                                          "key": {
+                                            "Named": "field"
+                                          },
+                                          "field_type": {
+                                            "name": "object",
+                                            "description": "",
+                                            "kind": "Object",
+                                            "fields": [
+                                              {
+                                                "key": {
+                                                  "Named": "field_0"
+                                                },
+                                                "field_type": {
+                                                  "name": "DecodedVout",
+                                                  "description": "",
+                                                  "kind": "Object",
+                                                  "fields": [
+                                                    {
+                                                      "key": {
+                                                        "Named": "value"
+                                                      },
+                                                      "field_type": {
+                                                        "name": "amount",
+                                                        "description": "The value in BTC",
+                                                        "kind": "Primitive",
+                                                        "fields": null,
+                                                        "variants": null,
+                                                        "base_type": null,
+                                                        "protocol_type": "amount"
+                                                      },
+                                                      "required": true,
+                                                      "description": "The value in BTC",
+                                                      "default_value": null
+                                                    },
+                                                    {
+                                                      "key": {
+                                                        "Named": "n"
+                                                      },
+                                                      "field_type": {
+                                                        "name": "number",
+                                                        "description": "index",
+                                                        "kind": "Primitive",
+                                                        "fields": null,
+                                                        "variants": null,
+                                                        "base_type": null,
+                                                        "protocol_type": "number"
+                                                      },
+                                                      "required": true,
+                                                      "description": "index",
+                                                      "default_value": null
+                                                    },
+                                                    {
+                                                      "key": {
+                                                        "Named": "scriptPubKey"
+                                                      },
+                                                      "field_type": {
+                                                        "name": "DecodedVout",
+                                                        "description": "",
+                                                        "kind": "Object",
+                                                        "fields": [
+                                                          {
+                                                            "key": {
+                                                              "Named": "asm"
+                                                            },
+                                                            "field_type": {
+                                                              "name": "string",
+                                                              "description": "Disassembly of the output script",
+                                                              "kind": "Primitive",
+                                                              "fields": null,
+                                                              "variants": null,
+                                                              "base_type": null,
+                                                              "protocol_type": "string"
+                                                            },
+                                                            "required": true,
+                                                            "description": "Disassembly of the output script",
+                                                            "default_value": null
+                                                          },
+                                                          {
+                                                            "key": {
+                                                              "Named": "desc"
+                                                            },
+                                                            "field_type": {
+                                                              "name": "string",
+                                                              "description": "Inferred descriptor for the output",
+                                                              "kind": "Primitive",
+                                                              "fields": null,
+                                                              "variants": null,
+                                                              "base_type": null,
+                                                              "protocol_type": "string"
+                                                            },
+                                                            "required": true,
+                                                            "description": "Inferred descriptor for the output",
+                                                            "default_value": null
+                                                          },
+                                                          {
+                                                            "key": {
+                                                              "Named": "hex"
+                                                            },
+                                                            "field_type": {
+                                                              "name": "hex",
+                                                              "description": "The raw output script bytes, hex-encoded",
+                                                              "kind": "Primitive",
+                                                              "fields": null,
+                                                              "variants": null,
+                                                              "base_type": null,
+                                                              "protocol_type": "hex"
+                                                            },
+                                                            "required": true,
+                                                            "description": "The raw output script bytes, hex-encoded",
+                                                            "default_value": null
+                                                          },
+                                                          {
+                                                            "key": {
+                                                              "Named": "address"
+                                                            },
+                                                            "field_type": {
+                                                              "name": "string",
+                                                              "description": "The Bitcoin address (only if a well-defined address exists)",
+                                                              "kind": "Primitive",
+                                                              "fields": null,
+                                                              "variants": null,
+                                                              "base_type": null,
+                                                              "protocol_type": "string"
+                                                            },
+                                                            "required": false,
+                                                            "description": "The Bitcoin address (only if a well-defined address exists)",
+                                                            "default_value": null
+                                                          },
+                                                          {
+                                                            "key": {
+                                                              "Named": "type"
+                                                            },
+                                                            "field_type": {
+                                                              "name": "string",
+                                                              "description": "The type (one of: nonstandard, anchor, pubkey, pubkeyhash, scripthash, multisig, nulldata, witness_v0_scripthash, witness_v0_keyhash, witness_v1_taproot, witness_unknown)",
+                                                              "kind": "Primitive",
+                                                              "fields": null,
+                                                              "variants": null,
+                                                              "base_type": null,
+                                                              "protocol_type": "string"
+                                                            },
+                                                            "required": true,
+                                                            "description": "The type (one of: nonstandard, anchor, pubkey, pubkeyhash, scripthash, multisig, nulldata, witness_v0_scripthash, witness_v0_keyhash, witness_v1_taproot, witness_unknown)",
+                                                            "default_value": null
+                                                          }
+                                                        ],
+                                                        "variants": null,
+                                                        "base_type": null,
+                                                        "protocol_type": "object"
+                                                      },
+                                                      "required": true,
+                                                      "description": "",
+                                                      "default_value": null
+                                                    }
+                                                  ],
+                                                  "variants": null,
+                                                  "base_type": null,
+                                                  "protocol_type": "object"
+                                                },
+                                                "required": true,
+                                                "description": "",
+                                                "default_value": null
+                                              }
+                                            ],
+                                            "variants": null,
+                                            "base_type": null,
+                                            "protocol_type": "object"
+                                          },
+                                          "required": true,
+                                          "description": "",
+                                          "default_value": null
+                                        }
+                                      ],
+                                      "variants": null,
+                                      "base_type": null,
+                                      "protocol_type": "array"
+                                    },
+                                    "required": true,
+                                    "description": "",
+                                    "default_value": null
+                                  },
+                                  {
+                                    "key": {
+                                      "Named": "fee"
+                                    },
+                                    "field_type": {
+                                      "name": "number",
+                                      "description": "The transaction fee in BTC, omitted if block undo data is not available",
+                                      "kind": "Primitive",
+                                      "fields": null,
+                                      "variants": null,
+                                      "base_type": null,
+                                      "protocol_type": "number"
+                                    },
+                                    "required": false,
+                                    "description": "The transaction fee in BTC, omitted if block undo data is not available",
+                                    "default_value": null
+                                  },
+                                  {
+                                    "key": {
+                                      "Named": "hex"
+                                    },
+                                    "field_type": {
+                                      "name": "hex",
+                                      "description": "The serialized, hex-encoded data for the transaction",
+                                      "kind": "Primitive",
+                                      "fields": null,
+                                      "variants": null,
+                                      "base_type": null,
+                                      "protocol_type": "hex"
+                                    },
+                                    "required": true,
+                                    "description": "The serialized, hex-encoded data for the transaction",
+                                    "default_value": null
                                   }
                                 ],
                                 "variants": null,
@@ -11331,6 +12944,176 @@
                   "required": true,
                   "description": "",
                   "default_value": null
+                },
+                {
+                  "key": {
+                    "Named": "time_2"
+                  },
+                  "field_type": {
+                    "name": "timestamp",
+                    "description": "The block time expressed in UNIX epoch time",
+                    "kind": "Primitive",
+                    "fields": null,
+                    "variants": null,
+                    "base_type": null,
+                    "protocol_type": "timestamp"
+                  },
+                  "required": true,
+                  "description": "The block time expressed in UNIX epoch time",
+                  "default_value": null
+                },
+                {
+                  "key": {
+                    "Named": "mediantime_2"
+                  },
+                  "field_type": {
+                    "name": "timestamp",
+                    "description": "The median block time expressed in UNIX epoch time",
+                    "kind": "Primitive",
+                    "fields": null,
+                    "variants": null,
+                    "base_type": null,
+                    "protocol_type": "timestamp"
+                  },
+                  "required": true,
+                  "description": "The median block time expressed in UNIX epoch time",
+                  "default_value": null
+                },
+                {
+                  "key": {
+                    "Named": "nonce_2"
+                  },
+                  "field_type": {
+                    "name": "number",
+                    "description": "The nonce",
+                    "kind": "Primitive",
+                    "fields": null,
+                    "variants": null,
+                    "base_type": null,
+                    "protocol_type": "number"
+                  },
+                  "required": true,
+                  "description": "The nonce",
+                  "default_value": null
+                },
+                {
+                  "key": {
+                    "Named": "bits_2"
+                  },
+                  "field_type": {
+                    "name": "hex",
+                    "description": "nBits: compact representation of the block difficulty target",
+                    "kind": "Primitive",
+                    "fields": null,
+                    "variants": null,
+                    "base_type": null,
+                    "protocol_type": "hex"
+                  },
+                  "required": true,
+                  "description": "nBits: compact representation of the block difficulty target",
+                  "default_value": null
+                },
+                {
+                  "key": {
+                    "Named": "target_2"
+                  },
+                  "field_type": {
+                    "name": "hex",
+                    "description": "The difficulty target",
+                    "kind": "Primitive",
+                    "fields": null,
+                    "variants": null,
+                    "base_type": null,
+                    "protocol_type": "hex"
+                  },
+                  "required": true,
+                  "description": "The difficulty target",
+                  "default_value": null
+                },
+                {
+                  "key": {
+                    "Named": "difficulty_2"
+                  },
+                  "field_type": {
+                    "name": "number",
+                    "description": "The difficulty",
+                    "kind": "Primitive",
+                    "fields": null,
+                    "variants": null,
+                    "base_type": null,
+                    "protocol_type": "number"
+                  },
+                  "required": true,
+                  "description": "The difficulty",
+                  "default_value": null
+                },
+                {
+                  "key": {
+                    "Named": "chainwork_2"
+                  },
+                  "field_type": {
+                    "name": "hex",
+                    "description": "Expected number of hashes required to produce the chain up to this block (in hex)",
+                    "kind": "Primitive",
+                    "fields": null,
+                    "variants": null,
+                    "base_type": null,
+                    "protocol_type": "hex"
+                  },
+                  "required": true,
+                  "description": "Expected number of hashes required to produce the chain up to this block (in hex)",
+                  "default_value": null
+                },
+                {
+                  "key": {
+                    "Named": "nTx_2"
+                  },
+                  "field_type": {
+                    "name": "number",
+                    "description": "The number of transactions in the block",
+                    "kind": "Primitive",
+                    "fields": null,
+                    "variants": null,
+                    "base_type": null,
+                    "protocol_type": "number"
+                  },
+                  "required": true,
+                  "description": "The number of transactions in the block",
+                  "default_value": null
+                },
+                {
+                  "key": {
+                    "Named": "previousblockhash_2"
+                  },
+                  "field_type": {
+                    "name": "hex",
+                    "description": "The hash of the previous block (if available)",
+                    "kind": "Primitive",
+                    "fields": null,
+                    "variants": null,
+                    "base_type": null,
+                    "protocol_type": "hex"
+                  },
+                  "required": false,
+                  "description": "The hash of the previous block (if available)",
+                  "default_value": null
+                },
+                {
+                  "key": {
+                    "Named": "nextblockhash_2"
+                  },
+                  "field_type": {
+                    "name": "hex",
+                    "description": "The hash of the next block (if available)",
+                    "kind": "Primitive",
+                    "fields": null,
+                    "variants": null,
+                    "base_type": null,
+                    "protocol_type": "hex"
+                  },
+                  "required": false,
+                  "description": "The hash of the next block (if available)",
+                  "default_value": null
                 }
               ],
               "variants": null,
@@ -11342,7 +13125,7 @@
             "requires_private_keys": false,
             "version_added": "0.17",
             "examples": [
-              "getblock \"blockhash\" ( verbosity )\n\nIf verbosity is 0, returns a string that is serialized, hex-encoded data for block 'hash'.\nIf verbosity is 1, returns an Object with information about block <hash>.\nIf verbosity is 2, returns an Object with information about block <hash> and information about each transaction.\nIf verbosity is 3, returns an Object with information about block <hash> and information about each transaction, including prevout information for inputs (only for unpruned blocks in the current best chain).\n\nArguments:\n1. blockhash    (string, required) The block hash\n2. verbosity    (numeric, optional, default=1) 0 for hex-encoded data, 1 for a JSON object, 2 for JSON object with transaction data, and 3 for JSON object with transaction data including prevout information for inputs\n\nResult (for verbosity = 0):\n\"hex\"    (string) A string that is serialized, hex-encoded data for block 'hash'\n\nResult (for verbosity = 1):\n{                                 (json object)\n  \"hash\" : \"hex\",                 (string) the block hash (same as provided)\n  \"confirmations\" : n,            (numeric) The number of confirmations, or -1 if the block is not on the main chain\n  \"size\" : n,                     (numeric) The block size\n  \"strippedsize\" : n,             (numeric) The block size excluding witness data\n  \"weight\" : n,                   (numeric) The block weight as defined in BIP 141\n  \"coinbase_tx\" : {               (json object) Coinbase transaction metadata\n    \"version\" : n,                (numeric) The coinbase transaction version\n    \"locktime\" : n,               (numeric) The coinbase transaction's locktime (nLockTime)\n    \"sequence\" : n,               (numeric) The coinbase input's sequence number (nSequence)\n    \"coinbase\" : \"hex\",           (string) The coinbase input's script\n    \"witness\" : \"hex\"             (string, optional) The coinbase input's first (and only) witness stack element, if present\n  },\n  \"height\" : n,                   (numeric) The block height or index\n  \"version\" : n,                  (numeric) The block version\n  \"versionHex\" : \"hex\",           (string) The block version formatted in hexadecimal\n  \"merkleroot\" : \"hex\",           (string) The merkle root\n  \"tx\" : [                        (json array) The transaction ids\n    \"hex\",                        (string) The transaction id\n    ...\n  ],\n  \"time\" : xxx,                   (numeric) The block time expressed in UNIX epoch time\n  \"mediantime\" : xxx,             (numeric) The median block time expressed in UNIX epoch time\n  \"nonce\" : n,                    (numeric) The nonce\n  \"bits\" : \"hex\",                 (string) nBits: compact representation of the block difficulty target\n  \"target\" : \"hex\",               (string) The difficulty target\n  \"difficulty\" : n,               (numeric) The difficulty\n  \"chainwork\" : \"hex\",            (string) Expected number of hashes required to produce the chain up to this block (in hex)\n  \"nTx\" : n,                      (numeric) The number of transactions in the block\n  \"previousblockhash\" : \"hex\",    (string, optional) The hash of the previous block (if available)\n  \"nextblockhash\" : \"hex\"         (string, optional) The hash of the next block (if available)\n}\n\nResult (for verbosity = 2):\n{                   (json object)\n  ...,              Same output as verbosity = 1\n  \"tx\" : [          (json array)\n    {               (json object)\n      ...,          The transactions in the format of the getrawtransaction RPC. Different from verbosity = 1 \"tx\" result\n      \"fee\" : n     (numeric, optional) The transaction fee in BTC, omitted if block undo data is not available\n    },\n    ...\n  ]\n}\n\nResult (for verbosity = 3):\n{                                        (json object)\n  ...,                                   Same output as verbosity = 2\n  \"tx\" : [                               (json array)\n    {                                    (json object)\n      \"vin\" : [                          (json array)\n        {                                (json object)\n          ...,                           The same output as verbosity = 2\n          \"prevout\" : {                  (json object) (Only if undo information is available)\n            \"generated\" : true|false,    (boolean) Coinbase or not\n            \"height\" : n,                (numeric) The height of the prevout\n            \"value\" : n,                 (numeric) The value in BTC\n            \"scriptPubKey\" : {           (json object)\n              \"asm\" : \"str\",             (string) Disassembly of the output script\n              \"desc\" : \"str\",            (string) Inferred descriptor for the output\n              \"hex\" : \"hex\",             (string) The raw output script bytes, hex-encoded\n              \"address\" : \"str\",         (string, optional) The Bitcoin address (only if a well-defined address exists)\n              \"type\" : \"str\"             (string) The type (one of: nonstandard, anchor, pubkey, pubkeyhash, scripthash, multisig, nulldata, witness_v0_scripthash, witness_v0_keyhash, witness_v1_taproot, witness_unknown)\n            }\n          }\n        },\n        ...\n      ]\n    },\n    ...\n  ]\n}\n\nExamples:\n> bitcoin-cli getblock \"00000000c937983704a73af28acdec37b049d214adbda81d7e2a3dd146f6ed09\"\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"getblock\", \"params\": [\"00000000c937983704a73af28acdec37b049d214adbda81d7e2a3dd146f6ed09\"]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
+              "getblock \"blockhash\" ( verbosity )\n\nIf verbosity is 0, returns a string that is serialized, hex-encoded data for block 'hash'.\nIf verbosity is 1, returns an Object with information about block <hash>.\nIf verbosity is 2, returns an Object with information about block <hash> and information about each transaction.\nIf verbosity is 3, returns an Object with information about block <hash> and information about each transaction, including prevout information for inputs (only for unpruned blocks in the current best chain).\n\nArguments:\n1. blockhash    (string, required) The block hash\n2. verbosity    (numeric, optional, default=1) 0 for hex-encoded data, 1 for a JSON object, 2 for JSON object with transaction data, and 3 for JSON object with transaction data including prevout information for inputs\n\nResult (for verbosity = 0):\n\"hex\"    (string) A string that is serialized, hex-encoded data for block 'hash'\n\nResult (for verbosity = 1):\n{                                 (json object)\n  \"hash\" : \"hex\",                 (string) the block hash (same as provided)\n  \"confirmations\" : n,            (numeric) The number of confirmations, or -1 if the block is not on the main chain\n  \"size\" : n,                     (numeric) The block size\n  \"strippedsize\" : n,             (numeric) The block size excluding witness data\n  \"weight\" : n,                   (numeric) The block weight as defined in BIP 141\n  \"coinbase_tx\" : {               (json object) Coinbase transaction metadata\n    \"version\" : n,                (numeric) The coinbase transaction version\n    \"locktime\" : n,               (numeric) The coinbase transaction's locktime (nLockTime)\n    \"sequence\" : n,               (numeric) The coinbase input's sequence number (nSequence)\n    \"coinbase\" : \"hex\",           (string) The coinbase input's script\n    \"witness\" : \"hex\"             (string, optional) The coinbase input's first (and only) witness stack element, if present\n  },\n  \"height\" : n,                   (numeric) The block height or index\n  \"version\" : n,                  (numeric) The block version\n  \"versionHex\" : \"hex\",           (string) The block version formatted in hexadecimal\n  \"merkleroot\" : \"hex\",           (string) The merkle root\n  \"tx\" : [                        (json array) The transaction ids\n    \"hex\",                        (string) The transaction id\n    ...\n  ],\n  \"time\" : xxx,                   (numeric) The block time expressed in UNIX epoch time\n  \"mediantime\" : xxx,             (numeric) The median block time expressed in UNIX epoch time\n  \"nonce\" : n,                    (numeric) The nonce\n  \"bits\" : \"hex\",                 (string) nBits: compact representation of the block difficulty target\n  \"target\" : \"hex\",               (string) The difficulty target\n  \"difficulty\" : n,               (numeric) The difficulty\n  \"chainwork\" : \"hex\",            (string) Expected number of hashes required to produce the chain up to this block (in hex)\n  \"nTx\" : n,                      (numeric) The number of transactions in the block\n  \"previousblockhash\" : \"hex\",    (string, optional) The hash of the previous block (if available)\n  \"nextblockhash\" : \"hex\"         (string, optional) The hash of the next block (if available)\n}\n\nResult (for verbosity = 2):\n{                                 (json object)\n  \"hash\" : \"hex\",                 (string) the block hash (same as provided)\n  \"confirmations\" : n,            (numeric) The number of confirmations, or -1 if the block is not on the main chain\n  \"size\" : n,                     (numeric) The block size\n  \"strippedsize\" : n,             (numeric) The block size excluding witness data\n  \"weight\" : n,                   (numeric) The block weight as defined in BIP 141\n  \"coinbase_tx\" : {               (json object) Coinbase transaction metadata\n    \"version\" : n,                (numeric) The coinbase transaction version\n    \"locktime\" : n,               (numeric) The coinbase transaction's locktime (nLockTime)\n    \"sequence\" : n,               (numeric) The coinbase input's sequence number (nSequence)\n    \"coinbase\" : \"hex\",           (string) The coinbase input's script\n    \"witness\" : \"hex\"             (string, optional) The coinbase input's first (and only) witness stack element, if present\n  },\n  \"height\" : n,                   (numeric) The block height or index\n  \"version\" : n,                  (numeric) The block version\n  \"versionHex\" : \"hex\",           (string) The block version formatted in hexadecimal\n  \"merkleroot\" : \"hex\",           (string) The merkle root\n  \"tx\" : [                        (json array)\n    {                             (json object)\n      \"txid\" : \"hex\",             (string) The transaction id\n      \"hash\" : \"hex\",             (string) The transaction hash (differs from txid for witness transactions)\n      \"size\" : n,                 (numeric) The serialized transaction size\n      \"vsize\" : n,                (numeric) The virtual transaction size (differs from size for witness transactions)\n      \"weight\" : n,               (numeric) The transaction's weight (between vsize*4-3 and vsize*4)\n      \"version\" : n,              (numeric) The version\n      \"locktime\" : xxx,           (numeric) The lock time\n      \"vin\" : [                   (json array)\n        {                         (json object)\n          \"coinbase\" : \"hex\",     (string, optional) The coinbase value (only if coinbase transaction)\n          \"txid\" : \"hex\",         (string, optional) The transaction id (if not coinbase transaction)\n          \"vout\" : n,             (numeric, optional) The output number (if not coinbase transaction)\n          \"scriptSig\" : {         (json object, optional) The script (if not coinbase transaction)\n            \"asm\" : \"str\",        (string) Disassembly of the signature script\n            \"hex\" : \"hex\"         (string) The raw signature script bytes, hex-encoded\n          },\n          \"txinwitness\" : [       (json array, optional)\n            \"hex\",                (string) hex-encoded witness data (if any)\n            ...\n          ],\n          \"sequence\" : n          (numeric) The script sequence number\n        },\n        ...\n      ],\n      \"vout\" : [                  (json array)\n        {                         (json object)\n          \"value\" : n,            (numeric) The value in BTC\n          \"n\" : n,                (numeric) index\n          \"scriptPubKey\" : {      (json object)\n            \"asm\" : \"str\",        (string) Disassembly of the output script\n            \"desc\" : \"str\",       (string) Inferred descriptor for the output\n            \"hex\" : \"hex\",        (string) The raw output script bytes, hex-encoded\n            \"address\" : \"str\",    (string, optional) The Bitcoin address (only if a well-defined address exists)\n            \"type\" : \"str\"        (string) The type (one of: nonstandard, anchor, pubkey, pubkeyhash, scripthash, multisig, nulldata, witness_v0_scripthash, witness_v0_keyhash, witness_v1_taproot, witness_unknown)\n          }\n        },\n        ...\n      ],\n      \"fee\" : n,                  (numeric, optional) The transaction fee in BTC, omitted if block undo data is not available\n      \"hex\" : \"hex\"               (string) The serialized, hex-encoded data for the transaction\n    },\n    ...\n  ],\n  \"time\" : xxx,                   (numeric) The block time expressed in UNIX epoch time\n  \"mediantime\" : xxx,             (numeric) The median block time expressed in UNIX epoch time\n  \"nonce\" : n,                    (numeric) The nonce\n  \"bits\" : \"hex\",                 (string) nBits: compact representation of the block difficulty target\n  \"target\" : \"hex\",               (string) The difficulty target\n  \"difficulty\" : n,               (numeric) The difficulty\n  \"chainwork\" : \"hex\",            (string) Expected number of hashes required to produce the chain up to this block (in hex)\n  \"nTx\" : n,                      (numeric) The number of transactions in the block\n  \"previousblockhash\" : \"hex\",    (string, optional) The hash of the previous block (if available)\n  \"nextblockhash\" : \"hex\"         (string, optional) The hash of the next block (if available)\n}\n\nResult (for verbosity = 3):\n{                                        (json object)\n  \"hash\" : \"hex\",                        (string) the block hash (same as provided)\n  \"confirmations\" : n,                   (numeric) The number of confirmations, or -1 if the block is not on the main chain\n  \"size\" : n,                            (numeric) The block size\n  \"strippedsize\" : n,                    (numeric) The block size excluding witness data\n  \"weight\" : n,                          (numeric) The block weight as defined in BIP 141\n  \"coinbase_tx\" : {                      (json object) Coinbase transaction metadata\n    \"version\" : n,                       (numeric) The coinbase transaction version\n    \"locktime\" : n,                      (numeric) The coinbase transaction's locktime (nLockTime)\n    \"sequence\" : n,                      (numeric) The coinbase input's sequence number (nSequence)\n    \"coinbase\" : \"hex\",                  (string) The coinbase input's script\n    \"witness\" : \"hex\"                    (string, optional) The coinbase input's first (and only) witness stack element, if present\n  },\n  \"height\" : n,                          (numeric) The block height or index\n  \"version\" : n,                         (numeric) The block version\n  \"versionHex\" : \"hex\",                  (string) The block version formatted in hexadecimal\n  \"merkleroot\" : \"hex\",                  (string) The merkle root\n  \"tx\" : [                               (json array)\n    {                                    (json object)\n      \"txid\" : \"hex\",                    (string) The transaction id\n      \"hash\" : \"hex\",                    (string) The transaction hash (differs from txid for witness transactions)\n      \"size\" : n,                        (numeric) The serialized transaction size\n      \"vsize\" : n,                       (numeric) The virtual transaction size (differs from size for witness transactions)\n      \"weight\" : n,                      (numeric) The transaction's weight (between vsize*4-3 and vsize*4)\n      \"version\" : n,                     (numeric) The version\n      \"locktime\" : xxx,                  (numeric) The lock time\n      \"vin\" : [                          (json array)\n        {                                (json object)\n          \"coinbase\" : \"hex\",            (string, optional) The coinbase value (only if coinbase transaction)\n          \"txid\" : \"hex\",                (string, optional) The transaction id (if not coinbase transaction)\n          \"vout\" : n,                    (numeric, optional) The output number (if not coinbase transaction)\n          \"scriptSig\" : {                (json object, optional) The script (if not coinbase transaction)\n            \"asm\" : \"str\",               (string) Disassembly of the signature script\n            \"hex\" : \"hex\"                (string) The raw signature script bytes, hex-encoded\n          },\n          \"txinwitness\" : [              (json array, optional)\n            \"hex\",                       (string) hex-encoded witness data (if any)\n            ...\n          ],\n          \"prevout\" : {                  (json object, optional) The previous output, omitted if block undo data is not available\n            \"generated\" : true|false,    (boolean) Coinbase or not\n            \"height\" : n,                (numeric) The height of the prevout\n            \"value\" : n,                 (numeric) The value in BTC\n            \"scriptPubKey\" : {           (json object)\n              \"asm\" : \"str\",             (string) Disassembly of the output script\n              \"desc\" : \"str\",            (string) Inferred descriptor for the output\n              \"hex\" : \"hex\",             (string) The raw output script bytes, hex-encoded\n              \"address\" : \"str\",         (string, optional) The Bitcoin address (only if a well-defined address exists)\n              \"type\" : \"str\"             (string) The type (one of: nonstandard, anchor, pubkey, pubkeyhash, scripthash, multisig, nulldata, witness_v0_scripthash, witness_v0_keyhash, witness_v1_taproot, witness_unknown)\n            }\n          },\n          \"sequence\" : n                 (numeric) The script sequence number\n        },\n        ...\n      ],\n      \"vout\" : [                         (json array)\n        {                                (json object)\n          \"value\" : n,                   (numeric) The value in BTC\n          \"n\" : n,                       (numeric) index\n          \"scriptPubKey\" : {             (json object)\n            \"asm\" : \"str\",               (string) Disassembly of the output script\n            \"desc\" : \"str\",              (string) Inferred descriptor for the output\n            \"hex\" : \"hex\",               (string) The raw output script bytes, hex-encoded\n            \"address\" : \"str\",           (string, optional) The Bitcoin address (only if a well-defined address exists)\n            \"type\" : \"str\"               (string) The type (one of: nonstandard, anchor, pubkey, pubkeyhash, scripthash, multisig, nulldata, witness_v0_scripthash, witness_v0_keyhash, witness_v1_taproot, witness_unknown)\n          }\n        },\n        ...\n      ],\n      \"fee\" : n,                         (numeric, optional) The transaction fee in BTC, omitted if block undo data is not available\n      \"hex\" : \"hex\"                      (string) The serialized, hex-encoded data for the transaction\n    },\n    ...\n  ],\n  \"time\" : xxx,                          (numeric) The block time expressed in UNIX epoch time\n  \"mediantime\" : xxx,                    (numeric) The median block time expressed in UNIX epoch time\n  \"nonce\" : n,                           (numeric) The nonce\n  \"bits\" : \"hex\",                        (string) nBits: compact representation of the block difficulty target\n  \"target\" : \"hex\",                      (string) The difficulty target\n  \"difficulty\" : n,                      (numeric) The difficulty\n  \"chainwork\" : \"hex\",                   (string) Expected number of hashes required to produce the chain up to this block (in hex)\n  \"nTx\" : n,                             (numeric) The number of transactions in the block\n  \"previousblockhash\" : \"hex\",           (string, optional) The hash of the previous block (if available)\n  \"nextblockhash\" : \"hex\"                (string, optional) The hash of the next block (if available)\n}\n\nExamples:\n> bitcoin-cli getblock \"00000000c937983704a73af28acdec37b049d214adbda81d7e2a3dd146f6ed09\"\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"getblock\", \"params\": [\"00000000c937983704a73af28acdec37b049d214adbda81d7e2a3dd146f6ed09\"]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
             ]
           }
         },
