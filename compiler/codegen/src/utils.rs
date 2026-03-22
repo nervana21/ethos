@@ -560,6 +560,27 @@ const CONCAT_TO_SNAKE: &[(&str, &str)] = &[
     ("wtxid", "w_txid"),
 ];
 
+/// Converts JSON-style keys (camelCase / mixed case like `nTx`, `versionHex`) to Rust `snake_case`.
+/// Already-snake keys (no uppercase ASCII letters) are returned unchanged.
+fn json_key_to_snake_case(name: &str) -> String {
+    let chars: Vec<char> = name.chars().collect();
+    let mut out = String::with_capacity(name.len() + 4);
+    for (i, c) in chars.iter().enumerate() {
+        if c.is_uppercase() {
+            let prev_lower_or_digit =
+                i > 0 && (chars[i - 1].is_lowercase() || chars[i - 1].is_ascii_digit());
+            let next_lower = i + 1 < chars.len() && chars[i + 1].is_lowercase();
+            if prev_lower_or_digit || (i > 0 && chars[i - 1].is_uppercase() && next_lower) {
+                out.push('_');
+            }
+            out.extend(c.to_lowercase());
+        } else {
+            out.push(*c);
+        }
+    }
+    out
+}
+
 /// Sanitizes external identifiers (e.g. RPC schemas) to be valid Rust identifiers.
 /// Prefixes with `field_` when the result would start with a digit (e.g. `10th_percentile_feerate` -> `field_10th_percentile_feerate`).
 pub fn sanitize_external_identifier(name: &str) -> String {
@@ -581,6 +602,8 @@ pub fn sanitize_external_identifier(name: &str) -> String {
     // Rust identifiers cannot start with a digit; use field_ prefix so #[serde(rename)] keeps JSON key correct
     if sanitized.chars().next().map(|c| c.is_ascii_digit()).unwrap_or(false) {
         format!("field_{sanitized}")
+    } else if sanitized.chars().any(|c| c.is_uppercase()) {
+        json_key_to_snake_case(&sanitized)
     } else {
         sanitized
     }
@@ -909,6 +932,10 @@ mod tests {
         // Rust identifiers cannot start with a digit; prefix with field_ and caller uses #[serde(rename)] for JSON key
         let out = sanitize_external_identifier("10th_percentile_feerate");
         assert_eq!(out, "field_10th_percentile_feerate");
+
+        assert_eq!(sanitize_external_identifier("nTx"), "n_tx");
+        assert_eq!(sanitize_external_identifier("versionHex"), "version_hex");
+        assert_eq!(sanitize_external_identifier("global_xpubs"), "global_xpubs");
     }
 
     #[test]

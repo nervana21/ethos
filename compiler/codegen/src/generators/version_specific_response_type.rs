@@ -2207,6 +2207,7 @@ mod tests {
             protocol_type: Some("string".to_string()),
             canonical_name: None,
             condition: None,
+            ..Default::default()
         };
 
         // Element encoded as anonymous positional field_0.
@@ -2222,6 +2223,8 @@ mod tests {
                 default_value: None,
                 version_added: None,
                 version_removed: None,
+                emit_in_struct: None,
+                force_optional: None,
             }]),
             variants: None,
             union_variants: None,
@@ -2229,6 +2232,7 @@ mod tests {
             protocol_type: Some("array".to_string()),
             canonical_name: None,
             condition: None,
+            ..Default::default()
         };
 
         let method = RpcDef {
@@ -2243,6 +2247,7 @@ mod tests {
             version_removed: None,
             examples: None,
             hidden: None,
+            result_discriminator: None,
         };
 
         let code = gen
@@ -2274,6 +2279,7 @@ mod tests {
             protocol_type: Some("string".to_string()),
             canonical_name: None,
             condition: None,
+            ..Default::default()
         };
 
         let result_ty = TypeDef {
@@ -2288,6 +2294,8 @@ mod tests {
                 default_value: None,
                 version_added: None,
                 version_removed: None,
+                emit_in_struct: None,
+                force_optional: None,
             }]),
             variants: None,
             union_variants: None,
@@ -2295,6 +2303,7 @@ mod tests {
             protocol_type: Some("array".to_string()),
             canonical_name: None,
             condition: None,
+            ..Default::default()
         };
 
         let method = RpcDef {
@@ -2309,6 +2318,7 @@ mod tests {
             version_removed: None,
             examples: None,
             hidden: None,
+            result_discriminator: None,
         };
 
         let code = gen
@@ -2348,12 +2358,15 @@ mod tests {
                     protocol_type: Some("hex".to_string()),
                     canonical_name: None,
                     condition: None,
+                    ..Default::default()
                 },
                 required: true,
                 description: String::new(),
                 default_value: None,
                 version_added: None,
                 version_removed: None,
+                emit_in_struct: None,
+                force_optional: None,
             }]),
             variants: None,
             union_variants: None,
@@ -2361,6 +2374,7 @@ mod tests {
             protocol_type: Some("object".to_string()),
             canonical_name: None,
             condition: None,
+            ..Default::default()
         };
 
         let input_elem = TypeDef {
@@ -2374,6 +2388,7 @@ mod tests {
             protocol_type: Some("object".to_string()),
             canonical_name: None,
             condition: None,
+            ..Default::default()
         };
 
         let output_elem = TypeDef {
@@ -2387,6 +2402,7 @@ mod tests {
             protocol_type: Some("object".to_string()),
             canonical_name: None,
             condition: None,
+            ..Default::default()
         };
 
         let make_array_of_objects = |elem: TypeDef| TypeDef {
@@ -2407,6 +2423,8 @@ mod tests {
                         default_value: None,
                         version_added: None,
                         version_removed: None,
+                        emit_in_struct: None,
+                        force_optional: None,
                     }]),
                     variants: None,
                     union_variants: None,
@@ -2414,12 +2432,15 @@ mod tests {
                     protocol_type: Some("object".to_string()),
                     canonical_name: None,
                     condition: None,
+                    ..Default::default()
                 },
                 required: true,
                 description: String::new(),
                 default_value: None,
                 version_added: None,
                 version_removed: None,
+                emit_in_struct: None,
+                force_optional: None,
             }]),
             variants: None,
             union_variants: None,
@@ -2427,6 +2448,7 @@ mod tests {
             protocol_type: Some("array".to_string()),
             canonical_name: None,
             condition: None,
+            ..Default::default()
         };
 
         let inputs_array = make_array_of_objects(input_elem);
@@ -2445,6 +2467,8 @@ mod tests {
                     default_value: None,
                     version_added: None,
                     version_removed: None,
+                    emit_in_struct: None,
+                    force_optional: None,
                 },
                 ir::FieldDef {
                     key: ir::FieldKey::Named("inputs".to_string()),
@@ -2454,6 +2478,8 @@ mod tests {
                     default_value: None,
                     version_added: None,
                     version_removed: None,
+                    emit_in_struct: None,
+                    force_optional: None,
                 },
                 ir::FieldDef {
                     key: ir::FieldKey::Named("outputs".to_string()),
@@ -2463,6 +2489,8 @@ mod tests {
                     default_value: None,
                     version_added: None,
                     version_removed: None,
+                    emit_in_struct: None,
+                    force_optional: None,
                 },
             ]),
             variants: None,
@@ -2471,6 +2499,7 @@ mod tests {
             protocol_type: Some("object".to_string()),
             canonical_name: None,
             condition: None,
+            ..Default::default()
         };
 
         let method = RpcDef {
@@ -2485,6 +2514,7 @@ mod tests {
             version_removed: None,
             examples: None,
             hidden: None,
+            result_discriminator: None,
         };
 
         let code = gen
@@ -2523,6 +2553,7 @@ mod tests {
             protocol_type: Some("any".to_string()),
             canonical_name: None,
             condition: None,
+            ..Default::default()
         };
 
         let result_ty = TypeDef {
@@ -2537,6 +2568,8 @@ mod tests {
                 default_value: None,
                 version_added: None,
                 version_removed: None,
+                emit_in_struct: None,
+                force_optional: None,
             }]),
             variants: None,
             union_variants: None,
@@ -2544,6 +2577,7 @@ mod tests {
             protocol_type: Some("array".to_string()),
             canonical_name: None,
             condition: None,
+            ..Default::default()
         };
 
         let method = RpcDef {
@@ -2558,6 +2592,7 @@ mod tests {
             version_removed: None,
             examples: None,
             hidden: None,
+            result_discriminator: None,
         };
 
         let code = gen
@@ -2589,6 +2624,7 @@ mod tests {
             protocol_type: Some("none".to_string()),
             canonical_name: None,
             condition: Some("If the proposal was accepted with mode=='proposal'".to_string()),
+            ..Default::default()
         };
 
         let version_ty = TypeDef {
@@ -2602,6 +2638,7 @@ mod tests {
             protocol_type: Some("number".to_string()),
             canonical_name: None,
             condition: None,
+            ..Default::default()
         };
 
         let result_ty = TypeDef {
@@ -2617,6 +2654,8 @@ mod tests {
                     default_value: None,
                     version_added: None,
                     version_removed: None,
+                    emit_in_struct: None,
+                    force_optional: None,
                 },
                 ir::FieldDef {
                     key: ir::FieldKey::Named("version".to_string()),
@@ -2626,6 +2665,8 @@ mod tests {
                     default_value: None,
                     version_added: None,
                     version_removed: None,
+                    emit_in_struct: None,
+                    force_optional: None,
                 },
             ]),
             variants: None,
@@ -2634,6 +2675,7 @@ mod tests {
             protocol_type: Some("object".to_string()),
             canonical_name: None,
             condition: None,
+            ..Default::default()
         };
 
         let method = RpcDef {
@@ -2648,6 +2690,7 @@ mod tests {
             version_removed: None,
             examples: None,
             hidden: None,
+            result_discriminator: None,
         };
 
         let code = gen
@@ -2773,6 +2816,7 @@ mod tests {
                 protocol_type: Some("string".to_string()),
                 canonical_name: None,
                 condition: None,
+                ..Default::default()
             };
             TypeDef {
                 name: name.to_string(),
@@ -2786,6 +2830,8 @@ mod tests {
                     default_value: None,
                     version_added: None,
                     version_removed: None,
+                    emit_in_struct: None,
+                    force_optional: None,
                 }]),
                 variants: None,
                 union_variants: None,
@@ -2793,6 +2839,7 @@ mod tests {
                 protocol_type: None,
                 canonical_name: None,
                 condition: None,
+                ..Default::default()
             }
         }
 
@@ -2809,6 +2856,7 @@ mod tests {
                 version_removed: None,
                 examples: None,
                 hidden: None,
+                result_discriminator: None,
             }
         }
 

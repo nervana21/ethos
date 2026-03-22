@@ -21,6 +21,7 @@ fn create_test_rpc_def(results: Vec<MethodResult>) -> RpcDef {
         hidden: None,
         version_added: None,
         version_removed: None,
+        result_discriminator: None,
     }
 }
 
@@ -44,13 +45,18 @@ fn convert_method_result_to_type_def(result: &MethodResult) -> ir::TypeDef {
                         base_type: Some(inner.type_.clone()),
                         protocol_type: None,
                         canonical_name: None,
+                        type_identity: None,
                         condition: None,
+                        map_value: None,
+                        map_key_protocol_type: None,
                     },
                     required: !inner.optional,
                     description: inner.description.clone(),
                     default_value: None,
                     version_added: None,
                     version_removed: None,
+                    emit_in_struct: None,
+                    force_optional: None,
                 })
                 .collect(),
         )
@@ -68,7 +74,10 @@ fn convert_method_result_to_type_def(result: &MethodResult) -> ir::TypeDef {
         base_type: Some(result.type_.clone()),
         protocol_type: None,
         canonical_name: None,
+        type_identity: None,
         condition: None,
+        map_value: None,
+        map_key_protocol_type: None,
     }
 }
 

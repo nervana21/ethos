@@ -100,6 +100,7 @@ mod tests {
             version_removed: None,
             examples: None,
             hidden: None,
+            result_discriminator: None,
         };
 
         let rpc_def2 = RpcDef {
@@ -114,6 +115,7 @@ mod tests {
             version_removed: None,
             examples: None,
             hidden: None,
+            result_discriminator: None,
         };
 
         let module1 = ir::ProtocolModule::from_source(
@@ -154,6 +156,7 @@ mod tests {
             version_removed: None,
             examples: None,
             hidden: None,
+            result_discriminator: None,
         };
 
         let module = ir::ProtocolModule::from_source(
@@ -185,6 +188,7 @@ mod tests {
             version_removed: None,
             examples: None,
             hidden: None,
+            result_discriminator: None,
         };
 
         let rpc_def2 = RpcDef {
@@ -199,6 +203,7 @@ mod tests {
             version_removed: None,
             examples: None,
             hidden: None,
+            result_discriminator: None,
         };
 
         let module1 = ir::ProtocolModule::from_source(
