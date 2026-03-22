@@ -16,6 +16,9 @@ pub use node_manager::NodeManagerGenerator;
 /// Shared helpers for generator modules
 pub mod fee_rate_utils;
 
+/// Allowlisted non-mechanical Raw response rules (`response_field_type_override`, etc.).
+pub mod raw_response_policy;
+
 pub mod test_node;
 
 /// Version-specific response type generator
