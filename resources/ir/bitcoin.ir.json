@@ -2350,19 +2350,503 @@
                     "fields": [
                       {
                         "key": {
-                          "Named": "field_0"
+                          "Named": "txid"
                         },
                         "field_type": {
-                          "name": "elision",
-                          "description": "The layout is the same as the output of decoderawtransaction.",
+                          "name": "hex",
+                          "description": "The transaction id",
                           "kind": "Primitive",
                           "fields": null,
                           "variants": null,
                           "base_type": null,
-                          "protocol_type": "elision"
+                          "protocol_type": "hex"
                         },
                         "required": true,
-                        "description": "The layout is the same as the output of decoderawtransaction.",
+                        "description": "The transaction id",
+                        "default_value": null
+                      },
+                      {
+                        "key": {
+                          "Named": "hash"
+                        },
+                        "field_type": {
+                          "name": "hex",
+                          "description": "The transaction hash (differs from txid for witness transactions)",
+                          "kind": "Primitive",
+                          "fields": null,
+                          "variants": null,
+                          "base_type": null,
+                          "protocol_type": "hex"
+                        },
+                        "required": true,
+                        "description": "The transaction hash (differs from txid for witness transactions)",
+                        "default_value": null
+                      },
+                      {
+                        "key": {
+                          "Named": "size"
+                        },
+                        "field_type": {
+                          "name": "number",
+                          "description": "The serialized transaction size",
+                          "kind": "Primitive",
+                          "fields": null,
+                          "variants": null,
+                          "base_type": null,
+                          "protocol_type": "number"
+                        },
+                        "required": true,
+                        "description": "The serialized transaction size",
+                        "default_value": null
+                      },
+                      {
+                        "key": {
+                          "Named": "vsize"
+                        },
+                        "field_type": {
+                          "name": "number",
+                          "description": "The virtual transaction size (differs from size for witness transactions)",
+                          "kind": "Primitive",
+                          "fields": null,
+                          "variants": null,
+                          "base_type": null,
+                          "protocol_type": "number"
+                        },
+                        "required": true,
+                        "description": "The virtual transaction size (differs from size for witness transactions)",
+                        "default_value": null
+                      },
+                      {
+                        "key": {
+                          "Named": "weight"
+                        },
+                        "field_type": {
+                          "name": "number",
+                          "description": "The transaction's weight (between vsize*4-3 and vsize*4)",
+                          "kind": "Primitive",
+                          "fields": null,
+                          "variants": null,
+                          "base_type": null,
+                          "protocol_type": "number"
+                        },
+                        "required": true,
+                        "description": "The transaction's weight (between vsize*4-3 and vsize*4)",
+                        "default_value": null
+                      },
+                      {
+                        "key": {
+                          "Named": "version"
+                        },
+                        "field_type": {
+                          "name": "number",
+                          "description": "The version",
+                          "kind": "Primitive",
+                          "fields": null,
+                          "variants": null,
+                          "base_type": null,
+                          "protocol_type": "number"
+                        },
+                        "required": true,
+                        "description": "The version",
+                        "default_value": null
+                      },
+                      {
+                        "key": {
+                          "Named": "locktime"
+                        },
+                        "field_type": {
+                          "name": "timestamp",
+                          "description": "The lock time",
+                          "kind": "Primitive",
+                          "fields": null,
+                          "variants": null,
+                          "base_type": null,
+                          "protocol_type": "timestamp"
+                        },
+                        "required": true,
+                        "description": "The lock time",
+                        "default_value": null
+                      },
+                      {
+                        "key": {
+                          "Named": "vin"
+                        },
+                        "field_type": {
+                          "name": "array",
+                          "description": "",
+                          "kind": "Object",
+                          "fields": [
+                            {
+                              "key": {
+                                "Named": "field"
+                              },
+                              "field_type": {
+                                "name": "object",
+                                "description": "",
+                                "kind": "Object",
+                                "fields": [
+                                  {
+                                    "key": {
+                                      "Named": "field_0"
+                                    },
+                                    "field_type": {
+                                      "name": "DecodedVin",
+                                      "description": "",
+                                      "kind": "Object",
+                                      "fields": [
+                                        {
+                                          "key": {
+                                            "Named": "coinbase"
+                                          },
+                                          "field_type": {
+                                            "name": "hex",
+                                            "description": "The coinbase value (only if coinbase transaction)",
+                                            "kind": "Primitive",
+                                            "fields": null,
+                                            "variants": null,
+                                            "base_type": null,
+                                            "protocol_type": "hex"
+                                          },
+                                          "required": false,
+                                          "description": "The coinbase value (only if coinbase transaction)",
+                                          "default_value": null
+                                        },
+                                        {
+                                          "key": {
+                                            "Named": "txid"
+                                          },
+                                          "field_type": {
+                                            "name": "hex",
+                                            "description": "The transaction id (if not coinbase transaction)",
+                                            "kind": "Primitive",
+                                            "fields": null,
+                                            "variants": null,
+                                            "base_type": null,
+                                            "protocol_type": "hex"
+                                          },
+                                          "required": false,
+                                          "description": "The transaction id (if not coinbase transaction)",
+                                          "default_value": null
+                                        },
+                                        {
+                                          "key": {
+                                            "Named": "vout"
+                                          },
+                                          "field_type": {
+                                            "name": "number",
+                                            "description": "The output number (if not coinbase transaction)",
+                                            "kind": "Primitive",
+                                            "fields": null,
+                                            "variants": null,
+                                            "base_type": null,
+                                            "protocol_type": "number"
+                                          },
+                                          "required": false,
+                                          "description": "The output number (if not coinbase transaction)",
+                                          "default_value": null
+                                        },
+                                        {
+                                          "key": {
+                                            "Named": "scriptSig"
+                                          },
+                                          "field_type": {
+                                            "name": "DecodedVin",
+                                            "description": "The script (if not coinbase transaction)",
+                                            "kind": "Object",
+                                            "fields": [
+                                              {
+                                                "key": {
+                                                  "Named": "asm"
+                                                },
+                                                "field_type": {
+                                                  "name": "string",
+                                                  "description": "Disassembly of the signature script",
+                                                  "kind": "Primitive",
+                                                  "fields": null,
+                                                  "variants": null,
+                                                  "base_type": null,
+                                                  "protocol_type": "string"
+                                                },
+                                                "required": true,
+                                                "description": "Disassembly of the signature script",
+                                                "default_value": null
+                                              },
+                                              {
+                                                "key": {
+                                                  "Named": "hex"
+                                                },
+                                                "field_type": {
+                                                  "name": "hex",
+                                                  "description": "The raw signature script bytes, hex-encoded",
+                                                  "kind": "Primitive",
+                                                  "fields": null,
+                                                  "variants": null,
+                                                  "base_type": null,
+                                                  "protocol_type": "hex"
+                                                },
+                                                "required": true,
+                                                "description": "The raw signature script bytes, hex-encoded",
+                                                "default_value": null
+                                              }
+                                            ],
+                                            "variants": null,
+                                            "base_type": null,
+                                            "protocol_type": "object"
+                                          },
+                                          "required": false,
+                                          "description": "The script (if not coinbase transaction)",
+                                          "default_value": null
+                                        },
+                                        {
+                                          "key": {
+                                            "Named": "txinwitness"
+                                          },
+                                          "field_type": {
+                                            "name": "array",
+                                            "description": "",
+                                            "kind": "Array",
+                                            "fields": null,
+                                            "variants": null,
+                                            "base_type": null,
+                                            "protocol_type": "array"
+                                          },
+                                          "required": false,
+                                          "description": "",
+                                          "default_value": null
+                                        },
+                                        {
+                                          "key": {
+                                            "Named": "sequence"
+                                          },
+                                          "field_type": {
+                                            "name": "number",
+                                            "description": "The script sequence number",
+                                            "kind": "Primitive",
+                                            "fields": null,
+                                            "variants": null,
+                                            "base_type": null,
+                                            "protocol_type": "number"
+                                          },
+                                          "required": true,
+                                          "description": "The script sequence number",
+                                          "default_value": null
+                                        }
+                                      ],
+                                      "variants": null,
+                                      "base_type": null,
+                                      "protocol_type": "object"
+                                    },
+                                    "required": true,
+                                    "description": "",
+                                    "default_value": null
+                                  }
+                                ],
+                                "variants": null,
+                                "base_type": null,
+                                "protocol_type": "object"
+                              },
+                              "required": true,
+                              "description": "",
+                              "default_value": null
+                            }
+                          ],
+                          "variants": null,
+                          "base_type": null,
+                          "protocol_type": "array"
+                        },
+                        "required": true,
+                        "description": "",
+                        "default_value": null
+                      },
+                      {
+                        "key": {
+                          "Named": "vout"
+                        },
+                        "field_type": {
+                          "name": "array",
+                          "description": "",
+                          "kind": "Object",
+                          "fields": [
+                            {
+                              "key": {
+                                "Named": "field"
+                              },
+                              "field_type": {
+                                "name": "object",
+                                "description": "",
+                                "kind": "Object",
+                                "fields": [
+                                  {
+                                    "key": {
+                                      "Named": "field_0"
+                                    },
+                                    "field_type": {
+                                      "name": "DecodedVout",
+                                      "description": "",
+                                      "kind": "Object",
+                                      "fields": [
+                                        {
+                                          "key": {
+                                            "Named": "value"
+                                          },
+                                          "field_type": {
+                                            "name": "amount",
+                                            "description": "The value in BTC",
+                                            "kind": "Primitive",
+                                            "fields": null,
+                                            "variants": null,
+                                            "base_type": null,
+                                            "protocol_type": "amount"
+                                          },
+                                          "required": true,
+                                          "description": "The value in BTC",
+                                          "default_value": null
+                                        },
+                                        {
+                                          "key": {
+                                            "Named": "n"
+                                          },
+                                          "field_type": {
+                                            "name": "number",
+                                            "description": "index",
+                                            "kind": "Primitive",
+                                            "fields": null,
+                                            "variants": null,
+                                            "base_type": null,
+                                            "protocol_type": "number"
+                                          },
+                                          "required": true,
+                                          "description": "index",
+                                          "default_value": null
+                                        },
+                                        {
+                                          "key": {
+                                            "Named": "scriptPubKey"
+                                          },
+                                          "field_type": {
+                                            "name": "DecodedVout",
+                                            "description": "",
+                                            "kind": "Object",
+                                            "fields": [
+                                              {
+                                                "key": {
+                                                  "Named": "asm"
+                                                },
+                                                "field_type": {
+                                                  "name": "string",
+                                                  "description": "Disassembly of the output script",
+                                                  "kind": "Primitive",
+                                                  "fields": null,
+                                                  "variants": null,
+                                                  "base_type": null,
+                                                  "protocol_type": "string"
+                                                },
+                                                "required": true,
+                                                "description": "Disassembly of the output script",
+                                                "default_value": null
+                                              },
+                                              {
+                                                "key": {
+                                                  "Named": "desc"
+                                                },
+                                                "field_type": {
+                                                  "name": "string",
+                                                  "description": "Inferred descriptor for the output",
+                                                  "kind": "Primitive",
+                                                  "fields": null,
+                                                  "variants": null,
+                                                  "base_type": null,
+                                                  "protocol_type": "string"
+                                                },
+                                                "required": true,
+                                                "description": "Inferred descriptor for the output",
+                                                "default_value": null
+                                              },
+                                              {
+                                                "key": {
+                                                  "Named": "hex"
+                                                },
+                                                "field_type": {
+                                                  "name": "hex",
+                                                  "description": "The raw output script bytes, hex-encoded",
+                                                  "kind": "Primitive",
+                                                  "fields": null,
+                                                  "variants": null,
+                                                  "base_type": null,
+                                                  "protocol_type": "hex"
+                                                },
+                                                "required": true,
+                                                "description": "The raw output script bytes, hex-encoded",
+                                                "default_value": null
+                                              },
+                                              {
+                                                "key": {
+                                                  "Named": "address"
+                                                },
+                                                "field_type": {
+                                                  "name": "string",
+                                                  "description": "The Bitcoin address (only if a well-defined address exists)",
+                                                  "kind": "Primitive",
+                                                  "fields": null,
+                                                  "variants": null,
+                                                  "base_type": null,
+                                                  "protocol_type": "string"
+                                                },
+                                                "required": false,
+                                                "description": "The Bitcoin address (only if a well-defined address exists)",
+                                                "default_value": null
+                                              },
+                                              {
+                                                "key": {
+                                                  "Named": "type"
+                                                },
+                                                "field_type": {
+                                                  "name": "string",
+                                                  "description": "The type (one of: nonstandard, anchor, pubkey, pubkeyhash, scripthash, multisig, nulldata, witness_v0_scripthash, witness_v0_keyhash, witness_v1_taproot, witness_unknown)",
+                                                  "kind": "Primitive",
+                                                  "fields": null,
+                                                  "variants": null,
+                                                  "base_type": null,
+                                                  "protocol_type": "string"
+                                                },
+                                                "required": true,
+                                                "description": "The type (one of: nonstandard, anchor, pubkey, pubkeyhash, scripthash, multisig, nulldata, witness_v0_scripthash, witness_v0_keyhash, witness_v1_taproot, witness_unknown)",
+                                                "default_value": null
+                                              }
+                                            ],
+                                            "variants": null,
+                                            "base_type": null,
+                                            "protocol_type": "object"
+                                          },
+                                          "required": true,
+                                          "description": "",
+                                          "default_value": null
+                                        }
+                                      ],
+                                      "variants": null,
+                                      "base_type": null,
+                                      "protocol_type": "object"
+                                    },
+                                    "required": true,
+                                    "description": "",
+                                    "default_value": null
+                                  }
+                                ],
+                                "variants": null,
+                                "base_type": null,
+                                "protocol_type": "object"
+                              },
+                              "required": true,
+                              "description": "",
+                              "default_value": null
+                            }
+                          ],
+                          "variants": null,
+                          "base_type": null,
+                          "protocol_type": "array"
+                        },
+                        "required": true,
+                        "description": "",
                         "default_value": null
                       }
                     ],
@@ -2691,16 +3175,500 @@
                                       "fields": [
                                         {
                                           "key": {
-                                            "Named": "field_0"
+                                            "Named": "txid"
                                           },
                                           "field_type": {
-                                            "name": "elision",
-                                            "description": "",
+                                            "name": "hex",
+                                            "description": "The transaction id",
                                             "kind": "Primitive",
                                             "fields": null,
                                             "variants": null,
                                             "base_type": null,
-                                            "protocol_type": "elision"
+                                            "protocol_type": "hex"
+                                          },
+                                          "required": true,
+                                          "description": "The transaction id",
+                                          "default_value": null
+                                        },
+                                        {
+                                          "key": {
+                                            "Named": "hash"
+                                          },
+                                          "field_type": {
+                                            "name": "hex",
+                                            "description": "The transaction hash (differs from txid for witness transactions)",
+                                            "kind": "Primitive",
+                                            "fields": null,
+                                            "variants": null,
+                                            "base_type": null,
+                                            "protocol_type": "hex"
+                                          },
+                                          "required": true,
+                                          "description": "The transaction hash (differs from txid for witness transactions)",
+                                          "default_value": null
+                                        },
+                                        {
+                                          "key": {
+                                            "Named": "size"
+                                          },
+                                          "field_type": {
+                                            "name": "number",
+                                            "description": "The serialized transaction size",
+                                            "kind": "Primitive",
+                                            "fields": null,
+                                            "variants": null,
+                                            "base_type": null,
+                                            "protocol_type": "number"
+                                          },
+                                          "required": true,
+                                          "description": "The serialized transaction size",
+                                          "default_value": null
+                                        },
+                                        {
+                                          "key": {
+                                            "Named": "vsize"
+                                          },
+                                          "field_type": {
+                                            "name": "number",
+                                            "description": "The virtual transaction size (differs from size for witness transactions)",
+                                            "kind": "Primitive",
+                                            "fields": null,
+                                            "variants": null,
+                                            "base_type": null,
+                                            "protocol_type": "number"
+                                          },
+                                          "required": true,
+                                          "description": "The virtual transaction size (differs from size for witness transactions)",
+                                          "default_value": null
+                                        },
+                                        {
+                                          "key": {
+                                            "Named": "weight"
+                                          },
+                                          "field_type": {
+                                            "name": "number",
+                                            "description": "The transaction's weight (between vsize*4-3 and vsize*4)",
+                                            "kind": "Primitive",
+                                            "fields": null,
+                                            "variants": null,
+                                            "base_type": null,
+                                            "protocol_type": "number"
+                                          },
+                                          "required": true,
+                                          "description": "The transaction's weight (between vsize*4-3 and vsize*4)",
+                                          "default_value": null
+                                        },
+                                        {
+                                          "key": {
+                                            "Named": "version"
+                                          },
+                                          "field_type": {
+                                            "name": "number",
+                                            "description": "The version",
+                                            "kind": "Primitive",
+                                            "fields": null,
+                                            "variants": null,
+                                            "base_type": null,
+                                            "protocol_type": "number"
+                                          },
+                                          "required": true,
+                                          "description": "The version",
+                                          "default_value": null
+                                        },
+                                        {
+                                          "key": {
+                                            "Named": "locktime"
+                                          },
+                                          "field_type": {
+                                            "name": "timestamp",
+                                            "description": "The lock time",
+                                            "kind": "Primitive",
+                                            "fields": null,
+                                            "variants": null,
+                                            "base_type": null,
+                                            "protocol_type": "timestamp"
+                                          },
+                                          "required": true,
+                                          "description": "The lock time",
+                                          "default_value": null
+                                        },
+                                        {
+                                          "key": {
+                                            "Named": "vin"
+                                          },
+                                          "field_type": {
+                                            "name": "array",
+                                            "description": "",
+                                            "kind": "Object",
+                                            "fields": [
+                                              {
+                                                "key": {
+                                                  "Named": "field"
+                                                },
+                                                "field_type": {
+                                                  "name": "object",
+                                                  "description": "",
+                                                  "kind": "Object",
+                                                  "fields": [
+                                                    {
+                                                      "key": {
+                                                        "Named": "field_0"
+                                                      },
+                                                      "field_type": {
+                                                        "name": "DecodedVin",
+                                                        "description": "",
+                                                        "kind": "Object",
+                                                        "fields": [
+                                                          {
+                                                            "key": {
+                                                              "Named": "coinbase"
+                                                            },
+                                                            "field_type": {
+                                                              "name": "hex",
+                                                              "description": "The coinbase value (only if coinbase transaction)",
+                                                              "kind": "Primitive",
+                                                              "fields": null,
+                                                              "variants": null,
+                                                              "base_type": null,
+                                                              "protocol_type": "hex"
+                                                            },
+                                                            "required": false,
+                                                            "description": "The coinbase value (only if coinbase transaction)",
+                                                            "default_value": null
+                                                          },
+                                                          {
+                                                            "key": {
+                                                              "Named": "txid"
+                                                            },
+                                                            "field_type": {
+                                                              "name": "hex",
+                                                              "description": "The transaction id (if not coinbase transaction)",
+                                                              "kind": "Primitive",
+                                                              "fields": null,
+                                                              "variants": null,
+                                                              "base_type": null,
+                                                              "protocol_type": "hex"
+                                                            },
+                                                            "required": false,
+                                                            "description": "The transaction id (if not coinbase transaction)",
+                                                            "default_value": null
+                                                          },
+                                                          {
+                                                            "key": {
+                                                              "Named": "vout"
+                                                            },
+                                                            "field_type": {
+                                                              "name": "number",
+                                                              "description": "The output number (if not coinbase transaction)",
+                                                              "kind": "Primitive",
+                                                              "fields": null,
+                                                              "variants": null,
+                                                              "base_type": null,
+                                                              "protocol_type": "number"
+                                                            },
+                                                            "required": false,
+                                                            "description": "The output number (if not coinbase transaction)",
+                                                            "default_value": null
+                                                          },
+                                                          {
+                                                            "key": {
+                                                              "Named": "scriptSig"
+                                                            },
+                                                            "field_type": {
+                                                              "name": "DecodedVin",
+                                                              "description": "The script (if not coinbase transaction)",
+                                                              "kind": "Object",
+                                                              "fields": [
+                                                                {
+                                                                  "key": {
+                                                                    "Named": "asm"
+                                                                  },
+                                                                  "field_type": {
+                                                                    "name": "string",
+                                                                    "description": "Disassembly of the signature script",
+                                                                    "kind": "Primitive",
+                                                                    "fields": null,
+                                                                    "variants": null,
+                                                                    "base_type": null,
+                                                                    "protocol_type": "string"
+                                                                  },
+                                                                  "required": true,
+                                                                  "description": "Disassembly of the signature script",
+                                                                  "default_value": null
+                                                                },
+                                                                {
+                                                                  "key": {
+                                                                    "Named": "hex"
+                                                                  },
+                                                                  "field_type": {
+                                                                    "name": "hex",
+                                                                    "description": "The raw signature script bytes, hex-encoded",
+                                                                    "kind": "Primitive",
+                                                                    "fields": null,
+                                                                    "variants": null,
+                                                                    "base_type": null,
+                                                                    "protocol_type": "hex"
+                                                                  },
+                                                                  "required": true,
+                                                                  "description": "The raw signature script bytes, hex-encoded",
+                                                                  "default_value": null
+                                                                }
+                                                              ],
+                                                              "variants": null,
+                                                              "base_type": null,
+                                                              "protocol_type": "object"
+                                                            },
+                                                            "required": false,
+                                                            "description": "The script (if not coinbase transaction)",
+                                                            "default_value": null
+                                                          },
+                                                          {
+                                                            "key": {
+                                                              "Named": "txinwitness"
+                                                            },
+                                                            "field_type": {
+                                                              "name": "array",
+                                                              "description": "",
+                                                              "kind": "Array",
+                                                              "fields": null,
+                                                              "variants": null,
+                                                              "base_type": null,
+                                                              "protocol_type": "array"
+                                                            },
+                                                            "required": false,
+                                                            "description": "",
+                                                            "default_value": null
+                                                          },
+                                                          {
+                                                            "key": {
+                                                              "Named": "sequence"
+                                                            },
+                                                            "field_type": {
+                                                              "name": "number",
+                                                              "description": "The script sequence number",
+                                                              "kind": "Primitive",
+                                                              "fields": null,
+                                                              "variants": null,
+                                                              "base_type": null,
+                                                              "protocol_type": "number"
+                                                            },
+                                                            "required": true,
+                                                            "description": "The script sequence number",
+                                                            "default_value": null
+                                                          }
+                                                        ],
+                                                        "variants": null,
+                                                        "base_type": null,
+                                                        "protocol_type": "object"
+                                                      },
+                                                      "required": true,
+                                                      "description": "",
+                                                      "default_value": null
+                                                    }
+                                                  ],
+                                                  "variants": null,
+                                                  "base_type": null,
+                                                  "protocol_type": "object"
+                                                },
+                                                "required": true,
+                                                "description": "",
+                                                "default_value": null
+                                              }
+                                            ],
+                                            "variants": null,
+                                            "base_type": null,
+                                            "protocol_type": "array"
+                                          },
+                                          "required": true,
+                                          "description": "",
+                                          "default_value": null
+                                        },
+                                        {
+                                          "key": {
+                                            "Named": "vout"
+                                          },
+                                          "field_type": {
+                                            "name": "array",
+                                            "description": "",
+                                            "kind": "Object",
+                                            "fields": [
+                                              {
+                                                "key": {
+                                                  "Named": "field"
+                                                },
+                                                "field_type": {
+                                                  "name": "object",
+                                                  "description": "",
+                                                  "kind": "Object",
+                                                  "fields": [
+                                                    {
+                                                      "key": {
+                                                        "Named": "field_0"
+                                                      },
+                                                      "field_type": {
+                                                        "name": "DecodedVout",
+                                                        "description": "",
+                                                        "kind": "Object",
+                                                        "fields": [
+                                                          {
+                                                            "key": {
+                                                              "Named": "value"
+                                                            },
+                                                            "field_type": {
+                                                              "name": "amount",
+                                                              "description": "The value in BTC",
+                                                              "kind": "Primitive",
+                                                              "fields": null,
+                                                              "variants": null,
+                                                              "base_type": null,
+                                                              "protocol_type": "amount"
+                                                            },
+                                                            "required": true,
+                                                            "description": "The value in BTC",
+                                                            "default_value": null
+                                                          },
+                                                          {
+                                                            "key": {
+                                                              "Named": "n"
+                                                            },
+                                                            "field_type": {
+                                                              "name": "number",
+                                                              "description": "index",
+                                                              "kind": "Primitive",
+                                                              "fields": null,
+                                                              "variants": null,
+                                                              "base_type": null,
+                                                              "protocol_type": "number"
+                                                            },
+                                                            "required": true,
+                                                            "description": "index",
+                                                            "default_value": null
+                                                          },
+                                                          {
+                                                            "key": {
+                                                              "Named": "scriptPubKey"
+                                                            },
+                                                            "field_type": {
+                                                              "name": "DecodedVout",
+                                                              "description": "",
+                                                              "kind": "Object",
+                                                              "fields": [
+                                                                {
+                                                                  "key": {
+                                                                    "Named": "asm"
+                                                                  },
+                                                                  "field_type": {
+                                                                    "name": "string",
+                                                                    "description": "Disassembly of the output script",
+                                                                    "kind": "Primitive",
+                                                                    "fields": null,
+                                                                    "variants": null,
+                                                                    "base_type": null,
+                                                                    "protocol_type": "string"
+                                                                  },
+                                                                  "required": true,
+                                                                  "description": "Disassembly of the output script",
+                                                                  "default_value": null
+                                                                },
+                                                                {
+                                                                  "key": {
+                                                                    "Named": "desc"
+                                                                  },
+                                                                  "field_type": {
+                                                                    "name": "string",
+                                                                    "description": "Inferred descriptor for the output",
+                                                                    "kind": "Primitive",
+                                                                    "fields": null,
+                                                                    "variants": null,
+                                                                    "base_type": null,
+                                                                    "protocol_type": "string"
+                                                                  },
+                                                                  "required": true,
+                                                                  "description": "Inferred descriptor for the output",
+                                                                  "default_value": null
+                                                                },
+                                                                {
+                                                                  "key": {
+                                                                    "Named": "hex"
+                                                                  },
+                                                                  "field_type": {
+                                                                    "name": "hex",
+                                                                    "description": "The raw output script bytes, hex-encoded",
+                                                                    "kind": "Primitive",
+                                                                    "fields": null,
+                                                                    "variants": null,
+                                                                    "base_type": null,
+                                                                    "protocol_type": "hex"
+                                                                  },
+                                                                  "required": true,
+                                                                  "description": "The raw output script bytes, hex-encoded",
+                                                                  "default_value": null
+                                                                },
+                                                                {
+                                                                  "key": {
+                                                                    "Named": "address"
+                                                                  },
+                                                                  "field_type": {
+                                                                    "name": "string",
+                                                                    "description": "The Bitcoin address (only if a well-defined address exists)",
+                                                                    "kind": "Primitive",
+                                                                    "fields": null,
+                                                                    "variants": null,
+                                                                    "base_type": null,
+                                                                    "protocol_type": "string"
+                                                                  },
+                                                                  "required": false,
+                                                                  "description": "The Bitcoin address (only if a well-defined address exists)",
+                                                                  "default_value": null
+                                                                },
+                                                                {
+                                                                  "key": {
+                                                                    "Named": "type"
+                                                                  },
+                                                                  "field_type": {
+                                                                    "name": "string",
+                                                                    "description": "The type (one of: nonstandard, anchor, pubkey, pubkeyhash, scripthash, multisig, nulldata, witness_v0_scripthash, witness_v0_keyhash, witness_v1_taproot, witness_unknown)",
+                                                                    "kind": "Primitive",
+                                                                    "fields": null,
+                                                                    "variants": null,
+                                                                    "base_type": null,
+                                                                    "protocol_type": "string"
+                                                                  },
+                                                                  "required": true,
+                                                                  "description": "The type (one of: nonstandard, anchor, pubkey, pubkeyhash, scripthash, multisig, nulldata, witness_v0_scripthash, witness_v0_keyhash, witness_v1_taproot, witness_unknown)",
+                                                                  "default_value": null
+                                                                }
+                                                              ],
+                                                              "variants": null,
+                                                              "base_type": null,
+                                                              "protocol_type": "object"
+                                                            },
+                                                            "required": true,
+                                                            "description": "",
+                                                            "default_value": null
+                                                          }
+                                                        ],
+                                                        "variants": null,
+                                                        "base_type": null,
+                                                        "protocol_type": "object"
+                                                      },
+                                                      "required": true,
+                                                      "description": "",
+                                                      "default_value": null
+                                                    }
+                                                  ],
+                                                  "variants": null,
+                                                  "base_type": null,
+                                                  "protocol_type": "object"
+                                                },
+                                                "required": true,
+                                                "description": "",
+                                                "default_value": null
+                                              }
+                                            ],
+                                            "variants": null,
+                                            "base_type": null,
+                                            "protocol_type": "array"
                                           },
                                           "required": true,
                                           "description": "",
@@ -5069,7 +6037,7 @@
             "requires_private_keys": false,
             "version_added": "0.17",
             "examples": [
-              "decodepsbt \"psbt\"\n\nReturn a JSON object representing the serialized, base64-encoded partially signed Bitcoin transaction.\n\nArguments:\n1. psbt    (string, required) The PSBT base64 string\n\nResult:\n{                                          (json object)\n  \"tx\" : {                                 (json object) The decoded network-serialized unsigned transaction.\n    ...                                    The layout is the same as the output of decoderawtransaction.\n  },\n  \"global_xpubs\" : [                       (json array)\n    {                                      (json object)\n      \"xpub\" : \"str\",                      (string) The extended public key this path corresponds to\n      \"master_fingerprint\" : \"hex\",        (string) The fingerprint of the master key\n      \"path\" : \"str\"                       (string) The path\n    },\n    ...\n  ],\n  \"psbt_version\" : n,                      (numeric) The PSBT version number. Not to be confused with the unsigned transaction version\n  \"proprietary\" : [                        (json array) The global proprietary map\n    {                                      (json object)\n      \"identifier\" : \"hex\",                (string) The hex string for the proprietary identifier\n      \"subtype\" : n,                       (numeric) The number for the subtype\n      \"key\" : \"hex\",                       (string) The hex for the key\n      \"value\" : \"hex\"                      (string) The hex for the value\n    },\n    ...\n  ],\n  \"unknown\" : {                            (json object) The unknown global fields\n    \"key\" : \"hex\",                         (string) (key-value pair) An unknown key-value pair\n    ...\n  },\n  \"inputs\" : [                             (json array)\n    {                                      (json object)\n      \"non_witness_utxo\" : {               (json object, optional) Decoded network transaction for non-witness UTXOs\n        ...\n      },\n      \"witness_utxo\" : {                   (json object, optional) Transaction output for witness UTXOs\n        \"amount\" : n,                      (numeric) The value in BTC\n        \"scriptPubKey\" : {                 (json object)\n          \"asm\" : \"str\",                   (string) Disassembly of the output script\n          \"desc\" : \"str\",                  (string) Inferred descriptor for the output\n          \"hex\" : \"hex\",                   (string) The raw output script bytes, hex-encoded\n          \"type\" : \"str\",                  (string) The type, eg 'pubkeyhash'\n          \"address\" : \"str\"                (string, optional) The Bitcoin address (only if a well-defined address exists)\n        }\n      },\n      \"partial_signatures\" : {             (json object, optional)\n        \"pubkey\" : \"str\",                  (string) The public key and signature that corresponds to it.\n        ...\n      },\n      \"sighash\" : \"str\",                   (string, optional) The sighash type to be used\n      \"redeem_script\" : {                  (json object, optional)\n        \"asm\" : \"str\",                     (string) Disassembly of the redeem script\n        \"hex\" : \"hex\",                     (string) The raw redeem script bytes, hex-encoded\n        \"type\" : \"str\"                     (string) The type, eg 'pubkeyhash'\n      },\n      \"witness_script\" : {                 (json object, optional)\n        \"asm\" : \"str\",                     (string) Disassembly of the witness script\n        \"hex\" : \"hex\",                     (string) The raw witness script bytes, hex-encoded\n        \"type\" : \"str\"                     (string) The type, eg 'pubkeyhash'\n      },\n      \"bip32_derivs\" : [                   (json array, optional)\n        {                                  (json object)\n          \"pubkey\" : \"str\",                (string) The public key with the derivation path as the value.\n          \"master_fingerprint\" : \"str\",    (string) The fingerprint of the master key\n          \"path\" : \"str\"                   (string) The path\n        },\n        ...\n      ],\n      \"final_scriptSig\" : {                (json object, optional)\n        \"asm\" : \"str\",                     (string) Disassembly of the final signature script\n        \"hex\" : \"hex\"                      (string) The raw final signature script bytes, hex-encoded\n      },\n      \"final_scriptwitness\" : [            (json array, optional)\n        \"hex\",                             (string) hex-encoded witness data (if any)\n        ...\n      ],\n      \"ripemd160_preimages\" : {            (json object, optional)\n        \"hash\" : \"str\",                    (string) The hash and preimage that corresponds to it.\n        ...\n      },\n      \"sha256_preimages\" : {               (json object, optional)\n        \"hash\" : \"str\",                    (string) The hash and preimage that corresponds to it.\n        ...\n      },\n      \"hash160_preimages\" : {              (json object, optional)\n        \"hash\" : \"str\",                    (string) The hash and preimage that corresponds to it.\n        ...\n      },\n      \"hash256_preimages\" : {              (json object, optional)\n        \"hash\" : \"str\",                    (string) The hash and preimage that corresponds to it.\n        ...\n      },\n      \"taproot_key_path_sig\" : \"hex\",      (string, optional) hex-encoded signature for the Taproot key path spend\n      \"taproot_script_path_sigs\" : [       (json array, optional)\n        {                                  (json object, optional) The signature for the pubkey and leaf hash combination\n          \"pubkey\" : \"str\",                (string) The x-only pubkey for this signature\n          \"leaf_hash\" : \"str\",             (string) The leaf hash for this signature\n          \"sig\" : \"str\"                    (string) The signature itself\n        },\n        ...\n      ],\n      \"taproot_scripts\" : [                (json array, optional)\n        {                                  (json object)\n          \"script\" : \"hex\",                (string) A leaf script\n          \"leaf_ver\" : n,                  (numeric) The version number for the leaf script\n          \"control_blocks\" : [             (json array) The control blocks for this script\n            \"hex\",                         (string) A hex-encoded control block for this script\n            ...\n          ]\n        },\n        ...\n      ],\n      \"taproot_bip32_derivs\" : [           (json array, optional)\n        {                                  (json object)\n          \"pubkey\" : \"str\",                (string) The x-only public key this path corresponds to\n          \"master_fingerprint\" : \"str\",    (string) The fingerprint of the master key\n          \"path\" : \"str\",                  (string) The path\n          \"leaf_hashes\" : [                (json array) The hashes of the leaves this pubkey appears in\n            \"hex\",                         (string) The hash of a leaf this pubkey appears in\n            ...\n          ]\n        },\n        ...\n      ],\n      \"taproot_internal_key\" : \"hex\",      (string, optional) The hex-encoded Taproot x-only internal key\n      \"taproot_merkle_root\" : \"hex\",       (string, optional) The hex-encoded Taproot merkle root\n      \"musig2_participant_pubkeys\" : [     (json array, optional)\n        {                                  (json object)\n          \"aggregate_pubkey\" : \"hex\",      (string) The compressed aggregate public key for which the participants create.\n          \"participant_pubkeys\" : [        (json array)\n            \"hex\",                         (string) The compressed public keys that are aggregated for aggregate_pubkey.\n            ...\n          ]\n        },\n        ...\n      ],\n      \"musig2_pubnonces\" : [               (json array, optional)\n        {                                  (json object)\n          \"participant_pubkey\" : \"hex\",    (string) The compressed public key of the participant that created this pubnonce.\n          \"aggregate_pubkey\" : \"hex\",      (string) The compressed aggregate public key for which this pubnonce is for.\n          \"leaf_hash\" : \"hex\",             (string, optional) The hash of the leaf script that contains the aggregate pubkey being signed for. Omitted when signing for the internal key.\n          \"pubnonce\" : \"hex\"               (string) The public nonce itself.\n        },\n        ...\n      ],\n      \"musig2_partial_sigs\" : [            (json array, optional)\n        {                                  (json object)\n          \"participant_pubkey\" : \"hex\",    (string) The compressed public key of the participant that created this partial signature.\n          \"aggregate_pubkey\" : \"hex\",      (string) The compressed aggregate public key for which this partial signature is for.\n          \"leaf_hash\" : \"hex\",             (string, optional) The hash of the leaf script that contains the aggregate pubkey being signed for. Omitted when signing for the internal key.\n          \"partial_sig\" : \"hex\"            (string) The partial signature itself.\n        },\n        ...\n      ],\n      \"unknown\" : {                        (json object, optional) The unknown input fields\n        \"key\" : \"hex\",                     (string) (key-value pair) An unknown key-value pair\n        ...\n      },\n      \"proprietary\" : [                    (json array, optional) The input proprietary map\n        {                                  (json object)\n          \"identifier\" : \"hex\",            (string) The hex string for the proprietary identifier\n          \"subtype\" : n,                   (numeric) The number for the subtype\n          \"key\" : \"hex\",                   (string) The hex for the key\n          \"value\" : \"hex\"                  (string) The hex for the value\n        },\n        ...\n      ]\n    },\n    ...\n  ],\n  \"outputs\" : [                            (json array)\n    {                                      (json object)\n      \"redeem_script\" : {                  (json object, optional)\n        \"asm\" : \"str\",                     (string) Disassembly of the redeem script\n        \"hex\" : \"hex\",                     (string) The raw redeem script bytes, hex-encoded\n        \"type\" : \"str\"                     (string) The type, eg 'pubkeyhash'\n      },\n      \"witness_script\" : {                 (json object, optional)\n        \"asm\" : \"str\",                     (string) Disassembly of the witness script\n        \"hex\" : \"hex\",                     (string) The raw witness script bytes, hex-encoded\n        \"type\" : \"str\"                     (string) The type, eg 'pubkeyhash'\n      },\n      \"bip32_derivs\" : [                   (json array, optional)\n        {                                  (json object)\n          \"pubkey\" : \"str\",                (string) The public key this path corresponds to\n          \"master_fingerprint\" : \"str\",    (string) The fingerprint of the master key\n          \"path\" : \"str\"                   (string) The path\n        },\n        ...\n      ],\n      \"taproot_internal_key\" : \"hex\",      (string, optional) The hex-encoded Taproot x-only internal key\n      \"taproot_tree\" : [                   (json array, optional) The tuples that make up the Taproot tree, in depth first search order\n        {                                  (json object, optional) A single leaf script in the taproot tree\n          \"depth\" : n,                     (numeric) The depth of this element in the tree\n          \"leaf_ver\" : n,                  (numeric) The version of this leaf\n          \"script\" : \"str\"                 (string) The hex-encoded script itself\n        },\n        ...\n      ],\n      \"taproot_bip32_derivs\" : [           (json array, optional)\n        {                                  (json object)\n          \"pubkey\" : \"str\",                (string) The x-only public key this path corresponds to\n          \"master_fingerprint\" : \"str\",    (string) The fingerprint of the master key\n          \"path\" : \"str\",                  (string) The path\n          \"leaf_hashes\" : [                (json array) The hashes of the leaves this pubkey appears in\n            \"hex\",                         (string) The hash of a leaf this pubkey appears in\n            ...\n          ]\n        },\n        ...\n      ],\n      \"musig2_participant_pubkeys\" : [     (json array, optional)\n        {                                  (json object)\n          \"aggregate_pubkey\" : \"hex\",      (string) The compressed aggregate public key for which the participants create.\n          \"participant_pubkeys\" : [        (json array)\n            \"hex\",                         (string) The compressed public keys that are aggregated for aggregate_pubkey.\n            ...\n          ]\n        },\n        ...\n      ],\n      \"unknown\" : {                        (json object, optional) The unknown output fields\n        \"key\" : \"hex\",                     (string) (key-value pair) An unknown key-value pair\n        ...\n      },\n      \"proprietary\" : [                    (json array, optional) The output proprietary map\n        {                                  (json object)\n          \"identifier\" : \"hex\",            (string) The hex string for the proprietary identifier\n          \"subtype\" : n,                   (numeric) The number for the subtype\n          \"key\" : \"hex\",                   (string) The hex for the key\n          \"value\" : \"hex\"                  (string) The hex for the value\n        },\n        ...\n      ]\n    },\n    ...\n  ],\n  \"fee\" : n                                (numeric, optional) The transaction fee paid if all UTXOs slots in the PSBT have been filled.\n}\n\nExamples:\n> bitcoin-cli decodepsbt \"psbt\"\n"
+              "decodepsbt \"psbt\"\n\nReturn a JSON object representing the serialized, base64-encoded partially signed Bitcoin transaction.\n\nArguments:\n1. psbt    (string, required) The PSBT base64 string\n\nResult:\n{                                          (json object)\n  \"tx\" : {                                 (json object) The decoded network-serialized unsigned transaction.\n    ...                                    The layout is the same as the output of decoderawtransaction.\n  },\n  \"global_xpubs\" : [                       (json array)\n    {                                      (json object)\n      \"xpub\" : \"str\",                      (string) The extended public key this path corresponds to\n      \"master_fingerprint\" : \"hex\",        (string) The fingerprint of the master key\n      \"path\" : \"str\"                       (string) The path\n    },\n    ...\n  ],\n  \"psbt_version\" : n,                      (numeric) The PSBT version number. Not to be confused with the unsigned transaction version\n  \"proprietary\" : [                        (json array) The global proprietary map\n    {                                      (json object)\n      \"identifier\" : \"hex\",                (string) The hex string for the proprietary identifier\n      \"subtype\" : n,                       (numeric) The number for the subtype\n      \"key\" : \"hex\",                       (string) The hex for the key\n      \"value\" : \"hex\"                      (string) The hex for the value\n    },\n    ...\n  ],\n  \"unknown\" : {                            (json object) The unknown global fields\n    \"key\" : \"hex\",                         (string) (key-value pair) An unknown key-value pair\n    ...\n  },\n  \"inputs\" : [                             (json array)\n    {                                      (json object)\n      \"non_witness_utxo\" : {               (json object, optional) Decoded network transaction for non-witness UTXOs\n        ...                                The layout is the same as the output of decoderawtransaction.\n      },\n      \"witness_utxo\" : {                   (json object, optional) Transaction output for witness UTXOs\n        \"amount\" : n,                      (numeric) The value in BTC\n        \"scriptPubKey\" : {                 (json object)\n          \"asm\" : \"str\",                   (string) Disassembly of the output script\n          \"desc\" : \"str\",                  (string) Inferred descriptor for the output\n          \"hex\" : \"hex\",                   (string) The raw output script bytes, hex-encoded\n          \"type\" : \"str\",                  (string) The type, eg 'pubkeyhash'\n          \"address\" : \"str\"                (string, optional) The Bitcoin address (only if a well-defined address exists)\n        }\n      },\n      \"partial_signatures\" : {             (json object, optional)\n        \"pubkey\" : \"str\",                  (string) The public key and signature that corresponds to it.\n        ...\n      },\n      \"sighash\" : \"str\",                   (string, optional) The sighash type to be used\n      \"redeem_script\" : {                  (json object, optional)\n        \"asm\" : \"str\",                     (string) Disassembly of the redeem script\n        \"hex\" : \"hex\",                     (string) The raw redeem script bytes, hex-encoded\n        \"type\" : \"str\"                     (string) The type, eg 'pubkeyhash'\n      },\n      \"witness_script\" : {                 (json object, optional)\n        \"asm\" : \"str\",                     (string) Disassembly of the witness script\n        \"hex\" : \"hex\",                     (string) The raw witness script bytes, hex-encoded\n        \"type\" : \"str\"                     (string) The type, eg 'pubkeyhash'\n      },\n      \"bip32_derivs\" : [                   (json array, optional)\n        {                                  (json object)\n          \"pubkey\" : \"str\",                (string) The public key with the derivation path as the value.\n          \"master_fingerprint\" : \"str\",    (string) The fingerprint of the master key\n          \"path\" : \"str\"                   (string) The path\n        },\n        ...\n      ],\n      \"final_scriptSig\" : {                (json object, optional)\n        \"asm\" : \"str\",                     (string) Disassembly of the final signature script\n        \"hex\" : \"hex\"                      (string) The raw final signature script bytes, hex-encoded\n      },\n      \"final_scriptwitness\" : [            (json array, optional)\n        \"hex\",                             (string) hex-encoded witness data (if any)\n        ...\n      ],\n      \"ripemd160_preimages\" : {            (json object, optional)\n        \"hash\" : \"str\",                    (string) The hash and preimage that corresponds to it.\n        ...\n      },\n      \"sha256_preimages\" : {               (json object, optional)\n        \"hash\" : \"str\",                    (string) The hash and preimage that corresponds to it.\n        ...\n      },\n      \"hash160_preimages\" : {              (json object, optional)\n        \"hash\" : \"str\",                    (string) The hash and preimage that corresponds to it.\n        ...\n      },\n      \"hash256_preimages\" : {              (json object, optional)\n        \"hash\" : \"str\",                    (string) The hash and preimage that corresponds to it.\n        ...\n      },\n      \"taproot_key_path_sig\" : \"hex\",      (string, optional) hex-encoded signature for the Taproot key path spend\n      \"taproot_script_path_sigs\" : [       (json array, optional)\n        {                                  (json object, optional) The signature for the pubkey and leaf hash combination\n          \"pubkey\" : \"str\",                (string) The x-only pubkey for this signature\n          \"leaf_hash\" : \"str\",             (string) The leaf hash for this signature\n          \"sig\" : \"str\"                    (string) The signature itself\n        },\n        ...\n      ],\n      \"taproot_scripts\" : [                (json array, optional)\n        {                                  (json object)\n          \"script\" : \"hex\",                (string) A leaf script\n          \"leaf_ver\" : n,                  (numeric) The version number for the leaf script\n          \"control_blocks\" : [             (json array) The control blocks for this script\n            \"hex\",                         (string) A hex-encoded control block for this script\n            ...\n          ]\n        },\n        ...\n      ],\n      \"taproot_bip32_derivs\" : [           (json array, optional)\n        {                                  (json object)\n          \"pubkey\" : \"str\",                (string) The x-only public key this path corresponds to\n          \"master_fingerprint\" : \"str\",    (string) The fingerprint of the master key\n          \"path\" : \"str\",                  (string) The path\n          \"leaf_hashes\" : [                (json array) The hashes of the leaves this pubkey appears in\n            \"hex\",                         (string) The hash of a leaf this pubkey appears in\n            ...\n          ]\n        },\n        ...\n      ],\n      \"taproot_internal_key\" : \"hex\",      (string, optional) The hex-encoded Taproot x-only internal key\n      \"taproot_merkle_root\" : \"hex\",       (string, optional) The hex-encoded Taproot merkle root\n      \"musig2_participant_pubkeys\" : [     (json array, optional)\n        {                                  (json object)\n          \"aggregate_pubkey\" : \"hex\",      (string) The compressed aggregate public key for which the participants create.\n          \"participant_pubkeys\" : [        (json array)\n            \"hex\",                         (string) The compressed public keys that are aggregated for aggregate_pubkey.\n            ...\n          ]\n        },\n        ...\n      ],\n      \"musig2_pubnonces\" : [               (json array, optional)\n        {                                  (json object)\n          \"participant_pubkey\" : \"hex\",    (string) The compressed public key of the participant that created this pubnonce.\n          \"aggregate_pubkey\" : \"hex\",      (string) The compressed aggregate public key for which this pubnonce is for.\n          \"leaf_hash\" : \"hex\",             (string, optional) The hash of the leaf script that contains the aggregate pubkey being signed for. Omitted when signing for the internal key.\n          \"pubnonce\" : \"hex\"               (string) The public nonce itself.\n        },\n        ...\n      ],\n      \"musig2_partial_sigs\" : [            (json array, optional)\n        {                                  (json object)\n          \"participant_pubkey\" : \"hex\",    (string) The compressed public key of the participant that created this partial signature.\n          \"aggregate_pubkey\" : \"hex\",      (string) The compressed aggregate public key for which this partial signature is for.\n          \"leaf_hash\" : \"hex\",             (string, optional) The hash of the leaf script that contains the aggregate pubkey being signed for. Omitted when signing for the internal key.\n          \"partial_sig\" : \"hex\"            (string) The partial signature itself.\n        },\n        ...\n      ],\n      \"unknown\" : {                        (json object, optional) The unknown input fields\n        \"key\" : \"hex\",                     (string) (key-value pair) An unknown key-value pair\n        ...\n      },\n      \"proprietary\" : [                    (json array, optional) The input proprietary map\n        {                                  (json object)\n          \"identifier\" : \"hex\",            (string) The hex string for the proprietary identifier\n          \"subtype\" : n,                   (numeric) The number for the subtype\n          \"key\" : \"hex\",                   (string) The hex for the key\n          \"value\" : \"hex\"                  (string) The hex for the value\n        },\n        ...\n      ]\n    },\n    ...\n  ],\n  \"outputs\" : [                            (json array)\n    {                                      (json object)\n      \"redeem_script\" : {                  (json object, optional)\n        \"asm\" : \"str\",                     (string) Disassembly of the redeem script\n        \"hex\" : \"hex\",                     (string) The raw redeem script bytes, hex-encoded\n        \"type\" : \"str\"                     (string) The type, eg 'pubkeyhash'\n      },\n      \"witness_script\" : {                 (json object, optional)\n        \"asm\" : \"str\",                     (string) Disassembly of the witness script\n        \"hex\" : \"hex\",                     (string) The raw witness script bytes, hex-encoded\n        \"type\" : \"str\"                     (string) The type, eg 'pubkeyhash'\n      },\n      \"bip32_derivs\" : [                   (json array, optional)\n        {                                  (json object)\n          \"pubkey\" : \"str\",                (string) The public key this path corresponds to\n          \"master_fingerprint\" : \"str\",    (string) The fingerprint of the master key\n          \"path\" : \"str\"                   (string) The path\n        },\n        ...\n      ],\n      \"taproot_internal_key\" : \"hex\",      (string, optional) The hex-encoded Taproot x-only internal key\n      \"taproot_tree\" : [                   (json array, optional) The tuples that make up the Taproot tree, in depth first search order\n        {                                  (json object, optional) A single leaf script in the taproot tree\n          \"depth\" : n,                     (numeric) The depth of this element in the tree\n          \"leaf_ver\" : n,                  (numeric) The version of this leaf\n          \"script\" : \"str\"                 (string) The hex-encoded script itself\n        },\n        ...\n      ],\n      \"taproot_bip32_derivs\" : [           (json array, optional)\n        {                                  (json object)\n          \"pubkey\" : \"str\",                (string) The x-only public key this path corresponds to\n          \"master_fingerprint\" : \"str\",    (string) The fingerprint of the master key\n          \"path\" : \"str\",                  (string) The path\n          \"leaf_hashes\" : [                (json array) The hashes of the leaves this pubkey appears in\n            \"hex\",                         (string) The hash of a leaf this pubkey appears in\n            ...\n          ]\n        },\n        ...\n      ],\n      \"musig2_participant_pubkeys\" : [     (json array, optional)\n        {                                  (json object)\n          \"aggregate_pubkey\" : \"hex\",      (string) The compressed aggregate public key for which the participants create.\n          \"participant_pubkeys\" : [        (json array)\n            \"hex\",                         (string) The compressed public keys that are aggregated for aggregate_pubkey.\n            ...\n          ]\n        },\n        ...\n      ],\n      \"unknown\" : {                        (json object, optional) The unknown output fields\n        \"key\" : \"hex\",                     (string) (key-value pair) An unknown key-value pair\n        ...\n      },\n      \"proprietary\" : [                    (json array, optional) The output proprietary map\n        {                                  (json object)\n          \"identifier\" : \"hex\",            (string) The hex string for the proprietary identifier\n          \"subtype\" : n,                   (numeric) The number for the subtype\n          \"key\" : \"hex\",                   (string) The hex for the key\n          \"value\" : \"hex\"                  (string) The hex for the value\n        },\n        ...\n      ]\n    },\n    ...\n  ],\n  \"fee\" : n                                (numeric, optional) The transaction fee paid if all UTXOs slots in the PSBT have been filled.\n}\n\nExamples:\n> bitcoin-cli decodepsbt \"psbt\"\n"
             ]
           }
         },
@@ -13245,7 +14213,7 @@
         {
           "RpcMethod": {
             "name": "getdeploymentinfo",
-            "description": "Returns an object containing various state info regarding deployments of consensus changes.",
+            "description": "Returns an object containing various state info regarding deployments of consensus changes.\nConsensus changes for which the new rules are enforced from genesis are not listed in \"deployments\".",
             "params": [
               {
                 "name": "blockhash",
@@ -13673,7 +14641,7 @@
             "requires_private_keys": false,
             "version_added": "23",
             "examples": [
-              "getdeploymentinfo ( \"blockhash\" )\n\nReturns an object containing various state info regarding deployments of consensus changes.\n\nArguments:\n1. blockhash    (string, optional, default=\"hash of current chain tip\") The block hash at which to query deployment state\n\nResult:\n{                                       (json object)\n  \"hash\" : \"str\",                       (string) requested block hash (or tip)\n  \"height\" : n,                         (numeric) requested block height (or tip)\n  \"script_flags\" : [                    (json array) script verify flags for the block\n    \"str\",                              (string) a script verify flag\n    ...\n  ],\n  \"deployments\" : {                     (json object)\n    \"xxxx\" : {                          (json object) name of the deployment\n      \"type\" : \"str\",                   (string) one of \"buried\", \"bip9\"\n      \"height\" : n,                     (numeric, optional) height of the first block which the rules are or will be enforced (only for \"buried\" type, or \"bip9\" type with \"active\" status)\n      \"active\" : true|false,            (boolean) true if the rules are enforced for the mempool and the next block\n      \"bip9\" : {                        (json object, optional) status of bip9 softforks (only for \"bip9\" type)\n        \"bit\" : n,                      (numeric, optional) the bit (0-28) in the block version field used to signal this softfork (only for \"started\" and \"locked_in\" status)\n        \"start_time\" : xxx,             (numeric) the minimum median time past of a block at which the bit gains its meaning\n        \"timeout\" : xxx,                (numeric) the median time past of a block at which the deployment is considered failed if not yet locked in\n        \"min_activation_height\" : n,    (numeric) minimum height of blocks for which the rules may be enforced\n        \"status\" : \"str\",               (string) status of deployment at specified block (one of \"defined\", \"started\", \"locked_in\", \"active\", \"failed\")\n        \"since\" : n,                    (numeric) height of the first block to which the status applies\n        \"status_next\" : \"str\",          (string) status of deployment at the next block\n        \"statistics\" : {                (json object, optional) numeric statistics about signalling for a softfork (only for \"started\" and \"locked_in\" status)\n          \"period\" : n,                 (numeric) the length in blocks of the signalling period\n          \"threshold\" : n,              (numeric, optional) the number of blocks with the version bit set required to activate the feature (only for \"started\" status)\n          \"elapsed\" : n,                (numeric) the number of blocks elapsed since the beginning of the current period\n          \"count\" : n,                  (numeric) the number of blocks with the version bit set in the current period\n          \"possible\" : true|false       (boolean, optional) returns false if there are not enough blocks left in this period to pass activation threshold (only for \"started\" status)\n        },\n        \"signalling\" : \"str\"            (string, optional) indicates blocks that signalled with a # and blocks that did not with a -\n      }\n    },\n    ...\n  }\n}\n\nExamples:\n> bitcoin-cli getdeploymentinfo \n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"getdeploymentinfo\", \"params\": []}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
+              "getdeploymentinfo ( \"blockhash\" )\n\nReturns an object containing various state info regarding deployments of consensus changes.\nConsensus changes for which the new rules are enforced from genesis are not listed in \"deployments\".\n\nArguments:\n1. blockhash    (string, optional, default=\"hash of current chain tip\") The block hash at which to query deployment state\n\nResult:\n{                                       (json object)\n  \"hash\" : \"str\",                       (string) requested block hash (or tip)\n  \"height\" : n,                         (numeric) requested block height (or tip)\n  \"script_flags\" : [                    (json array) script verify flags for the block\n    \"str\",                              (string) a script verify flag\n    ...\n  ],\n  \"deployments\" : {                     (json object)\n    \"xxxx\" : {                          (json object) name of the deployment\n      \"type\" : \"str\",                   (string) one of \"buried\", \"bip9\"\n      \"height\" : n,                     (numeric, optional) height of the first block which the rules are or will be enforced (only for \"buried\" type, or \"bip9\" type with \"active\" status)\n      \"active\" : true|false,            (boolean) true if the rules are enforced for the mempool and the next block\n      \"bip9\" : {                        (json object, optional) status of bip9 softforks (only for \"bip9\" type)\n        \"bit\" : n,                      (numeric, optional) the bit (0-28) in the block version field used to signal this softfork (only for \"started\" and \"locked_in\" status)\n        \"start_time\" : xxx,             (numeric) the minimum median time past of a block at which the bit gains its meaning\n        \"timeout\" : xxx,                (numeric) the median time past of a block at which the deployment is considered failed if not yet locked in\n        \"min_activation_height\" : n,    (numeric) minimum height of blocks for which the rules may be enforced\n        \"status\" : \"str\",               (string) status of deployment at specified block (one of \"defined\", \"started\", \"locked_in\", \"active\", \"failed\")\n        \"since\" : n,                    (numeric) height of the first block to which the status applies\n        \"status_next\" : \"str\",          (string) status of deployment at the next block\n        \"statistics\" : {                (json object, optional) numeric statistics about signalling for a softfork (only for \"started\" and \"locked_in\" status)\n          \"period\" : n,                 (numeric) the length in blocks of the signalling period\n          \"threshold\" : n,              (numeric, optional) the number of blocks with the version bit set required to activate the feature (only for \"started\" status)\n          \"elapsed\" : n,                (numeric) the number of blocks elapsed since the beginning of the current period\n          \"count\" : n,                  (numeric) the number of blocks with the version bit set in the current period\n          \"possible\" : true|false       (boolean, optional) returns false if there are not enough blocks left in this period to pass activation threshold (only for \"started\" status)\n        },\n        \"signalling\" : \"str\"            (string, optional) indicates blocks that signalled with a # and blocks that did not with a -\n      }\n    },\n    ...\n  }\n}\n\nExamples:\n> bitcoin-cli getdeploymentinfo \n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"getdeploymentinfo\", \"params\": []}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
             ]
           }
         },
@@ -19115,23 +20083,6 @@
                       },
                       {
                         "key": {
-                          "Named": "startingheight"
-                        },
-                        "field_type": {
-                          "name": "number",
-                          "description": "(DEPRECATED, returned only if config option -deprecatedrpc=startingheight is passed) The starting height (block) of the peer",
-                          "kind": "Primitive",
-                          "fields": null,
-                          "variants": null,
-                          "base_type": null,
-                          "protocol_type": "number"
-                        },
-                        "required": false,
-                        "description": "(DEPRECATED, returned only if config option -deprecatedrpc=startingheight is passed) The starting height (block) of the peer",
-                        "default_value": null
-                      },
-                      {
-                        "key": {
                           "Named": "presynced_headers"
                         },
                         "field_type": {
@@ -19423,7 +20374,7 @@
             "requires_private_keys": false,
             "version_added": "0.17",
             "examples": [
-              "getpeerinfo\n\nReturns data about each connected network peer as a json array of objects.\n\nResult:\n[                                         (json array)\n  {                                       (json object)\n    \"id\" : n,                             (numeric) Peer index\n    \"addr\" : \"str\",                       (string) (host:port) The IP address/hostname optionally followed by :port of the peer\n    \"addrbind\" : \"str\",                   (string, optional) (ip:port) Bind address of the connection to the peer\n    \"addrlocal\" : \"str\",                  (string, optional) (ip:port) Local address as reported by the peer\n    \"network\" : \"str\",                    (string) Network (ipv4, ipv6, onion, i2p, cjdns, not_publicly_routable)\n    \"mapped_as\" : n,                      (numeric, optional) Mapped AS (Autonomous System) number at the end of the BGP route to the peer, used for diversifying\n                                          peer selection (only displayed if the -asmap config option is set)\n    \"services\" : \"hex\",                   (string) The services offered\n    \"servicesnames\" : [                   (json array) the services offered, in human-readable form\n      \"str\",                              (string) the service name if it is recognised\n      ...\n    ],\n    \"relaytxes\" : true|false,             (boolean) Whether we relay transactions to this peer\n    \"last_inv_sequence\" : n,              (numeric) Mempool sequence number of this peer's last INV\n    \"inv_to_send\" : n,                    (numeric) How many txs we have queued to announce to this peer\n    \"lastsend\" : xxx,                     (numeric) The UNIX epoch time of the last send\n    \"lastrecv\" : xxx,                     (numeric) The UNIX epoch time of the last receive\n    \"last_transaction\" : xxx,             (numeric) The UNIX epoch time of the last valid transaction received from this peer\n    \"last_block\" : xxx,                   (numeric) The UNIX epoch time of the last block received from this peer\n    \"bytessent\" : n,                      (numeric) The total bytes sent\n    \"bytesrecv\" : n,                      (numeric) The total bytes received\n    \"conntime\" : xxx,                     (numeric) The UNIX epoch time of the connection\n    \"timeoffset\" : n,                     (numeric) The time offset in seconds\n    \"pingtime\" : n,                       (numeric, optional) The last ping time in seconds, if any\n    \"minping\" : n,                        (numeric, optional) The minimum observed ping time in seconds, if any\n    \"pingwait\" : n,                       (numeric, optional) The duration in seconds of an outstanding ping (if non-zero)\n    \"version\" : n,                        (numeric) The peer version, such as 70001\n    \"subver\" : \"str\",                     (string) The string version\n    \"inbound\" : true|false,               (boolean) Inbound (true) or Outbound (false)\n    \"bip152_hb_to\" : true|false,          (boolean) Whether we selected peer as (compact blocks) high-bandwidth peer\n    \"bip152_hb_from\" : true|false,        (boolean) Whether peer selected us as (compact blocks) high-bandwidth peer\n    \"startingheight\" : n,                 (numeric, optional) (DEPRECATED, returned only if config option -deprecatedrpc=startingheight is passed) The starting height (block) of the peer\n    \"presynced_headers\" : n,              (numeric) The current height of header pre-synchronization with this peer, or -1 if no low-work sync is in progress\n    \"synced_headers\" : n,                 (numeric) The last header we have in common with this peer\n    \"synced_blocks\" : n,                  (numeric) The last block we have in common with this peer\n    \"inflight\" : [                        (json array)\n      n,                                  (numeric) The heights of blocks we're currently asking from this peer\n      ...\n    ],\n    \"addr_relay_enabled\" : true|false,    (boolean) Whether we participate in address relay with this peer\n    \"addr_processed\" : n,                 (numeric) The total number of addresses processed, excluding those dropped due to rate limiting\n    \"addr_rate_limited\" : n,              (numeric) The total number of addresses dropped due to rate limiting\n    \"permissions\" : [                     (json array) Any special permissions that have been granted to this peer\n      \"str\",                              (string) bloomfilter (allow requesting BIP37 filtered blocks and transactions),\n                                          noban (do not ban for misbehavior; implies download),\n                                          forcerelay (relay transactions that are already in the mempool; implies relay),\n                                          relay (relay even in -blocksonly mode, and unlimited transaction announcements),\n                                          mempool (allow requesting BIP35 mempool contents),\n                                          download (allow getheaders during IBD, no disconnect after maxuploadtarget limit),\n                                          addr (responses to GETADDR avoid hitting the cache and contain random records with the most up-to-date info).\n                                          \n      ...\n    ],\n    \"minfeefilter\" : n,                   (numeric) The minimum fee rate for transactions this peer accepts\n    \"bytessent_per_msg\" : {               (json object)\n      \"msg\" : n,                          (numeric) The total bytes sent aggregated by message type\n                                          When a message type is not listed in this json object, the bytes sent are 0.\n                                          Only known message types can appear as keys in the object.\n      ...\n    },\n    \"bytesrecv_per_msg\" : {               (json object)\n      \"msg\" : n,                          (numeric) The total bytes received aggregated by message type\n                                          When a message type is not listed in this json object, the bytes received are 0.\n                                          Only known message types can appear as keys in the object and all bytes received\n                                          of unknown message types are listed under '*other*'.\n      ...\n    },\n    \"connection_type\" : \"str\",            (string) Type of connection: \n                                          outbound-full-relay (default automatic connections),\n                                          block-relay-only (does not relay transactions or addresses),\n                                          inbound (initiated by the peer),\n                                          manual (added via addnode RPC or -addnode/-connect configuration options),\n                                          addr-fetch (short-lived automatic connection for soliciting addresses),\n                                          feeler (short-lived automatic connection for testing addresses),\n                                          private-broadcast (short-lived automatic connection for broadcasting privacy-sensitive transactions).\n                                          Please note this output is unlikely to be stable in upcoming releases as we iterate to\n                                          best capture connection behaviors.\n    \"transport_protocol_type\" : \"str\",    (string) Type of transport protocol: \n                                          detecting (peer could be v1 or v2),\n                                          v1 (plaintext transport protocol),\n                                          v2 (BIP324 encrypted transport protocol).\n                                          \n    \"session_id\" : \"str\"                  (string) The session ID for this connection, or \"\" if there is none (\"v2\" transport protocol only).\n                                          \n  },\n  ...\n]\n\nExamples:\n> bitcoin-cli getpeerinfo \n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"getpeerinfo\", \"params\": []}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
+              "getpeerinfo\n\nReturns data about each connected network peer as a json array of objects.\n\nResult:\n[                                         (json array)\n  {                                       (json object)\n    \"id\" : n,                             (numeric) Peer index\n    \"addr\" : \"str\",                       (string) (host:port) The IP address/hostname optionally followed by :port of the peer\n    \"addrbind\" : \"str\",                   (string, optional) (ip:port) Bind address of the connection to the peer\n    \"addrlocal\" : \"str\",                  (string, optional) (ip:port) Local address as reported by the peer\n    \"network\" : \"str\",                    (string) Network (ipv4, ipv6, onion, i2p, cjdns, not_publicly_routable)\n    \"mapped_as\" : n,                      (numeric, optional) Mapped AS (Autonomous System) number at the end of the BGP route to the peer, used for diversifying\n                                          peer selection (only displayed if the -asmap config option is set)\n    \"services\" : \"hex\",                   (string) The services offered\n    \"servicesnames\" : [                   (json array) the services offered, in human-readable form\n      \"str\",                              (string) the service name if it is recognised\n      ...\n    ],\n    \"relaytxes\" : true|false,             (boolean) Whether we relay transactions to this peer\n    \"last_inv_sequence\" : n,              (numeric) Mempool sequence number of this peer's last INV\n    \"inv_to_send\" : n,                    (numeric) How many txs we have queued to announce to this peer\n    \"lastsend\" : xxx,                     (numeric) The UNIX epoch time of the last send\n    \"lastrecv\" : xxx,                     (numeric) The UNIX epoch time of the last receive\n    \"last_transaction\" : xxx,             (numeric) The UNIX epoch time of the last valid transaction received from this peer\n    \"last_block\" : xxx,                   (numeric) The UNIX epoch time of the last block received from this peer\n    \"bytessent\" : n,                      (numeric) The total bytes sent\n    \"bytesrecv\" : n,                      (numeric) The total bytes received\n    \"conntime\" : xxx,                     (numeric) The UNIX epoch time of the connection\n    \"timeoffset\" : n,                     (numeric) The time offset in seconds\n    \"pingtime\" : n,                       (numeric, optional) The last ping time in seconds, if any\n    \"minping\" : n,                        (numeric, optional) The minimum observed ping time in seconds, if any\n    \"pingwait\" : n,                       (numeric, optional) The duration in seconds of an outstanding ping (if non-zero)\n    \"version\" : n,                        (numeric) The peer version, such as 70001\n    \"subver\" : \"str\",                     (string) The string version\n    \"inbound\" : true|false,               (boolean) Inbound (true) or Outbound (false)\n    \"bip152_hb_to\" : true|false,          (boolean) Whether we selected peer as (compact blocks) high-bandwidth peer\n    \"bip152_hb_from\" : true|false,        (boolean) Whether peer selected us as (compact blocks) high-bandwidth peer\n    \"presynced_headers\" : n,              (numeric) The current height of header pre-synchronization with this peer, or -1 if no low-work sync is in progress\n    \"synced_headers\" : n,                 (numeric) The last header we have in common with this peer\n    \"synced_blocks\" : n,                  (numeric) The last block we have in common with this peer\n    \"inflight\" : [                        (json array)\n      n,                                  (numeric) The heights of blocks we're currently asking from this peer\n      ...\n    ],\n    \"addr_relay_enabled\" : true|false,    (boolean) Whether we participate in address relay with this peer\n    \"addr_processed\" : n,                 (numeric) The total number of addresses processed, excluding those dropped due to rate limiting\n    \"addr_rate_limited\" : n,              (numeric) The total number of addresses dropped due to rate limiting\n    \"permissions\" : [                     (json array) Any special permissions that have been granted to this peer\n      \"str\",                              (string) bloomfilter (allow requesting BIP37 filtered blocks and transactions),\n                                          noban (do not ban for misbehavior; implies download),\n                                          forcerelay (relay transactions that are already in the mempool; implies relay),\n                                          relay (relay even in -blocksonly mode, and unlimited transaction announcements),\n                                          mempool (allow requesting BIP35 mempool contents),\n                                          download (allow getheaders during IBD, no disconnect after maxuploadtarget limit),\n                                          addr (responses to GETADDR avoid hitting the cache and contain random records with the most up-to-date info).\n                                          \n      ...\n    ],\n    \"minfeefilter\" : n,                   (numeric) The minimum fee rate for transactions this peer accepts\n    \"bytessent_per_msg\" : {               (json object)\n      \"msg\" : n,                          (numeric) The total bytes sent aggregated by message type\n                                          When a message type is not listed in this json object, the bytes sent are 0.\n                                          Only known message types can appear as keys in the object.\n      ...\n    },\n    \"bytesrecv_per_msg\" : {               (json object)\n      \"msg\" : n,                          (numeric) The total bytes received aggregated by message type\n                                          When a message type is not listed in this json object, the bytes received are 0.\n                                          Only known message types can appear as keys in the object and all bytes received\n                                          of unknown message types are listed under '*other*'.\n      ...\n    },\n    \"connection_type\" : \"str\",            (string) Type of connection: \n                                          outbound-full-relay (default automatic connections),\n                                          block-relay-only (does not relay transactions or addresses),\n                                          inbound (initiated by the peer),\n                                          manual (added via addnode RPC or -addnode/-connect configuration options),\n                                          addr-fetch (short-lived automatic connection for soliciting addresses),\n                                          feeler (short-lived automatic connection for testing addresses),\n                                          private-broadcast (short-lived automatic connection for broadcasting privacy-sensitive transactions).\n                                          Please note this output is unlikely to be stable in upcoming releases as we iterate to\n                                          best capture connection behaviors.\n    \"transport_protocol_type\" : \"str\",    (string) Type of transport protocol: \n                                          detecting (peer could be v1 or v2),\n                                          v1 (plaintext transport protocol),\n                                          v2 (BIP324 encrypted transport protocol).\n                                          \n    \"session_id\" : \"str\"                  (string) The session ID for this connection, or \"\" if there is none (\"v2\" transport protocol only).\n                                          \n  },\n  ...\n]\n\nExamples:\n> bitcoin-cli getpeerinfo \n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"getpeerinfo\", \"params\": []}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
             ]
           }
         },
@@ -27634,7 +28585,7 @@
         {
           "RpcMethod": {
             "name": "logging",
-            "description": "Gets and sets the logging configuration.\nWhen called without an argument, returns the list of categories with status that are currently being debug logged or not.\nWhen called with arguments, adds or removes categories from debug logging and return the lists above.\nThe arguments are evaluated in order \"include\", \"exclude\".\nIf an item is both included and excluded, it will thus end up being excluded.\nThe valid logging categories are: addrman, bench, blockstorage, cmpctblock, coindb, estimatefee, http, i2p, ipc, kernel, leveldb, libevent, mempool, mempoolrej, net, privatebroadcast, proxy, prune, qt, rand, reindex, rpc, scan, selectcoins, tor, txpackages, txreconciliation, validation, walletdb, zmq\nIn addition, the following are available as category names with special meanings:\n  - \"all\",  \"1\" : represent all logging categories.",
+            "description": "Gets and sets the logging configuration.\nWhen called without an argument, returns the list of categories with status that are currently being debug logged or not.\nWhen called with arguments, adds or removes categories from debug logging and return the lists above.\nThe arguments are evaluated in order \"include\", \"exclude\".\nIf an item is both included and excluded, it will thus end up being excluded.\nThe valid logging categories are: addrman, bench, blockstorage, cmpctblock, coindb, estimatefee, http, i2p, ipc, kernel, leveldb, libevent, lock, mempool, mempoolrej, net, privatebroadcast, proxy, prune, qt, rand, reindex, rpc, scan, selectcoins, tor, txpackages, txreconciliation, validation, walletdb, zmq\nIn addition, the following are available as category names with special meanings:\n  - \"all\",  \"1\" : represent all logging categories.",
             "params": [
               {
                 "name": "include",
@@ -27699,7 +28650,7 @@
             "requires_private_keys": false,
             "version_added": "0.17",
             "examples": [
-              "logging ( [\"include_category\",...] [\"exclude_category\",...] )\n\nGets and sets the logging configuration.\nWhen called without an argument, returns the list of categories with status that are currently being debug logged or not.\nWhen called with arguments, adds or removes categories from debug logging and return the lists above.\nThe arguments are evaluated in order \"include\", \"exclude\".\nIf an item is both included and excluded, it will thus end up being excluded.\nThe valid logging categories are: addrman, bench, blockstorage, cmpctblock, coindb, estimatefee, http, i2p, ipc, kernel, leveldb, libevent, mempool, mempoolrej, net, privatebroadcast, proxy, prune, qt, rand, reindex, rpc, scan, selectcoins, tor, txpackages, txreconciliation, validation, walletdb, zmq\nIn addition, the following are available as category names with special meanings:\n  - \"all\",  \"1\" : represent all logging categories.\n\nArguments:\n1. include                    (json array, optional) The categories to add to debug logging\n     [\n       \"include_category\",    (string) the valid logging category\n       ...\n     ]\n2. exclude                    (json array, optional) The categories to remove from debug logging\n     [\n       \"exclude_category\",    (string) the valid logging category\n       ...\n     ]\n\nResult:\n{                             (json object) keys are the logging categories, and values indicates its status\n  \"category\" : true|false,    (boolean) if being debug logged or not. false:inactive, true:active\n  ...\n}\n\nExamples:\n> bitcoin-cli logging \"[\\\"all\\\"]\" \"[\\\"http\\\"]\"\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"logging\", \"params\": [[\"all\"], [\"libevent\"]]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
+              "logging ( [\"include_category\",...] [\"exclude_category\",...] )\n\nGets and sets the logging configuration.\nWhen called without an argument, returns the list of categories with status that are currently being debug logged or not.\nWhen called with arguments, adds or removes categories from debug logging and return the lists above.\nThe arguments are evaluated in order \"include\", \"exclude\".\nIf an item is both included and excluded, it will thus end up being excluded.\nThe valid logging categories are: addrman, bench, blockstorage, cmpctblock, coindb, estimatefee, http, i2p, ipc, kernel, leveldb, libevent, lock, mempool, mempoolrej, net, privatebroadcast, proxy, prune, qt, rand, reindex, rpc, scan, selectcoins, tor, txpackages, txreconciliation, validation, walletdb, zmq\nIn addition, the following are available as category names with special meanings:\n  - \"all\",  \"1\" : represent all logging categories.\n\nArguments:\n1. include                    (json array, optional) The categories to add to debug logging\n     [\n       \"include_category\",    (string) the valid logging category\n       ...\n     ]\n2. exclude                    (json array, optional) The categories to remove from debug logging\n     [\n       \"exclude_category\",    (string) the valid logging category\n       ...\n     ]\n\nResult:\n{                             (json object) keys are the logging categories, and values indicates its status\n  \"category\" : true|false,    (boolean) if being debug logged or not. false:inactive, true:active\n  ...\n}\n\nExamples:\n> bitcoin-cli logging \"[\\\"all\\\"]\" \"[\\\"http\\\"]\"\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"logging\", \"params\": [[\"all\"], [\"libevent\"]]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
             ]
           }
         },
@@ -34057,7 +35008,7 @@
             ],
             "result": {
               "name": "boolean",
-              "description": "Verification finished successfully. If false, check debug.log for reason.",
+              "description": "Verification finished successfully. If false, check debug log for reason.",
               "kind": "Primitive",
               "fields": null,
               "variants": null,
@@ -34069,7 +35020,7 @@
             "requires_private_keys": false,
             "version_added": "0.17",
             "examples": [
-              "verifychain ( checklevel nblocks )\n\nVerifies blockchain database.\n\nArguments:\n1. checklevel    (numeric, optional, default=3, range=0-4) How thorough the block verification is:\n                 - level 0 reads the blocks from disk\n                 - level 1 verifies block validity\n                 - level 2 verifies undo data\n                 - level 3 checks disconnection of tip blocks\n                 - level 4 tries to reconnect the blocks\n                 - each level includes the checks of the previous levels\n2. nblocks       (numeric, optional, default=6, 0=all) The number of blocks to check.\n\nResult:\ntrue|false    (boolean) Verification finished successfully. If false, check debug.log for reason.\n\nExamples:\n> bitcoin-cli verifychain \n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"verifychain\", \"params\": []}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
+              "verifychain ( checklevel nblocks )\n\nVerifies blockchain database.\n\nArguments:\n1. checklevel    (numeric, optional, default=3, range=0-4) How thorough the block verification is:\n                 - level 0 reads the blocks from disk\n                 - level 1 verifies block validity\n                 - level 2 verifies undo data\n                 - level 3 checks disconnection of tip blocks\n                 - level 4 tries to reconnect the blocks\n                 - each level includes the checks of the previous levels\n2. nblocks       (numeric, optional, default=6, 0=all) The number of blocks to check.\n\nResult:\ntrue|false    (boolean) Verification finished successfully. If false, check debug log for reason.\n\nExamples:\n> bitcoin-cli verifychain \n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"verifychain\", \"params\": []}' -H 'content-type: application/json' http://127.0.0.1:8332/\n"
             ]
           }
         },
