@@ -15504,12 +15504,16 @@
         "schema": {
           "oneOf": [
             {
-              "type": "null",
-              "description": "If the proposal was accepted with mode=='proposal'"
-            },
-            {
-              "type": "string",
-              "description": "If the proposal was not accepted with mode=='proposal'"
+              "oneOf": [
+                {
+                  "type": "null",
+                  "description": "If the proposal was accepted with mode=='proposal'"
+                },
+                {
+                  "type": "string",
+                  "description": "If the proposal was not accepted with mode=='proposal'"
+                }
+              ]
             },
             {
               "type": "object",
@@ -15550,53 +15554,7 @@
                 "transactions": {
                   "type": "array",
                   "items": {
-                    "type": "object",
-                    "properties": {
-                      "data": {
-                        "type": "string",
-                        "pattern": "^[0-9a-fA-F]*$",
-                        "description": "transaction data encoded in hexadecimal (byte-for-byte)"
-                      },
-                      "txid": {
-                        "type": "string",
-                        "pattern": "^[0-9a-fA-F]*$",
-                        "description": "transaction hash excluding witness data, shown in byte-reversed hex"
-                      },
-                      "hash": {
-                        "type": "string",
-                        "pattern": "^[0-9a-fA-F]*$",
-                        "description": "transaction hash including witness data, shown in byte-reversed hex"
-                      },
-                      "depends": {
-                        "type": "array",
-                        "items": {
-                          "type": "number"
-                        },
-                        "description": "array of numbers"
-                      },
-                      "fee": {
-                        "type": "number",
-                        "description": "difference in value between transaction inputs and outputs (in satoshis); for coinbase transactions, this is a negative Number of the total collected block fees (ie, not including the block subsidy); if key is not present, fee is unknown and clients MUST NOT assume there isn't one"
-                      },
-                      "sigops": {
-                        "type": "number",
-                        "description": "total SigOps cost, as counted for purposes of block limits; if key is not present, sigop cost is unknown and clients MUST NOT assume it is zero"
-                      },
-                      "weight": {
-                        "type": "number",
-                        "description": "total transaction weight, as counted for purposes of block limits"
-                      }
-                    },
-                    "additionalProperties": false,
-                    "required": [
-                      "data",
-                      "txid",
-                      "hash",
-                      "depends",
-                      "fee",
-                      "sigops",
-                      "weight"
-                    ]
+                    "$ref": "#/components/schemas/GetBlockTemplateTransaction"
                   },
                   "description": "contents of non-coinbase transactions that should be included in the next block"
                 },
@@ -15698,7 +15656,16 @@
               ],
               "description": "Otherwise"
             }
-          ]
+          ],
+          "x-bitcoin-discriminatedResult": {
+            "parameter": "template_request",
+            "parameterIndex": 0,
+            "nestedParameterKey": "mode",
+            "values": [
+              "proposal",
+              null
+            ]
+          }
         },
         "x-bitcoin-results": [
           {
@@ -15863,7 +15830,7 @@
                       },
                       {
                         "type": "number",
-                        "optional": false,
+                        "optional": true,
                         "description": "difference in value between transaction inputs and outputs (in satoshis); for coinbase transactions, this is a negative Number of the total collected block fees (ie, not including the block subsidy); if key is not present, fee is unknown and clients MUST NOT assume there isn't one",
                         "skip_type_check": false,
                         "key_name": "fee",
@@ -15871,7 +15838,7 @@
                       },
                       {
                         "type": "number",
-                        "optional": false,
+                        "optional": true,
                         "description": "total SigOps cost, as counted for purposes of block limits; if key is not present, sigop cost is unknown and clients MUST NOT assume it is zero",
                         "skip_type_check": false,
                         "key_name": "sigops",
@@ -16034,7 +16001,7 @@
         ]
       },
       "x-bitcoin-category": "mining",
-      "x-bitcoin-examples": "getblocktemplate {\"mode\":\"str\",\"capabilities\":[\"str\",...],\"rules\":[\"segwit\",\"str\",...],\"longpollid\":\"str\",\"data\":\"hex\"}\n\nIf the request parameters include a 'mode' key, that is used to explicitly select between the default 'template' request or a 'proposal'.\nIt returns data needed to construct a block to work on.\nFor full specification, see BIPs 22, 23, 9, and 145:\n    https://github.com/bitcoin/bips/blob/master/bip-0022.mediawiki\n    https://github.com/bitcoin/bips/blob/master/bip-0023.mediawiki\n    https://github.com/bitcoin/bips/blob/master/bip-0009.mediawiki#getblocktemplate_changes\n    https://github.com/bitcoin/bips/blob/master/bip-0145.mediawiki\n\nArguments:\n1. template_request            (json object, required) Format of the template\n     {\n       \"mode\": \"str\",          (string, optional) This must be set to \"template\", \"proposal\" (see BIP 23), or omitted\n       \"capabilities\": [       (json array, optional) A list of strings\n         \"str\",                (string) client side supported feature, 'longpoll', 'coinbasevalue', 'proposal', 'serverlist', 'workid'\n         ...\n       ],\n       \"rules\": [              (json array, required) A list of strings\n         \"segwit\",             (string, required) (literal) indicates client side segwit support\n         \"str\",                (string) other client side supported softfork deployment\n         ...\n       ],\n       \"longpollid\": \"str\",    (string, optional) delay processing request until the result would vary significantly from the \"longpollid\" of a prior template\n       \"data\": \"hex\",          (string, optional) proposed block data to check, encoded in hexadecimal; valid only for mode=\"proposal\"\n     }\n\nResult (If the proposal was accepted with mode=='proposal'):\nnull    (json null)\n\nResult (If the proposal was not accepted with mode=='proposal'):\n\"str\"    (string) According to BIP22\n\nResult (Otherwise):\n{                                          (json object)\n  \"version\" : n,                           (numeric) The preferred block version\n  \"rules\" : [                              (json array) specific block rules that are to be enforced\n    \"str\",                                 (string) name of a rule the client must understand to some extent; see BIP 9 for format\n    ...\n  ],\n  \"vbavailable\" : {                        (json object) set of pending, supported versionbit (BIP 9) softfork deployments\n    \"rulename\" : n,                        (numeric) identifies the bit number as indicating acceptance and readiness for the named softfork rule\n    ...\n  },\n  \"capabilities\" : [                       (json array)\n    \"str\",                                 (string) A supported feature, for example 'proposal'\n    ...\n  ],\n  \"vbrequired\" : n,                        (numeric) bit mask of versionbits the server requires set in submissions\n  \"previousblockhash\" : \"str\",             (string) The hash of current highest block\n  \"transactions\" : [                       (json array) contents of non-coinbase transactions that should be included in the next block\n    {                                      (json object)\n      \"data\" : \"hex\",                      (string) transaction data encoded in hexadecimal (byte-for-byte)\n      \"txid\" : \"hex\",                      (string) transaction hash excluding witness data, shown in byte-reversed hex\n      \"hash\" : \"hex\",                      (string) transaction hash including witness data, shown in byte-reversed hex\n      \"depends\" : [                        (json array) array of numbers\n        n,                                 (numeric) transactions before this one (by 1-based index in 'transactions' list) that must be present in the final block if this one is\n        ...\n      ],\n      \"fee\" : n,                           (numeric) difference in value between transaction inputs and outputs (in satoshis); for coinbase transactions, this is a negative Number of the total collected block fees (ie, not including the block subsidy); if key is not present, fee is unknown and clients MUST NOT assume there isn't one\n      \"sigops\" : n,                        (numeric) total SigOps cost, as counted for purposes of block limits; if key is not present, sigop cost is unknown and clients MUST NOT assume it is zero\n      \"weight\" : n                         (numeric) total transaction weight, as counted for purposes of block limits\n    },\n    ...\n  ],\n  \"coinbaseaux\" : {                        (json object) data that should be included in the coinbase's scriptSig content\n    \"key\" : \"hex\",                         (string) values must be in the coinbase (keys may be ignored)\n    ...\n  },\n  \"coinbasevalue\" : n,                     (numeric) maximum allowable input to coinbase transaction, including the generation award and transaction fees (in satoshis)\n  \"longpollid\" : \"str\",                    (string) an id to include with a request to longpoll on an update to this template\n  \"target\" : \"str\",                        (string) The hash target\n  \"mintime\" : xxx,                         (numeric) The minimum timestamp appropriate for the next block time, expressed in UNIX epoch time. Adjusted for the proposed BIP94 timewarp rule.\n  \"mutable\" : [                            (json array) list of ways the block template may be changed\n    \"str\",                                 (string) A way the block template may be changed, e.g. 'time', 'transactions', 'prevblock'\n    ...\n  ],\n  \"noncerange\" : \"hex\",                    (string) A range of valid nonces\n  \"sigoplimit\" : n,                        (numeric) limit of sigops in blocks\n  \"sizelimit\" : n,                         (numeric) limit of block size\n  \"weightlimit\" : n,                       (numeric, optional) limit of block weight\n  \"curtime\" : xxx,                         (numeric) current timestamp in UNIX epoch time. Adjusted for the proposed BIP94 timewarp rule.\n  \"bits\" : \"str\",                          (string) compressed target of next block\n  \"height\" : n,                            (numeric) The height of the next block\n  \"signet_challenge\" : \"hex\",              (string, optional) Only on signet\n  \"default_witness_commitment\" : \"hex\"     (string, optional) a valid witness commitment for the unmodified block template\n}\n\nExamples:\n> bitcoin-cli getblocktemplate '{\"rules\": [\"segwit\"]}'\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"getblocktemplate\", \"params\": [{\"rules\": [\"segwit\"]}]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n",
+      "x-bitcoin-examples": "getblocktemplate {\"mode\":\"str\",\"capabilities\":[\"str\",...],\"rules\":[\"segwit\",\"str\",...],\"longpollid\":\"str\",\"data\":\"hex\"}\n\nIf the request parameters include a 'mode' key, that is used to explicitly select between the default 'template' request or a 'proposal'.\nIt returns data needed to construct a block to work on.\nFor full specification, see BIPs 22, 23, 9, and 145:\n    https://github.com/bitcoin/bips/blob/master/bip-0022.mediawiki\n    https://github.com/bitcoin/bips/blob/master/bip-0023.mediawiki\n    https://github.com/bitcoin/bips/blob/master/bip-0009.mediawiki#getblocktemplate_changes\n    https://github.com/bitcoin/bips/blob/master/bip-0145.mediawiki\n\nArguments:\n1. template_request            (json object, required) Format of the template\n     {\n       \"mode\": \"str\",          (string, optional) This must be set to \"template\", \"proposal\" (see BIP 23), or omitted\n       \"capabilities\": [       (json array, optional) A list of strings\n         \"str\",                (string) client side supported feature, 'longpoll', 'coinbasevalue', 'proposal', 'serverlist', 'workid'\n         ...\n       ],\n       \"rules\": [              (json array, required) A list of strings\n         \"segwit\",             (string, required) (literal) indicates client side segwit support\n         \"str\",                (string) other client side supported softfork deployment\n         ...\n       ],\n       \"longpollid\": \"str\",    (string, optional) delay processing request until the result would vary significantly from the \"longpollid\" of a prior template\n       \"data\": \"hex\",          (string, optional) proposed block data to check, encoded in hexadecimal; valid only for mode=\"proposal\"\n     }\n\nResult (If the proposal was accepted with mode=='proposal'):\nnull    (json null)\n\nResult (If the proposal was not accepted with mode=='proposal'):\n\"str\"    (string) According to BIP22\n\nResult (Otherwise):\n{                                          (json object)\n  \"version\" : n,                           (numeric) The preferred block version\n  \"rules\" : [                              (json array) specific block rules that are to be enforced\n    \"str\",                                 (string) name of a rule the client must understand to some extent; see BIP 9 for format\n    ...\n  ],\n  \"vbavailable\" : {                        (json object) set of pending, supported versionbit (BIP 9) softfork deployments\n    \"rulename\" : n,                        (numeric) identifies the bit number as indicating acceptance and readiness for the named softfork rule\n    ...\n  },\n  \"capabilities\" : [                       (json array)\n    \"str\",                                 (string) A supported feature, for example 'proposal'\n    ...\n  ],\n  \"vbrequired\" : n,                        (numeric) bit mask of versionbits the server requires set in submissions\n  \"previousblockhash\" : \"str\",             (string) The hash of current highest block\n  \"transactions\" : [                       (json array) contents of non-coinbase transactions that should be included in the next block\n    {                                      (json object)\n      \"data\" : \"hex\",                      (string) transaction data encoded in hexadecimal (byte-for-byte)\n      \"txid\" : \"hex\",                      (string) transaction hash excluding witness data, shown in byte-reversed hex\n      \"hash\" : \"hex\",                      (string) transaction hash including witness data, shown in byte-reversed hex\n      \"depends\" : [                        (json array) array of numbers\n        n,                                 (numeric) transactions before this one (by 1-based index in 'transactions' list) that must be present in the final block if this one is\n        ...\n      ],\n      \"fee\" : n,                           (numeric, optional) difference in value between transaction inputs and outputs (in satoshis); for coinbase transactions, this is a negative Number of the total collected block fees (ie, not including the block subsidy); if key is not present, fee is unknown and clients MUST NOT assume there isn't one\n      \"sigops\" : n,                        (numeric, optional) total SigOps cost, as counted for purposes of block limits; if key is not present, sigop cost is unknown and clients MUST NOT assume it is zero\n      \"weight\" : n                         (numeric) total transaction weight, as counted for purposes of block limits\n    },\n    ...\n  ],\n  \"coinbaseaux\" : {                        (json object) data that should be included in the coinbase's scriptSig content\n    \"key\" : \"hex\",                         (string) values must be in the coinbase (keys may be ignored)\n    ...\n  },\n  \"coinbasevalue\" : n,                     (numeric) maximum allowable input to coinbase transaction, including the generation award and transaction fees (in satoshis)\n  \"longpollid\" : \"str\",                    (string) an id to include with a request to longpoll on an update to this template\n  \"target\" : \"str\",                        (string) The hash target\n  \"mintime\" : xxx,                         (numeric) The minimum timestamp appropriate for the next block time, expressed in UNIX epoch time. Adjusted for the proposed BIP94 timewarp rule.\n  \"mutable\" : [                            (json array) list of ways the block template may be changed\n    \"str\",                                 (string) A way the block template may be changed, e.g. 'time', 'transactions', 'prevblock'\n    ...\n  ],\n  \"noncerange\" : \"hex\",                    (string) A range of valid nonces\n  \"sigoplimit\" : n,                        (numeric) limit of sigops in blocks\n  \"sizelimit\" : n,                         (numeric) limit of block size\n  \"weightlimit\" : n,                       (numeric, optional) limit of block weight\n  \"curtime\" : xxx,                         (numeric) current timestamp in UNIX epoch time. Adjusted for the proposed BIP94 timewarp rule.\n  \"bits\" : \"str\",                          (string) compressed target of next block\n  \"height\" : n,                            (numeric) The height of the next block\n  \"signet_challenge\" : \"hex\",              (string, optional) Only on signet\n  \"default_witness_commitment\" : \"hex\"     (string, optional) a valid witness commitment for the unmodified block template\n}\n\nExamples:\n> bitcoin-cli getblocktemplate '{\"rules\": [\"segwit\"]}'\n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"getblocktemplate\", \"params\": [{\"rules\": [\"segwit\"]}]}' -H 'content-type: application/json' http://127.0.0.1:8332/\n",
       "x-bitcoin-argument-names": [
         "template_request"
       ],
@@ -43648,8 +43615,6 @@
           "txid",
           "hash",
           "depends",
-          "fee",
-          "sigops",
           "weight"
         ]
       }
