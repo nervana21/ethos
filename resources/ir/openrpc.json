@@ -11633,6 +11633,11 @@
       "result": {
         "name": "result",
         "schema": {
+          "x-bitcoin-discriminatedResult": {
+            "parameter": "verbosity|verbose",
+            "parameterIndex": 1,
+            "values": [0, 1, 2, 3]
+          },
           "oneOf": [
             {
               "type": "string",

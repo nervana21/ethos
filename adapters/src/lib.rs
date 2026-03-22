@@ -18,6 +18,7 @@ use ir::ProtocolIR;
 pub mod bitcoin_core {
     /// Bitcoin Core OpenRPC converter and version filtering (openrpc.json / getopenrpcinfo -> IR)
     pub mod openrpc;
+    mod openrpc_type_disambiguation;
     /// Bitcoin Core type definitions and utilities
     pub mod types;
 }

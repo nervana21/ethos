@@ -460,6 +460,11 @@ const CATEGORY_RULES: &[CategoryRule] = &[
         category: BitcoinCoreRpcType::BitcoinTxid,
     },
     CategoryRule {
+        rpc_type: RpcJsonType::Hex,
+        field_name: Some("transactionid"),
+        category: BitcoinCoreRpcType::BitcoinTxid,
+    },
+    CategoryRule {
         rpc_type: RpcJsonType::String,
         field_name: Some("blockhash"),
         category: BitcoinCoreRpcType::BitcoinBlockHash,
