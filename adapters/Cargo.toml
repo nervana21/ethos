@@ -7,8 +7,6 @@ edition = "2021"
 async-trait = "0.1.89"
 bitcoin = { version = "0.32.8", features = ["serde"] }
 bitcoin-units = { version = "0.3.0", features = ["serde"] }
-bytes = "1.11.1"  # RUSTSEC-2026-0007: force >=1.11.1 (reqwest/tower-http transitive)
-chrono = { version = "0.4", features = ["serde"] }
 futures = "0.3"
 fuzz-types = { package = "ethos-fuzz-types", version = "0.1.0", path = "../primitives/fuzz" }
 ir = { package = "ethos-ir", version = "0.1.0", path = "../primitives/ir" }
@@ -16,17 +14,10 @@ normalization = { package = "ethos-normalization", version = "0.1.0", path = "..
 path = { package = "ethos-path", version = "0.1.0", path = "../primitives/path" }
 semantics = { package = "ethos-semantics", version = "0.1.0", path = "../compiler/semantics" }
 plugins = { package = "ethos-plugins", version = "0.1.0", path = "../primitives/plugins" }
-reqwest = { version = "0.13.1", features = ["json"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0.145"
 thiserror = "2.0.17"
-tokio = { version = "1.49", features = ["rt", "rt-multi-thread", "time", "test-util", "macros"] }
 types = { package = "ethos-types", version = "0.1.0", path = "../primitives/types" }
-
-[dev-dependencies]
-tempfile = "3.8"
-tokio-test = "0.4"
-serial_test = "^3.1"
 
 [[bin]]
 name = "process_bitcoin_openrpc"
