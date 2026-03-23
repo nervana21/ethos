@@ -90,7 +90,7 @@ corpus-pull:
 
 # Check for unused dependencies.
 @udeps:
-  cargo +{{NIGHTLY_VERSION}} udeps --all-targets
+  cargo +{{NIGHTLY_VERSION}} udeps --workspace --all-targets
 
 # Run security audit.
 @audit:
