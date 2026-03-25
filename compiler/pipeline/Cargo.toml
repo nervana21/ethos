@@ -11,12 +11,10 @@ external_fuzz = []
 [dependencies]
 adapters = { package = "ethos-adapters", version = "0.1.0", path = "../../adapters" }
 analysis = { package = "ethos-analysis", version = "0.1.0", path = "../analysis" }
-chrono = { version = "0.4", features = ["serde"] }
 codegen = { package = "ethos-codegen", version = "0.1.0", path = "../codegen" }
 ir = { package = "ethos-ir", version = "0.1.0", path = "../../primitives/ir" }
 normalization = { package = "ethos-normalization", version = "0.1.0", path = "../../primitives/normalization" }
 path = { package = "ethos-path", version = "0.1.0", path = "../../primitives/path" }
-pathdiff = "0.2"
 plugins = { package = "ethos-plugins", version = "0.1.0", path = "../../primitives/plugins" }
 regex = "1.0"
 registry = { package = "ethos-registry", version = "0.1.0", path = "../../primitives/registry" }
@@ -25,10 +23,6 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0.145", features = ["preserve_order"] }
 thiserror = "2.0.17"
 types = { package = "ethos-types", version = "0.1.0", path = "../../primitives/types" }
-wait-timeout = "0.2"
-
-[dev-dependencies]
-tempfile = "3.23.0"
 
 [lib]
 name = "pipeline"
