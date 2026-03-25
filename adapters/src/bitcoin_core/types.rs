@@ -410,7 +410,6 @@ impl RpcJsonType {
             "number" => Self::Number,
             "boolean" => Self::Boolean,
             "null" => Self::Null,
-            "*" => Self::Wildcard,
             "amount" => Self::Amount,
             "hex" => Self::Hex,
             "array" => Self::Array,
