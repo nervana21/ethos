@@ -413,7 +413,10 @@ impl RpcJsonType {
             "amount" => Self::Amount,
             "hex" => Self::Hex,
             "array" => Self::Array,
+            "array-fixed" => Self::Array,
             "object" => Self::Object,
+            // Dynamic-key objects (e.g. PSBT unknown map); same wire shape as `object` for typing.
+            "object-dynamic" => Self::Object,
             "timestamp" => Self::Timestamp,
             "none" => Self::NoneType,
             "any" => Self::Any,
