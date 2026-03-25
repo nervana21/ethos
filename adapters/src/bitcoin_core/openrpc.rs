@@ -242,12 +242,16 @@ fn map_protocol_type(bc_type: &str) -> String {
         "amount" => "amount".to_string(),
         "any" => "any".to_string(),
         "array" => "array".to_string(),
+        // Tuple-shaped JSON array (fixed arity); same wire encoding as `array`.
+        "array-fixed" => "array".to_string(),
         "boolean" => "boolean".to_string(),
         "elision" => "elision".to_string(),
         "hex" => "hex".to_string(),
         "none" => "none".to_string(),
         "number" => "number".to_string(),
         "object" => "object".to_string(),
+        // Dynamic-key JSON objects (OpenRPC); inner entries are illustrative, not a fixed struct.
+        "object-dynamic" => "object-dynamic".to_string(),
         "range" => "range".to_string(),
         "string" => "string".to_string(),
         "timestamp" => "timestamp".to_string(),
@@ -318,7 +322,7 @@ impl InnerFieldInfo for RawResult {
 /// This unified function works for both arguments and results.
 fn determine_type_kind<T: HasTypeAndInner>(bc_type: &str, inner: &[T]) -> TypeKind {
     match bc_type {
-        "array" => {
+        "array" | "array-fixed" => {
             if inner.is_empty() {
                 TypeKind::Array
             } else if inner.len() == 1 && inner[0].is_named_object_array_template() {
@@ -720,7 +724,7 @@ fn load_openrpc_doc(path: &PathBuf) -> Result<OpenRpcDoc, Box<dyn std::error::Er
 fn build_base_type_def(type_str: &str) -> (String, String) {
     let protocol_type = map_protocol_type(type_str);
     let type_name = match type_str {
-        "array" => "array".to_string(),
+        "array" | "array-fixed" => "array".to_string(),
         "object" => "object".to_string(),
         _ => map_protocol_type(type_str),
     };
@@ -754,7 +758,7 @@ fn convert_argument_to_type_def(raw: &RawArgument) -> TypeDef {
             force_optional: None,
         });
 
-        type_def.fields = Some(if raw.r#type == "array" {
+        type_def.fields = Some(if matches!(raw.r#type.as_str(), "array" | "array-fixed") {
             build_array_of_objects_wrapper(fields)
         } else {
             fields
@@ -855,7 +859,7 @@ fn convert_result(raw: &RawResult, parent_key: Option<&str>, method_name: Option
             })
             .collect();
 
-        type_def.fields = Some(if raw.r#type == "array" {
+        type_def.fields = Some(if matches!(raw.r#type.as_str(), "array" | "array-fixed") {
             build_array_of_objects_wrapper(fields)
         } else {
             fields
