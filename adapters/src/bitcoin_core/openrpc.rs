@@ -1144,24 +1144,27 @@ fn merge_results_to_exclusive_union(results: &[RawResult], method_name: &str) ->
     }
 }
 
+/// Allocates a JSON key name that is unique among `field_names`, appending `_1`, `_2`, ... when needed.
+fn ensure_unique_merged_field_name(
+    field_names: &mut std::collections::HashSet<String>,
+    base_name: String,
+) -> String {
+    let base_name_clone = base_name.clone();
+    let mut name = base_name;
+    let mut counter = 0;
+    while field_names.contains(&name) {
+        counter += 1;
+        name = format!("{}_{}", base_name_clone, counter);
+    }
+    field_names.insert(name.clone());
+    name
+}
+
 /// Merges multiple results into a single object `TypeDef`.
 /// `method_name`: RPC method name so nested object types get stable names (e.g. DecodepsbtTx).
 fn merge_results_to_object(results: &[RawResult], method_name: &str) -> TypeDef {
     let mut fields: Vec<FieldDef> = Vec::new();
     let mut field_names: std::collections::HashSet<String> = std::collections::HashSet::new();
-
-    // Helper to ensure unique field names
-    let mut ensure_unique_name = |base_name: String| -> String {
-        let base_name_clone = base_name.clone();
-        let mut name = base_name;
-        let mut counter = 0;
-        while field_names.contains(&name) {
-            counter += 1;
-            name = format!("{}_{}", base_name_clone, counter);
-        }
-        field_names.insert(name.clone());
-        name
-    };
 
     // Check if we have any object results with inner fields
     let has_object_with_inner = results.iter().any(|r| r.r#type == "object" && !r.inner.is_empty());
@@ -1199,9 +1202,9 @@ fn merge_results_to_object(results: &[RawResult], method_name: &str) -> TypeDef 
                 let key_name = if !inner.key_name.is_empty() {
                     inner.key_name.clone()
                 } else {
-                    ensure_unique_name(format!("field_{}", idx))
+                    ensure_unique_merged_field_name(&mut field_names, format!("field_{}", idx))
                 };
-                let name = ensure_unique_name(key_name);
+                let name = ensure_unique_merged_field_name(&mut field_names, key_name);
 
                 // If we have conditional results (simple type + object), make all fields optional
                 // because the response type depends on the condition (e.g., verbose parameter)
@@ -1253,11 +1256,11 @@ fn merge_results_to_object(results: &[RawResult], method_name: &str) -> TypeDef 
                 if desc_lower.contains("address") && !desc_lower.contains("address_") {
                     "addresses".to_string()
                 } else {
-                    ensure_unique_name(format!("field_{}", idx))
+                    ensure_unique_merged_field_name(&mut field_names, format!("field_{}", idx))
                 }
             };
 
-            let name = ensure_unique_name(base_field_name);
+            let name = ensure_unique_merged_field_name(&mut field_names, base_field_name);
             fields.push(FieldDef {
                 key: FieldKey::Named(name),
                 field_type: convert_result(result, None, Some(method_name)),
