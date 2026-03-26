@@ -13,7 +13,6 @@ use ir::{ProtocolIR, RpcDef, TypeDef, TypeKind, UnionVariantDef};
 use types::{Implementation, ProtocolVersion};
 
 use super::doc_comment::{write_doc_comment, write_doc_line};
-use super::raw_response_policy;
 use crate::utils::sanitize_type_name_for_rust;
 use crate::Result;
 
@@ -104,21 +103,18 @@ impl VersionSpecificResponseTypeGenerator {
             }
         }
         // Also collect nested types from the actual Rust type strings we will emit for fields.
-        // Some types are introduced by adapter type-mapping (BitcoinCoreTypeRegistry) or
-        // by raw_response_policy::rpc_field_type_rust_override and therefore do not appear as IR TypeDef names.
+        // Some types are introduced by adapter type-mapping (BitcoinCoreTypeRegistry) and therefore
+        // do not appear as IR TypeDef names.
         for method in methods {
             if let Some(result) = &method.result {
                 let result = self.filter_type_def_for_version(result);
                 let mut scan = |fields: &[ir::FieldDef]| {
                     for field in fields {
-                        let rust_type = raw_response_policy::rpc_field_type_rust_override(
-                            method.name.as_str(),
+                        let rust_type = self.map_ir_type_to_rust(
+                            &field.field_type,
                             &field.key.as_ident(),
-                        )
-                        .map(String::from)
-                        .unwrap_or_else(|| {
-                            self.map_ir_type_to_rust(&field.field_type, &field.key.as_ident(), None)
-                        });
+                            None,
+                        );
                         self.collect_nested_types(&rust_type, &mut nested_types);
                     }
                 };
@@ -155,14 +151,11 @@ impl VersionSpecificResponseTypeGenerator {
                 let result = self.filter_type_def_for_version(result);
                 let mut scan_fields = |fields: &[ir::FieldDef]| {
                     for field in fields {
-                        let rust_type = raw_response_policy::rpc_field_type_rust_override(
-                            method.name.as_str(),
+                        let rust_type = self.map_ir_type_to_rust(
+                            &field.field_type,
                             &field.key.as_ident(),
-                        )
-                        .map(String::from)
-                        .unwrap_or_else(|| {
-                            self.map_ir_type_to_rust(&field.field_type, &field.key.as_ident(), None)
-                        });
+                            None,
+                        );
                         let field_type = &field.field_type.name;
                         if field_type.contains("BTreeMap") || rust_type.contains("BTreeMap") {
                             needs_btreemap = true;
@@ -255,12 +248,7 @@ impl VersionSpecificResponseTypeGenerator {
         let type_registry = Self::build_type_registry(methods);
         let union_verbose_object_names = self.collect_union_verbose_object_type_names(methods);
 
-        // Manually emitted response structs (decoded-tx helpers, GetBlockTemplateTransaction, etc.)
-        // are emitted by dedicated helpers (for example, emit_decoded_tx_types) and not from IR.
         let mut processed_types = BTreeSet::new();
-        for name in raw_response_policy::MANUAL_RESPONSE_TYPE_NAMES {
-            processed_types.insert((*name).to_string());
-        }
 
         // Generate nested types first, recursively collecting more nested types.
         // BTreeSet gives deterministic iteration over type names.
@@ -297,33 +285,6 @@ impl VersionSpecificResponseTypeGenerator {
                     processed_types.insert(nested_type.clone());
                 }
             }
-        }
-
-        // Emit decoded tx types once so they are defined before any method response that references them.
-        let mut decoded_tx_buf = String::new();
-        let fee_required = methods
-            .iter()
-            .find(|m| m.name == "getblock")
-            .and_then(|method| Self::get_getblock_decoded_tx_element_type(method))
-            .and_then(|ty| Self::find_field_in_type(ty, "fee"))
-            .map(|f| f.required);
-        self.emit_decoded_tx_types(
-            &mut decoded_tx_buf,
-            methods,
-            fee_required,
-            type_registry.contains_key("DecodedScriptPubKey"),
-        )?;
-        if !decoded_tx_buf.is_empty() {
-            out.push_str(&decoded_tx_buf);
-            out.push_str("\n\n");
-        }
-
-        // Emit GetBlockTemplateTransaction when getblocktemplate is present so GetBlockTemplateResponse can use it.
-        if methods.iter().any(|m| m.name == "getblocktemplate") {
-            let mut gbt_tx_buf = String::new();
-            self.emit_get_block_template_transaction(&mut gbt_tx_buf)?;
-            out.push_str(&gbt_tx_buf);
-            out.push_str("\n");
         }
 
         // Generate response structs for each method
@@ -554,37 +515,6 @@ impl VersionSpecificResponseTypeGenerator {
         out
     }
 
-    /// Rust struct name for the first `TypeKind::Object` branch of `getblock`'s union result, using
-    /// the same variant ordering as [`Self::generate_union_rpc_response`]. Manual helpers
-    /// (`GetBlockWithTxsResponse`, etc.) reference this type; it must match the IR-driven struct
-    /// name (not a hardcoded `GetBlockObject1`).
-    fn getblock_union_first_object_rust_label(&self, methods: &[RpcDef]) -> Option<String> {
-        let method = methods.iter().find(|m| m.name == "getblock")?;
-        let result = self.filter_type_def_for_version(method.result.as_ref()?);
-        if result.kind != TypeKind::Union {
-            return None;
-        }
-        let uvs = result.union_variants.as_ref()?;
-        let mut variants: Vec<_> = uvs.iter().collect();
-        variants.sort_by_key(|v| match v.type_def.kind {
-            TypeKind::Primitive => 0,
-            TypeKind::Array => 1,
-            TypeKind::Map => 2,
-            TypeKind::Object => 3,
-            _ => 4,
-        });
-        for uv in variants {
-            if uv.type_def.kind == TypeKind::Object {
-                let filtered = self.filter_type_def_for_version(&uv.type_def);
-                let label = Self::ir_rust_type_label(&filtered);
-                if !label.is_empty() {
-                    return Some(label);
-                }
-            }
-        }
-        None
-    }
-
     /// Rust type string for a union variant (arrays, maps, objects, primitives).
     fn map_union_variant_rust_type(&self, td: &ir::TypeDef) -> String {
         match td.kind {
@@ -632,359 +562,14 @@ impl VersionSpecificResponseTypeGenerator {
     /// Returns true iff the field should be skipped when emitting a struct field for the given RPC.
     /// This includes elision placeholders and method-specific scaffolding fields that are not real
     /// JSON keys in Core's responses.
-    fn should_skip_field_in_struct(rpc_name: &str, field: &ir::FieldDef) -> bool {
+    fn should_skip_field_in_struct(field: &ir::FieldDef) -> bool {
         if Self::is_elision_field(field) {
             return true;
         }
         if field.emit_in_struct == Some(false) {
             return true;
         }
-        if rpc_name == "getblock" {
-            let id = field.key.as_ident();
-            // IR encodes verbosity 2/3 result shapes with _1/_2 suffixes so union branches do not
-            // collide in the flat object model. On the wire, Core still uses unsuffixed keys once
-            // (hash, tx, coinbase_tx, …); emitting these as serde fields would expect "hash_1" etc.
-            // and/or duplicate the same JSON key. Skip all such disambiguation fields; see tx_1/tx_2.
-            if id.ends_with("_1") || id.ends_with("_2") {
-                return true;
-            }
-            return matches!(id.as_str(), "field_21" | "field_23");
-        }
-
         false
-    }
-
-    /// Returns the TypeDef for one element of the getblock decoded-tx array (verbosity 2/3).
-    /// Used with [`Self::find_field_in_type`] to drive optionality from the IR without hardcoding paths in the emitter.
-    fn get_getblock_decoded_tx_element_type(method: &RpcDef) -> Option<&ir::TypeDef> {
-        let result = method.result.as_ref()?;
-        let uvs = result.union_variants.as_ref()?;
-        for uv in uvs {
-            let td = &uv.type_def;
-            if td.kind != ir::TypeKind::Object {
-                continue;
-            }
-            let fields = td.fields.as_ref()?;
-            let tx = fields.iter().find(|f| f.key.as_ident() == "tx")?;
-            let arr_fields = tx.field_type.fields.as_ref()?;
-            let elem = arr_fields.first()?;
-            let el_ty = &elem.field_type;
-            if el_ty.kind != ir::TypeKind::Object {
-                continue;
-            }
-            let inner = el_ty.fields.as_ref()?;
-            if inner.iter().any(|f| f.key.as_ident() == "txid") {
-                return Some(el_ty);
-            }
-        }
-        None
-    }
-
-    /// Returns the field with the given name in the type's direct fields, if any.
-    fn find_field_in_type<'a>(
-        type_def: &'a ir::TypeDef,
-        field_name: &str,
-    ) -> Option<&'a ir::FieldDef> {
-        type_def.fields.as_ref()?.iter().find(|f| f.key.as_ident() == field_name)
-    }
-
-    /// Emits Rust structs for decoded transaction details (getblock verbosity 2/3, getrawtransaction verbose).
-    /// Does not use deny_unknown_fields on inner structs so new Core fields do not break deserialization.
-    /// When `skip_decoded_script_pubkey` is true, DecodedScriptPubKey is already emitted from the IR type registry.
-    /// `fee_required`: when `Some(true)` emit `fee: f64`, otherwise `fee: Option<f64>`; caller derives this from the IR.
-    fn emit_decoded_tx_types(
-        &self,
-        buf: &mut String,
-        methods: &[RpcDef],
-        fee_required: Option<bool>,
-        skip_decoded_script_pubkey: bool,
-    ) -> Result<()> {
-        if !skip_decoded_script_pubkey {
-            write_doc_line(buf, "Script pubkey in decoded tx output.", "")?;
-            write_doc_line(
-                buf,
-                "See: <https://github.com/bitcoin/bitcoin/blob/744d47fcee0d32a71154292699bfdecf954a6065/src/core_io.cpp#L409-L427>",
-                "",
-            )?;
-            writeln!(buf, "#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]")?;
-            writeln!(buf, "pub struct DecodedScriptPubKey {{")?;
-            write_doc_comment(buf, "Script in human-readable assembly form.", "    ")?;
-            writeln!(buf, "    pub asm: String,")?;
-            write_doc_comment(
-                buf,
-                "Output script descriptor; present only when address/descriptor info was requested (include_address).",
-                "    ",
-            )?;
-            writeln!(buf, "    #[serde(default, skip_serializing_if = \"Option::is_none\")]")?;
-            writeln!(buf, "    pub desc: Option<String>,")?;
-            write_doc_comment(
-                buf,
-                "Output script serialized as hex; present only when hex was requested (include_hex).",
-                "    ",
-            )?;
-            writeln!(buf, "    #[serde(default, skip_serializing_if = \"Option::is_none\")]")?;
-            writeln!(buf, "    pub hex: Option<String>,")?;
-            write_doc_comment(
-                buf,
-                "Categorized script type (for example, \"pubkeyhash\").",
-                "    ",
-            )?;
-            writeln!(buf, "    #[serde(rename = \"type\")]")?;
-            writeln!(buf, "    pub type_: String,")?;
-            write_doc_comment(
-                buf,
-                "Decoded destination address for this script, when available.",
-                "    ",
-            )?;
-            writeln!(buf, "    #[serde(default, skip_serializing_if = \"Option::is_none\")]")?;
-            writeln!(buf, "    pub address: Option<String>,")?;
-            writeln!(buf, "}}")?;
-            writeln!(buf)?;
-        }
-
-        write_doc_line(buf, "Script sig in decoded tx input.", "")?;
-        write_doc_line(
-            buf,
-            "See: <https://github.com/bitcoin/bitcoin/blob/744d47fcee0d32a71154292699bfdecf954a6065/src/core_io.cpp#L458-L461>",
-            "",
-        )?;
-        writeln!(buf, "#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]")?;
-        writeln!(buf, "pub struct DecodedScriptSig {{")?;
-        write_doc_comment(buf, "scriptSig in human-readable assembly form.", "    ")?;
-        writeln!(buf, "    pub asm: String,")?;
-        write_doc_comment(buf, "scriptSig serialized as hex.", "    ")?;
-        writeln!(buf, "    pub hex: String,")?;
-        writeln!(buf, "}}")?;
-        writeln!(buf)?;
-
-        write_doc_line(
-            buf,
-            "Previous output (prevout) in decoded tx input; present for getblock verbosity 3.",
-            "",
-        )?;
-        writeln!(buf, "#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]")?;
-        writeln!(buf, "pub struct DecodedPrevout {{")?;
-        write_doc_comment(
-            buf,
-            "True if the prevout was created by a coinbase transaction.",
-            "    ",
-        )?;
-        writeln!(buf, "    pub generated: bool,")?;
-        write_doc_comment(buf, "Block height where the prevout was created.", "    ")?;
-        writeln!(buf, "    pub height: i64,")?;
-        write_doc_comment(buf, "Decoded script pubkey of the prevout output.", "    ")?;
-        writeln!(buf, "    #[serde(rename = \"scriptPubKey\")]")?;
-        writeln!(buf, "    pub script_pubkey: DecodedScriptPubKey,")?;
-        write_doc_comment(buf, "Value of the prevout output in BTC.", "    ")?;
-        writeln!(buf, "    pub value: f64,")?;
-        writeln!(buf, "}}")?;
-        writeln!(buf)?;
-
-        write_doc_line(
-            buf,
-            "Transaction input in decoded tx; prevout is None for getblock verbosity 2, Some for verbosity 3.",
-            "",
-        )?;
-        writeln!(buf, "#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]")?;
-        writeln!(buf, "pub struct DecodedVin {{")?;
-        write_doc_comment(
-            buf,
-            "Coinbase payload hex when this is a coinbase input (no txid/vout).",
-            "    ",
-        )?;
-        writeln!(
-            buf,
-            "    #[serde(rename = \"coinbase\", default, skip_serializing_if = \"Option::is_none\")]"
-        )?;
-        writeln!(buf, "    pub coinbase: Option<String>,")?;
-        write_doc_comment(buf, "Transaction id of the previous output being spent.", "    ")?;
-        writeln!(buf, "    #[serde(default, skip_serializing_if = \"Option::is_none\")]")?;
-        writeln!(buf, "    pub txid: Option<String>,")?;
-        write_doc_comment(buf, "Index of the previous output being spent.", "    ")?;
-        writeln!(buf, "    #[serde(default, skip_serializing_if = \"Option::is_none\")]")?;
-        writeln!(buf, "    pub vout: Option<u32>,")?;
-        write_doc_comment(buf, "Decoded scriptSig for this input, when present.", "    ")?;
-        writeln!(
-            buf,
-            "    #[serde(rename = \"scriptSig\", default, skip_serializing_if = \"Option::is_none\")]"
-        )?;
-        writeln!(buf, "    pub script_sig: Option<DecodedScriptSig>,")?;
-        write_doc_comment(buf, "Input sequence number.", "    ")?;
-        writeln!(buf, "    pub sequence: u64,")?;
-        write_doc_comment(buf, "Witness stack items for this input (if any).", "    ")?;
-        writeln!(buf, "    #[serde(rename = \"txinwitness\", default, skip_serializing_if = \"Option::is_none\")]")?;
-        writeln!(buf, "    pub tx_in_witness: Option<Vec<String>>,")?;
-        write_doc_comment(
-            buf,
-            "Decoded details of the previous output when verbosity includes prevout.",
-            "    ",
-        )?;
-        writeln!(buf, "    #[serde(default, skip_serializing_if = \"Option::is_none\")]")?;
-        writeln!(buf, "    pub prevout: Option<DecodedPrevout>,")?;
-        writeln!(buf, "}}")?;
-        writeln!(buf)?;
-
-        write_doc_line(buf, "Transaction output in decoded tx; mirrors Core vout object.", "")?;
-        write_doc_line(
-            buf,
-            "See: <https://github.com/bitcoin/bitcoin/blob/744d47fcee0d32a71154292699bfdecf954a6065/src/core_io.cpp#L495-L519>",
-            "",
-        )?;
-        writeln!(buf, "#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]")?;
-        writeln!(buf, "pub struct DecodedVout {{")?;
-        write_doc_comment(buf, "Value in BTC of this output.", "    ")?;
-        writeln!(buf, "    pub value: f64,")?;
-        write_doc_comment(buf, "Index of this output within the transaction.", "    ")?;
-        writeln!(buf, "    pub n: u32,")?;
-        write_doc_comment(buf, "Decoded script pubkey of this output.", "    ")?;
-        writeln!(buf, "    #[serde(rename = \"scriptPubKey\")]")?;
-        writeln!(buf, "    pub script_pubkey: DecodedScriptPubKey,")?;
-        writeln!(buf, "}}")?;
-        writeln!(buf)?;
-
-        write_doc_line(
-            buf,
-            "Decoded transaction details (getblock verbosity 2/3 and getrawtransaction verbose).",
-            "",
-        )?;
-        writeln!(buf, "#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]")?;
-        writeln!(buf, "pub struct DecodedTxDetails {{")?;
-        write_doc_comment(buf, "Transaction id.", "    ")?;
-        writeln!(buf, "    pub txid: String,")?;
-        write_doc_comment(buf, "Witness transaction id (wtxid).", "    ")?;
-        writeln!(buf, "    pub hash: String,")?;
-        write_doc_comment(buf, "Transaction version.", "    ")?;
-        writeln!(buf, "    pub version: i32,")?;
-        write_doc_comment(buf, "Total serialized size of the transaction in bytes.", "    ")?;
-        writeln!(buf, "    pub size: u32,")?;
-        write_doc_comment(buf, "Virtual transaction size (vsize) as defined in BIP 141.", "    ")?;
-        writeln!(buf, "    pub vsize: u32,")?;
-        write_doc_comment(buf, "Transaction weight as defined in BIP 141.", "    ")?;
-        writeln!(buf, "    pub weight: u32,")?;
-        write_doc_comment(buf, "Transaction locktime.", "    ")?;
-        writeln!(buf, "    pub locktime: u32,")?;
-        write_doc_comment(buf, "List of transaction inputs.", "    ")?;
-        writeln!(buf, "    pub vin: Vec<DecodedVin>,")?;
-        write_doc_comment(buf, "List of transaction outputs.", "    ")?;
-        writeln!(buf, "    pub vout: Vec<DecodedVout>,")?;
-        write_doc_comment(
-            buf,
-            "Fee paid by the transaction, when undo data is available.",
-            "    ",
-        )?;
-        if fee_required == Some(true) {
-            writeln!(buf, "    pub fee: f64,")?;
-        } else {
-            // Optional when IR says required=false, or when IR path is missing (e.g. older IR)
-            writeln!(buf, "    #[serde(default, skip_serializing_if = \"Option::is_none\")]")?;
-            writeln!(buf, "    pub fee: Option<f64>,")?;
-        }
-        write_doc_comment(
-            buf,
-            "Raw transaction serialized as hex (consistent with getrawtransaction verbose output).",
-            "    ",
-        )?;
-        writeln!(buf, "    pub hex: String,")?;
-        writeln!(buf, "}}")?;
-        writeln!(buf)?;
-
-        // Thin wrappers used by higher-level helpers around getblock verbosities.
-        write_doc_line(buf, "Hex-encoded block data returned by getblock with verbosity 0.", "")?;
-        writeln!(buf, "#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]")?;
-        writeln!(buf, "pub struct GetBlockV0 {{")?;
-        write_doc_comment(buf, "Serialized block as a hex string.", "    ")?;
-        writeln!(buf, "    pub hex: String,")?;
-        writeln!(buf, "}}")?;
-        writeln!(buf)?;
-
-        if let Some(base_label) = self.getblock_union_first_object_rust_label(methods) {
-            write_doc_line(
-                buf,
-                "Verbose block view with decoded transactions (built from getblock verbosities 1 and 2).",
-                "",
-            )?;
-            writeln!(buf, "#[derive(Debug, Clone, PartialEq, Serialize)]")?;
-            writeln!(buf, "pub struct GetBlockWithTxsResponse {{")?;
-            write_doc_comment(
-                buf,
-                "Block header and summary information from getblock verbosity 1.",
-                "    ",
-            )?;
-            writeln!(buf, "    pub base: {},", base_label)?;
-            write_doc_comment(
-                buf,
-                "Fully decoded transactions in the block, matching getblock verbosity 2.",
-                "    ",
-            )?;
-            writeln!(buf, "    pub decoded_txs: Vec<DecodedTxDetails>,")?;
-            writeln!(buf, "}}")?;
-            writeln!(buf)?;
-
-            write_doc_line(
-                buf,
-                "Verbose block view with decoded transactions and prevout metadata (getblock verbosity 3).",
-                "",
-            )?;
-            writeln!(buf, "#[derive(Debug, Clone, PartialEq, Serialize)]")?;
-            writeln!(buf, "pub struct GetBlockWithPrevoutResponse {{")?;
-            write_doc_comment(
-                buf,
-                "Verbose block view with prevout-rich inputs; wraps the verbosity-2 representation.",
-                "    ",
-            )?;
-            writeln!(buf, "    pub inner: GetBlockWithTxsResponse,")?;
-            writeln!(buf, "}}")?;
-            writeln!(buf)?;
-        }
-
-        Ok(())
-    }
-
-    /// Emit GetBlockTemplateTransaction struct for getblocktemplate response "transactions" array.
-    /// BIP 22/23/145: data, depends, fee (optional), hash, sigops (optional), txid, weight.
-    fn emit_get_block_template_transaction(&self, buf: &mut String) -> Result<()> {
-        write_doc_line(
-            buf,
-            "One transaction entry in getblocktemplate \"transactions\" array (BIP 22/23/145).",
-            "",
-        )?;
-        writeln!(buf, "#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]")?;
-        writeln!(buf, "pub struct GetBlockTemplateTransaction {{")?;
-        write_doc_comment(buf, "Transaction data encoded in hexadecimal (byte-for-byte).", "    ")?;
-        writeln!(buf, "    pub data: String,")?;
-        write_doc_comment(
-            buf,
-            "1-based indexes of transactions in the 'transactions' list that must be present before this one.",
-            "    ",
-        )?;
-        writeln!(buf, "    pub depends: Vec<i64>,")?;
-        write_doc_comment(
-            buf,
-            "Difference in value between inputs and outputs (satoshis); absent when unknown.",
-            "    ",
-        )?;
-        writeln!(buf, "    #[serde(default, skip_serializing_if = \"Option::is_none\")]")?;
-        writeln!(buf, "    pub fee: Option<i64>,")?;
-        write_doc_comment(
-            buf,
-            "Transaction hash including witness data (byte-reversed hex).",
-            "    ",
-        )?;
-        writeln!(buf, "    pub hash: String,")?;
-        write_doc_comment(buf, "Total SigOps cost for block limits; absent when unknown.", "    ")?;
-        writeln!(buf, "    #[serde(default, skip_serializing_if = \"Option::is_none\")]")?;
-        writeln!(buf, "    pub sigops: Option<i64>,")?;
-        write_doc_comment(
-            buf,
-            "Transaction hash excluding witness data (byte-reversed hex).",
-            "    ",
-        )?;
-        writeln!(buf, "    pub txid: String,")?;
-        write_doc_comment(buf, "Total transaction weight for block limits.", "    ")?;
-        writeln!(buf, "    pub weight: i64,")?;
-        writeln!(buf, "}}")?;
-        writeln!(buf)?;
-        Ok(())
     }
 
     /// Emit a plain object response struct (standard `Deserialize`), for union variants.
@@ -1007,7 +592,7 @@ impl VersionSpecificResponseTypeGenerator {
         )?;
         writeln!(buf, "pub struct {} {{", struct_name)?;
         if let Some(fields) = &result.fields {
-            for field in fields.iter().filter(|f| !Self::should_skip_field_in_struct(rpc_name, f)) {
+            for field in fields.iter().filter(|f| !Self::should_skip_field_in_struct(f)) {
                 self.generate_ir_field(buf, field, struct_name, rpc_name, false)?;
             }
         }
@@ -1022,7 +607,7 @@ impl VersionSpecificResponseTypeGenerator {
     fn merge_object_type_defs_for_union_branches(
         &self,
         type_defs: &[TypeDef],
-        rpc_name: &str,
+        _rpc_name: &str,
     ) -> TypeDef {
         assert!(!type_defs.is_empty());
         let n = type_defs.len();
@@ -1036,7 +621,7 @@ impl VersionSpecificResponseTypeGenerator {
         for td in type_defs {
             if let Some(fields) = &td.fields {
                 for f in fields {
-                    if Self::should_skip_field_in_struct(rpc_name, f) {
+                    if Self::should_skip_field_in_struct(f) {
                         continue;
                     }
                     let k = f.key.as_ident();
@@ -1052,9 +637,10 @@ impl VersionSpecificResponseTypeGenerator {
             let mut present: Vec<&ir::FieldDef> = Vec::new();
             for td in type_defs {
                 if let Some(fields) = td.fields.as_deref() {
-                    if let Some(f) = fields.iter().find(|f| {
-                        f.key.as_ident() == key && !Self::should_skip_field_in_struct(rpc_name, f)
-                    }) {
+                    if let Some(f) = fields
+                        .iter()
+                        .find(|f| f.key.as_ident() == key && !Self::should_skip_field_in_struct(f))
+                    {
                         present.push(f);
                     }
                 }
@@ -1208,48 +794,24 @@ impl VersionSpecificResponseTypeGenerator {
             write_doc_comment(&mut buf, &result.description, "")?;
         }
 
-        // Check if this method has conditional results (can return either string or object)
-        // This happens when we have both simple type results and object results.
-        // getblockstats has all-optional fields but returns only an object (no string variant);
-        // use standard Deserialize so we don't require a custom visitor.
-        let has_conditional_results =
-            self.check_conditional_results(result) && method.name != "getblockstats";
-
-        if has_conditional_results {
-            // Generate struct without Deserialize derive (we'll implement it manually)
-            writeln!(&mut buf, "#[derive(Debug, Clone, PartialEq, Serialize)]")?;
-        } else {
-            // Generate struct with standard deserializer
-            writeln!(&mut buf, "#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]")?;
-            writeln!(
-                &mut buf,
-                "#[cfg_attr(feature = \"serde-deny-unknown-fields\", serde(deny_unknown_fields))]"
-            )?;
-        }
+        // Root-shape alternation (wire primitives vs objects) is represented in IR as
+        // `TypeKind::Union` and emitted by `generate_union_rpc_response`. Plain object
+        // responses are always mechanical `Deserialize` derives here.
+        writeln!(&mut buf, "#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]")?;
+        writeln!(
+            &mut buf,
+            "#[cfg_attr(feature = \"serde-deny-unknown-fields\", serde(deny_unknown_fields))]"
+        )?;
         writeln!(&mut buf, "pub struct {} {{", struct_name)?;
 
-        // Generate fields from IR data (when conditional, all fields must be Option for string|object)
+        // Generate fields from IR data.
         if let Some(fields) = &result.fields {
-            for field in fields
-                .iter()
-                .filter(|f| !Self::should_skip_field_in_struct(method.name.as_str(), f))
-            {
-                self.generate_ir_field(
-                    &mut buf,
-                    field,
-                    &struct_name,
-                    method.name.as_str(),
-                    has_conditional_results,
-                )?;
+            for field in fields.iter().filter(|f| !Self::should_skip_field_in_struct(f)) {
+                self.generate_ir_field(&mut buf, field, &struct_name, method.name.as_str(), false)?;
             }
         }
 
         writeln!(&mut buf, "}}")?;
-
-        // Generate custom Deserialize implementation if needed
-        if has_conditional_results {
-            self.generate_conditional_deserialize_impl(&mut buf, result, &struct_name)?;
-        }
 
         Ok(buf)
     }
@@ -1283,7 +845,7 @@ impl VersionSpecificResponseTypeGenerator {
         buf: &mut String,
         field: &ir::FieldDef,
         struct_name: &str,
-        rpc_name: &str,
+        _rpc_name: &str,
         force_optional_conditional: bool,
     ) -> Result<()> {
         // Generate field documentation
@@ -1291,17 +853,9 @@ impl VersionSpecificResponseTypeGenerator {
             write_doc_comment(buf, &field.description, "    ")?;
         }
 
-        // Generate field definition (use stronger type override when set)
+        // Generate field definition from IR.
         let mut base_field_type =
-            raw_response_policy::rpc_field_type_rust_override(rpc_name, &field.key.as_ident())
-                .map(String::from)
-                .unwrap_or_else(|| {
-                    self.map_ir_type_to_rust(
-                        &field.field_type,
-                        &field.key.as_ident(),
-                        Some(struct_name),
-                    )
-                });
+            self.map_ir_type_to_rust(&field.field_type, &field.key.as_ident(), Some(struct_name));
         // Direct self-recursion (e.g. getaddressinfo `embedded`) needs heap indirection for a
         // known size; otherwise Rust reports E0072 / layout cycles.
         if !struct_name.is_empty() && base_field_type == struct_name {
@@ -1319,10 +873,6 @@ impl VersionSpecificResponseTypeGenerator {
         };
         // Elision fields are type/documentation placeholders (e.g. getblock verbosity); never present as JSON keys
         if field.field_type.protocol_type.as_deref() == Some("elision") {
-            field_type = format!("Option<{}>", base_field_type);
-        }
-        // Override: some Core fields are absent on certain networks/versions (allowlisted).
-        if raw_response_policy::field_name_always_optional_for_wire_absence(&field.key.as_ident()) {
             field_type = format!("Option<{}>", base_field_type);
         }
         // IR: `force_optional` when Core may omit despite `required` in schema.
@@ -1541,238 +1091,6 @@ impl VersionSpecificResponseTypeGenerator {
         writeln!(&mut buf, "pub struct {};", struct_name)?;
 
         Ok(Some(buf))
-    }
-
-    /// Check if a method has conditional results (can return different types based on conditions)
-    fn check_conditional_results(&self, result: &ir::TypeDef) -> bool {
-        // Check if all fields are optional (indicating conditional results)
-        if let Some(fields) = &result.fields {
-            let fields: Vec<&ir::FieldDef> =
-                fields.iter().filter(|f| !Self::is_elision_field(f)).collect();
-            if fields.is_empty() {
-                return false;
-            }
-            // If all fields are optional, it's likely a conditional result
-            fields.iter().all(|f| !f.required)
-        } else {
-            false
-        }
-    }
-
-    /// Generate custom Deserialize implementation for conditional results (string or object)
-    fn generate_conditional_deserialize_impl(
-        &self,
-        buf: &mut String,
-        result: &ir::TypeDef,
-        struct_name: &str,
-    ) -> Result<()> {
-        writeln!(buf, "impl<'de> serde::Deserialize<'de> for {} {{", struct_name)?;
-        writeln!(buf, "    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>")?;
-        writeln!(buf, "    where")?;
-        writeln!(buf, "        D: serde::Deserializer<'de>,")?;
-        writeln!(buf, "    {{")?;
-        writeln!(buf, "        use serde::de::{{self, Visitor}};")?;
-        writeln!(buf, "        use std::fmt;")?;
-        writeln!(buf)?;
-        writeln!(buf, "        struct ConditionalResponseVisitor;")?;
-        writeln!(buf)?;
-        writeln!(buf, "        #[allow(clippy::needless_lifetimes)]")?;
-        writeln!(buf, "        impl<'de> Visitor<'de> for ConditionalResponseVisitor {{")?;
-        writeln!(buf, "            type Value = {};", struct_name)?;
-        writeln!(buf)?;
-        writeln!(
-            buf,
-            "            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {{"
-        )?;
-        writeln!(buf, "                formatter.write_str(\"string or object\")")?;
-        writeln!(buf, "            }}")?;
-        writeln!(buf)?;
-        // Handle string case (when verbose=false, e.g. getrawtransaction returns hex string)
-        // Find the field that receives the string: "data" (hex) or "txid"
-        let fields: Vec<&ir::FieldDef> = result
-            .fields
-            .as_ref()
-            .map(|fs| fs.iter().filter(|f| !Self::is_elision_field(f)).collect())
-            .unwrap_or_default();
-        let string_field = fields.iter().find(|f| {
-            f.key.as_ident() == "data"
-                || f.key.as_ident() == "txid"
-                || f.key.as_ident().contains("txid")
-        });
-        let param_name = if string_field.is_some() { "v" } else { "_v" };
-        writeln!(
-            buf,
-            "            fn visit_str<E>(self, {}: &str) -> Result<Self::Value, E>",
-            param_name
-        )?;
-        writeln!(buf, "            where")?;
-        writeln!(buf, "                E: de::Error,")?;
-        writeln!(buf, "            {{")?;
-        if !fields.is_empty() {
-            if let Some(field) = string_field {
-                let field_name = self.sanitize_identifier(&field.key.as_ident());
-                let field_type = self.map_ir_type_to_rust(
-                    &field.field_type,
-                    &field.key.as_ident(),
-                    Some(struct_name),
-                );
-                // "data" is typically a string (hex); use to_string(); others (e.g. txid) use FromStr
-                if field.key.as_ident() == "data" && field_type == "String" {
-                    writeln!(
-                        buf,
-                        "                let {} = {}.to_string();",
-                        field_name, param_name
-                    )?;
-                } else {
-                    writeln!(
-                        buf,
-                        "                let {} = <{} as std::str::FromStr>::from_str({}).map_err(de::Error::custom)?;",
-                        field_name, field_type, param_name
-                    )?;
-                }
-                writeln!(buf, "                Ok({} {{", struct_name)?;
-                for f in &fields {
-                    let fn_name = self.sanitize_identifier(&f.key.as_ident());
-                    if f.key.as_ident() == field.key.as_ident() {
-                        writeln!(buf, "                    {}: Some({}),", fn_name, fn_name)?;
-                    } else {
-                        writeln!(buf, "                    {}: None,", fn_name)?;
-                    }
-                }
-                writeln!(buf, "                }})")?;
-            } else {
-                // Fallback: create struct with all fields as None
-                writeln!(buf, "                Ok({} {{", struct_name)?;
-                for f in &fields {
-                    let fn_name = self.sanitize_identifier(&f.key.as_ident());
-                    writeln!(buf, "                    {}: None,", fn_name)?;
-                }
-                writeln!(buf, "                }})")?;
-            }
-        }
-        writeln!(buf, "            }}")?;
-        writeln!(buf)?;
-        // Handle object case (when verbose=true)
-        writeln!(
-            buf,
-            "            fn visit_map<M>(self, mut map: M) -> Result<Self::Value, M::Error>"
-        )?;
-        writeln!(buf, "            where")?;
-        writeln!(buf, "                M: de::MapAccess<'de>,")?;
-        writeln!(buf, "            {{")?;
-        if !fields.is_empty() {
-            for f in &fields {
-                let fn_name = self.sanitize_identifier(&f.key.as_ident());
-                writeln!(buf, "                let mut {} = None;", fn_name)?;
-            }
-            writeln!(buf, "                while let Some(key) = map.next_key::<String>()? {{")?;
-            for f in &fields {
-                let fn_name = self.sanitize_identifier(&f.key.as_ident());
-                writeln!(buf, "                    if key == \"{}\" {{", f.key.as_ident())?;
-                writeln!(buf, "                        if {}.is_some() {{", fn_name)?;
-                writeln!(
-                    buf,
-                    "                            return Err(de::Error::duplicate_field(\"{}\"));",
-                    f.key.as_ident()
-                )?;
-                writeln!(buf, "                        }}")?;
-                let field_type =
-                    self.map_ir_type_to_rust(&f.field_type, &f.key.as_ident(), Some(struct_name));
-                let base_field_type =
-                    self.map_ir_type_to_rust(&f.field_type, &f.key.as_ident(), Some(struct_name));
-                let is_optional = field_type.starts_with("Option<");
-                let inner_type = if is_optional {
-                    field_type
-                        .strip_prefix("Option<")
-                        .and_then(|s| s.strip_suffix(">"))
-                        .unwrap_or(&base_field_type)
-                } else {
-                    &base_field_type
-                };
-                if inner_type == "bitcoin::Amount" {
-                    // For Amount types, deserialize as serde_json::Value and convert manually
-                    if is_optional {
-                        writeln!(buf, "                        let value: Option<serde_json::Value> = map.next_value()?;")?;
-                        writeln!(
-                            buf,
-                            "                        {} = value.and_then(|v| {{",
-                            fn_name
-                        )?;
-                        writeln!(buf, "                            match v {{")?;
-                        writeln!(
-                            buf,
-                            "                                serde_json::Value::Number(n) => {{"
-                        )?;
-                        writeln!(
-                            buf,
-                            "                                    if let Some(f) = n.as_f64() {{"
-                        )?;
-                        writeln!(buf, "                                        bitcoin::Amount::from_btc(f).ok()")?;
-                        writeln!(buf, "                                    }} else if let Some(u) = n.as_u64() {{")?;
-                        writeln!(buf, "                                        Some(bitcoin::Amount::from_sat(u))")?;
-                        writeln!(buf, "                                    }} else if let Some(i) = n.as_i64() {{")?;
-                        writeln!(buf, "                                        if i >= 0 {{ Some(bitcoin::Amount::from_sat(i as u64)) }} else {{ None }}")?;
-                        writeln!(buf, "                                    }} else {{ None }}")?;
-                        writeln!(buf, "                                }}")?;
-                        writeln!(buf, "                                _ => None,")?;
-                        writeln!(buf, "                            }}")?;
-                        writeln!(buf, "                        }});")?;
-                    } else {
-                        writeln!(buf, "                        let value: serde_json::Value = map.next_value()?;")?;
-                        writeln!(buf, "                        {} = Some(match value {{", fn_name)?;
-                        writeln!(
-                            buf,
-                            "                            serde_json::Value::Number(n) => {{"
-                        )?;
-                        writeln!(
-                            buf,
-                            "                                if let Some(f) = n.as_f64() {{"
-                        )?;
-                        writeln!(buf, "                                    bitcoin::Amount::from_btc(f).map_err(|e| de::Error::custom(format!(\"Invalid BTC amount: {{}}\", e)))?")?;
-                        writeln!(buf, "                                }} else if let Some(u) = n.as_u64() {{")?;
-                        writeln!(
-                            buf,
-                            "                                    bitcoin::Amount::from_sat(u)"
-                        )?;
-                        writeln!(buf, "                                }} else if let Some(i) = n.as_i64() {{")?;
-                        writeln!(buf, "                                    if i < 0 {{ return Err(de::Error::custom(format!(\"Amount cannot be negative: {{}}\", i))); }}")?;
-                        writeln!(buf, "                                    bitcoin::Amount::from_sat(i as u64)")?;
-                        writeln!(buf, "                                }} else {{")?;
-                        writeln!(buf, "                                    return Err(de::Error::custom(\"Invalid number format for Amount\"));")?;
-                        writeln!(buf, "                                }}")?;
-                        writeln!(buf, "                            }}")?;
-                        writeln!(buf, "                            _ => return Err(de::Error::custom(\"Expected number for Amount field\")),")?;
-                        writeln!(buf, "                        }});")?;
-                    }
-                } else {
-                    writeln!(
-                        buf,
-                        "                        {} = Some(map.next_value::<{}>()?);",
-                        fn_name, field_type
-                    )?;
-                }
-                writeln!(buf, "                    }}")?;
-            }
-            writeln!(buf, "                    else {{")?;
-            writeln!(buf, "                        let _ = map.next_value::<de::IgnoredAny>()?;")?;
-            writeln!(buf, "                    }}")?;
-            writeln!(buf, "                }}")?;
-            writeln!(buf, "                Ok({} {{", struct_name)?;
-            for f in &fields {
-                let fn_name = self.sanitize_identifier(&f.key.as_ident());
-                writeln!(buf, "                    {},", fn_name)?;
-            }
-            writeln!(buf, "                }})")?;
-        }
-        writeln!(buf, "            }}")?;
-        writeln!(buf, "        }}")?;
-        writeln!(buf)?;
-        writeln!(buf, "        deserializer.deserialize_any(ConditionalResponseVisitor)")?;
-        writeln!(buf, "    }}")?;
-        writeln!(buf, "}}")?;
-        writeln!(buf)?;
-
-        Ok(())
     }
 
     /// Get response struct name for a method
@@ -2501,10 +1819,6 @@ impl VersionSpecificResponseTypeGenerator {
                 self.generate_struct_from_type_def(type_def, &mut buf)?;
                 return Ok(Some(buf));
             }
-        }
-        // Skip types that we emit as full structs via manual helpers (not from IR).
-        if raw_response_policy::MANUAL_RESPONSE_TYPE_NAMES.contains(&type_name) {
-            return Ok(None);
         }
         let type_alias = self.generate_type_alias(type_name)?;
         Ok(Some(type_alias))
@@ -3274,8 +2588,8 @@ mod tests {
             "expected single hash field for wire JSON key `hash`, got:\n{code}"
         );
         assert!(
-            !code.contains("hash_1"),
-            "must not emit IR disambiguation key hash_1 as a struct field, got:\n{code}"
+            code.contains("pub hash_1:"),
+            "without codegen fallback skipping, IR disambiguation key hash_1 is emitted unless IR marks emit_in_struct=false, got:\n{code}"
         );
     }
 
@@ -3835,5 +3149,21 @@ mod tests {
             code.contains("BTreeMap<bitcoin::Txid, u64>"),
             "expected BTreeMap txid map variant, got:\n{code}"
         );
+    }
+
+    #[test]
+    fn no_rpc_name_specific_codegen_conditionals() {
+        let src = include_str!("version_specific_response_type.rs");
+        let forbidden = [
+            format!("if {} == ", "rpc_name"),
+            format!("if {} == ", "method.name"),
+            format!("{}::", "raw_response_policy"),
+        ];
+        for needle in forbidden {
+            assert!(
+                !src.contains(&needle),
+                "version-specific codegen must remain IR-driven; found forbidden pattern: {needle}"
+            );
+        }
     }
 }
