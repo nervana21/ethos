@@ -5,12 +5,12 @@
 //! After OpenRPC → IR conversion, `openrpc_type_disambiguation` assigns distinct `TypeDef::name`
 //! values where the schema overloads one name for different object shapes.
 
-use std::collections::{BTreeSet, HashMap};
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
 use ir::{
     FieldDef, FieldKey, ParamDef, ProtocolDef, ProtocolIR, ProtocolModule, RpcDef,
-    RpcResultDiscriminator, TypeDef, TypeKind, UnionVariantDef,
+    RpcResultDiscriminator, TypeDef, TypeKind,
 };
 use normalization::bitcoin_canonical_from_adapter_method;
 use path::{
@@ -29,55 +29,22 @@ fn canonical_method_pascal(method_name: &str) -> String {
         .unwrap_or_else(|_| normalization::suggest_canonical_key(method_name))
 }
 
-fn top_level_array_element_type_name(method_name: &str) -> String {
-    // Derive element type names from the same canonical PascalCase prefix used
-    // for response structs. This keeps e.g. `ListUnspentResponse` aligned with
-    // `ListUnspentElement` without duplicating mapping tables here.
-    //
-    // We treat Bitcoin Core as the only supported protocol in this adapter.
-    format!("{}Element", canonical_method_pascal(method_name))
-}
-
-/// Singular + PascalCase suffix for result/field keys (e.g. "inputs" -> "Input", "bytesrecv" -> "BytesRecv").
 fn result_key_pascal_suffix(key: &str) -> String {
-    let singular = match key {
-        "bip32_derivs" => "Bip32Derivs",
-        "bytesrecv" => "BytesRecv",
-        "bytesrecv_per_msg" => "BytesRecvPerMsg",
-        "bytessent" => "BytesSent",
-        "bytessent_per_msg" => "BytesSentPerMsg",
-        "final_scriptSig" => "FinalScriptSig",
-        "global_xpubs" => "GlobalXpubs",
-        "hash160_preimages" => "Hash160Preimages",
-        "hash256_preimages" => "Hash256Preimages",
-        "inputs" => "Input",
-        "localaddresses" => "LocalAddress",
-        "networks" => "Network",
-        "musig2_partial_sigs" => "Musig2PartialSigs",
-        "musig2_participant_pubkeys" => "Musig2ParticipantPubkeys",
-        "musig2_pubnonces" => "Musig2Pubnonces",
-        "non_witness_utxo" => "NonWitnessUtxo",
-        "outputs" => "Output",
-        "partial_signatures" => "PartialSignatures",
-        "prevout_spk" => "PrevoutSpk",
-        "redeem_script" => "RedeemScript",
-        "removed_transactions" => "RemovedTransactions",
-        "ripemd160_preimages" => "Ripemd160Preimages",
-        "sha256_preimages" => "Sha256Preimages",
-        "taproot_bip32_derivs" => "TaprootBip32Derivs",
-        "taproot_scripts" => "TaprootScripts",
-        "tx-results" => "TxResults",
-        "uploadtarget" => "UploadTarget",
-        "witness_script" => "WitnessScript",
-        "witness_utxo" => "WitnessUtxo",
-        "<transactionid>" => "TransactionId",
-        _ => key,
-    };
-    let mut chars = singular.chars();
-    match chars.next() {
-        None => String::new(),
-        Some(first) => first.to_uppercase().collect::<String>() + chars.as_str(),
+    let mut out = String::new();
+    let mut upper = true;
+    for ch in key.chars() {
+        if ch.is_ascii_alphanumeric() {
+            if upper {
+                out.push(ch.to_ascii_uppercase());
+                upper = false;
+            } else {
+                out.push(ch);
+            }
+        } else {
+            upper = true;
+        }
     }
+    out
 }
 
 /// OpenRPC document produced by Bitcoin Core's `getopenrpcinfo`
@@ -787,19 +754,8 @@ fn convert_result(raw: &RawResult, parent_key: Option<&str>, method_name: Option
     // JSON array with element template (including nested arrays, e.g. listaddressgroupings).
     if matches!(kind, TypeKind::Array) && !raw.inner.is_empty() {
         let elem = &raw.inner[0];
-        // Propagate `vin` / `vout` (and Core aliases like `vin_1`) so object elements get
-        // `DecodedVin` / `DecodedVout` instead of a shared `*Row` type (wrong for serde).
-        // Use the array's JSON key (e.g. `networks` vs `localaddresses`) so element object types
-        // do not collapse to one shared `*Row` name per method.
-        let elem_parent_key: Option<&str> = if raw.key_name.is_empty() {
-            Some("array_child")
-        } else {
-            match raw.key_name.as_str() {
-                "vin" | "vin_1" => Some("vin"),
-                "vout" => Some("vout"),
-                _ => Some(raw.key_name.as_str()),
-            }
-        };
+        let elem_parent_key: Option<&str> =
+            if raw.key_name.is_empty() { Some("array_child") } else { Some(raw.key_name.as_str()) };
         let mut element_type = convert_result(elem, elem_parent_key, method_name);
         if matches!(element_type.kind, TypeKind::Array) && element_type.name == "array" {
             if let Some(method) = method_name {
@@ -834,8 +790,6 @@ fn convert_result(raw: &RawResult, parent_key: Option<&str>, method_name: Option
                 } else {
                     inner.field_name()
                 };
-                // Pass each child's JSON key as `parent_key` so nested objects like `scriptSig`
-                // become `DecodedScriptSig`, not the same name as the `vin` / `vout` array element.
                 let child_parent = if inner.key_name.is_empty() {
                     if raw.key_name.is_empty() {
                         parent_key
@@ -866,19 +820,9 @@ fn convert_result(raw: &RawResult, parent_key: Option<&str>, method_name: Option
         });
     }
 
-    // Canonical names for decoded-tx nested types so codegen emits shared types from IR
     if matches!(kind, TypeKind::Object) && !raw.inner.is_empty() {
-        match raw.key_name.as_str() {
-            "scriptPubKey" => type_def.name = "DecodedScriptPubKey".to_string(),
-            "scriptSig" => type_def.name = "DecodedScriptSig".to_string(),
-            "prevout" => type_def.name = "DecodedPrevout".to_string(),
-            _ => {}
-        }
-        // Name array element types when we're the element of vin/vout
         if let Some(p) = parent_key {
             match p {
-                "vin" => type_def.name = "DecodedVin".to_string(),
-                "vout" => type_def.name = "DecodedVout".to_string(),
                 "array_child" if raw.r#type == "object" =>
                     if let Some(method) = method_name {
                         type_def.name = format!("{}Row", canonical_method_pascal(method));
@@ -903,194 +847,6 @@ fn convert_result(raw: &RawResult, parent_key: Option<&str>, method_name: Option
     type_def
 }
 
-/// True when the wire JSON result alternates between a string/hex primitive at the root and a
-/// verbose object (e.g. `getrawtransaction`, `getblock`).
-fn results_warrant_union(results: &[RawResult]) -> bool {
-    let has_object_with_inner = results.iter().any(|r| r.r#type == "object" && !r.inner.is_empty());
-    let has_string_like_top =
-        results.iter().any(|r| matches!(r.r#type.as_str(), "hex" | "string") && r.inner.is_empty());
-    has_object_with_inner && has_string_like_top
-}
-
-/// Builds a [`TypeKind::Union`] for top-level string/hex vs object alternation.
-fn merge_results_to_union(results: &[RawResult], method_name: &str) -> TypeDef {
-    let method_pascal = canonical_method_pascal(method_name);
-
-    let object_results: Vec<RawResult> =
-        results.iter().filter(|r| r.r#type == "object" && !r.inner.is_empty()).cloned().collect();
-
-    let mut object_merged = merge_results_to_object(&object_results, method_name);
-    object_merged.name = format!("{}Verbose", method_pascal);
-
-    let simple = results
-        .iter()
-        .find(|r| matches!(r.r#type.as_str(), "hex" | "string") && r.inner.is_empty());
-
-    let mut wire_string_td = if let Some(r) = simple {
-        convert_result(r, None, Some(method_name))
-    } else {
-        TypeDef {
-            name: "string".to_string(),
-            kind: TypeKind::Primitive,
-            protocol_type: Some("string".to_string()),
-            description: "Top-level wire string result".to_string(),
-            ..Default::default()
-        }
-    };
-    wire_string_td.kind = TypeKind::Primitive;
-    if wire_string_td.protocol_type.is_none() {
-        wire_string_td.protocol_type = Some("string".to_string());
-    }
-
-    let wire_desc = simple
-        .map(|r| r.description.clone())
-        .filter(|s| !s.is_empty())
-        .unwrap_or_else(|| "Hex-encoded or string result at JSON root".to_string());
-    let wire_condition = simple.map(|r| r.condition.trim().to_string()).filter(|s| !s.is_empty());
-
-    TypeDef {
-        name: format!("{}Response", method_pascal),
-        description: String::new(),
-        kind: TypeKind::Union,
-        union_variants: Some(vec![
-            UnionVariantDef {
-                name: format!("{}WireString", method_pascal),
-                description: wire_desc,
-                condition: wire_condition,
-                type_def: wire_string_td,
-            },
-            UnionVariantDef {
-                name: format!("{}Verbose", method_pascal),
-                description: "Verbose JSON object result".to_string(),
-                condition: None,
-                type_def: object_merged,
-            },
-        ]),
-        protocol_type: Some("union".to_string()),
-        ..Default::default()
-    }
-}
-
-/// OpenRPC encodes a JSON object with dynamic keys by using a single inner field
-/// `transactionid` whose children describe the map value shape.
-fn is_map_value_template(raw: &RawResult) -> bool {
-    raw.r#type == "object"
-        && raw.inner.len() == 1
-        && raw.inner[0].key_name == "transactionid"
-        && !raw.inner[0].inner.is_empty()
-}
-
-fn raw_array_shape_signature(r: &RawResult) -> String {
-    if r.inner.is_empty() {
-        return format!("empty|{}", r.condition);
-    }
-    let e = &r.inner[0];
-    format!("{}|{}|{}|{}", r.condition, e.r#type, e.inner.len(), e.key_name)
-}
-
-/// True when `x-bitcoin-results` lists mutually exclusive top-level shapes (not mergeable).
-fn results_warrant_exclusive_union(results: &[RawResult]) -> bool {
-    if results.len() < 2 {
-        return false;
-    }
-    let arrays: Vec<&RawResult> = results.iter().filter(|r| r.r#type == "array").collect();
-    if arrays.len() >= 2 {
-        let sigs: BTreeSet<String> = arrays.iter().map(|r| raw_array_shape_signature(r)).collect();
-        if sigs.len() >= 2 {
-            return true;
-        }
-    }
-    let has_array = !arrays.is_empty();
-    let has_map = results.iter().any(|r| is_map_value_template(r));
-    let has_plain_object = results
-        .iter()
-        .any(|r| r.r#type == "object" && !r.inner.is_empty() && !is_map_value_template(r));
-    (has_array && has_map) || (has_array && has_plain_object) || (has_map && has_plain_object)
-}
-
-fn build_top_level_array_typedef_from_raw_result(
-    canonical: &RawResult,
-    method_name: &str,
-) -> TypeDef {
-    let mut element_type = if !canonical.inner.is_empty() {
-        let elem = &canonical.inner[0];
-        convert_result(elem, None, Some(method_name))
-    } else {
-        TypeDef {
-            name: "any".to_string(),
-            description: canonical.description.clone(),
-            kind: TypeKind::Primitive,
-            protocol_type: Some("any".to_string()),
-            ..Default::default()
-        }
-    };
-    if matches!(element_type.kind, TypeKind::Object) && element_type.name == "object" {
-        element_type.name = top_level_array_element_type_name(method_name);
-    }
-    TypeDef {
-        name: "array".to_string(),
-        description: canonical.description.clone(),
-        kind: TypeKind::Array,
-        fields: Some(vec![FieldDef {
-            key: FieldKey::Named("field_0".to_string()),
-            field_type: element_type,
-            required: !canonical.optional,
-            description: canonical.description.clone(),
-            default_value: None,
-            version_added: None,
-            version_removed: None,
-            emit_in_struct: None,
-            force_optional: None,
-        }]),
-        protocol_type: Some("array".to_string()),
-        condition: if canonical.condition.is_empty() {
-            None
-        } else {
-            Some(canonical.condition.clone())
-        },
-        ..Default::default()
-    }
-}
-
-fn convert_map_shaped_result(raw: &RawResult, method_name: &str) -> TypeDef {
-    let template = &raw.inner[0];
-    let mut value_td = convert_result(template, None, Some(method_name));
-    let method_pascal = canonical_method_pascal(method_name);
-    if value_td.name == "object" || value_td.name.is_empty() {
-        value_td.name = format!("{}MapValue", method_pascal);
-    }
-    TypeDef {
-        name: format!("{}TxidMap", method_pascal),
-        description: raw.description.clone(),
-        kind: TypeKind::Map,
-        map_value: Some(Box::new(value_td)),
-        map_key_protocol_type: Some("hex".to_string()),
-        protocol_type: Some("map".to_string()),
-        condition: if raw.condition.is_empty() { None } else { Some(raw.condition.clone()) },
-        ..Default::default()
-    }
-}
-
-fn exclusive_union_variant_name(method_name: &str, index: usize, raw: &RawResult) -> String {
-    let pascal = canonical_method_pascal(method_name);
-    if method_name == "getrawmempool"
-        && raw.r#type == "object"
-        && !is_map_value_template(raw)
-        && raw.condition.contains("mempool_sequence")
-        && raw.condition.contains("verbose = false")
-    {
-        return format!("{}TxidsWithSequence", pascal);
-    }
-    let tag = match raw.r#type.as_str() {
-        "array" => "Array",
-        "object" if is_map_value_template(raw) => "Map",
-        "object" => "Object",
-        "hex" | "string" => "Wire",
-        _ => "Branch",
-    };
-    format!("{}{}{}", pascal, tag, index)
-}
-
 /// Bitcoin Core OpenRPC: `schema.x-bitcoin-discriminatedResult` when the result is a keyed `oneOf`.
 fn parse_result_discriminator(schema: &serde_json::Value) -> Option<RpcResultDiscriminator> {
     let disc = schema.get("x-bitcoin-discriminatedResult")?;
@@ -1103,45 +859,6 @@ fn parse_result_discriminator(schema: &serde_json::Value) -> Option<RpcResultDis
             .and_then(|v| v.as_str())
             .map(str::to_string),
     })
-}
-
-fn merge_results_to_exclusive_union(results: &[RawResult], method_name: &str) -> TypeDef {
-    let method_pascal = canonical_method_pascal(method_name);
-    let mut variants = Vec::with_capacity(results.len());
-    for (i, raw) in results.iter().enumerate() {
-        let mut type_def = if is_map_value_template(raw) {
-            convert_map_shaped_result(raw, method_name)
-        } else if raw.r#type == "array" {
-            build_top_level_array_typedef_from_raw_result(raw, method_name)
-        } else {
-            convert_result(raw, None, Some(method_name))
-        };
-        let branch_name = exclusive_union_variant_name(method_name, i, raw);
-        if matches!(type_def.kind, TypeKind::Object)
-            && type_def.name == "object"
-            && !is_map_value_template(raw)
-        {
-            type_def.name = branch_name.clone();
-        }
-        variants.push(UnionVariantDef {
-            name: branch_name,
-            description: if raw.description.is_empty() {
-                raw.condition.clone()
-            } else {
-                raw.description.clone()
-            },
-            condition: if raw.condition.is_empty() { None } else { Some(raw.condition.clone()) },
-            type_def,
-        });
-    }
-    TypeDef {
-        name: format!("{}Response", method_pascal),
-        description: String::new(),
-        kind: TypeKind::Union,
-        union_variants: Some(variants),
-        protocol_type: Some("union".to_string()),
-        ..Default::default()
-    }
 }
 
 /// Picks the longer description when RPC help repeats the same key with more detail later.
@@ -1486,56 +1203,8 @@ fn convert_openrpc_method(method: OpenRpcMethod, version_added: Option<String>) 
 
     let result = if results.is_empty() {
         None
-    } else if method.name == "help" && results.iter().any(|r| r.r#type == "string") {
-        let string_res = results.iter().find(|r| r.r#type == "string").expect("help string result");
-        Some(convert_result(string_res, None, Some(&method.name)))
-    } else if results.len() == 1 && results[0].r#type == "array" {
-        // Top-level JSON array: single `array` entry in `x-bitcoin-results`.
-        let canonical = &results[0];
-        let mut element_type = if !canonical.inner.is_empty() {
-            let elem = &canonical.inner[0];
-            convert_result(elem, None, Some(&method.name))
-        } else {
-            TypeDef {
-                name: "any".to_string(),
-                description: canonical.description.clone(),
-                kind: TypeKind::Primitive,
-                protocol_type: Some("any".to_string()),
-                ..Default::default()
-            }
-        };
-
-        if matches!(element_type.kind, TypeKind::Object) {
-            element_type.name = top_level_array_element_type_name(&method.name);
-        }
-
-        Some(TypeDef {
-            name: "array".to_string(),
-            description: canonical.description.clone(),
-            kind: TypeKind::Array,
-            fields: Some(vec![FieldDef {
-                key: FieldKey::Named("field_0".to_string()),
-                field_type: element_type,
-                required: !canonical.optional,
-                description: canonical.description.clone(),
-                default_value: None,
-                version_added: None,
-                version_removed: None,
-                emit_in_struct: None,
-                force_optional: None,
-            }]),
-            protocol_type: Some("array".to_string()),
-            ..Default::default()
-        })
     } else if results.len() == 1 {
         Some(convert_result(&results[0], None, Some(&method.name)))
-    } else if result_discriminator.is_some() && results.len() >= 2 {
-        // e.g. `getblock` (verbosity 0–3): do not merge object branches into one pseudo-struct.
-        Some(merge_results_to_exclusive_union(&results, &method.name))
-    } else if results_warrant_union(&results) {
-        Some(merge_results_to_union(&results, &method.name))
-    } else if results_warrant_exclusive_union(&results) {
-        Some(merge_results_to_exclusive_union(&results, &method.name))
     } else {
         Some(merge_results_to_object(&results, &method.name))
     };
@@ -1604,7 +1273,11 @@ mod tests {
             .expect("getrawtransaction in openrpc");
         let rpc = convert_openrpc_method(method.clone(), Some("30".to_string()));
         let merged = rpc.result.expect("getrawtransaction result");
-        assert_eq!(merged.kind, TypeKind::Object, "multi-branch results merge to one object IR");
+        assert_eq!(
+            merged.kind,
+            TypeKind::Object,
+            "multi-branch results are mechanically merged to one object"
+        );
         let fields = merged.fields.as_ref().expect("merged fields");
         for bad in [
             "in_active_chain_1",
@@ -1637,7 +1310,7 @@ mod tests {
     }
 
     #[test]
-    fn getblock_discriminated_openrpc_yields_four_union_variants_without_merged_scaffold_keys() {
+    fn getblock_openrpc_yields_wire_plus_verbose_union_variants_without_merged_scaffold_keys() {
         let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../resources/ir/openrpc.json");
         let content = std::fs::read_to_string(&path)
             .unwrap_or_else(|e| panic!("read {}: {e}", path.display()));
@@ -1645,22 +1318,13 @@ mod tests {
         let method =
             doc.methods.iter().find(|m| m.name == "getblock").expect("getblock in openrpc");
         let rpc = convert_openrpc_method(method.clone(), Some("31".to_string()));
+        let merged = rpc.result.expect("getblock result");
+        assert_eq!(merged.kind, TypeKind::Object);
+        let fields = merged.fields.as_ref().expect("getblock object fields");
         assert!(
-            rpc.result_discriminator.is_some(),
-            "expected schema x-bitcoin-discriminatedResult on getblock"
+            !fields.iter().any(|f| f.key.as_ident() == "tx_1"),
+            "merged scaffold key tx_1 must not appear"
         );
-        let union = rpc.result.expect("getblock result");
-        let uvs = union.union_variants.expect("getblock union");
-        assert_eq!(uvs.len(), 4, "verbosity 0–3 branches");
-        for uv in &uvs {
-            if let Some(fields) = &uv.type_def.fields {
-                assert!(
-                    !fields.iter().any(|f| f.key.as_ident() == "tx_1"),
-                    "merged scaffold key tx_1 must not appear: {:?}",
-                    uv.name
-                );
-            }
-        }
     }
 
     #[test]
@@ -1713,7 +1377,7 @@ mod tests {
     }
 
     #[test]
-    fn exclusive_union_emitted_for_two_distinct_top_level_array_shapes() {
+    fn distinct_top_level_array_shapes_are_mechanically_merged() {
         let str_elem = RawResult {
             r#type: "string".to_string(),
             optional: false,
@@ -1767,10 +1431,7 @@ mod tests {
 
         let rpc = convert_openrpc_method(method, Some("30".to_string()));
         let result_ty = rpc.result.expect("result type should be present");
-        assert_eq!(result_ty.kind, TypeKind::Union);
-        let uvs = result_ty.union_variants.as_ref().expect("union variants");
-        assert_eq!(uvs.len(), 2);
-        assert!(uvs.iter().all(|v| v.type_def.kind == TypeKind::Array));
+        assert_eq!(result_ty.kind, TypeKind::Object);
     }
 
     #[test]
@@ -1801,8 +1462,8 @@ mod tests {
             loc_el.rust_emit_name(),
             "network row vs local address row must not share one IR type name"
         );
-        assert_eq!(net_el.rust_emit_name(), "GetNetworkInfoNetwork");
-        assert_eq!(loc_el.rust_emit_name(), "GetNetworkInfoLocalAddress");
+        assert_eq!(net_el.rust_emit_name(), "GetNetworkInfoNetworks");
+        assert_eq!(loc_el.rust_emit_name(), "GetNetworkInfoLocaladdresses");
     }
 
     #[test]
@@ -1819,14 +1480,28 @@ mod tests {
             .expect("getrawmempool present in openrpc.json");
         let rpc = convert_openrpc_method(method.clone(), Some("30".to_string()));
         let result_ty = rpc.result.expect("getrawmempool result");
-        assert_eq!(result_ty.kind, TypeKind::Union);
-        let uvs = result_ty.union_variants.as_ref().expect("union variants");
-        let seq = uvs
-            .iter()
-            .find(|v| v.name == "GetRawMempoolTxidsWithSequence")
-            .expect("mempool_sequence bundle variant");
-        assert_eq!(seq.type_def.rust_emit_name(), "GetRawMempoolTxidsWithSequence");
-        assert_ne!(seq.type_def.name, "object");
+        assert_eq!(result_ty.kind, TypeKind::Object);
+        let fields = result_ty.fields.as_ref().expect("merged fields");
+        assert!(
+            fields.iter().any(|f| f.key.as_ident() == "mempool_sequence"),
+            "mechanical merge should preserve mempool_sequence key"
+        );
+    }
+
+    #[test]
+    fn no_rpc_name_specific_conditionals_in_openrpc_adapter() {
+        let src = include_str!("openrpc.rs");
+        let forbidden = [
+            format!("if {} == ", "method.name"),
+            format!("match {} {{", "method.name.as_str()"),
+            format!("if {} == ", "rpc.name"),
+        ];
+        for needle in forbidden {
+            assert!(
+                !src.contains(&needle),
+                "openrpc adapter must stay mechanical; found forbidden conditional pattern: {needle}"
+            );
+        }
     }
 }
 
