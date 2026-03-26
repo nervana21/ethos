@@ -1292,7 +1292,7 @@ impl VersionSpecificResponseTypeGenerator {
         }
 
         // Generate field definition (use stronger type override when set)
-        let base_field_type =
+        let mut base_field_type =
             raw_response_policy::rpc_field_type_rust_override(rpc_name, &field.key.as_ident())
                 .map(String::from)
                 .unwrap_or_else(|| {
@@ -1302,6 +1302,11 @@ impl VersionSpecificResponseTypeGenerator {
                         Some(struct_name),
                     )
                 });
+        // Direct self-recursion (e.g. getaddressinfo `embedded`) needs heap indirection for a
+        // known size; otherwise Rust reports E0072 / layout cycles.
+        if !struct_name.is_empty() && base_field_type == struct_name {
+            base_field_type = format!("Box<{struct_name}>");
+        }
         if base_field_type.starts_with("bitcoin::") {
             let symbol = base_field_type.split("::").last().unwrap_or(&base_field_type);
             record_external_symbol("bitcoin", symbol);
