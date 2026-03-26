@@ -1577,6 +1577,65 @@ mod tests {
 
     use super::*;
 
+    fn type_def_contains_named_field_recursive(td: &TypeDef, name: &str) -> bool {
+        if let Some(fields) = &td.fields {
+            for f in fields {
+                if f.key.json_key() == Some(name) {
+                    return true;
+                }
+                if type_def_contains_named_field_recursive(&f.field_type, name) {
+                    return true;
+                }
+            }
+        }
+        false
+    }
+
+    #[test]
+    fn getrawtransaction_merged_results_drop_duplicate_json_keys_no_suffix() {
+        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../resources/ir/openrpc.json");
+        let content = std::fs::read_to_string(&path)
+            .unwrap_or_else(|e| panic!("read {}: {e}", path.display()));
+        let doc: OpenRpcDoc = serde_json::from_str(&content).expect("openrpc json");
+        let method = doc
+            .methods
+            .iter()
+            .find(|m| m.name == "getrawtransaction")
+            .expect("getrawtransaction in openrpc");
+        let rpc = convert_openrpc_method(method.clone(), Some("30".to_string()));
+        let merged = rpc.result.expect("getrawtransaction result");
+        assert_eq!(merged.kind, TypeKind::Object, "multi-branch results merge to one object IR");
+        let fields = merged.fields.as_ref().expect("merged fields");
+        for bad in [
+            "in_active_chain_1",
+            "blockhash_1",
+            "confirmations_1",
+            "blocktime_1",
+            "time_1",
+            "hex_1",
+            "txid_1",
+            "hash_1",
+            "size_1",
+            "vsize_1",
+            "weight_1",
+            "version_1",
+            "locktime_1",
+            "vin_1",
+            "vout_1",
+        ] {
+            assert!(
+                !fields.iter().any(|f| f.key.as_ident() == bad),
+                "duplicate help branches must merge to real JSON keys (unexpected {bad}); got {:?}",
+                fields.iter().map(|f| f.key.as_ident()).collect::<Vec<_>>()
+            );
+        }
+        let vin = fields.iter().find(|f| f.key.as_ident() == "vin").expect("vin field");
+        assert!(
+            type_def_contains_named_field_recursive(&vin.field_type, "prevout"),
+            "merged vin type should include prevout (verbosity 2)"
+        );
+    }
+
     #[test]
     fn getblock_discriminated_openrpc_yields_four_union_variants_without_merged_scaffold_keys() {
         let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../resources/ir/openrpc.json");
