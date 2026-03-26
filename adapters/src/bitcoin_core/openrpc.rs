@@ -1144,6 +1144,138 @@ fn merge_results_to_exclusive_union(results: &[RawResult], method_name: &str) ->
     }
 }
 
+/// Picks the longer description when RPC help repeats the same key with more detail later.
+fn prefer_richer_description(a: &str, b: &str) -> String {
+    if b.len() > a.len() {
+        b.to_string()
+    } else {
+        a.to_string()
+    }
+}
+
+/// Merges two `FieldDef` slices for the same JSON object: duplicate key -> recurse; new keys -> append.
+fn merge_duplicate_field_def_lists(a: &[FieldDef], b: &[FieldDef]) -> Vec<FieldDef> {
+    let mut out: Vec<FieldDef> = a.to_vec();
+    for fb in b {
+        let id = fb.key.as_ident();
+        if let Some(existing) = out.iter_mut().find(|f| f.key.as_ident() == id) {
+            existing.field_type =
+                merge_duplicate_rpc_result_types(&existing.field_type, &fb.field_type);
+            existing.required = existing.required && fb.required;
+            if existing.description.is_empty() && !fb.description.is_empty() {
+                existing.description = fb.description.clone();
+            } else if !fb.description.is_empty() {
+                existing.description =
+                    prefer_richer_description(&existing.description, &fb.description);
+            }
+        } else {
+            out.push(fb.clone());
+        }
+    }
+    out
+}
+
+/// When OpenRPC lists the same JSON key twice, merge into one field while keeping a superset
+/// of nested members.
+fn merge_duplicate_rpc_result_types(a: &TypeDef, b: &TypeDef) -> TypeDef {
+    match (&a.kind, &b.kind) {
+        (TypeKind::Object, TypeKind::Object) => {
+            let fields_a = a.fields.as_deref().unwrap_or(&[]);
+            let fields_b = b.fields.as_deref().unwrap_or(&[]);
+            if fields_a.is_empty() {
+                return b.clone();
+            }
+            if fields_b.is_empty() {
+                return a.clone();
+            }
+
+            let is_array_object_shell = |t: &TypeDef| {
+                t.protocol_type.as_deref() == Some("array")
+                    && t.fields.as_ref().is_some_and(|f| f.len() == 1)
+            };
+            if is_array_object_shell(a) && is_array_object_shell(b) {
+                let fa = &fields_a[0];
+                let fb = &fields_b[0];
+                if fa.key.as_ident() == fb.key.as_ident() {
+                    let merged_inner =
+                        merge_duplicate_rpc_result_types(&fa.field_type, &fb.field_type);
+                    return TypeDef {
+                        name: a.name.clone(),
+                        description: prefer_richer_description(&a.description, &b.description),
+                        kind: TypeKind::Object,
+                        fields: Some(vec![FieldDef {
+                            key: fa.key.clone(),
+                            field_type: merged_inner,
+                            required: fa.required && fb.required,
+                            description: prefer_richer_description(
+                                &fa.description,
+                                &fb.description,
+                            ),
+                            default_value: None,
+                            version_added: None,
+                            version_removed: None,
+                            emit_in_struct: None,
+                            force_optional: None,
+                        }]),
+                        condition: a.condition.clone().or_else(|| b.condition.clone()),
+                        ..a.clone()
+                    };
+                }
+            }
+
+            let merged_fields = merge_duplicate_field_def_lists(fields_a, fields_b);
+            TypeDef {
+                name: a.name.clone(),
+                description: prefer_richer_description(&a.description, &b.description),
+                kind: TypeKind::Object,
+                fields: Some(merged_fields),
+                condition: a.condition.clone().or_else(|| b.condition.clone()),
+                ..a.clone()
+            }
+        }
+        (TypeKind::Array, TypeKind::Array) => {
+            let ea = a.array_element_type();
+            let eb = b.array_element_type();
+            match (ea, eb) {
+                (Some(x), Some(y)) => {
+                    let merged_elem = merge_duplicate_rpc_result_types(x, y);
+                    let mut out = a.clone();
+                    if let Some(ref mut fields) = out.fields {
+                        for f in fields.iter_mut() {
+                            if f.key.is_positional_zero()
+                                || matches!(&f.key, FieldKey::Named(s) if s == "field_0")
+                            {
+                                f.field_type = merged_elem;
+                                break;
+                            }
+                        }
+                    }
+                    out.description = prefer_richer_description(&a.description, &b.description);
+                    out
+                }
+                (Some(_), None) => a.clone(),
+                (None, Some(_)) => b.clone(),
+                (None, None) => a.clone(),
+            }
+        }
+        _ => {
+            if matches!(b.kind, TypeKind::Object | TypeKind::Array)
+                && matches!(a.kind, TypeKind::Primitive)
+            {
+                b.clone()
+            } else if matches!(a.kind, TypeKind::Object | TypeKind::Array)
+                && matches!(b.kind, TypeKind::Primitive)
+            {
+                a.clone()
+            } else if a.protocol_type == b.protocol_type {
+                a.clone()
+            } else {
+                b.clone()
+            }
+        }
+    }
+}
+
 /// Allocates a JSON key name that is unique among `field_names`, appending `_1`, `_2`, ... when needed.
 fn ensure_unique_merged_field_name(
     field_names: &mut std::collections::HashSet<String>,
@@ -1199,13 +1331,6 @@ fn merge_results_to_object(results: &[RawResult], method_name: &str) -> TypeDef 
         if result.r#type == "object" && !result.inner.is_empty() {
             // Expand inner fields directly into the parent object
             for inner in &result.inner {
-                let key_name = if !inner.key_name.is_empty() {
-                    inner.key_name.clone()
-                } else {
-                    ensure_unique_merged_field_name(&mut field_names, format!("field_{}", idx))
-                };
-                let name = ensure_unique_merged_field_name(&mut field_names, key_name);
-
                 // If we have conditional results (simple type + object), make all fields optional
                 // because the response type depends on the condition (e.g., verbose parameter)
                 let is_required = if has_conditional_results {
@@ -1216,9 +1341,37 @@ fn merge_results_to_object(results: &[RawResult], method_name: &str) -> TypeDef 
 
                 let parent =
                     if result.key_name.is_empty() { None } else { Some(result.key_name.as_str()) };
+                let new_field_type = convert_result(inner, parent, Some(method_name));
+
+                if !inner.key_name.is_empty() && field_names.contains(&inner.key_name) {
+                    if let Some(existing) = fields
+                        .iter_mut()
+                        .find(|f| f.key.json_key() == Some(inner.key_name.as_str()))
+                    {
+                        existing.field_type =
+                            merge_duplicate_rpc_result_types(&existing.field_type, &new_field_type);
+                        existing.required = existing.required && is_required;
+                        if existing.description.is_empty() && !inner.description.is_empty() {
+                            existing.description = inner.description.clone();
+                        } else if !inner.description.is_empty() {
+                            existing.description = prefer_richer_description(
+                                &existing.description,
+                                &inner.description,
+                            );
+                        }
+                    }
+                    continue;
+                }
+
+                let key_name = if !inner.key_name.is_empty() {
+                    inner.key_name.clone()
+                } else {
+                    ensure_unique_merged_field_name(&mut field_names, format!("field_{}", idx))
+                };
+                let name = ensure_unique_merged_field_name(&mut field_names, key_name);
                 fields.push(FieldDef {
                     key: FieldKey::Named(name),
-                    field_type: convert_result(inner, parent, Some(method_name)),
+                    field_type: new_field_type,
                     required: is_required,
                     description: inner.description.clone(),
                     default_value: None,
@@ -1260,11 +1413,31 @@ fn merge_results_to_object(results: &[RawResult], method_name: &str) -> TypeDef 
                 }
             };
 
+            let new_field_type = convert_result(result, None, Some(method_name));
+            let is_required_leaf = !result.optional;
+
+            if !result.key_name.is_empty() && field_names.contains(&result.key_name) {
+                if let Some(existing) =
+                    fields.iter_mut().find(|f| f.key.json_key() == Some(result.key_name.as_str()))
+                {
+                    existing.field_type =
+                        merge_duplicate_rpc_result_types(&existing.field_type, &new_field_type);
+                    existing.required = existing.required && is_required_leaf;
+                    if existing.description.is_empty() && !result.description.is_empty() {
+                        existing.description = result.description.clone();
+                    } else if !result.description.is_empty() {
+                        existing.description =
+                            prefer_richer_description(&existing.description, &result.description);
+                    }
+                }
+                continue;
+            }
+
             let name = ensure_unique_merged_field_name(&mut field_names, base_field_name);
             fields.push(FieldDef {
                 key: FieldKey::Named(name),
-                field_type: convert_result(result, None, Some(method_name)),
-                required: !result.optional,
+                field_type: new_field_type,
+                required: is_required_leaf,
                 description: result.description.clone(),
                 default_value: None,
                 version_added: None,
