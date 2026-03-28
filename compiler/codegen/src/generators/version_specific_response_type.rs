@@ -10,6 +10,7 @@ use std::str::FromStr;
 use std::sync::{Mutex, OnceLock};
 
 use ir::{ProtocolIR, RpcDef, TypeDef, TypeKind, UnionVariantDef};
+use serde::Serialize;
 use types::{Implementation, ProtocolVersion};
 
 use super::doc_comment::{write_doc_comment, write_doc_line};
@@ -21,6 +22,57 @@ type SymbolRecorder = fn(&str, &str);
 
 // Safe global to record external symbol usage via a callback
 static EXTERNAL_SYMBOL_RECORDER: OnceLock<Mutex<Option<SymbolRecorder>>> = OnceLock::new();
+static FALLBACK_EVENTS: OnceLock<Mutex<Vec<FallbackEvent>>> = OnceLock::new();
+static CURRENT_RPC_METHOD: OnceLock<Mutex<Option<String>>> = OnceLock::new();
+
+#[derive(Debug, Clone, Serialize)]
+/// One weak-typing event emitted while mapping IR to Rust response types.
+pub struct FallbackEvent {
+    /// RPC method name when known.
+    pub rpc_method: String,
+    /// Best-effort pointer to schema/IR location.
+    pub schema_or_ir_path: String,
+    /// Category of fallback behavior.
+    pub fallback_kind: String,
+    /// Rust type selected by the fallback.
+    pub chosen_rust_type: String,
+    /// Machine-readable reason for the fallback.
+    pub reason: String,
+    /// Severity bucket (`P0`/`P1`/`P2`).
+    pub severity: String,
+}
+
+/// Clears all collected fallback events.
+pub fn clear_fallback_events() {
+    let slot = FALLBACK_EVENTS.get_or_init(|| Mutex::new(Vec::new()));
+    let mut guard = slot.lock().expect("fallback event mutex poisoned");
+    guard.clear();
+}
+
+/// Returns a snapshot of currently collected fallback events.
+pub fn fallback_events_snapshot() -> Vec<FallbackEvent> {
+    let slot = FALLBACK_EVENTS.get_or_init(|| Mutex::new(Vec::new()));
+    let guard = slot.lock().expect("fallback event mutex poisoned");
+    guard.clone()
+}
+
+fn record_fallback_event(event: FallbackEvent) {
+    let slot = FALLBACK_EVENTS.get_or_init(|| Mutex::new(Vec::new()));
+    let mut guard = slot.lock().expect("fallback event mutex poisoned");
+    guard.push(event);
+}
+
+fn set_current_rpc_method(name: Option<&str>) {
+    let slot = CURRENT_RPC_METHOD.get_or_init(|| Mutex::new(None));
+    let mut guard = slot.lock().expect("current rpc mutex poisoned");
+    *guard = name.map(ToString::to_string);
+}
+
+fn current_rpc_method_or_unknown() -> String {
+    let slot = CURRENT_RPC_METHOD.get_or_init(|| Mutex::new(None));
+    let guard = slot.lock().expect("current rpc mutex poisoned");
+    guard.clone().unwrap_or_else(|| "unknown".to_string())
+}
 
 /// Provide a recorder callback for external symbols
 pub fn set_external_symbol_recorder(recorder: SymbolRecorder) {
@@ -298,6 +350,7 @@ impl VersionSpecificResponseTypeGenerator {
         // Generate response structs for each method
         let mut has_any_responses = false;
         for method in methods {
+            set_current_rpc_method(Some(&method.name));
             if let Some(response_struct) = self.generate_method_response(method)? {
                 if !has_any_responses {
                     has_any_responses = true;
@@ -305,6 +358,7 @@ impl VersionSpecificResponseTypeGenerator {
                 out.push_str(&response_struct);
                 out.push('\n');
             }
+            set_current_rpc_method(None);
         }
 
         // Add amount deserializer helper functions if needed
@@ -572,6 +626,14 @@ impl VersionSpecificResponseTypeGenerator {
                     let base = sanitize_type_name_for_rust(label);
                     parent_enum.map(|e| Self::qualify_union_branch_struct(e, &base)).unwrap_or(base)
                 } else {
+                    record_fallback_event(FallbackEvent {
+                        rpc_method: current_rpc_method_or_unknown(),
+                        schema_or_ir_path: format!("union_variant:{}", td.name),
+                        fallback_kind: "json_value_fallback".to_string(),
+                        chosen_rust_type: "serde_json::Value".to_string(),
+                        reason: "unnamed_union_object_variant".to_string(),
+                        severity: "P1".to_string(),
+                    });
                     "serde_json::Value".to_string()
                 }
             }
@@ -584,7 +646,17 @@ impl VersionSpecificResponseTypeGenerator {
             ir::TypeKind::Map => {
                 let key_ty = match td.map_key_protocol_type.as_deref() {
                     Some("hex") => "bitcoin::Txid",
-                    _ => "String",
+                    _ => {
+                        record_fallback_event(FallbackEvent {
+                            rpc_method: current_rpc_method_or_unknown(),
+                            schema_or_ir_path: format!("union_variant_map_key:{}", td.name),
+                            fallback_kind: "map_string_key_fallback".to_string(),
+                            chosen_rust_type: "String".to_string(),
+                            reason: "missing_map_key_protocol_type".to_string(),
+                            severity: "P1".to_string(),
+                        });
+                        "String"
+                    }
                 };
                 let val = td.map_value_type().expect("map union variant must have map_value");
                 format!(
@@ -598,10 +670,28 @@ impl VersionSpecificResponseTypeGenerator {
                 if !label.is_empty() && label != "object" && label != "array" {
                     sanitize_type_name_for_rust(label)
                 } else {
+                    record_fallback_event(FallbackEvent {
+                        rpc_method: current_rpc_method_or_unknown(),
+                        schema_or_ir_path: format!("union_variant_union:{}", td.name),
+                        fallback_kind: "json_value_fallback".to_string(),
+                        chosen_rust_type: "serde_json::Value".to_string(),
+                        reason: "unnamed_nested_union_variant".to_string(),
+                        severity: "P1".to_string(),
+                    });
                     "serde_json::Value".to_string()
                 }
             }
-            _ => "serde_json::Value".to_string(),
+            _ => {
+                record_fallback_event(FallbackEvent {
+                    rpc_method: current_rpc_method_or_unknown(),
+                    schema_or_ir_path: format!("union_variant_other:{}", td.name),
+                    fallback_kind: "json_value_fallback".to_string(),
+                    chosen_rust_type: "serde_json::Value".to_string(),
+                    reason: "unhandled_union_variant_kind".to_string(),
+                    severity: "P1".to_string(),
+                });
+                "serde_json::Value".to_string()
+            }
         }
     }
 
@@ -1036,12 +1126,32 @@ impl VersionSpecificResponseTypeGenerator {
                     adapters::bitcoin_core::types::BitcoinCoreTypeRegistry::map_result_type(
                         &method_result,
                     );
+                if rust_type == "Vec<String>" {
+                    record_fallback_event(FallbackEvent {
+                        rpc_method: current_rpc_method_or_unknown(),
+                        schema_or_ir_path: format!("array_field:{}", field_name),
+                        fallback_kind: "array_value_fallback".to_string(),
+                        chosen_rust_type: rust_type.to_string(),
+                        reason: "array_missing_element_metadata".to_string(),
+                        severity: "P1".to_string(),
+                    });
+                }
                 rust_type.to_string()
             }
             ir::TypeKind::Map => {
                 let key_ty = match type_def.map_key_protocol_type.as_deref() {
                     Some("hex") => "bitcoin::Txid",
-                    _ => "String",
+                    _ => {
+                        record_fallback_event(FallbackEvent {
+                            rpc_method: current_rpc_method_or_unknown(),
+                            schema_or_ir_path: format!("map_field:{}", field_name),
+                            fallback_kind: "map_string_key_fallback".to_string(),
+                            chosen_rust_type: "String".to_string(),
+                            reason: "missing_map_key_protocol_type".to_string(),
+                            severity: "P1".to_string(),
+                        });
+                        "String"
+                    }
                 };
                 let val =
                     type_def.map_value_type().expect("TypeKind::Map must set map_value in IR");
@@ -1061,6 +1171,14 @@ impl VersionSpecificResponseTypeGenerator {
                         rust_name
                     }
                 } else {
+                    record_fallback_event(FallbackEvent {
+                        rpc_method: current_rpc_method_or_unknown(),
+                        schema_or_ir_path: format!("union_field:{}", field_name),
+                        fallback_kind: "json_value_fallback".to_string(),
+                        chosen_rust_type: "serde_json::Value".to_string(),
+                        reason: "unnamed_union_field_type".to_string(),
+                        severity: "P1".to_string(),
+                    });
                     "serde_json::Value".to_string()
                 }
             }
@@ -1124,10 +1242,30 @@ impl VersionSpecificResponseTypeGenerator {
                 match field_name {
                     "vin" => "Vec<DecodedVin>".to_string(),
                     "vout" => "Vec<DecodedVout>".to_string(),
-                    _ => "serde_json::Value".to_string(),
+                    _ => {
+                        record_fallback_event(FallbackEvent {
+                            rpc_method: current_rpc_method_or_unknown(),
+                            schema_or_ir_path: format!("object_field:{}", field_name),
+                            fallback_kind: "json_value_fallback".to_string(),
+                            chosen_rust_type: "serde_json::Value".to_string(),
+                            reason: "generic_object_without_named_shape".to_string(),
+                            severity: "P1".to_string(),
+                        });
+                        "serde_json::Value".to_string()
+                    }
                 }
             }
-            _ => "serde_json::Value".to_string(),
+            _ => {
+                record_fallback_event(FallbackEvent {
+                    rpc_method: current_rpc_method_or_unknown(),
+                    schema_or_ir_path: format!("type_kind_other:{}", field_name),
+                    fallback_kind: "json_value_fallback".to_string(),
+                    chosen_rust_type: "serde_json::Value".to_string(),
+                    reason: "unhandled_type_kind".to_string(),
+                    severity: "P1".to_string(),
+                });
+                "serde_json::Value".to_string()
+            }
         };
         // If the mapped type is from the bitcoin crate, record it for re-exports
         if let Some(stripped) = mapped.strip_prefix("bitcoin::") {
@@ -1210,17 +1348,41 @@ impl VersionSpecificResponseTypeGenerator {
         if type_name.contains("HashMap<String") && !type_name.contains(',') {
             // Handle cases like "Option<HashMap<String" or "HashMap<String"
             let fixed = type_name.replace("HashMap<String", "HashMap<String, serde_json::Value>");
+            record_fallback_event(FallbackEvent {
+                rpc_method: current_rpc_method_or_unknown(),
+                schema_or_ir_path: format!("metadata_type:{type_name}"),
+                fallback_kind: "map_value_fallback".to_string(),
+                chosen_rust_type: fixed.clone(),
+                reason: "metadata_incomplete_hashmap_type".to_string(),
+                severity: "P2".to_string(),
+            });
             return fixed;
         }
 
         // Fix specific case: Option<HashMap<String -> Option<HashMap<String, serde_json::Value>>
         if type_name == "Option<HashMap<String" {
             let fixed = "Option<HashMap<String, serde_json::Value>>".to_string();
+            record_fallback_event(FallbackEvent {
+                rpc_method: current_rpc_method_or_unknown(),
+                schema_or_ir_path: "metadata_type:Option<HashMap<String".to_string(),
+                fallback_kind: "map_value_fallback".to_string(),
+                chosen_rust_type: fixed.clone(),
+                reason: "metadata_malformed_hashmap_option".to_string(),
+                severity: "P2".to_string(),
+            });
             return fixed;
         }
         if type_name.contains("BTreeMap<String") && !type_name.contains(',') {
             // Handle cases like "Option<BTreeMap<String" or "BTreeMap<String"
             let fixed = type_name.replace("BTreeMap<String", "BTreeMap<String, serde_json::Value>");
+            record_fallback_event(FallbackEvent {
+                rpc_method: current_rpc_method_or_unknown(),
+                schema_or_ir_path: format!("metadata_type:{type_name}"),
+                fallback_kind: "map_value_fallback".to_string(),
+                chosen_rust_type: fixed.clone(),
+                reason: "metadata_incomplete_btreemap_type".to_string(),
+                severity: "P2".to_string(),
+            });
             return fixed;
         }
 
@@ -1294,6 +1456,16 @@ impl VersionSpecificResponseTypeGenerator {
         // Use the Bitcoin Core type registry to properly map types
         let (rust_type, _) =
             adapters::bitcoin_core::types::BitcoinCoreTypeRegistry::map_result_type(&method_result);
+        if rust_type == "serde_json::Value" {
+            record_fallback_event(FallbackEvent {
+                rpc_method: current_rpc_method_or_unknown(),
+                schema_or_ir_path: format!("metadata_type:{type_name}"),
+                fallback_kind: "json_value_fallback".to_string(),
+                chosen_rust_type: rust_type.to_string(),
+                reason: "metadata_type_collapsed_to_any".to_string(),
+                severity: "P1".to_string(),
+            });
+        }
         rust_type.to_string()
     }
 
@@ -1731,6 +1903,14 @@ impl VersionSpecificResponseTypeGenerator {
                 self.map_ir_type_to_rust(elem_ty, "field_0", None)
             }
         } else {
+            record_fallback_event(FallbackEvent {
+                rpc_method: method.name.clone(),
+                schema_or_ir_path: format!("result:{}:array_element", method.name),
+                fallback_kind: "array_value_fallback".to_string(),
+                chosen_rust_type: "Vec<serde_json::Value>".to_string(),
+                reason: "top_level_array_missing_element_metadata".to_string(),
+                severity: "P1".to_string(),
+            });
             "serde_json::Value".to_string()
         };
 
@@ -1945,6 +2125,17 @@ impl VersionSpecificResponseTypeGenerator {
                 }
             }
         };
+
+        if rust_type == "String" {
+            record_fallback_event(FallbackEvent {
+                rpc_method: current_rpc_method_or_unknown(),
+                schema_or_ir_path: format!("type_alias:{type_name}"),
+                fallback_kind: "unknown_alias_string_fallback".to_string(),
+                chosen_rust_type: "String".to_string(),
+                reason: "unmapped_alias_default_string".to_string(),
+                severity: "P2".to_string(),
+            });
+        }
 
         let mut output = String::new();
         write_doc_line(&mut output, &format!("Type alias for {}", type_name), "")?;
@@ -3251,6 +3442,41 @@ mod tests {
         assert!(
             code.contains("BTreeMap<bitcoin::Txid, u64>"),
             "expected BTreeMap txid map variant, got:\n{code}"
+        );
+    }
+
+    #[test]
+    fn fallback_inventory_regression_guard() {
+        let workspace_root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../");
+        let ir_path = workspace_root.join("resources/ir/bitcoin.ir.json");
+        let ir = ir::ProtocolIR::from_file(&ir_path)
+            .unwrap_or_else(|e| panic!("load IR {}: {e}", ir_path.display()));
+        let methods: Vec<RpcDef> = ir.get_rpc_methods().into_iter().cloned().collect();
+
+        clear_fallback_events();
+        let version = ProtocolVersion::from_str("30.0.0").expect("protocol version");
+        let gen = VersionSpecificResponseTypeGenerator::new(version, "bitcoin_core".to_string());
+        let _ = gen.generate(&methods).expect("generate responses");
+        let events = fallback_events_snapshot();
+
+        let allowed_reasons: std::collections::BTreeSet<&str> = std::collections::BTreeSet::from([
+            "generic_object_without_named_shape",
+            "unmapped_alias_default_string",
+        ]);
+        for event in &events {
+            assert!(
+                allowed_reasons.contains(event.reason.as_str()),
+                "unexpected fallback reason `{}` in event {:?}; review schema/codegen precision",
+                event.reason,
+                event
+            );
+        }
+        // Full `bitcoin.ir.json` legitimately triggers many `generic_object_without_named_shape`
+        // events until OpenRPC gives stable names to every nested object; cap avoids silent growth.
+        assert!(
+            events.len() <= 128,
+            "fallback event count increased unexpectedly ({} > 128); investigate codegen/IR regression",
+            events.len()
         );
     }
 
