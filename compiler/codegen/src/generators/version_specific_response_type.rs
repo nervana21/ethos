@@ -54,6 +54,14 @@ impl VersionSpecificResponseTypeGenerator {
         sanitize_type_name_for_rust(ty.rust_emit_name())
     }
 
+    /// Prefix merged branch struct names with their parent `#[serde(untagged)]` enum so IR
+    /// collisions like `FinalizePsbtBranch1Object1` under both root and nested unions become
+    /// distinct Rust types.
+    #[inline]
+    fn qualify_union_branch_struct(parent_enum: &str, inner_label: &str) -> String {
+        sanitize_type_name_for_rust(&format!("{parent_enum}{inner_label}"))
+    }
+
     /// Create a new version-specific response type generator
     pub fn new(version: ProtocolVersion, implementation: String) -> Self {
         Self { version, implementation }
@@ -99,7 +107,7 @@ impl VersionSpecificResponseTypeGenerator {
         let mut nested_types = BTreeSet::new();
         for method in methods {
             if let Some(result) = &method.result {
-                self.collect_nested_types_from_type_def(result, &mut nested_types);
+                self.collect_nested_types_from_type_def(result, &mut nested_types, true);
             }
         }
         // Also collect nested types from the actual Rust type strings we will emit for fields.
@@ -197,7 +205,7 @@ impl VersionSpecificResponseTypeGenerator {
                         if let Some(fields) = uv.type_def.fields.as_ref() {
                             scan_fields(fields);
                         }
-                        let rust_ty = self.map_union_variant_rust_type(&uv.type_def);
+                        let rust_ty = self.map_union_variant_rust_type(&uv.type_def, None);
                         if rust_ty.contains("BTreeMap") {
                             union_needs_btreemap = true;
                         }
@@ -246,7 +254,7 @@ impl VersionSpecificResponseTypeGenerator {
         out.push('\n');
 
         let type_registry = Self::build_type_registry(methods);
-        let union_verbose_object_names = self.collect_union_verbose_object_type_names(methods);
+        let union_embedded_object_names = self.collect_union_embedded_object_struct_names(methods);
 
         let mut processed_types = BTreeSet::new();
 
@@ -267,7 +275,7 @@ impl VersionSpecificResponseTypeGenerator {
                 // correct `rpc_name` for overrides and `should_skip_field_in_struct`. The registry
                 // path uses `generate_struct_from_type_def` with an empty `rpc_name`, which would
                 // duplicate the type and produce the wrong field types (e.g. getblocktemplate).
-                if union_verbose_object_names.contains(nested_type) {
+                if union_embedded_object_names.contains(nested_type) {
                     processed_types.insert(nested_type.clone());
                     continue;
                 }
@@ -431,8 +439,29 @@ impl VersionSpecificResponseTypeGenerator {
     /// BTreeMap so keys are iterated in stable, sorted order.
     fn build_type_registry(methods: &[RpcDef]) -> BTreeMap<String, TypeDef> {
         let mut reg = BTreeMap::new();
-        fn visit(ty: &TypeDef, reg: &mut BTreeMap<String, TypeDef>) {
+        /// Register every named object/union under this node. The method's **root** `TypeKind::Union`
+        /// (e.g. `GetBlockResponse`) is skipped so it is only emitted by `generate_method_response`,
+        /// not as a duplicate from `generate_nested_type`.
+        fn visit_method_result_root(ty: &TypeDef, reg: &mut BTreeMap<String, TypeDef>) {
+            if matches!(ty.kind, TypeKind::Union) {
+                if let Some(uvars) = &ty.union_variants {
+                    for uv in uvars {
+                        visit_type_for_registry(&uv.type_def, reg);
+                    }
+                }
+                return;
+            }
+            visit_type_for_registry(ty, reg);
+        }
+
+        fn visit_type_for_registry(ty: &TypeDef, reg: &mut BTreeMap<String, TypeDef>) {
             if matches!(ty.kind, TypeKind::Object) {
+                let label = ty.rust_emit_name();
+                if !label.is_empty() && label != "object" && label != "array" {
+                    reg.entry(sanitize_type_name_for_rust(label)).or_insert_with(|| ty.clone());
+                }
+            }
+            if matches!(ty.kind, TypeKind::Union) {
                 let label = ty.rust_emit_name();
                 if !label.is_empty() && label != "object" && label != "array" {
                     reg.entry(sanitize_type_name_for_rust(label)).or_insert_with(|| ty.clone());
@@ -440,89 +469,108 @@ impl VersionSpecificResponseTypeGenerator {
             }
             if let Some(uvars) = &ty.union_variants {
                 for uv in uvars {
-                    visit(&uv.type_def, reg);
+                    visit_type_for_registry(&uv.type_def, reg);
                 }
             }
             if let Some(fields) = &ty.fields {
                 for f in fields {
-                    visit(&f.field_type, reg);
+                    visit_type_for_registry(&f.field_type, reg);
                 }
             }
             if let Some(mv) = ty.map_value.as_deref() {
-                visit(mv, reg);
+                visit_type_for_registry(mv, reg);
             }
         }
+
         for method in methods {
             if let Some(ref result) = method.result {
-                visit(result, &mut reg);
+                visit_method_result_root(result, &mut reg);
             }
         }
         reg
     }
 
-    /// Sanitized names of object types used only as the verbose variant of a root `TypeKind::Union`
-    /// RPC result. These structs are emitted next to the untagged enum in
-    /// `generate_union_rpc_response`, not from the generic type-registry pass (which would
-    /// duplicate them and miss per-RPC field overrides).
-    fn collect_union_verbose_object_type_names(&self, methods: &[RpcDef]) -> BTreeSet<String> {
+    /// Struct names emitted inline next to **any** `TypeKind::Union` (root or nested). The generic
+    /// nested-type pass must skip these so they are not regenerated from `type_registry` without
+    /// union-specific merge/skip rules.
+    fn collect_union_embedded_object_struct_names(&self, methods: &[RpcDef]) -> BTreeSet<String> {
         let mut out = BTreeSet::new();
         for method in methods {
             let Some(result) = method.result.as_ref() else {
                 continue;
             };
             let result = self.filter_type_def_for_version(result);
-            if result.kind != TypeKind::Union {
-                continue;
-            }
-            let Some(uvs) = result.union_variants.as_ref() else {
-                continue;
-            };
-            for uv in uvs {
-                let td = &uv.type_def;
-                match td.kind {
-                    TypeKind::Object => {
-                        let filtered = self.filter_type_def_for_version(td);
-                        out.insert(Self::ir_rust_type_label(&filtered));
-                    }
-                    TypeKind::Array =>
-                        if let Some(elem) = td.array_element_type() {
-                            let elabel = elem.rust_emit_name();
-                            if matches!(elem.kind, TypeKind::Object)
-                                && !elabel.is_empty()
-                                && elabel != "object"
-                                && elabel != "array"
-                            {
-                                let filtered = self.filter_type_def_for_version(elem);
-                                out.insert(Self::ir_rust_type_label(&filtered));
-                            }
-                        },
-                    TypeKind::Map =>
-                        if let Some(val) = td.map_value_type() {
-                            let vlabel = val.rust_emit_name();
-                            if matches!(val.kind, TypeKind::Object)
-                                && !vlabel.is_empty()
-                                && vlabel != "object"
-                                && vlabel != "array"
-                            {
-                                let filtered = self.filter_type_def_for_version(val);
-                                out.insert(Self::ir_rust_type_label(&filtered));
-                            }
-                        },
-                    _ => {}
-                }
-            }
+            self.union_branch_object_labels_visit(&result, &mut out);
         }
         out
     }
 
+    fn union_branch_object_labels_visit(&self, ty: &TypeDef, out: &mut BTreeSet<String>) {
+        if ty.kind == TypeKind::Union {
+            if let Some(uvs) = ty.union_variants.as_ref() {
+                for uv in uvs {
+                    let td = &uv.type_def;
+                    match td.kind {
+                        TypeKind::Object => {
+                            let filtered = self.filter_type_def_for_version(td);
+                            out.insert(Self::ir_rust_type_label(&filtered));
+                        }
+                        TypeKind::Array =>
+                            if let Some(elem) = td.array_element_type() {
+                                let elabel = elem.rust_emit_name();
+                                if matches!(elem.kind, TypeKind::Object)
+                                    && !elabel.is_empty()
+                                    && elabel != "object"
+                                    && elabel != "array"
+                                {
+                                    let filtered = self.filter_type_def_for_version(elem);
+                                    out.insert(Self::ir_rust_type_label(&filtered));
+                                }
+                            },
+                        TypeKind::Map =>
+                            if let Some(val) = td.map_value_type() {
+                                let vlabel = val.rust_emit_name();
+                                if matches!(val.kind, TypeKind::Object)
+                                    && !vlabel.is_empty()
+                                    && vlabel != "object"
+                                    && vlabel != "array"
+                                {
+                                    let filtered = self.filter_type_def_for_version(val);
+                                    out.insert(Self::ir_rust_type_label(&filtered));
+                                }
+                            },
+                        _ => {}
+                    }
+                }
+            }
+        }
+        if let Some(uvs) = &ty.union_variants {
+            for uv in uvs {
+                self.union_branch_object_labels_visit(&uv.type_def, out);
+            }
+        }
+        if let Some(fields) = &ty.fields {
+            for f in fields {
+                self.union_branch_object_labels_visit(&f.field_type, out);
+            }
+        }
+        if let Some(mv) = ty.map_value.as_deref() {
+            self.union_branch_object_labels_visit(mv, out);
+        }
+    }
+
     /// Rust type string for a union variant (arrays, maps, objects, primitives).
-    fn map_union_variant_rust_type(&self, td: &ir::TypeDef) -> String {
+    ///
+    /// `parent_enum` is the `#[serde(untagged)]` enum being generated; when set, object (and
+    /// array/map) branch structs are qualified with it so names do not collide across unions.
+    fn map_union_variant_rust_type(&self, td: &ir::TypeDef, parent_enum: Option<&str>) -> String {
         match td.kind {
             ir::TypeKind::Primitive => self.map_ir_type_to_rust(td, "wire", None),
             ir::TypeKind::Object => {
                 let label = td.rust_emit_name();
                 if !label.is_empty() && label != "object" && label != "array" {
-                    sanitize_type_name_for_rust(label)
+                    let base = sanitize_type_name_for_rust(label);
+                    parent_enum.map(|e| Self::qualify_union_branch_struct(e, &base)).unwrap_or(base)
                 } else {
                     "serde_json::Value".to_string()
                 }
@@ -531,7 +579,7 @@ impl VersionSpecificResponseTypeGenerator {
                 let elem = td
                     .array_element_type()
                     .expect("array union variant must carry array_element_type");
-                format!("Vec<{}>", self.map_union_variant_rust_type(elem))
+                format!("Vec<{}>", self.map_union_variant_rust_type(elem, parent_enum))
             }
             ir::TypeKind::Map => {
                 let key_ty = match td.map_key_protocol_type.as_deref() {
@@ -539,7 +587,19 @@ impl VersionSpecificResponseTypeGenerator {
                     _ => "String",
                 };
                 let val = td.map_value_type().expect("map union variant must have map_value");
-                format!("BTreeMap<{}, {}>", key_ty, self.map_union_variant_rust_type(val))
+                format!(
+                    "BTreeMap<{}, {}>",
+                    key_ty,
+                    self.map_union_variant_rust_type(val, parent_enum)
+                )
+            }
+            ir::TypeKind::Union => {
+                let label = td.rust_emit_name();
+                if !label.is_empty() && label != "object" && label != "array" {
+                    sanitize_type_name_for_rust(label)
+                } else {
+                    "serde_json::Value".to_string()
+                }
             }
             _ => "serde_json::Value".to_string(),
         }
@@ -580,11 +640,12 @@ impl VersionSpecificResponseTypeGenerator {
         rpc_name: &str,
         buf: &mut String,
     ) -> Result<()> {
-        write_doc_line(
-            buf,
-            &format!("Verbose JSON object (union variant) for `{}` RPC", rpc_name),
-            "",
-        )?;
+        let doc = if rpc_name.is_empty() {
+            "Object shape from an OpenRPC union branch (nested field)".to_string()
+        } else {
+            format!("Verbose JSON object (union variant) for `{}` RPC", rpc_name)
+        };
+        write_doc_line(buf, &doc, "")?;
         writeln!(buf, "#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]")?;
         writeln!(
             buf,
@@ -664,6 +725,24 @@ impl VersionSpecificResponseTypeGenerator {
         union_td: &TypeDef,
         enum_name: &str,
     ) -> Result<String> {
+        let mut buf = String::new();
+        let canonical_name =
+            crate::utils::canonical_from_adapter_method(&self.implementation, &method.name, None)
+                .unwrap_or_else(|_| enum_name.replace("Response", ""));
+        write_doc_line(&mut buf, &format!("Response for the `{}` RPC method", canonical_name), "")?;
+        buf.push_str(&self.emit_union_definition(union_td, enum_name, method.name.as_str())?);
+        Ok(buf)
+    }
+
+    /// Emit merged branch structs and a `#[serde(untagged)]` enum for any IR `TypeKind::Union`.
+    /// `rpc_doc_name` is used in struct doc comments; use `""` for nested unions.
+    fn emit_union_definition(
+        &self,
+        union_td: &TypeDef,
+        enum_name: &str,
+        rpc_doc_name: &str,
+    ) -> Result<String> {
+        let union_td = self.filter_type_def_for_version(union_td);
         let uvs =
             union_td.union_variants.as_ref().expect("union response must have union_variants");
         let mut variants: Vec<&UnionVariantDef> = uvs.iter().collect();
@@ -671,15 +750,12 @@ impl VersionSpecificResponseTypeGenerator {
             TypeKind::Primitive => 0,
             TypeKind::Array => 1,
             TypeKind::Map => 2,
-            TypeKind::Object => 3,
-            _ => 4,
+            TypeKind::Union => 3,
+            TypeKind::Object => 4,
+            _ => 5,
         });
 
         let mut buf = String::new();
-        let canonical_name =
-            crate::utils::canonical_from_adapter_method(&self.implementation, &method.name, None)
-                .unwrap_or_else(|_| enum_name.replace("Response", ""));
-        write_doc_line(&mut buf, &format!("Response for the `{}` RPC method", canonical_name), "")?;
 
         // Group inner object shapes by Rust struct name so we emit each helper struct once (merged
         // when union branches reuse the same IR type name with different fields).
@@ -712,9 +788,9 @@ impl VersionSpecificResponseTypeGenerator {
             }
         }
         for (inner_name, defs) in inner_by_name {
-            let merged =
-                self.merge_object_type_defs_for_union_branches(&defs, method.name.as_str());
-            self.emit_object_response_struct(&merged, &inner_name, method.name.as_str(), &mut buf)?;
+            let merged = self.merge_object_type_defs_for_union_branches(&defs, rpc_doc_name);
+            let qualified = Self::qualify_union_branch_struct(enum_name, &inner_name);
+            self.emit_object_response_struct(&merged, &qualified, rpc_doc_name, &mut buf)?;
         }
 
         writeln!(buf, "#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]")?;
@@ -722,7 +798,7 @@ impl VersionSpecificResponseTypeGenerator {
         writeln!(buf, "pub enum {} {{", enum_name)?;
         for uv in &variants {
             let variant_name = sanitize_type_name_for_rust(&uv.name);
-            let rust_ty = self.map_union_variant_rust_type(&uv.type_def);
+            let rust_ty = self.map_union_variant_rust_type(&uv.type_def, Some(enum_name));
             writeln!(buf, "    {}({}),", variant_name, rust_ty)?;
         }
         writeln!(buf, "}}")?;
@@ -974,6 +1050,19 @@ impl VersionSpecificResponseTypeGenerator {
                     key_ty,
                     self.map_ir_type_to_rust(val, field_name, enclosing_struct)
                 )
+            }
+            ir::TypeKind::Union => {
+                let label = type_def.rust_emit_name();
+                if !label.is_empty() && label != "object" && label != "array" {
+                    let rust_name = sanitize_type_name_for_rust(label);
+                    if enclosing_struct.is_some_and(|s| s == rust_name.as_str()) {
+                        format!("Box<{rust_name}>")
+                    } else {
+                        rust_name
+                    }
+                } else {
+                    "serde_json::Value".to_string()
+                }
             }
             ir::TypeKind::Object => {
                 // Decoded tx fields: IR uses Object (with nested array shape) for vin/vout; map to typed vecs.
@@ -1743,21 +1832,18 @@ impl VersionSpecificResponseTypeGenerator {
     }
 
     /// Recursively collect nested type names from a TypeDef (so nested scriptPubKey is seen).
+    ///
+    /// `is_method_result_root`: when true, the node is the RPC's top-level `result` type. That root
+    /// must not be listed if it is `TypeKind::Union` (`GetBlockResponse`, …), because that enum is
+    /// emitted by `generate_method_response`, not `generate_nested_type`.
     fn collect_nested_types_from_type_def(
         &self,
         type_def: &ir::TypeDef,
         nested_types: &mut BTreeSet<String>,
+        is_method_result_root: bool,
     ) {
-        // Prefer the full IR type name (sanitized) when it looks like a custom type.
-        // This avoids losing information for names containing separators like `/`
-        // (e.g. `GetRawAddrManBucket/position`).
-        //
-        // Do not record `TypeKind::Union` roots here: their IR `name` matches the method's
-        // response enum (e.g. `GetBlockResponse`) emitted by `generate_union_rpc_response`.
-        // Treating that name as a "nested" type otherwise falls through to
-        // `generate_type_alias` and emits `pub type GetBlockResponse = String`, which then
-        // collides with the real untagged enum.
-        if type_def.kind != TypeKind::Union {
+        let is_union = type_def.kind == TypeKind::Union;
+        if is_union && !is_method_result_root {
             let label = type_def.rust_emit_name();
             if !label.is_empty()
                 && label != "object"
@@ -1766,22 +1852,31 @@ impl VersionSpecificResponseTypeGenerator {
             {
                 nested_types.insert(sanitize_type_name_for_rust(label));
             }
+        }
 
-            // Also parse the name as a type string (covers generic Rust-like strings).
+        if !is_union {
+            let label = type_def.rust_emit_name();
+            if !label.is_empty()
+                && label != "object"
+                && label != "array"
+                && label.chars().next().is_some_and(|c| c.is_uppercase())
+            {
+                nested_types.insert(sanitize_type_name_for_rust(label));
+            }
             self.collect_nested_types(label, nested_types);
         }
         if let Some(ref uvars) = type_def.union_variants {
             for uv in uvars {
-                self.collect_nested_types_from_type_def(&uv.type_def, nested_types);
+                self.collect_nested_types_from_type_def(&uv.type_def, nested_types, false);
             }
         }
         if let Some(ref fields) = type_def.fields {
             for field in fields {
-                self.collect_nested_types_from_type_def(&field.field_type, nested_types);
+                self.collect_nested_types_from_type_def(&field.field_type, nested_types, false);
             }
         }
         if let Some(mv) = type_def.map_value.as_deref() {
-            self.collect_nested_types_from_type_def(mv, nested_types);
+            self.collect_nested_types_from_type_def(mv, nested_types, false);
         }
     }
 
@@ -1818,6 +1913,11 @@ impl VersionSpecificResponseTypeGenerator {
                 let mut buf = String::new();
                 self.generate_struct_from_type_def(type_def, &mut buf)?;
                 return Ok(Some(buf));
+            }
+            if matches!(type_def.kind, TypeKind::Union)
+                && type_def.union_variants.as_ref().is_some_and(|v| !v.is_empty())
+            {
+                return Ok(Some(self.emit_union_definition(type_def, &lookup_name, "")?));
             }
         }
         let type_alias = self.generate_type_alias(type_name)?;
@@ -2773,7 +2873,10 @@ mod tests {
             .expect("generation must succeed")
             .expect("response must be generated");
         assert!(code.contains("#[serde(untagged)]"), "got:\n{code}");
-        assert!(code.contains("pub struct DemoVerbose"), "got:\n{code}");
+        assert!(
+            code.contains("pub struct DemoRpcResponseDemoVerbose"),
+            "branch structs are qualified with parent enum name, got:\n{code}"
+        );
         assert!(code.contains("pub enum DemoRpcResponse"), "got:\n{code}");
     }
 
@@ -2897,9 +3000,9 @@ mod tests {
             .expect("response must be generated");
 
         assert_eq!(
-            code.matches("pub struct MergedElem").count(),
+            code.matches("pub struct DemoOrphanStyleResponseMergedElem").count(),
             1,
-            "expected exactly one MergedElem struct, got:\n{code}"
+            "expected exactly one qualified merged element struct, got:\n{code}"
         );
         assert!(
             code.contains("pub hex: Option<String>"),
