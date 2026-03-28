@@ -10,7 +10,7 @@ use std::path::{Path, PathBuf};
 
 use ir::{
     FieldDef, FieldKey, ParamDef, ProtocolDef, ProtocolIR, ProtocolModule, RpcDef,
-    RpcResultDiscriminator, TypeDef, TypeKind,
+    RpcResultDiscriminator, TypeDef, TypeKind, UnionVariantDef,
 };
 use normalization::bitcoin_canonical_from_adapter_method;
 use path::{
@@ -749,7 +749,29 @@ fn convert_argument_to_type_def(raw: &RawArgument) -> TypeDef {
 /// Converts a raw result to a `TypeDef`.
 /// `parent_key`: when recursing, the key of the parent field (e.g. "vin") so we can name array element types.
 /// `method_name`: RPC method name (e.g. "decodepsbt") so we can assign stable type names for codegen.
-fn convert_result(raw: &RawResult, parent_key: Option<&str>, method_name: Option<&str>) -> TypeDef {
+/// `schema_hint`: OpenRPC `result.schema` when converting the method's top-level result (for oneOf branch metadata).
+fn convert_result(
+    raw: &RawResult,
+    parent_key: Option<&str>,
+    method_name: Option<&str>,
+    schema_hint: Option<&serde_json::Value>,
+) -> TypeDef {
+    if raw.r#type == "object-one-of" && !raw.inner.is_empty() {
+        let m = method_name.unwrap_or("rpc");
+        let disambig =
+            if !raw.key_name.is_empty() { Some(raw.key_name.as_str()) } else { parent_key };
+        let union_type_name = if disambig.is_none() {
+            format!("{}ResultUnion", canonical_method_pascal(m))
+        } else {
+            format!(
+                "{}{}ObjectOneOfUnion",
+                canonical_method_pascal(m),
+                result_key_pascal_suffix(disambig.unwrap())
+            )
+        };
+        return build_union_from_raw_results(&raw.inner, m, schema_hint, &union_type_name);
+    }
+
     let (type_name, protocol_type) = build_base_type_def(&raw.r#type);
     let kind = determine_type_kind(&raw.r#type, &raw.inner);
 
@@ -767,7 +789,7 @@ fn convert_result(raw: &RawResult, parent_key: Option<&str>, method_name: Option
         let elem = &raw.inner[0];
         let elem_parent_key: Option<&str> =
             if raw.key_name.is_empty() { Some("array_child") } else { Some(raw.key_name.as_str()) };
-        let mut element_type = convert_result(elem, elem_parent_key, method_name);
+        let mut element_type = convert_result(elem, elem_parent_key, method_name, None);
         if matches!(element_type.kind, TypeKind::Array) && element_type.name == "array" {
             if let Some(method) = method_name {
                 if parent_key.is_none() {
@@ -812,7 +834,7 @@ fn convert_result(raw: &RawResult, parent_key: Option<&str>, method_name: Option
                 };
                 FieldDef {
                     key: FieldKey::Named(name),
-                    field_type: convert_result(inner, child_parent, method_name),
+                    field_type: convert_result(inner, child_parent, method_name, None),
                     required: inner.is_required(),
                     description: inner.description.clone(),
                     default_value: inner.default_value(),
@@ -1069,7 +1091,7 @@ fn merge_results_to_object(results: &[RawResult], method_name: &str) -> TypeDef 
 
                 let parent =
                     if result.key_name.is_empty() { None } else { Some(result.key_name.as_str()) };
-                let new_field_type = convert_result(inner, parent, Some(method_name));
+                let new_field_type = convert_result(inner, parent, Some(method_name), None);
 
                 if !inner.key_name.is_empty() && field_names.contains(&inner.key_name) {
                     if let Some(existing) = fields
@@ -1141,7 +1163,7 @@ fn merge_results_to_object(results: &[RawResult], method_name: &str) -> TypeDef 
                 }
             };
 
-            let new_field_type = convert_result(result, None, Some(method_name));
+            let new_field_type = convert_result(result, None, Some(method_name), None);
             let is_required_leaf = !result.optional;
 
             if !result.key_name.is_empty() && field_names.contains(&result.key_name) {
@@ -1215,7 +1237,21 @@ fn convert_openrpc_method(method: OpenRpcMethod, version_added: Option<String>) 
     let result = if results.is_empty() {
         None
     } else if results.len() == 1 {
-        Some(convert_result(&results[0], None, Some(&method.name)))
+        Some(convert_result(
+            &results[0],
+            None,
+            Some(&method.name),
+            openrpc_result.and_then(|r| r.schema.as_ref()),
+        ))
+    } else if openrpc_result
+        .and_then(|r| r.schema.as_ref())
+        .is_some_and(has_schema_discriminated_oneof)
+    {
+        Some(build_union_result_type(
+            &results,
+            &method.name,
+            openrpc_result.and_then(|r| r.schema.as_ref()),
+        ))
     } else {
         Some(merge_results_to_object(&results, &method.name))
     };
@@ -1248,6 +1284,116 @@ fn convert_openrpc_method(method: OpenRpcMethod, version_added: Option<String>) 
             None
         },
         result_discriminator,
+    }
+}
+
+fn has_schema_oneof_branch_metadata(schema: &serde_json::Value) -> bool {
+    schema
+        .get("x-bitcoin-oneof-branches")
+        .and_then(|v| v.as_array())
+        .is_some_and(|branches| branches.len() >= 2)
+}
+
+fn has_schema_discriminated_oneof(schema: &serde_json::Value) -> bool {
+    has_schema_oneof_branch_metadata(schema)
+        && schema.get("x-bitcoin-discriminatedResult").is_some()
+}
+
+/// Builds a [`TypeKind::Union`] from parallel `x-bitcoin-results` or `object-one-of` branches.
+fn build_union_from_raw_results(
+    results: &[RawResult],
+    method_name: &str,
+    schema: Option<&serde_json::Value>,
+    union_type_name: &str,
+) -> TypeDef {
+    let method_pascal = canonical_method_pascal(method_name);
+    let branch_conditions: Vec<String> = schema
+        .and_then(|s| s.get("x-bitcoin-oneof-branches"))
+        .and_then(|v| v.as_array())
+        .map(|branches| {
+            branches
+                .iter()
+                .map(|b| b.get("condition").and_then(|v| v.as_str()).unwrap_or("").to_string())
+                .collect()
+        })
+        .unwrap_or_default();
+
+    let union_variants = results
+        .iter()
+        .enumerate()
+        .map(|(idx, raw)| {
+            let mut branch_type = convert_result(raw, None, Some(method_name), None);
+            // Preserve oneOf branches while giving every anonymous object/array in the branch
+            // a stable unique name. Without this, many methods collapse to repeated `Object`.
+            let mut anon_counter = 0usize;
+            uniquify_anonymous_types(&mut branch_type, &method_pascal, idx + 1, &mut anon_counter);
+
+            UnionVariantDef {
+                name: format!("Branch{}", idx + 1),
+                description: raw.description.clone(),
+                condition: branch_conditions.get(idx).cloned().filter(|s| !s.is_empty()).or_else(
+                    || {
+                        if raw.condition.is_empty() {
+                            None
+                        } else {
+                            Some(raw.condition.clone())
+                        }
+                    },
+                ),
+                type_def: branch_type,
+            }
+        })
+        .collect();
+
+    TypeDef {
+        name: union_type_name.to_string(),
+        description: "Union result preserved from OpenRPC oneOf branches".to_string(),
+        kind: TypeKind::Union,
+        union_variants: Some(union_variants),
+        ..Default::default()
+    }
+}
+
+fn build_union_result_type(
+    results: &[RawResult],
+    method_name: &str,
+    schema: Option<&serde_json::Value>,
+) -> TypeDef {
+    let name = format!("{}ResultUnion", canonical_method_pascal(method_name));
+    build_union_from_raw_results(results, method_name, schema, &name)
+}
+
+fn uniquify_anonymous_types(
+    td: &mut TypeDef,
+    method_pascal: &str,
+    branch_idx: usize,
+    anon_counter: &mut usize,
+) {
+    let is_anon_object = td.name == "object" || td.name == "Object";
+    let is_anon_array = td.name == "array" || td.name == "Array";
+    if is_anon_object || is_anon_array {
+        *anon_counter += 1;
+        let kind = if is_anon_object { "Object" } else { "Array" };
+        td.name = format!("{method_pascal}Branch{branch_idx}{kind}{anon_counter}");
+    }
+
+    if let Some(fields) = td.fields.as_mut() {
+        for field in fields {
+            uniquify_anonymous_types(
+                &mut field.field_type,
+                method_pascal,
+                branch_idx,
+                anon_counter,
+            );
+        }
+    }
+    if let Some(value) = td.map_value.as_mut() {
+        uniquify_anonymous_types(value, method_pascal, branch_idx, anon_counter);
+    }
+    if let Some(uvs) = td.union_variants.as_mut() {
+        for uv in uvs {
+            uniquify_anonymous_types(&mut uv.type_def, method_pascal, branch_idx, anon_counter);
+        }
     }
 }
 
