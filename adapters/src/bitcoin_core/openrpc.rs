@@ -212,6 +212,8 @@ fn map_protocol_type(bc_type: &str) -> String {
         // Tuple-shaped JSON array (fixed arity); same wire encoding as `array`.
         "array-fixed" => "array".to_string(),
         "boolean" => "boolean".to_string(),
+        // JSON `false` or a JSON object (e.g. `getwalletinfo` `scanning`).
+        "bool-or-object" => "bool-or-object".to_string(),
         "elision" => "elision".to_string(),
         "hex" => "hex".to_string(),
         "none" => "none".to_string(),
@@ -219,8 +221,12 @@ fn map_protocol_type(bc_type: &str) -> String {
         "object" => "object".to_string(),
         // Dynamic-key JSON objects (OpenRPC); inner entries are illustrative, not a fixed struct.
         "object-dynamic" => "object-dynamic".to_string(),
+        // Mutually exclusive JSON object shapes (Core `object-one-of`); branches live in `inner`.
+        "object-one-of" => "object-one-of".to_string(),
         "range" => "range".to_string(),
         "string" => "string".to_string(),
+        // JSON string or JSON array of strings (e.g. `warnings` on getblockchaininfo).
+        "string-or-string-array" => "string-or-string-array".to_string(),
         "timestamp" => "timestamp".to_string(),
         // Exhaustive: unmapped types must be added explicitly above.
         unknown => panic!(
@@ -308,6 +314,11 @@ fn determine_type_kind<T: HasTypeAndInner>(bc_type: &str, inner: &[T]) -> TypeKi
             }
         }
         "object" => TypeKind::Object,
+        // Arguments should not use this; results are handled in `convert_result` before `kind` is used.
+        "object-one-of" => TypeKind::Union,
+        // Results only; lowered to a two-branch union in `convert_result`.
+        "string-or-string-array" => TypeKind::Union,
+        "bool-or-object" => TypeKind::Union,
         // All other types (amount, boolean, hex, number, object, string, etc.) are primitives
         _ => TypeKind::Primitive,
     }
