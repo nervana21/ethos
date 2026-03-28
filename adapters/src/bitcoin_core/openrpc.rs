@@ -772,6 +772,149 @@ fn convert_result(
         return build_union_from_raw_results(&raw.inner, m, schema_hint, &union_type_name);
     }
 
+    if raw.r#type == "string-or-string-array" {
+        let m = method_name.unwrap_or("rpc");
+        let method_pascal = canonical_method_pascal(m);
+        let field_hint = if !raw.key_name.is_empty() {
+            raw.key_name.as_str()
+        } else {
+            parent_key.unwrap_or("value")
+        };
+        let union_name = format!(
+            "{}{}StringOrStringArrayUnion",
+            method_pascal,
+            result_key_pascal_suffix(field_hint)
+        );
+
+        let mut string_branch = TypeDef {
+            name: "string".to_string(),
+            description: raw.description.clone(),
+            kind: TypeKind::Primitive,
+            protocol_type: Some("string".to_string()),
+            ..Default::default()
+        };
+        let elem_desc = raw
+            .inner
+            .first()
+            .map(|r| r.description.clone())
+            .unwrap_or_else(|| "warning".to_string());
+        let mut array_branch = TypeDef {
+            name: "array".to_string(),
+            description: raw.description.clone(),
+            kind: TypeKind::Array,
+            protocol_type: Some("array".to_string()),
+            fields: Some(vec![FieldDef {
+                key: FieldKey::Named("field_0".to_string()),
+                field_type: TypeDef {
+                    name: "string".to_string(),
+                    description: elem_desc,
+                    kind: TypeKind::Primitive,
+                    protocol_type: Some("string".to_string()),
+                    ..Default::default()
+                },
+                required: true,
+                description: String::new(),
+                default_value: None,
+                version_added: None,
+                version_removed: None,
+                emit_in_struct: None,
+                force_optional: None,
+            }]),
+            ..Default::default()
+        };
+        let mut anon_1 = 0usize;
+        uniquify_anonymous_types(&mut string_branch, &method_pascal, 1, &mut anon_1);
+        let mut anon_2 = 0usize;
+        uniquify_anonymous_types(&mut array_branch, &method_pascal, 2, &mut anon_2);
+
+        return TypeDef {
+            name: union_name,
+            description: raw.description.clone(),
+            kind: TypeKind::Union,
+            union_variants: Some(vec![
+                UnionVariantDef {
+                    name: "String".to_string(),
+                    description: "Deprecated single-string form (`-deprecatedrpc=warnings`)"
+                        .to_string(),
+                    condition: None,
+                    type_def: string_branch,
+                },
+                UnionVariantDef {
+                    name: "StringArray".to_string(),
+                    description: "Array of warning strings".to_string(),
+                    condition: None,
+                    type_def: array_branch,
+                },
+            ]),
+            protocol_type: Some("string-or-string-array".to_string()),
+            condition: if raw.condition.is_empty() { None } else { Some(raw.condition.clone()) },
+            ..Default::default()
+        };
+    }
+
+    if raw.r#type == "bool-or-object" {
+        let m = method_name.unwrap_or("rpc");
+        let method_pascal = canonical_method_pascal(m);
+        let field_hint = if !raw.key_name.is_empty() {
+            raw.key_name.as_str()
+        } else {
+            parent_key.unwrap_or("value")
+        };
+        let union_name =
+            format!("{}{}BoolOrObjectUnion", method_pascal, result_key_pascal_suffix(field_hint));
+
+        let mut bool_branch = TypeDef {
+            name: "boolean".to_string(),
+            description: raw.description.clone(),
+            kind: TypeKind::Primitive,
+            protocol_type: Some("boolean".to_string()),
+            ..Default::default()
+        };
+
+        let child_parent =
+            if !raw.key_name.is_empty() { Some(raw.key_name.as_str()) } else { parent_key };
+        let mut object_branch = if let Some(obj_raw) = raw.inner.first() {
+            convert_result(obj_raw, child_parent, method_name, None)
+        } else {
+            TypeDef {
+                name: "object".to_string(),
+                description: raw.description.clone(),
+                kind: TypeKind::Object,
+                protocol_type: Some("object".to_string()),
+                fields: Some(vec![]),
+                ..Default::default()
+            }
+        };
+
+        let mut anon_1 = 0usize;
+        uniquify_anonymous_types(&mut bool_branch, &method_pascal, 1, &mut anon_1);
+        let mut anon_2 = 0usize;
+        uniquify_anonymous_types(&mut object_branch, &method_pascal, 2, &mut anon_2);
+
+        return TypeDef {
+            name: union_name,
+            description: raw.description.clone(),
+            kind: TypeKind::Union,
+            union_variants: Some(vec![
+                UnionVariantDef {
+                    name: "Bool".to_string(),
+                    description: "`false` when no scan is in progress".to_string(),
+                    condition: None,
+                    type_def: bool_branch,
+                },
+                UnionVariantDef {
+                    name: "Object".to_string(),
+                    description: "Scanning progress object".to_string(),
+                    condition: None,
+                    type_def: object_branch,
+                },
+            ]),
+            protocol_type: Some("bool-or-object".to_string()),
+            condition: if raw.condition.is_empty() { None } else { Some(raw.condition.clone()) },
+            ..Default::default()
+        };
+    }
+
     let (type_name, protocol_type) = build_base_type_def(&raw.r#type);
     let kind = determine_type_kind(&raw.r#type, &raw.inner);
 
