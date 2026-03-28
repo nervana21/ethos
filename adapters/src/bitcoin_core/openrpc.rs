@@ -1576,7 +1576,7 @@ mod tests {
         assert_eq!(
             merged.kind,
             TypeKind::Object,
-            "multi-branch results are mechanically merged to one object"
+            "without explicit discriminator metadata, results should stay mechanically merged"
         );
         let fields = merged.fields.as_ref().expect("merged fields");
         for bad in [
@@ -1786,6 +1786,39 @@ mod tests {
             fields.iter().any(|f| f.key.as_ident() == "mempool_sequence"),
             "mechanical merge should preserve mempool_sequence key"
         );
+    }
+
+    #[test]
+    fn schema_oneof_branch_preservation_avoids_anonymous_object_names() {
+        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../resources/ir/openrpc.json");
+        let content = std::fs::read_to_string(&path)
+            .unwrap_or_else(|e| panic!("read {}: {e}", path.display()));
+        let doc: OpenRpcDoc = serde_json::from_str(&content).expect("openrpc json");
+
+        for method in &doc.methods {
+            let Some(result) = &method.result else { continue };
+            let Some(schema) = result.schema.as_ref() else {
+                continue;
+            };
+            if !has_schema_oneof_branch_metadata(schema) {
+                continue;
+            }
+            let rpc = convert_openrpc_method(method.clone(), Some("30".to_string()));
+            let result_ty = rpc.result.expect("result type");
+            if result_ty.kind != TypeKind::Union {
+                continue;
+            }
+            let variants = result_ty.union_variants.as_ref().expect("union variants");
+            for uv in variants {
+                let label = uv.type_def.rust_emit_name();
+                assert!(
+                    label != "object" && label != "Object" && label != "array" && label != "Array",
+                    "oneOf-preserved method {} still has anonymous branch type label {}",
+                    method.name,
+                    label
+                );
+            }
+        }
     }
 
     #[test]
