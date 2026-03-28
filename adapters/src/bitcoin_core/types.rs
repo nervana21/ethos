@@ -2,10 +2,49 @@
 //!
 //! This module contains types that are specific to Bitcoin Core's RPC interface.
 
+use std::sync::{Mutex, OnceLock};
+
 use ::types::{Argument, MethodResult};
 use bitcoin::BlockHash;
 use serde::{Deserialize, Serialize};
 use serde_json;
+
+static ADAPTER_FALLBACK_EVENTS: OnceLock<Mutex<Vec<AdapterFallbackEvent>>> = OnceLock::new();
+
+#[derive(Debug, Clone, Serialize)]
+/// Broad-type fallback event emitted by Bitcoin Core type classification.
+pub struct AdapterFallbackEvent {
+    /// Raw schema type token observed by the adapter.
+    pub schema_type: String,
+    /// Category of fallback behavior.
+    pub fallback_kind: String,
+    /// Rust type selected by the fallback path.
+    pub chosen_rust_type: String,
+    /// Machine-readable reason for this fallback.
+    pub reason: String,
+    /// Severity bucket (`P0`/`P1`/`P2`).
+    pub severity: String,
+}
+
+/// Clears all collected adapter fallback events.
+pub fn clear_adapter_fallback_events() {
+    let slot = ADAPTER_FALLBACK_EVENTS.get_or_init(|| Mutex::new(Vec::new()));
+    let mut guard = slot.lock().expect("adapter fallback event mutex poisoned");
+    guard.clear();
+}
+
+/// Returns a snapshot of currently collected adapter fallback events.
+pub fn adapter_fallback_events_snapshot() -> Vec<AdapterFallbackEvent> {
+    let slot = ADAPTER_FALLBACK_EVENTS.get_or_init(|| Mutex::new(Vec::new()));
+    let guard = slot.lock().expect("adapter fallback event mutex poisoned");
+    guard.clone()
+}
+
+fn record_adapter_fallback_event(event: AdapterFallbackEvent) {
+    let slot = ADAPTER_FALLBACK_EVENTS.get_or_init(|| Mutex::new(Vec::new()));
+    let mut guard = slot.lock().expect("adapter fallback event mutex poisoned");
+    guard.push(event);
+}
 
 /// Fee rate type used for Bitcoin Core parameters and results.
 ///
@@ -211,9 +250,36 @@ impl BitcoinCoreRpcType {
             BitcoinCoreRpcType::Float => "f64",
             BitcoinCoreRpcType::Timestamp => "u64",
             BitcoinCoreRpcType::None => "()",
-            BitcoinCoreRpcType::Any => "serde_json::Value",
-            BitcoinCoreRpcType::Elision => "serde_json::Value",
-            BitcoinCoreRpcType::Range => "serde_json::Value",
+            BitcoinCoreRpcType::Any => {
+                record_adapter_fallback_event(AdapterFallbackEvent {
+                    schema_type: "any".to_string(),
+                    fallback_kind: "broad_adapter_any".to_string(),
+                    chosen_rust_type: "serde_json::Value".to_string(),
+                    reason: "adapter_category_any".to_string(),
+                    severity: "P1".to_string(),
+                });
+                "serde_json::Value"
+            }
+            BitcoinCoreRpcType::Elision => {
+                record_adapter_fallback_event(AdapterFallbackEvent {
+                    schema_type: "elision".to_string(),
+                    fallback_kind: "broad_adapter_any".to_string(),
+                    chosen_rust_type: "serde_json::Value".to_string(),
+                    reason: "adapter_category_elision".to_string(),
+                    severity: "P2".to_string(),
+                });
+                "serde_json::Value"
+            }
+            BitcoinCoreRpcType::Range => {
+                record_adapter_fallback_event(AdapterFallbackEvent {
+                    schema_type: "range".to_string(),
+                    fallback_kind: "broad_adapter_any".to_string(),
+                    chosen_rust_type: "serde_json::Value".to_string(),
+                    reason: "adapter_category_range".to_string(),
+                    severity: "P1".to_string(),
+                });
+                "serde_json::Value"
+            }
             BitcoinCoreRpcType::Dummy => "String",
         }
     }
@@ -428,7 +494,16 @@ impl RpcJsonType {
             "any" => Self::Any,
             "elision" => Self::Elision,
             "range" => Self::Range,
-            _ => Self::Any,
+            _ => {
+                record_adapter_fallback_event(AdapterFallbackEvent {
+                    schema_type: s.to_string(),
+                    fallback_kind: "unknown_schema_type".to_string(),
+                    chosen_rust_type: "serde_json::Value".to_string(),
+                    reason: "schema_type_unrecognized".to_string(),
+                    severity: "P1".to_string(),
+                });
+                Self::Any
+            }
         }
     }
 }
