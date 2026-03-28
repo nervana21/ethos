@@ -417,6 +417,12 @@ impl RpcJsonType {
             "object" => Self::Object,
             // Dynamic-key objects (e.g. PSBT unknown map); same wire shape as `object` for typing.
             "object-dynamic" => Self::Object,
+            // Mutually exclusive object branches (results); adapter lowers to `TypeKind::Union`.
+            "object-one-of" => Self::Object,
+            // String or `[]string` (e.g. `warnings`); adapter lowers to `TypeKind::Union`.
+            "string-or-string-array" => Self::String,
+            // `false` or object (e.g. `scanning`); adapter lowers to `TypeKind::Union`.
+            "bool-or-object" => Self::Boolean,
             "timestamp" => Self::Timestamp,
             "none" => Self::NoneType,
             "any" => Self::Any,
