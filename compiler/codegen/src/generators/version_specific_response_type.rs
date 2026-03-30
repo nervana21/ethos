@@ -2223,17 +2223,8 @@ mod tests {
 
         let method = RpcDef {
             name: "deriveaddresses".to_string(),
-            description: String::new(),
-            params: Vec::new(),
             result: Some(result_ty),
-            category: String::new(),
-            access_level: ir::AccessLevel::Public,
-            requires_private_keys: false,
-            version_added: None,
-            version_removed: None,
-            examples: None,
-            hidden: None,
-            result_discriminator: None,
+            ..Default::default()
         };
 
         let code = gen
@@ -2294,17 +2285,8 @@ mod tests {
 
         let method = RpcDef {
             name: "deriveaddresses".to_string(),
-            description: String::new(),
-            params: Vec::new(),
             result: Some(result_ty),
-            category: String::new(),
-            access_level: ir::AccessLevel::Public,
-            requires_private_keys: false,
-            version_added: None,
-            version_removed: None,
-            examples: None,
-            hidden: None,
-            result_discriminator: None,
+            ..Default::default()
         };
 
         let code = gen
@@ -2478,17 +2460,8 @@ mod tests {
 
         let method = RpcDef {
             name: "decodepsbt".to_string(),
-            description: String::new(),
-            params: Vec::new(),
             result: Some(result_ty),
-            category: String::new(),
-            access_level: ir::AccessLevel::Public,
-            requires_private_keys: false,
-            version_added: None,
-            version_removed: None,
-            examples: None,
-            hidden: None,
-            result_discriminator: None,
+            ..Default::default()
         };
 
         let code = gen
@@ -2671,17 +2644,8 @@ mod tests {
 
         let method = RpcDef {
             name: "getrawmempool".to_string(),
-            description: String::new(),
-            params: Vec::new(),
             result: Some(result_ty),
-            category: String::new(),
-            access_level: ir::AccessLevel::Public,
-            requires_private_keys: false,
-            version_added: None,
-            version_removed: None,
-            examples: None,
-            hidden: None,
-            result_discriminator: None,
+            ..Default::default()
         };
 
         let code = gen
@@ -2769,17 +2733,8 @@ mod tests {
 
         let method = RpcDef {
             name: "getblocktemplate".to_string(),
-            description: String::new(),
-            params: Vec::new(),
             result: Some(result_ty),
-            category: String::new(),
-            access_level: ir::AccessLevel::Public,
-            requires_private_keys: false,
-            version_added: None,
-            version_removed: None,
-            examples: None,
-            hidden: None,
-            result_discriminator: None,
+            ..Default::default()
         };
 
         let code = gen
@@ -2854,20 +2809,8 @@ mod tests {
             ..Default::default()
         };
 
-        let method = RpcDef {
-            name: "getblock".to_string(),
-            description: String::new(),
-            params: Vec::new(),
-            result: Some(result_ty),
-            category: String::new(),
-            access_level: ir::AccessLevel::Public,
-            requires_private_keys: false,
-            version_added: None,
-            version_removed: None,
-            examples: None,
-            hidden: None,
-            result_discriminator: None,
-        };
+        let method =
+            RpcDef { name: "getblock".to_string(), result: Some(result_ty), ..Default::default() };
 
         let code = gen
             .generate_method_response(&method)
@@ -2894,8 +2837,6 @@ mod tests {
     #[test]
     fn nested_type_emission_order_stable_when_set_shrinks() {
         use std::str::FromStr;
-
-        use ir::AccessLevel;
 
         let version = ProtocolVersion::from_str("30.0.0").unwrap();
         let gen = VersionSpecificResponseTypeGenerator::new(version, "bitcoin_core".to_string());
@@ -2940,20 +2881,7 @@ mod tests {
         }
 
         fn rpc_method(name: &str, result: TypeDef) -> RpcDef {
-            RpcDef {
-                name: name.to_string(),
-                description: String::new(),
-                params: Vec::new(),
-                result: Some(result),
-                category: String::new(),
-                access_level: AccessLevel::Public,
-                requires_private_keys: false,
-                version_added: None,
-                version_removed: None,
-                examples: None,
-                hidden: None,
-                result_discriminator: None,
-            }
+            RpcDef { name: name.to_string(), result: Some(result), ..Default::default() }
         }
 
         // Use short names with spread hash values so HashSet iteration order is more likely

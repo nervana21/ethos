@@ -3,7 +3,7 @@
 //! Tests that IR can be serialized and deserialized without data loss,
 //! and that serialization is deterministic.
 
-use ethos_ir::{AccessLevel, ProtocolDef, ProtocolIR, ProtocolModule, RpcDef, TypeDef, TypeKind};
+use ethos_ir::{ProtocolDef, ProtocolIR, ProtocolModule, RpcDef, TypeDef, TypeKind};
 use tempfile::TempDir;
 
 /// Create a sample ProtocolIR for testing
@@ -26,13 +26,7 @@ fn create_sample_ir() -> ProtocolIR {
             ..Default::default()
         }),
         category: "node".to_string(),
-        access_level: AccessLevel::default(),
-        requires_private_keys: false,
-        examples: None,
-        hidden: None,
-        version_added: None,
-        version_removed: None,
-        result_discriminator: None,
+        ..Default::default()
     };
 
     let module = ProtocolModule::from_source(

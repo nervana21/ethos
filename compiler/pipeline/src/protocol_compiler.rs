@@ -94,13 +94,7 @@ mod tests {
             params: vec![],
             result: None,
             category: "node".to_string(),
-            access_level: ir::AccessLevel::default(),
-            requires_private_keys: false,
-            version_added: None,
-            version_removed: None,
-            examples: None,
-            hidden: None,
-            result_discriminator: None,
+            ..Default::default()
         };
 
         let rpc_def2 = RpcDef {
@@ -109,13 +103,7 @@ mod tests {
             params: vec![],
             result: None,
             category: "node".to_string(),
-            access_level: ir::AccessLevel::default(),
-            requires_private_keys: false,
-            version_added: None,
-            version_removed: None,
-            examples: None,
-            hidden: None,
-            result_discriminator: None,
+            ..Default::default()
         };
 
         let module1 = ir::ProtocolModule::from_source(
@@ -150,13 +138,7 @@ mod tests {
             params: vec![],
             result: None,
             category: "node".to_string(),
-            access_level: ir::AccessLevel::default(),
-            requires_private_keys: false,
-            version_added: None,
-            version_removed: None,
-            examples: None,
-            hidden: None,
-            result_discriminator: None,
+            ..Default::default()
         };
 
         let module = ir::ProtocolModule::from_source(
@@ -182,13 +164,7 @@ mod tests {
             params: vec![],
             result: None,
             category: "node".to_string(),
-            access_level: ir::AccessLevel::default(),
-            requires_private_keys: false,
-            version_added: None,
-            version_removed: None,
-            examples: None,
-            hidden: None,
-            result_discriminator: None,
+            ..Default::default()
         };
 
         let rpc_def2 = RpcDef {
@@ -197,13 +173,7 @@ mod tests {
             params: vec![],
             result: None,
             category: "node".to_string(),
-            access_level: ir::AccessLevel::default(),
-            requires_private_keys: false,
-            version_added: None,
-            version_removed: None,
-            examples: None,
-            hidden: None,
-            result_discriminator: None,
+            ..Default::default()
         };
 
         let module1 = ir::ProtocolModule::from_source(

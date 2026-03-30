@@ -1,4 +1,4 @@
-use ir::{AccessLevel, FieldKey, RpcDef};
+use ir::{FieldKey, RpcDef};
 use types::adapters::bitcoin_core::BitcoinCoreAdapter;
 use types::type_adapter::TypeAdapter;
 use types::MethodResult;
@@ -15,13 +15,7 @@ fn create_test_rpc_def(results: Vec<MethodResult>) -> RpcDef {
             Some(convert_method_result_to_type_def(&results[0]))
         },
         category: "test".to_string(),
-        access_level: AccessLevel::default(),
-        requires_private_keys: false,
-        examples: None,
-        hidden: None,
-        version_added: None,
-        version_removed: None,
-        result_discriminator: None,
+        ..Default::default()
     }
 }
 
