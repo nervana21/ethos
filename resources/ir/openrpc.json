@@ -22494,6 +22494,29 @@
                         "x-bitcoin-hidden": {
                           "type": "boolean",
                           "description": "Whether the parameter is hidden from default help text."
+                        },
+                        "x-bitcoin-oneline-description": {
+                          "type": "string",
+                          "description": "Short summary from help metadata."
+                        },
+                        "x-bitcoin-default": {
+                          "type": "string",
+                          "description": "Serialized default value when fixed."
+                        },
+                        "x-bitcoin-default-hint": {
+                          "type": "string",
+                          "description": "Narrative default when not a literal."
+                        },
+                        "x-bitcoin-arg-type": {
+                          "type": "string",
+                          "description": "Symbolic `RPCArg::Type` label."
+                        },
+                        "x-bitcoin-inner-args": {
+                          "type": "array",
+                          "items": {
+                            "x-bitcoin-unconstrained": true
+                          },
+                          "description": "Recursive metadata for nested arguments."
                         }
                       },
                       "additionalProperties": false,
@@ -22515,6 +22538,33 @@
                       "schema": {
                         "x-bitcoin-unconstrained": true,
                         "description": "JSON Schema for the result."
+                      },
+                      "x-bitcoin-results": {
+                        "type": "array",
+                        "items": {
+                          "x-bitcoin-unconstrained": true
+                        },
+                        "description": "Structured metadata for each documented result node."
+                      },
+                      "x-bitcoin-result-type": {
+                        "type": "string",
+                        "description": "Top-level `RPCResult::Type` when a single branch."
+                      },
+                      "x-bitcoin-optional": {
+                        "type": "boolean",
+                        "description": "Whether that branch is optional."
+                      },
+                      "x-bitcoin-skip-type-check": {
+                        "type": "boolean",
+                        "description": "Whether type checking is relaxed for that branch."
+                      },
+                      "x-bitcoin-key-name": {
+                        "type": "string",
+                        "description": "JSON object key for this result field."
+                      },
+                      "x-bitcoin-condition": {
+                        "type": "string",
+                        "description": "Human text selecting among `oneOf` branches."
                       }
                     },
                     "additionalProperties": false,
@@ -22527,6 +22577,34 @@
                   "x-bitcoin-category": {
                     "type": "string",
                     "description": "RPC category."
+                  },
+                  "x-bitcoin-examples": {
+                    "type": "string",
+                    "description": "CLI and RPC example block copied from `RPCHelpMan`."
+                  },
+                  "x-bitcoin-argument-names": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Names recorded on the `CRPCCommand` registration."
+                  },
+                  "x-bitcoin-arguments": {
+                    "type": "array",
+                    "items": {
+                      "x-bitcoin-unconstrained": true
+                    },
+                    "description": "Structured metadata parallel to `params`."
+                  },
+                  "x-bitcoin-variants": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                      },
+                      "additionalProperties": false
+                    },
+                    "description": "Further handler registrations that share the method name."
                   }
                 },
                 "additionalProperties": false,
@@ -22535,7 +22613,10 @@
                   "description",
                   "params",
                   "result",
-                  "x-bitcoin-category"
+                  "x-bitcoin-category",
+                  "x-bitcoin-examples",
+                  "x-bitcoin-argument-names",
+                  "x-bitcoin-arguments"
                 ]
               },
               "description": "Documented RPC methods."
@@ -22720,6 +22801,56 @@
                                 "skip_type_check": false,
                                 "key_name": "x-bitcoin-hidden",
                                 "condition": ""
+                              },
+                              {
+                                "type": "string",
+                                "optional": true,
+                                "description": "Short summary from help metadata.",
+                                "skip_type_check": false,
+                                "key_name": "x-bitcoin-oneline-description",
+                                "condition": ""
+                              },
+                              {
+                                "type": "string",
+                                "optional": true,
+                                "description": "Serialized default value when fixed.",
+                                "skip_type_check": false,
+                                "key_name": "x-bitcoin-default",
+                                "condition": ""
+                              },
+                              {
+                                "type": "string",
+                                "optional": true,
+                                "description": "Narrative default when not a literal.",
+                                "skip_type_check": false,
+                                "key_name": "x-bitcoin-default-hint",
+                                "condition": ""
+                              },
+                              {
+                                "type": "string",
+                                "optional": true,
+                                "description": "Symbolic `RPCArg::Type` label.",
+                                "skip_type_check": false,
+                                "key_name": "x-bitcoin-arg-type",
+                                "condition": ""
+                              },
+                              {
+                                "type": "array",
+                                "optional": true,
+                                "description": "Recursive metadata for nested arguments.",
+                                "skip_type_check": false,
+                                "key_name": "x-bitcoin-inner-args",
+                                "condition": "",
+                                "inner": [
+                                  {
+                                    "type": "any",
+                                    "optional": false,
+                                    "description": "Inner argument metadata object.",
+                                    "skip_type_check": false,
+                                    "key_name": "",
+                                    "condition": ""
+                                  }
+                                ]
                               }
                             ]
                           }
@@ -22748,6 +22879,64 @@
                             "skip_type_check": false,
                             "key_name": "schema",
                             "condition": ""
+                          },
+                          {
+                            "type": "array",
+                            "optional": true,
+                            "description": "Structured metadata for each documented result node.",
+                            "skip_type_check": false,
+                            "key_name": "x-bitcoin-results",
+                            "condition": "",
+                            "inner": [
+                              {
+                                "type": "any",
+                                "optional": false,
+                                "description": "One node in the `RPCResult` tree.",
+                                "skip_type_check": false,
+                                "key_name": "",
+                                "condition": ""
+                              }
+                            ]
+                          },
+                          {
+                            "type": "string",
+                            "optional": true,
+                            "description": "Top-level `RPCResult::Type` when a single branch.",
+                            "skip_type_check": false,
+                            "key_name": "x-bitcoin-result-type",
+                            "condition": ""
+                          },
+                          {
+                            "type": "boolean",
+                            "optional": true,
+                            "description": "Whether that branch is optional.",
+                            "skip_type_check": false,
+                            "key_name": "x-bitcoin-optional",
+                            "condition": ""
+                          },
+                          {
+                            "type": "boolean",
+                            "optional": true,
+                            "description": "Whether type checking is relaxed for that branch.",
+                            "skip_type_check": false,
+                            "key_name": "x-bitcoin-skip-type-check",
+                            "condition": ""
+                          },
+                          {
+                            "type": "string",
+                            "optional": true,
+                            "description": "JSON object key for this result field.",
+                            "skip_type_check": false,
+                            "key_name": "x-bitcoin-key-name",
+                            "condition": ""
+                          },
+                          {
+                            "type": "string",
+                            "optional": true,
+                            "description": "Human text selecting among `oneOf` branches.",
+                            "skip_type_check": false,
+                            "key_name": "x-bitcoin-condition",
+                            "condition": ""
                           }
                         ]
                       },
@@ -22758,6 +22947,68 @@
                         "skip_type_check": false,
                         "key_name": "x-bitcoin-category",
                         "condition": ""
+                      },
+                      {
+                        "type": "string",
+                        "optional": false,
+                        "description": "CLI and RPC example block copied from `RPCHelpMan`.",
+                        "skip_type_check": false,
+                        "key_name": "x-bitcoin-examples",
+                        "condition": ""
+                      },
+                      {
+                        "type": "array",
+                        "optional": false,
+                        "description": "Names recorded on the `CRPCCommand` registration.",
+                        "skip_type_check": false,
+                        "key_name": "x-bitcoin-argument-names",
+                        "condition": "",
+                        "inner": [
+                          {
+                            "type": "string",
+                            "optional": false,
+                            "description": "Registered name string.",
+                            "skip_type_check": false,
+                            "key_name": "",
+                            "condition": ""
+                          }
+                        ]
+                      },
+                      {
+                        "type": "array",
+                        "optional": false,
+                        "description": "Structured metadata parallel to `params`.",
+                        "skip_type_check": false,
+                        "key_name": "x-bitcoin-arguments",
+                        "condition": "",
+                        "inner": [
+                          {
+                            "type": "any",
+                            "optional": false,
+                            "description": "Argument metadata object.",
+                            "skip_type_check": false,
+                            "key_name": "",
+                            "condition": ""
+                          }
+                        ]
+                      },
+                      {
+                        "type": "array",
+                        "optional": true,
+                        "description": "Further handler registrations that share the method name.",
+                        "skip_type_check": false,
+                        "key_name": "x-bitcoin-variants",
+                        "condition": "",
+                        "inner": [
+                          {
+                            "type": "object",
+                            "optional": false,
+                            "description": "Same fields as the enclosing method object except this array.",
+                            "skip_type_check": false,
+                            "key_name": "",
+                            "condition": ""
+                          }
+                        ]
                       }
                     ]
                   }
@@ -22771,7 +23022,7 @@
         "x-bitcoin-skip-type-check": true
       },
       "x-bitcoin-category": "control",
-      "x-bitcoin-examples": "getopenrpcinfo\n\nReturns an OpenRPC document for currently available RPC commands.\n\nResult:\n{                                                      (json object)\n  \"openrpc\" : \"str\",                                   (string) OpenRPC specification version.\n  \"info\" : {                                           (json object) Metadata about this JSON-RPC interface.\n    \"title\" : \"str\",                                   (string) API title.\n    \"version\" : \"str\",                                 (string) Bitcoin Core version string.\n    \"description\" : \"str\"                              (string) API description.\n  },\n  \"methods\" : [                                        (json array) Documented RPC methods.\n    {                                                  (json object) An RPC method description object.\n      \"name\" : \"str\",                                  (string) Method name.\n      \"description\" : \"str\",                           (string) Method description.\n      \"params\" : [                                     (json array) Method parameters.\n        {                                              (json object) A parameter.\n          \"name\" : \"str\",                              (string) Parameter name.\n          \"required\" : true|false,                     (boolean) Whether the parameter is required.\n          \"schema\" : {...},                            (json value) JSON Schema for the parameter.\n          \"description\" : \"str\",                       (string, optional) Parameter description.\n          \"x-bitcoin-aliases\" : [                      (json array, optional) Alternative parameter names.\n            \"str\",                                     (string) An alias.\n            ...\n          ],\n          \"x-bitcoin-placeholder\" : true|false,        (boolean, optional) Whether the parameter is retained only for compatibility.\n          \"x-bitcoin-also-positional\" : true|false,    (boolean, optional) Whether the parameter can also be passed positionally.\n          \"x-bitcoin-hidden\" : true|false              (boolean, optional) Whether the parameter is hidden from default help text.\n        },\n        ...\n      ],\n      \"result\" : {                                     (json object) Method result.\n        \"name\" : \"str\",                                (string) Result name.\n        \"schema\" : {...}                               (json value) JSON Schema for the result.\n      },\n      \"x-bitcoin-category\" : \"str\"                     (string) RPC category.\n    },\n    ...\n  ]\n}\n\nExamples:\n> bitcoin-cli getopenrpcinfo \n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"getopenrpcinfo\", \"params\": []}' -H 'content-type: application/json' http://127.0.0.1:8332/\n",
+      "x-bitcoin-examples": "getopenrpcinfo\n\nReturns an OpenRPC document for currently available RPC commands.\n\nResult:\n{                                                      (json object)\n  \"openrpc\" : \"str\",                                   (string) OpenRPC specification version.\n  \"info\" : {                                           (json object) Metadata about this JSON-RPC interface.\n    \"title\" : \"str\",                                   (string) API title.\n    \"version\" : \"str\",                                 (string) Bitcoin Core version string.\n    \"description\" : \"str\"                              (string) API description.\n  },\n  \"methods\" : [                                        (json array) Documented RPC methods.\n    {                                                  (json object) An RPC method description object.\n      \"name\" : \"str\",                                  (string) Method name.\n      \"description\" : \"str\",                           (string) Method description.\n      \"params\" : [                                     (json array) Method parameters.\n        {                                              (json object) A parameter.\n          \"name\" : \"str\",                              (string) Parameter name.\n          \"required\" : true|false,                     (boolean) Whether the parameter is required.\n          \"schema\" : {...},                            (json value) JSON Schema for the parameter.\n          \"description\" : \"str\",                       (string, optional) Parameter description.\n          \"x-bitcoin-aliases\" : [                      (json array, optional) Alternative parameter names.\n            \"str\",                                     (string) An alias.\n            ...\n          ],\n          \"x-bitcoin-placeholder\" : true|false,        (boolean, optional) Whether the parameter is retained only for compatibility.\n          \"x-bitcoin-also-positional\" : true|false,    (boolean, optional) Whether the parameter can also be passed positionally.\n          \"x-bitcoin-hidden\" : true|false,             (boolean, optional) Whether the parameter is hidden from default help text.\n          \"x-bitcoin-oneline-description\" : \"str\",     (string, optional) Short summary from help metadata.\n          \"x-bitcoin-default\" : \"str\",                 (string, optional) Serialized default value when fixed.\n          \"x-bitcoin-default-hint\" : \"str\",            (string, optional) Narrative default when not a literal.\n          \"x-bitcoin-arg-type\" : \"str\",                (string, optional) Symbolic `RPCArg::Type` label.\n          \"x-bitcoin-inner-args\" : [                   (json array, optional) Recursive metadata for nested arguments.\n            {...},                                     (json value) Inner argument metadata object.\n            ...\n          ]\n        },\n        ...\n      ],\n      \"result\" : {                                     (json object) Method result.\n        \"name\" : \"str\",                                (string) Result name.\n        \"schema\" : {...},                              (json value) JSON Schema for the result.\n        \"x-bitcoin-results\" : [                        (json array, optional) Structured metadata for each documented result node.\n          {...},                                       (json value) One node in the `RPCResult` tree.\n          ...\n        ],\n        \"x-bitcoin-result-type\" : \"str\",               (string, optional) Top-level `RPCResult::Type` when a single branch.\n        \"x-bitcoin-optional\" : true|false,             (boolean, optional) Whether that branch is optional.\n        \"x-bitcoin-skip-type-check\" : true|false,      (boolean, optional) Whether type checking is relaxed for that branch.\n        \"x-bitcoin-key-name\" : \"str\",                  (string, optional) JSON object key for this result field.\n        \"x-bitcoin-condition\" : \"str\"                  (string, optional) Human text selecting among `oneOf` branches.\n      },\n      \"x-bitcoin-category\" : \"str\",                    (string) RPC category.\n      \"x-bitcoin-examples\" : \"str\",                    (string) CLI and RPC example block copied from `RPCHelpMan`.\n      \"x-bitcoin-argument-names\" : [                   (json array) Names recorded on the `CRPCCommand` registration.\n        \"str\",                                         (string) Registered name string.\n        ...\n      ],\n      \"x-bitcoin-arguments\" : [                        (json array) Structured metadata parallel to `params`.\n        {...},                                         (json value) Argument metadata object.\n        ...\n      ],\n      \"x-bitcoin-variants\" : [                         (json array, optional) Further handler registrations that share the method name.\n        {}                                             (empty JSON object) Same fields as the enclosing method object except this array.\n        ...\n      ]\n    },\n    ...\n  ]\n}\n\nExamples:\n> bitcoin-cli getopenrpcinfo \n> curl --user myusername --data-binary '{\"jsonrpc\": \"2.0\", \"id\": \"curltest\", \"method\": \"getopenrpcinfo\", \"params\": []}' -H 'content-type: application/json' http://127.0.0.1:8332/\n",
       "x-bitcoin-argument-names": [
       ],
       "x-bitcoin-arguments": [
