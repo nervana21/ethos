@@ -420,7 +420,8 @@
                             "type": "string"
                           }
                         ]
-                      }
+                      },
+                      "x-bitcoin-additional-properties-inferred": true
                     },
                     {
                       "type": "object",
@@ -708,7 +709,8 @@
                         "type": "string"
                       }
                     ]
-                  }
+                  },
+                  "x-bitcoin-additional-properties-inferred": true
                 },
                 {
                   "type": "object",
@@ -815,7 +817,8 @@
                         "type": "string"
                       }
                     ]
-                  }
+                  },
+                  "x-bitcoin-additional-properties-inferred": true
                 },
                 {
                   "type": "object",
@@ -1267,6 +1270,7 @@
                 "type": "string",
                 "pattern": "^[0-9a-fA-F]*$"
               },
+              "x-bitcoin-additional-properties-inferred": true,
               "description": "The unknown global fields"
             },
             "inputs": {
@@ -1487,7 +1491,8 @@
                     "type": "object",
                     "additionalProperties": {
                       "type": "string"
-                    }
+                    },
+                    "x-bitcoin-additional-properties-inferred": true
                   },
                   "sighash": {
                     "type": "string",
@@ -1597,25 +1602,29 @@
                     "type": "object",
                     "additionalProperties": {
                       "type": "string"
-                    }
+                    },
+                    "x-bitcoin-additional-properties-inferred": true
                   },
                   "sha256_preimages": {
                     "type": "object",
                     "additionalProperties": {
                       "type": "string"
-                    }
+                    },
+                    "x-bitcoin-additional-properties-inferred": true
                   },
                   "hash160_preimages": {
                     "type": "object",
                     "additionalProperties": {
                       "type": "string"
-                    }
+                    },
+                    "x-bitcoin-additional-properties-inferred": true
                   },
                   "hash256_preimages": {
                     "type": "object",
                     "additionalProperties": {
                       "type": "string"
-                    }
+                    },
+                    "x-bitcoin-additional-properties-inferred": true
                   },
                   "taproot_key_path_sig": {
                     "type": "string",
@@ -1823,6 +1832,7 @@
                       "type": "string",
                       "pattern": "^[0-9a-fA-F]*$"
                     },
+                    "x-bitcoin-additional-properties-inferred": true,
                     "description": "The unknown input fields"
                   },
                   "proprietary": {
@@ -2041,6 +2051,7 @@
                       "type": "string",
                       "pattern": "^[0-9a-fA-F]*$"
                     },
+                    "x-bitcoin-additional-properties-inferred": true,
                     "description": "The unknown output fields"
                   },
                   "proprietary": {
@@ -3809,7 +3820,8 @@
             "required": [
               "purpose"
             ]
-          }
+          },
+          "x-bitcoin-additional-properties-inferred": true
         }
       },
       "x-bitcoin-category": "wallet"
@@ -4108,7 +4120,8 @@
               "tried",
               "total"
             ]
-          }
+          },
+          "x-bitcoin-additional-properties-inferred": true
         }
       },
       "x-bitcoin-category": "network"
@@ -5817,6 +5830,7 @@
                   "additionalProperties": {
                     "type": "number"
                   },
+                  "x-bitcoin-additional-properties-inferred": true,
                   "description": "set of pending, supported versionbit (BIP 9) softfork deployments"
                 },
                 "capabilities": {
@@ -5892,6 +5906,7 @@
                     "type": "string",
                     "pattern": "^[0-9a-fA-F]*$"
                   },
+                  "x-bitcoin-additional-properties-inferred": true,
                   "description": "data that should be included in the coinbase's scriptSig content"
                 },
                 "coinbasevalue": {
@@ -6343,7 +6358,8 @@
                   "type",
                   "active"
                 ]
-              }
+              },
+              "x-bitcoin-additional-properties-inferred": true
             }
           },
           "additionalProperties": false,
@@ -6789,7 +6805,8 @@
               "synced",
               "best_block_height"
             ]
-          }
+          },
+          "x-bitcoin-additional-properties-inferred": true
         }
       },
       "x-bitcoin-category": "util"
@@ -7027,6 +7044,7 @@
                   "unbroadcast"
                 ]
               },
+              "x-bitcoin-additional-properties-inferred": true,
               "description": "for verbose = true"
             }
           ]
@@ -7261,6 +7279,7 @@
                   "unbroadcast"
                 ]
               },
+              "x-bitcoin-additional-properties-inferred": true,
               "description": "for verbose = true"
             }
           ]
@@ -8071,6 +8090,7 @@
                           "description": "Whether the parameter is required."
                         },
                         "schema": {
+                          "x-bitcoin-unconstrained": true,
                           "description": "JSON Schema for the parameter."
                         },
                         "description": {
@@ -8114,6 +8134,7 @@
                         "description": "Result name."
                       },
                       "schema": {
+                        "x-bitcoin-unconstrained": true,
                         "description": "JSON Schema for the result."
                       }
                     },
@@ -8453,13 +8474,15 @@
                 "type": "object",
                 "additionalProperties": {
                   "type": "number"
-                }
+                },
+                "x-bitcoin-additional-properties-inferred": true
               },
               "bytesrecv_per_msg": {
                 "type": "object",
                 "additionalProperties": {
                   "type": "number"
-                }
+                },
+                "x-bitcoin-additional-properties-inferred": true
               },
               "connection_type": {
                 "type": "string",
@@ -8547,7 +8570,8 @@
               "fee_delta",
               "in_mempool"
             ]
-          }
+          },
+          "x-bitcoin-additional-properties-inferred": true
         }
       },
       "x-bitcoin-category": "mining"
@@ -8691,8 +8715,10 @@
                 "source",
                 "source_network"
               ]
-            }
-          }
+            },
+            "x-bitcoin-additional-properties-inferred": true
+          },
+          "x-bitcoin-additional-properties-inferred": true
         }
       },
       "x-bitcoin-category": "hidden"
@@ -8875,6 +8901,7 @@
                   "unbroadcast"
                 ]
               },
+              "x-bitcoin-additional-properties-inferred": true,
               "description": "for verbose = true"
             },
             {
@@ -12064,7 +12091,8 @@
           "type": "object",
           "additionalProperties": {
             "type": "boolean"
-          }
+          },
+          "x-bitcoin-additional-properties-inferred": true
         }
       },
       "x-bitcoin-category": "control"
@@ -12294,7 +12322,8 @@
                             "type": "string"
                           }
                         ]
-                      }
+                      },
+                      "x-bitcoin-additional-properties-inferred": true
                     },
                     {
                       "type": "object",
@@ -12903,7 +12932,8 @@
                         "type": "string"
                       }
                     ]
-                  }
+                  },
+                  "x-bitcoin-additional-properties-inferred": true
                 },
                 {
                   "type": "object",
@@ -13177,7 +13207,8 @@
                         "type": "string"
                       }
                     ]
-                  }
+                  },
+                  "x-bitcoin-additional-properties-inferred": true
                 }
               ]
             }
@@ -13404,7 +13435,8 @@
                   "type": "string"
                 }
               ]
-            }
+            },
+            "x-bitcoin-additional-properties-inferred": true
           },
           "description": "The addresses and amounts"
         },
@@ -14514,6 +14546,7 @@
                   "txid"
                 ]
               },
+              "x-bitcoin-additional-properties-inferred": true,
               "description": "The transaction results keyed by wtxid. An entry is returned for every submitted wtxid."
             },
             "replaced-transactions": {
@@ -15131,7 +15164,8 @@
                         "type": "string"
                       }
                     ]
-                  }
+                  },
+                  "x-bitcoin-additional-properties-inferred": true
                 },
                 {
                   "type": "object",
