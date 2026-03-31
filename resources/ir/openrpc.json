@@ -5565,7 +5565,14 @@
           "schema": {
             "type": "array",
             "items": {
-              "type": "string"
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "string"
+                }
+              ]
             }
           },
           "description": "Values to plot (see result below)"
@@ -5750,7 +5757,14 @@
               "rules": {
                 "type": "array",
                 "items": {
-                  "type": "string"
+                  "oneOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
                 },
                 "description": "A list of strings"
               },
