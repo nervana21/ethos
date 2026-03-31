@@ -100,6 +100,58 @@
       "x-bitcoin-category": "wallet"
     },
     {
+      "name": "addconnection",
+      "description": "Open an outbound connection to a specified node. This RPC is for testing only.",
+      "params": [
+        {
+          "name": "address",
+          "required": true,
+          "schema": {
+            "type": "string"
+          },
+          "description": "The IP address and port to attempt connecting to."
+        },
+        {
+          "name": "connection_type",
+          "required": true,
+          "schema": {
+            "type": "string"
+          },
+          "description": "Type of connection to open (\"outbound-full-relay\", \"block-relay-only\", \"addr-fetch\" or \"feeler\")."
+        },
+        {
+          "name": "v2transport",
+          "required": true,
+          "schema": {
+            "type": "boolean"
+          },
+          "description": "Attempt to connect using BIP324 v2 transport protocol"
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "type": "object",
+          "properties": {
+            "address": {
+              "type": "string",
+              "description": "Address of newly added connection."
+            },
+            "connection_type": {
+              "type": "string",
+              "description": "Type of connection opened."
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "address",
+            "connection_type"
+          ]
+        }
+      },
+      "x-bitcoin-category": "hidden"
+    },
+    {
       "name": "addnode",
       "description": "Attempts to add or remove a node from the addnode list.\nOr try a connection to a node once.\nNodes added using addnode (or -connect) are protected from DoS disconnection and are not required to be\nfull nodes/support SegWit as other outbound peers are (though such peers will not be synced from).\nAddnode connections are limited to 8 at a time and are counted separately from the -maxconnections limit.",
       "params": [
@@ -135,6 +187,57 @@
         }
       },
       "x-bitcoin-category": "network"
+    },
+    {
+      "name": "addpeeraddress",
+      "description": "Add the address of a potential peer to an address manager table. This RPC is for testing only.",
+      "params": [
+        {
+          "name": "address",
+          "required": true,
+          "schema": {
+            "type": "string"
+          },
+          "description": "The IP address of the peer"
+        },
+        {
+          "name": "port",
+          "required": true,
+          "schema": {
+            "type": "number"
+          },
+          "description": "The port of the peer"
+        },
+        {
+          "name": "tried",
+          "required": false,
+          "schema": {
+            "type": "boolean"
+          },
+          "description": "If true, attempt to add the peer to the tried addresses table"
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "type": "object",
+          "properties": {
+            "success": {
+              "type": "boolean",
+              "description": "whether the peer address was successfully added to the address manager table"
+            },
+            "error": {
+              "type": "string",
+              "description": "error description, if the address could not be added"
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "success"
+          ]
+        }
+      },
+      "x-bitcoin-category": "hidden"
     },
     {
       "name": "analyzepsbt",
@@ -2562,6 +2665,191 @@
       "x-bitcoin-category": "blockchain"
     },
     {
+      "name": "echo",
+      "description": "Simply echo back the input arguments. This command is for testing.\n\nIt will return an internal bug report when arg9='trigger_internal_bug' is passed.\n\nThe difference between echo and echojson is that echojson has argument conversion enabled in the client-side table in bitcoin-cli and the GUI. There is no server-side difference.",
+      "params": [
+        {
+          "name": "arg0",
+          "required": false,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "arg1",
+          "required": false,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "arg2",
+          "required": false,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "arg3",
+          "required": false,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "arg4",
+          "required": false,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "arg5",
+          "required": false,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "arg6",
+          "required": false,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "arg7",
+          "required": false,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "arg8",
+          "required": false,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "arg9",
+          "required": false,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+        }
+      },
+      "x-bitcoin-category": "hidden"
+    },
+    {
+      "name": "echoipc",
+      "description": "Echo back the input argument, passing it through a spawned process in a multiprocess build.\nThis command is for testing.",
+      "params": [
+        {
+          "name": "arg",
+          "required": true,
+          "schema": {
+            "type": "string"
+          },
+          "description": "The string to echo"
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "x-bitcoin-category": "hidden"
+    },
+    {
+      "name": "echojson",
+      "description": "Simply echo back the input arguments. This command is for testing.\n\nIt will return an internal bug report when arg9='trigger_internal_bug' is passed.\n\nThe difference between echo and echojson is that echojson has argument conversion enabled in the client-side table in bitcoin-cli and the GUI. There is no server-side difference.",
+      "params": [
+        {
+          "name": "arg0",
+          "required": false,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "arg1",
+          "required": false,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "arg2",
+          "required": false,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "arg3",
+          "required": false,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "arg4",
+          "required": false,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "arg5",
+          "required": false,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "arg6",
+          "required": false,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "arg7",
+          "required": false,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "arg8",
+          "required": false,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "arg9",
+          "required": false,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+        }
+      },
+      "x-bitcoin-category": "hidden"
+    },
+    {
       "name": "encryptwallet",
       "description": "Encrypts the wallet with 'passphrase'. This is for first time encryption.\nAfter this, any calls that interact with private keys such as sending or signing \nwill require the passphrase to be set prior to making these calls.\nUse the walletpassphrase call for this, and then walletlock call.\nIf the wallet is already encrypted, use the walletpassphrasechange call.\n** IMPORTANT **\nFor security reasons, the encryption process will generate a new HD seed, resulting\nin the creation of a fresh set of active descriptors. Therefore, it is crucial to\nsecurely back up the newly generated wallet file using the backupwallet RPC.",
       "params": [
@@ -2622,6 +2910,362 @@
         }
       },
       "x-bitcoin-category": "signer"
+    },
+    {
+      "name": "estimaterawfee",
+      "description": "WARNING: This interface is unstable and may disappear or change!\n\nWARNING: This is an advanced API call that is tightly coupled to the specific\nimplementation of fee estimation. The parameters it can be called with\nand the results it returns will change if the internal implementation changes.\n\nEstimates the approximate fee per kilobyte needed for a transaction to begin\nconfirmation within conf_target blocks if possible. Uses virtual transaction size as\ndefined in BIP 141 (witness data is discounted).",
+      "params": [
+        {
+          "name": "conf_target",
+          "required": true,
+          "schema": {
+            "type": "number"
+          },
+          "description": "Confirmation target in blocks (1 - 1008)"
+        },
+        {
+          "name": "threshold",
+          "required": false,
+          "schema": {
+            "type": "number"
+          },
+          "description": "The proportion of transactions in a given feerate range that must have been\nconfirmed within conf_target in order to consider those feerates as high enough and proceed to check\nlower buckets."
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "type": "object",
+          "properties": {
+            "short": {
+              "type": "object",
+              "properties": {
+                "feerate": {
+                  "type": "number",
+                  "description": "estimate fee rate in BTC/kvB"
+                },
+                "decay": {
+                  "type": "number",
+                  "description": "exponential decay (per block) for historical moving average of confirmation data"
+                },
+                "scale": {
+                  "type": "number",
+                  "description": "The resolution of confirmation targets at this time horizon"
+                },
+                "pass": {
+                  "type": "object",
+                  "properties": {
+                    "startrange": {
+                      "type": "number",
+                      "description": "start of feerate range"
+                    },
+                    "endrange": {
+                      "type": "number",
+                      "description": "end of feerate range"
+                    },
+                    "withintarget": {
+                      "type": "number",
+                      "description": "number of txs over history horizon in the feerate range that were confirmed within target"
+                    },
+                    "totalconfirmed": {
+                      "type": "number",
+                      "description": "number of txs over history horizon in the feerate range that were confirmed at any point"
+                    },
+                    "inmempool": {
+                      "type": "number",
+                      "description": "current number of txs in mempool in the feerate range unconfirmed for at least target blocks"
+                    },
+                    "leftmempool": {
+                      "type": "number",
+                      "description": "number of txs over history horizon in the feerate range that left mempool unconfirmed after target"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "startrange",
+                    "endrange",
+                    "withintarget",
+                    "totalconfirmed",
+                    "inmempool",
+                    "leftmempool"
+                  ],
+                  "description": "information about the lowest range of feerates to succeed in meeting the threshold"
+                },
+                "fail": {
+                  "type": "object",
+                  "properties": {
+                    "startrange": {
+                      "type": "number",
+                      "description": "start of feerate range"
+                    },
+                    "endrange": {
+                      "type": "number",
+                      "description": "end of feerate range"
+                    },
+                    "withintarget": {
+                      "type": "number",
+                      "description": "number of txs over history horizon in the feerate range that were confirmed within target"
+                    },
+                    "totalconfirmed": {
+                      "type": "number",
+                      "description": "number of txs over history horizon in the feerate range that were confirmed at any point"
+                    },
+                    "inmempool": {
+                      "type": "number",
+                      "description": "current number of txs in mempool in the feerate range unconfirmed for at least target blocks"
+                    },
+                    "leftmempool": {
+                      "type": "number",
+                      "description": "number of txs over history horizon in the feerate range that left mempool unconfirmed after target"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "startrange",
+                    "endrange",
+                    "withintarget",
+                    "totalconfirmed",
+                    "inmempool",
+                    "leftmempool"
+                  ],
+                  "description": "information about the highest range of feerates to fail to meet the threshold"
+                },
+                "errors": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Errors encountered during processing (if there are any)"
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "decay",
+                "scale"
+              ],
+              "description": "estimate for short time horizon"
+            },
+            "medium": {
+              "type": "object",
+              "properties": {
+                "feerate": {
+                  "type": "number",
+                  "description": "estimate fee rate in BTC/kvB"
+                },
+                "decay": {
+                  "type": "number",
+                  "description": "exponential decay (per block) for historical moving average of confirmation data"
+                },
+                "scale": {
+                  "type": "number",
+                  "description": "The resolution of confirmation targets at this time horizon"
+                },
+                "pass": {
+                  "type": "object",
+                  "properties": {
+                    "startrange": {
+                      "type": "number",
+                      "description": "start of feerate range"
+                    },
+                    "endrange": {
+                      "type": "number",
+                      "description": "end of feerate range"
+                    },
+                    "withintarget": {
+                      "type": "number",
+                      "description": "number of txs over history horizon in the feerate range that were confirmed within target"
+                    },
+                    "totalconfirmed": {
+                      "type": "number",
+                      "description": "number of txs over history horizon in the feerate range that were confirmed at any point"
+                    },
+                    "inmempool": {
+                      "type": "number",
+                      "description": "current number of txs in mempool in the feerate range unconfirmed for at least target blocks"
+                    },
+                    "leftmempool": {
+                      "type": "number",
+                      "description": "number of txs over history horizon in the feerate range that left mempool unconfirmed after target"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "startrange",
+                    "endrange",
+                    "withintarget",
+                    "totalconfirmed",
+                    "inmempool",
+                    "leftmempool"
+                  ],
+                  "description": "information about the lowest range of feerates to succeed in meeting the threshold"
+                },
+                "fail": {
+                  "type": "object",
+                  "properties": {
+                    "startrange": {
+                      "type": "number",
+                      "description": "start of feerate range"
+                    },
+                    "endrange": {
+                      "type": "number",
+                      "description": "end of feerate range"
+                    },
+                    "withintarget": {
+                      "type": "number",
+                      "description": "number of txs over history horizon in the feerate range that were confirmed within target"
+                    },
+                    "totalconfirmed": {
+                      "type": "number",
+                      "description": "number of txs over history horizon in the feerate range that were confirmed at any point"
+                    },
+                    "inmempool": {
+                      "type": "number",
+                      "description": "current number of txs in mempool in the feerate range unconfirmed for at least target blocks"
+                    },
+                    "leftmempool": {
+                      "type": "number",
+                      "description": "number of txs over history horizon in the feerate range that left mempool unconfirmed after target"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "startrange",
+                    "endrange",
+                    "withintarget",
+                    "totalconfirmed",
+                    "inmempool",
+                    "leftmempool"
+                  ],
+                  "description": "information about the highest range of feerates to fail to meet the threshold"
+                },
+                "errors": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Errors encountered during processing (if there are any)"
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "decay",
+                "scale"
+              ],
+              "description": "estimate for medium time horizon"
+            },
+            "long": {
+              "type": "object",
+              "properties": {
+                "feerate": {
+                  "type": "number",
+                  "description": "estimate fee rate in BTC/kvB"
+                },
+                "decay": {
+                  "type": "number",
+                  "description": "exponential decay (per block) for historical moving average of confirmation data"
+                },
+                "scale": {
+                  "type": "number",
+                  "description": "The resolution of confirmation targets at this time horizon"
+                },
+                "pass": {
+                  "type": "object",
+                  "properties": {
+                    "startrange": {
+                      "type": "number",
+                      "description": "start of feerate range"
+                    },
+                    "endrange": {
+                      "type": "number",
+                      "description": "end of feerate range"
+                    },
+                    "withintarget": {
+                      "type": "number",
+                      "description": "number of txs over history horizon in the feerate range that were confirmed within target"
+                    },
+                    "totalconfirmed": {
+                      "type": "number",
+                      "description": "number of txs over history horizon in the feerate range that were confirmed at any point"
+                    },
+                    "inmempool": {
+                      "type": "number",
+                      "description": "current number of txs in mempool in the feerate range unconfirmed for at least target blocks"
+                    },
+                    "leftmempool": {
+                      "type": "number",
+                      "description": "number of txs over history horizon in the feerate range that left mempool unconfirmed after target"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "startrange",
+                    "endrange",
+                    "withintarget",
+                    "totalconfirmed",
+                    "inmempool",
+                    "leftmempool"
+                  ],
+                  "description": "information about the lowest range of feerates to succeed in meeting the threshold"
+                },
+                "fail": {
+                  "type": "object",
+                  "properties": {
+                    "startrange": {
+                      "type": "number",
+                      "description": "start of feerate range"
+                    },
+                    "endrange": {
+                      "type": "number",
+                      "description": "end of feerate range"
+                    },
+                    "withintarget": {
+                      "type": "number",
+                      "description": "number of txs over history horizon in the feerate range that were confirmed within target"
+                    },
+                    "totalconfirmed": {
+                      "type": "number",
+                      "description": "number of txs over history horizon in the feerate range that were confirmed at any point"
+                    },
+                    "inmempool": {
+                      "type": "number",
+                      "description": "current number of txs in mempool in the feerate range unconfirmed for at least target blocks"
+                    },
+                    "leftmempool": {
+                      "type": "number",
+                      "description": "number of txs over history horizon in the feerate range that left mempool unconfirmed after target"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "startrange",
+                    "endrange",
+                    "withintarget",
+                    "totalconfirmed",
+                    "inmempool",
+                    "leftmempool"
+                  ],
+                  "description": "information about the highest range of feerates to fail to meet the threshold"
+                },
+                "errors": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Errors encountered during processing (if there are any)"
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "decay",
+                "scale"
+              ],
+              "description": "estimate for long time horizon"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "x-bitcoin-category": "hidden"
     },
     {
       "name": "estimatesmartfee",
@@ -2922,6 +3566,157 @@
         }
       },
       "x-bitcoin-category": "rawtransactions"
+    },
+    {
+      "name": "generate",
+      "description": "has been replaced by the -generate cli option. Refer to -help for more information.",
+      "params": [
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+        }
+      },
+      "x-bitcoin-category": "hidden"
+    },
+    {
+      "name": "generateblock",
+      "description": "Mine a set of ordered transactions to a specified address or descriptor and return the block hash.\nTransaction fees are not collected in the block reward.",
+      "params": [
+        {
+          "name": "output",
+          "required": true,
+          "schema": {
+            "type": "string"
+          },
+          "description": "The address or descriptor to send the newly generated bitcoin to."
+        },
+        {
+          "name": "transactions",
+          "required": true,
+          "schema": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[0-9a-fA-F]*$"
+            }
+          },
+          "description": "An array of hex strings which are either txids or raw transactions.\nTxids must reference transactions currently in the mempool.\nAll transactions must be valid and in valid order, otherwise the block will be rejected."
+        },
+        {
+          "name": "submit",
+          "required": false,
+          "schema": {
+            "type": "boolean"
+          },
+          "description": "Whether to submit the block before the RPC call returns or to return it as hex."
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "type": "object",
+          "properties": {
+            "hash": {
+              "type": "string",
+              "pattern": "^[0-9a-fA-F]*$",
+              "description": "hash of generated block"
+            },
+            "hex": {
+              "type": "string",
+              "pattern": "^[0-9a-fA-F]*$",
+              "description": "hex of generated block, only present when submit=false"
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "hash"
+          ]
+        }
+      },
+      "x-bitcoin-category": "hidden"
+    },
+    {
+      "name": "generatetoaddress",
+      "description": "Mine to a specified address and return the block hashes.",
+      "params": [
+        {
+          "name": "nblocks",
+          "required": true,
+          "schema": {
+            "type": "number"
+          },
+          "description": "How many blocks are generated."
+        },
+        {
+          "name": "address",
+          "required": true,
+          "schema": {
+            "type": "string"
+          },
+          "description": "The address to send the newly generated bitcoin to."
+        },
+        {
+          "name": "maxtries",
+          "required": false,
+          "schema": {
+            "type": "number"
+          },
+          "description": "How many iterations to try."
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]*$"
+          }
+        }
+      },
+      "x-bitcoin-category": "hidden"
+    },
+    {
+      "name": "generatetodescriptor",
+      "description": "Mine to a specified descriptor and return the block hashes.",
+      "params": [
+        {
+          "name": "num_blocks",
+          "required": true,
+          "schema": {
+            "type": "number"
+          },
+          "description": "How many blocks are generated."
+        },
+        {
+          "name": "descriptor",
+          "required": true,
+          "schema": {
+            "type": "string"
+          },
+          "description": "The descriptor to send the newly generated bitcoin to."
+        },
+        {
+          "name": "maxtries",
+          "required": false,
+          "schema": {
+            "type": "number"
+          },
+          "description": "How many iterations to try."
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]*$"
+          }
+        }
+      },
+      "x-bitcoin-category": "hidden"
     },
     {
       "name": "getaddednodeinfo",
@@ -6601,6 +7396,37 @@
       "x-bitcoin-category": "blockchain"
     },
     {
+      "name": "getmempoolfeeratediagram",
+      "description": "Returns the feerate diagram for the whole mempool.",
+      "params": [
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "weight": {
+                "type": "number",
+                "description": "cumulative sigops-adjusted weight"
+              },
+              "fee": {
+                "type": "number",
+                "description": "cumulative fee"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "weight",
+              "fee"
+            ]
+          }
+        }
+      },
+      "x-bitcoin-category": "hidden"
+    },
+    {
       "name": "getmempoolinfo",
       "description": "Returns details on the active state of the TX memory pool.",
       "params": [
@@ -7251,6 +8077,10 @@
                         "x-bitcoin-also-positional": {
                           "type": "boolean",
                           "description": "Whether the parameter can also be passed positionally."
+                        },
+                        "x-bitcoin-hidden": {
+                          "type": "boolean",
+                          "description": "Whether the parameter is hidden from default help text."
                         }
                       },
                       "additionalProperties": false,
@@ -7306,6 +8136,134 @@
         }
       },
       "x-bitcoin-category": "control"
+    },
+    {
+      "name": "getorphantxs",
+      "description": "Shows transactions in the tx orphanage.\n\nEXPERIMENTAL warning: this call may be changed in future releases.",
+      "params": [
+        {
+          "name": "verbosity",
+          "required": false,
+          "schema": {
+            "type": "number"
+          },
+          "description": "0 for an array of txids (may contain duplicates), 1 for an array of objects with tx details, and 2 for details from (1) and tx hex"
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "oneOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[0-9a-fA-F]*$"
+              },
+              "description": "for verbose = 0"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "txid": {
+                    "type": "string",
+                    "pattern": "^[0-9a-fA-F]*$",
+                    "description": "The transaction hash in hex"
+                  },
+                  "wtxid": {
+                    "type": "string",
+                    "pattern": "^[0-9a-fA-F]*$",
+                    "description": "The transaction witness hash in hex"
+                  },
+                  "bytes": {
+                    "type": "number",
+                    "description": "The serialized transaction size in bytes"
+                  },
+                  "vsize": {
+                    "type": "number",
+                    "description": "The virtual transaction size as defined in BIP 141. This is different from actual serialized size for witness transactions as witness data is discounted."
+                  },
+                  "weight": {
+                    "type": "number",
+                    "description": "The transaction weight as defined in BIP 141."
+                  },
+                  "from": {
+                    "type": "array",
+                    "items": {
+                      "type": "number"
+                    }
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "txid",
+                  "wtxid",
+                  "bytes",
+                  "vsize",
+                  "weight",
+                  "from"
+                ]
+              },
+              "description": "for verbose = 1"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "txid": {
+                    "type": "string",
+                    "pattern": "^[0-9a-fA-F]*$",
+                    "description": "The transaction hash in hex"
+                  },
+                  "wtxid": {
+                    "type": "string",
+                    "pattern": "^[0-9a-fA-F]*$",
+                    "description": "The transaction witness hash in hex"
+                  },
+                  "bytes": {
+                    "type": "number",
+                    "description": "The serialized transaction size in bytes"
+                  },
+                  "vsize": {
+                    "type": "number",
+                    "description": "The virtual transaction size as defined in BIP 141. This is different from actual serialized size for witness transactions as witness data is discounted."
+                  },
+                  "weight": {
+                    "type": "number",
+                    "description": "The transaction weight as defined in BIP 141."
+                  },
+                  "from": {
+                    "type": "array",
+                    "items": {
+                      "type": "number"
+                    }
+                  },
+                  "hex": {
+                    "type": "string",
+                    "pattern": "^[0-9a-fA-F]*$",
+                    "description": "The serialized, hex-encoded transaction data"
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "txid",
+                  "wtxid",
+                  "bytes",
+                  "vsize",
+                  "weight",
+                  "from",
+                  "hex"
+                ]
+              },
+              "description": "for verbose = 2"
+            }
+          ]
+        }
+      },
+      "x-bitcoin-category": "hidden"
     },
     {
       "name": "getpeerinfo",
@@ -7656,6 +8614,74 @@
         }
       },
       "x-bitcoin-category": "rawtransactions"
+    },
+    {
+      "name": "getrawaddrman",
+      "description": "EXPERIMENTAL warning: this call may be changed in future releases.\n\nReturns information on all address manager entries for the new and tried tables.",
+      "params": [
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "address": {
+                  "type": "string",
+                  "description": "The address of the node"
+                },
+                "mapped_as": {
+                  "type": "number",
+                  "description": "Mapped AS (Autonomous System) number at the end of the BGP route to the peer, used for diversifying peer selection (only displayed if the -asmap config option is set)"
+                },
+                "port": {
+                  "type": "number",
+                  "description": "The port number of the node"
+                },
+                "network": {
+                  "type": "string",
+                  "description": "The network (ipv4, ipv6, onion, i2p, cjdns) of the address"
+                },
+                "services": {
+                  "type": "number",
+                  "description": "The services offered by the node"
+                },
+                "time": {
+                  "type": "number",
+                  "x-bitcoin-unit": "unix-time",
+                  "description": "The UNIX epoch time when the node was last seen"
+                },
+                "source": {
+                  "type": "string",
+                  "description": "The address that relayed the address to us"
+                },
+                "source_network": {
+                  "type": "string",
+                  "description": "The network (ipv4, ipv6, onion, i2p, cjdns) of the source address"
+                },
+                "source_mapped_as": {
+                  "type": "number",
+                  "description": "Mapped AS (Autonomous System) number at the end of the BGP route to the source, used for diversifying peer selection (only displayed if the -asmap config option is set)"
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "address",
+                "port",
+                "network",
+                "services",
+                "time",
+                "source",
+                "source_network"
+              ]
+            }
+          }
+        }
+      },
+      "x-bitcoin-category": "hidden"
     },
     {
       "name": "getrawchangeaddress",
@@ -9591,6 +10617,28 @@
       "x-bitcoin-category": "wallet"
     },
     {
+      "name": "invalidateblock",
+      "description": "Permanently marks a block as invalid, as if it violated a consensus rule.",
+      "params": [
+        {
+          "name": "blockhash",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]*$"
+          },
+          "description": "the hash of the block to mark as invalid"
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "type": "null"
+        }
+      },
+      "x-bitcoin-category": "hidden"
+    },
+    {
       "name": "joinpsbts",
       "description": "Joins multiple distinct PSBTs with different inputs and outputs into one PSBT with inputs and outputs from all of the PSBTs\nNo input in any of the PSBTs can be in more than one of the PSBTs.",
       "params": [
@@ -11060,6 +12108,27 @@
       "x-bitcoin-category": "wallet"
     },
     {
+      "name": "mockscheduler",
+      "description": "Bump the scheduler into the future (-regtest only)",
+      "params": [
+        {
+          "name": "delta_time",
+          "required": true,
+          "schema": {
+            "type": "number"
+          },
+          "description": "Number of seconds to forward the scheduler into the future."
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "type": "null"
+        }
+      },
+      "x-bitcoin-category": "hidden"
+    },
+    {
       "name": "ping",
       "description": "Requests that a ping be sent to all other nodes, to measure ping time.\nResults are provided in getpeerinfo.\nPing command is handled in queue with all other commands, so it measures processing backlog, not just network ping.",
       "params": [
@@ -11275,6 +12344,28 @@
         }
       },
       "x-bitcoin-category": "wallet"
+    },
+    {
+      "name": "reconsiderblock",
+      "description": "Removes invalidity status of a block, its ancestors and its descendants, reconsider them for activation.\nThis can be used to undo the effects of invalidateblock.",
+      "params": [
+        {
+          "name": "blockhash",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]*$"
+          },
+          "description": "the hash of the block to reconsider"
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "type": "null"
+        }
+      },
+      "x-bitcoin-category": "hidden"
     },
     {
       "name": "removeprunedfunds",
@@ -12414,6 +13505,47 @@
       "x-bitcoin-category": "wallet"
     },
     {
+      "name": "sendmsgtopeer",
+      "description": "Send a p2p message to a peer specified by id.\nThe message type and body must be provided, the message header will be generated.\nThis RPC is for testing only.",
+      "params": [
+        {
+          "name": "peer_id",
+          "required": true,
+          "schema": {
+            "type": "number"
+          },
+          "description": "The peer to send the message to."
+        },
+        {
+          "name": "msg_type",
+          "required": true,
+          "schema": {
+            "type": "string"
+          },
+          "description": "The message type (maximum length 12)"
+        },
+        {
+          "name": "msg",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]*$"
+          },
+          "description": "The serialized message body to send, in hex, without a message header"
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "type": "object",
+          "properties": {
+          },
+          "additionalProperties": false
+        }
+      },
+      "x-bitcoin-category": "hidden"
+    },
+    {
       "name": "sendrawtransaction",
       "description": "Submit a raw transaction (serialized, hex-encoded) to the network.\n\nIf -privatebroadcast is disabled, then the transaction will be put into the\nlocal mempool of the node and will be sent unconditionally to all currently\nconnected peers, so using sendrawtransaction for manual rebroadcast will degrade\nprivacy by leaking the transaction's origin, as nodes will normally not\nrebroadcast non-wallet transactions already in their mempool.\n\nIf -privatebroadcast is enabled, then the transaction will be sent only via\ndedicated, short-lived connections to Tor or I2P peers or IPv4/IPv6 peers\nvia the Tor network. This conceals the transaction's origin. The transaction\nwill only enter the local mempool when it is received back from the network.\n\nA specific exception, RPC_TRANSACTION_ALREADY_IN_UTXO_SET, may throw if the transaction cannot be added to the mempool.\n\nRelated RPCs: createrawtransaction, signrawtransactionwithkey",
       "params": [
@@ -12680,6 +13812,27 @@
         }
       },
       "x-bitcoin-category": "wallet"
+    },
+    {
+      "name": "setmocktime",
+      "description": "Set the local time to given timestamp (-regtest only)",
+      "params": [
+        {
+          "name": "timestamp",
+          "required": true,
+          "schema": {
+            "type": "number"
+          },
+          "description": "UNIX epoch time\nPass 0 to go back to using the system time."
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "type": "null"
+        }
+      },
+      "x-bitcoin-category": "hidden"
     },
     {
       "name": "setnetworkactive",
@@ -13366,6 +14519,19 @@
         }
       },
       "x-bitcoin-category": "rawtransactions"
+    },
+    {
+      "name": "syncwithvalidationinterfacequeue",
+      "description": "Waits for the validation interface queue to catch up on everything that was there when we entered this function.",
+      "params": [
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "type": "null"
+        }
+      },
+      "x-bitcoin-category": "hidden"
     },
     {
       "name": "testmempoolaccept",
