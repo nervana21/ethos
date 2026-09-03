@@ -491,7 +491,7 @@
               "original_change_index": {
                 "type": "number",
                 "x-bitcoin-default-hint": "not set, detect change automatically",
-                "description": "The 0-based index of the change output on the original transaction. The indicated output will be recycled into the new change output on the bumped transaction. The remainder after paying the recipients and fees will be sent to the output script of the original change output. The change output\u2019s amount can increase if bumping the transaction adds new inputs, otherwise it will decrease. Cannot be used in combination with the 'outputs' option."
+                "description": "The 0-based index of the change output on the original transaction. The indicated output will be recycled into the new change output on the bumped transaction. The remainder after paying the recipients and fees will be sent to the output script of the original change output. The change output’s amount can increase if bumping the transaction adds new inputs, otherwise it will decrease. Cannot be used in combination with the 'outputs' option."
               }
             },
             "additionalProperties": false
@@ -5587,17 +5587,7 @@
               ],
               "description": "for verbosity = 3"
             }
-          ],
-          "x-bitcoin-discriminatedResult": {
-            "parameter": "verbosity",
-            "parameterIndex": 1,
-            "values": [
-              0,
-              1,
-              2,
-              3
-            ]
-          }
+          ]
         }
       },
       "x-bitcoin-category": "blockchain"
@@ -12117,7 +12107,7 @@
     },
     {
       "name": "listtransactions",
-      "description": "If a label name is provided, this will return only incoming transactions paying to addresses with the specified label.\nReturns up to 'count' most recent transactions ordered from oldest to newest while skipping the first number of \ntransactions specified in the 'skip' argument. A transaction can have multiple entries in this RPC response. \nFor instance, a wallet transaction that pays three addresses \u2014 one wallet-owned and two external \u2014 will produce \nfour entries. The payment to the wallet-owned address appears both as a send entry and as a receive entry. \nAs a result, the RPC response will contain one entry in the receive category and three entries in the send category.",
+      "description": "If a label name is provided, this will return only incoming transactions paying to addresses with the specified label.\nReturns up to 'count' most recent transactions ordered from oldest to newest while skipping the first number of \ntransactions specified in the 'skip' argument. A transaction can have multiple entries in this RPC response. \nFor instance, a wallet transaction that pays three addresses — one wallet-owned and two external — will produce \nfour entries. The payment to the wallet-owned address appears both as a send entry and as a receive entry. \nAs a result, the RPC response will contain one entry in the receive category and three entries in the send category.",
       "params": [
         {
           "name": "label",
@@ -13052,7 +13042,7 @@
               "original_change_index": {
                 "type": "number",
                 "x-bitcoin-default-hint": "not set, detect change automatically",
-                "description": "The 0-based index of the change output on the original transaction. The indicated output will be recycled into the new change output on the bumped transaction. The remainder after paying the recipients and fees will be sent to the output script of the original change output. The change output\u2019s amount can increase if bumping the transaction adds new inputs, otherwise it will decrease. Cannot be used in combination with the 'outputs' option."
+                "description": "The 0-based index of the change output on the original transaction. The indicated output will be recycled into the new change output on the bumped transaction. The remainder after paying the recipients and fees will be sent to the output script of the original change output. The change output’s amount can increase if bumping the transaction adds new inputs, otherwise it will decrease. Cannot be used in combination with the 'outputs' option."
               },
               "psbt_version": {
                 "type": "number",

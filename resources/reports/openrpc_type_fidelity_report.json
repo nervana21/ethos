@@ -37,7 +37,7 @@
       "severity": "P2"
     }
   ],
-  "openrpc_path": "resources/ir/openrpc.json",
+  "openrpc_path": "/Users/bitnode/ethos/resources/ir/openrpc.json",
   "openrpc_version": "1.4.1",
   "rule_count": 1
 }
