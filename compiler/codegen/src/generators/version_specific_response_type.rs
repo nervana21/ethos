@@ -209,6 +209,15 @@ impl VersionSpecificResponseTypeGenerator {
         for method in methods {
             if let Some(result) = &method.result {
                 let result = self.filter_type_def_for_version(result);
+                // Top-level wrappers (for map/array/primitive results) may reference
+                // collection types even when there are no object fields to scan.
+                let root_rust_type = self.map_ir_type_to_rust(&result, "result", None);
+                if root_rust_type.contains("BTreeMap") {
+                    needs_btreemap = true;
+                }
+                if root_rust_type.contains("HashMap") {
+                    needs_hashmap = true;
+                }
                 let mut scan_fields = |fields: &[ir::FieldDef]| {
                     for field in fields {
                         let rust_type = self.map_ir_type_to_rust(
@@ -515,6 +524,12 @@ impl VersionSpecificResponseTypeGenerator {
                     reg.entry(sanitize_type_name_for_rust(label)).or_insert_with(|| ty.clone());
                 }
             }
+            if matches!(ty.kind, TypeKind::Map) {
+                let label = ty.rust_emit_name();
+                if !label.is_empty() && label != "object" && label != "array" {
+                    reg.entry(sanitize_type_name_for_rust(label)).or_insert_with(|| ty.clone());
+                }
+            }
             if matches!(ty.kind, TypeKind::Union) {
                 let label = ty.rust_emit_name();
                 if !label.is_empty() && label != "object" && label != "array" {
@@ -581,18 +596,10 @@ impl VersionSpecificResponseTypeGenerator {
                                     out.insert(Self::ir_rust_type_label(&filtered));
                                 }
                             },
-                        TypeKind::Map =>
-                            if let Some(val) = td.map_value_type() {
-                                let vlabel = val.rust_emit_name();
-                                if matches!(val.kind, TypeKind::Object)
-                                    && !vlabel.is_empty()
-                                    && vlabel != "object"
-                                    && vlabel != "array"
-                                {
-                                    let filtered = self.filter_type_def_for_version(val);
-                                    out.insert(Self::ir_rust_type_label(&filtered));
-                                }
-                            },
+                        // Map value objects use the same unqualified `map_ir_type_to_rust` names as
+                        // standalone map aliases and `generate_nested_type`; qualifying them here
+                        // produced enums pointing at helper structs that were skipped as
+                        // "union-embedded" while aliases still referenced the unqualified name.
                         _ => {}
                     }
                 }
@@ -629,12 +636,12 @@ impl VersionSpecificResponseTypeGenerator {
                     record_fallback_event(FallbackEvent {
                         rpc_method: current_rpc_method_or_unknown(),
                         schema_or_ir_path: format!("union_variant:{}", td.name),
-                        fallback_kind: "json_value_fallback".to_string(),
-                        chosen_rust_type: "serde_json::Value".to_string(),
+                        fallback_kind: "opaque_object_fallback".to_string(),
+                        chosen_rust_type: "serde_json::Map<String, serde_json::Value>".to_string(),
                         reason: "unnamed_union_object_variant".to_string(),
                         severity: "P1".to_string(),
                     });
-                    "serde_json::Value".to_string()
+                    "serde_json::Map<String, serde_json::Value>".to_string()
                 }
             }
             ir::TypeKind::Array => {
@@ -646,24 +653,27 @@ impl VersionSpecificResponseTypeGenerator {
             ir::TypeKind::Map => {
                 let key_ty = match td.map_key_protocol_type.as_deref() {
                     Some("hex") => "bitcoin::Txid",
-                    _ => {
+                    Some("string") | None => "String",
+                    Some(unk) => {
                         record_fallback_event(FallbackEvent {
                             rpc_method: current_rpc_method_or_unknown(),
                             schema_or_ir_path: format!("union_variant_map_key:{}", td.name),
                             fallback_kind: "map_string_key_fallback".to_string(),
                             chosen_rust_type: "String".to_string(),
-                            reason: "missing_map_key_protocol_type".to_string(),
+                            reason: format!("unmapped_map_key_protocol_type:{unk}"),
                             severity: "P1".to_string(),
                         });
                         "String"
                     }
                 };
                 let val = td.map_value_type().expect("map union variant must have map_value");
-                format!(
-                    "BTreeMap<{}, {}>",
-                    key_ty,
-                    self.map_union_variant_rust_type(val, parent_enum)
-                )
+                let val_rust = match val.kind {
+                    // Align with `map_ir_type_to_rust` / nested struct emission (see union_embedded
+                    // handling for map branches — value objects are not merged as qualified helpers).
+                    ir::TypeKind::Object => self.map_ir_type_to_rust(val, "map_value", None),
+                    _ => self.map_union_variant_rust_type(val, parent_enum),
+                };
+                format!("BTreeMap<{}, {}>", key_ty, val_rust)
             }
             ir::TypeKind::Union => {
                 let label = td.rust_emit_name();
@@ -866,14 +876,6 @@ impl VersionSpecificResponseTypeGenerator {
                             inner_by_name.entry(inner_name).or_default().push(filtered);
                         }
                     },
-                TypeKind::Map =>
-                    if let Some(val) = td.map_value_type() {
-                        if matches!(val.kind, TypeKind::Object) {
-                            let filtered = self.filter_type_def_for_version(val);
-                            let inner_name = Self::ir_rust_type_label(&filtered);
-                            inner_by_name.entry(inner_name).or_default().push(filtered);
-                        }
-                    },
                 _ => {}
             }
         }
@@ -883,6 +885,7 @@ impl VersionSpecificResponseTypeGenerator {
             self.emit_object_response_struct(&merged, &qualified, rpc_doc_name, &mut buf)?;
         }
 
+        writeln!(buf, "#[allow(clippy::large_enum_variant)]")?;
         writeln!(buf, "#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]")?;
         writeln!(buf, "#[serde(untagged)]")?;
         writeln!(buf, "pub enum {} {{", enum_name)?;
@@ -910,6 +913,10 @@ impl VersionSpecificResponseTypeGenerator {
             if r.kind == TypeKind::Primitive && r.protocol_type.as_deref() == Some("any") {
                 let struct_name = self.response_struct_name(method);
                 return Ok(Some(self.generate_value_wrapper(method, &struct_name)?));
+            }
+            if r.kind == TypeKind::Map {
+                let struct_name = self.response_struct_name(method);
+                return Ok(Some(self.generate_map_wrapper(method, &struct_name, &r)?));
             }
             if r.kind == TypeKind::Union {
                 if let Some(ref uvs) = r.union_variants {
@@ -940,6 +947,48 @@ impl VersionSpecificResponseTypeGenerator {
 
         // For methods without result types, generate unit structs
         self.generate_unit_response(method)
+    }
+
+    /// Generate a transparent wrapper for top-level map results.
+    fn generate_map_wrapper(
+        &self,
+        method: &RpcDef,
+        struct_name: &str,
+        result: &ir::TypeDef,
+    ) -> Result<String> {
+        let mut buf = String::new();
+        let canonical_name =
+            crate::utils::canonical_from_adapter_method(&self.implementation, &method.name, None)
+                .unwrap_or_else(|_| struct_name.replace("Response", ""));
+        write_doc_line(&mut buf, &format!("Response for the `{}` RPC method", canonical_name), "")?;
+        writeln!(&mut buf, "///")?;
+        write_doc_line(
+            &mut buf,
+            "This method returns a dynamic-key object wrapped in a transparent struct.",
+            "",
+        )?;
+        let map_ty = self.map_ir_type_to_rust(result, "result", Some(struct_name));
+        writeln!(&mut buf, "#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]")?;
+        writeln!(&mut buf, "#[serde(transparent)]")?;
+        writeln!(&mut buf, "pub struct {}(pub {});", struct_name, map_ty)?;
+        writeln!(&mut buf)?;
+        writeln!(&mut buf, "impl std::ops::Deref for {} {{", struct_name)?;
+        writeln!(&mut buf, "    type Target = {};", map_ty)?;
+        writeln!(&mut buf, "    fn deref(&self) -> &Self::Target {{ &self.0 }}")?;
+        writeln!(&mut buf, "}}")?;
+        writeln!(&mut buf)?;
+        writeln!(&mut buf, "impl std::ops::DerefMut for {} {{", struct_name)?;
+        writeln!(&mut buf, "    fn deref_mut(&mut self) -> &mut Self::Target {{ &mut self.0 }}")?;
+        writeln!(&mut buf, "}}")?;
+        writeln!(&mut buf)?;
+        writeln!(&mut buf, "impl From<{}> for {} {{", map_ty, struct_name)?;
+        writeln!(&mut buf, "    fn from(value: {}) -> Self {{ Self(value) }}", map_ty)?;
+        writeln!(&mut buf, "}}")?;
+        writeln!(&mut buf)?;
+        writeln!(&mut buf, "impl From<{}> for {} {{", struct_name, map_ty)?;
+        writeln!(&mut buf, "    fn from(wrapper: {}) -> Self {{ wrapper.0 }}", struct_name)?;
+        writeln!(&mut buf, "}}")?;
+        Ok(buf)
     }
 
     /// Generate response type from IR data (TypeDef.fields). The caller must pass a result
@@ -1141,13 +1190,16 @@ impl VersionSpecificResponseTypeGenerator {
             ir::TypeKind::Map => {
                 let key_ty = match type_def.map_key_protocol_type.as_deref() {
                     Some("hex") => "bitcoin::Txid",
-                    _ => {
+                    Some("string") | None =>
+                    // Core metadata often omits key type for conventional string-keyed objects; String is correct.
+                        "String",
+                    Some(unk) => {
                         record_fallback_event(FallbackEvent {
                             rpc_method: current_rpc_method_or_unknown(),
                             schema_or_ir_path: format!("map_field:{}", field_name),
                             fallback_kind: "map_string_key_fallback".to_string(),
                             chosen_rust_type: "String".to_string(),
-                            reason: "missing_map_key_protocol_type".to_string(),
+                            reason: format!("unmapped_map_key_protocol_type:{unk}"),
                             severity: "P1".to_string(),
                         });
                         "String"
@@ -1246,12 +1298,13 @@ impl VersionSpecificResponseTypeGenerator {
                         record_fallback_event(FallbackEvent {
                             rpc_method: current_rpc_method_or_unknown(),
                             schema_or_ir_path: format!("object_field:{}", field_name),
-                            fallback_kind: "json_value_fallback".to_string(),
-                            chosen_rust_type: "serde_json::Value".to_string(),
+                            fallback_kind: "opaque_object_fallback".to_string(),
+                            chosen_rust_type: "serde_json::Map<String, serde_json::Value>"
+                                .to_string(),
                             reason: "generic_object_without_named_shape".to_string(),
                             severity: "P1".to_string(),
                         });
-                        "serde_json::Value".to_string()
+                        "serde_json::Map<String, serde_json::Value>".to_string()
                     }
                 }
             }
@@ -2025,21 +2078,20 @@ impl VersionSpecificResponseTypeGenerator {
         let is_union = type_def.kind == TypeKind::Union;
         if is_union && !is_method_result_root {
             let label = type_def.rust_emit_name();
-            if !label.is_empty()
-                && label != "object"
-                && label != "array"
-                && label.chars().next().is_some_and(|c| c.is_uppercase())
-            {
+            if !label.is_empty() && label != "object" && label != "array" {
                 nested_types.insert(sanitize_type_name_for_rust(label));
             }
         }
 
         if !is_union {
             let label = type_def.rust_emit_name();
-            if !label.is_empty()
+            // `rust_emit_name()` prefers `type_identity` (OpenRPC), which is often snake_case.
+            // Only track shaped kinds here—primitives like `string` would sanitize to `String`
+            // and pollute the nested pass if we keyed purely on "starts with uppercase".
+            if matches!(type_def.kind, TypeKind::Object | TypeKind::Map)
+                && !label.is_empty()
                 && label != "object"
                 && label != "array"
-                && label.chars().next().is_some_and(|c| c.is_uppercase())
             {
                 nested_types.insert(sanitize_type_name_for_rust(label));
             }
@@ -2094,6 +2146,18 @@ impl VersionSpecificResponseTypeGenerator {
                 self.generate_struct_from_type_def(type_def, &mut buf)?;
                 return Ok(Some(buf));
             }
+            if matches!(type_def.kind, TypeKind::Map) {
+                let mut output = String::new();
+                let rust_type = self.map_ir_type_to_rust(type_def, &lookup_name, None);
+                write_doc_line(&mut output, &format!("Type alias for {}", type_name), "")?;
+                writeln!(
+                    output,
+                    "pub type {} = {};",
+                    sanitize_type_name_for_rust(type_name),
+                    rust_type
+                )?;
+                return Ok(Some(output));
+            }
             if matches!(type_def.kind, TypeKind::Union)
                 && type_def.union_variants.as_ref().is_some_and(|v| !v.is_empty())
             {
@@ -2106,6 +2170,9 @@ impl VersionSpecificResponseTypeGenerator {
 
     /// Generate a type alias for types not found in metadata
     fn generate_type_alias(&self, type_name: &str) -> Result<String> {
+        if type_name.ends_with("ResultMap") {
+            return Ok(String::new());
+        }
         // Check if this type is already imported from external crates
         if self.is_external_type(type_name) {
             return Ok(String::new());
@@ -3370,6 +3437,127 @@ mod tests {
         assert!(
             code.contains("BTreeMap<bitcoin::Txid, u64>"),
             "expected BTreeMap txid map variant, got:\n{code}"
+        );
+    }
+
+    #[test]
+    fn top_level_map_result_generates_transparent_map_wrapper() {
+        let version = ProtocolVersion::from_str("30.0.0").expect("version");
+        let gen = VersionSpecificResponseTypeGenerator::new(version, "bitcoin_core".to_string());
+
+        let result_ty = TypeDef {
+            name: "LoggingResultMap".to_string(),
+            description: String::new(),
+            kind: TypeKind::Map,
+            fields: None,
+            variants: None,
+            union_variants: None,
+            base_type: None,
+            protocol_type: Some("object-dynamic".to_string()),
+            canonical_name: None,
+            condition: None,
+            map_value: Some(Box::new(TypeDef {
+                name: "boolean".to_string(),
+                description: String::new(),
+                kind: TypeKind::Primitive,
+                fields: None,
+                variants: None,
+                union_variants: None,
+                base_type: None,
+                protocol_type: Some("boolean".to_string()),
+                canonical_name: None,
+                condition: None,
+                ..Default::default()
+            })),
+            map_key_protocol_type: Some("string".to_string()),
+            ..Default::default()
+        };
+
+        let method =
+            RpcDef { name: "logging".to_string(), result: Some(result_ty), ..Default::default() };
+
+        let code = gen
+            .generate_method_response(&method)
+            .expect("generation must succeed")
+            .expect("response must be generated");
+
+        assert!(
+            code.contains("#[serde(transparent)]"),
+            "expected transparent wrapper, got:\n{code}"
+        );
+        assert!(
+            code.contains("pub struct LoggingResponse(pub BTreeMap<String, bool>);"),
+            "expected map wrapper shape, got:\n{code}"
+        );
+    }
+
+    #[test]
+    fn generated_output_does_not_emit_resultmap_string_aliases() {
+        let version = ProtocolVersion::from_str("30.0.0").expect("version");
+        let gen = VersionSpecificResponseTypeGenerator::new(version, "bitcoin_core".to_string());
+        let methods = vec![RpcDef {
+            name: "logging".to_string(),
+            description: String::new(),
+            params: vec![],
+            result: Some(TypeDef {
+                name: "LoggingResultMap".to_string(),
+                description: String::new(),
+                kind: TypeKind::Map,
+                fields: None,
+                variants: None,
+                union_variants: None,
+                base_type: None,
+                protocol_type: Some("object-dynamic".to_string()),
+                canonical_name: None,
+                condition: None,
+                map_value: Some(Box::new(TypeDef {
+                    name: "boolean".to_string(),
+                    description: String::new(),
+                    kind: TypeKind::Primitive,
+                    fields: None,
+                    variants: None,
+                    union_variants: None,
+                    base_type: None,
+                    protocol_type: Some("boolean".to_string()),
+                    canonical_name: None,
+                    condition: None,
+                    ..Default::default()
+                })),
+                map_key_protocol_type: Some("string".to_string()),
+                ..Default::default()
+            }),
+            ..Default::default()
+        }];
+        let files = gen.generate(&methods).expect("generate");
+        let responses = files
+            .iter()
+            .find(|(name, _)| name == "responses.rs")
+            .map(|(_, content)| content)
+            .expect("responses.rs");
+        assert!(
+            !responses.contains("pub type LoggingResultMap = String;"),
+            "map aliases must never degrade to String:\n{responses}"
+        );
+    }
+
+    #[test]
+    fn analyzepsbt_emits_deep_nested_object_structs() {
+        let workspace_root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../");
+        let ir_path = workspace_root.join("resources/ir/bitcoin.ir.json");
+        let ir = ir::ProtocolIR::from_file(&ir_path)
+            .unwrap_or_else(|e| panic!("load IR {}: {e}", ir_path.display()));
+        let methods: Vec<RpcDef> = ir.get_rpc_methods().into_iter().cloned().collect();
+        let version = ProtocolVersion::from_str("30.2.0").expect("protocol version");
+        let gen = VersionSpecificResponseTypeGenerator::new(version, "bitcoin_core".to_string());
+        let files = gen.generate(&methods).expect("generate responses");
+        let responses = files
+            .iter()
+            .find(|(name, _)| name == "responses.rs")
+            .map(|(_, content)| content)
+            .expect("responses.rs");
+        assert!(
+            responses.contains("pub struct AnalyzepsbtObjectMissingAlways "),
+            "expected AnalyzepsbtObjectMissingAlways definition; codegen may skip emitting nested types referenced by fields"
         );
     }
 

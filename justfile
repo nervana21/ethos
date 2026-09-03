@@ -21,6 +21,17 @@ process-openrpc input output="":
         cargo run {{RELEASE}} -p ethos-adapters --bin process_bitcoin_openrpc -- {{input}} {{output}}; \
     fi
 
+# Re-apply Ethos post-patches after replacing `resources/ir/openrpc.json` from Bitcoin Core
+# (nullability, enums, integers, getaddednodeinfo conditionals, hash_or_height).
+# Schema-first Core dumps (OpenRPC 1.4.1 / getopenrpcinfo) do not need x-bitcoin-arguments tables.
+patch-openrpc-fidelity input="resources/ir/openrpc.json":
+    python3 {{justfile_directory()}}/scripts/patch_openrpc_fidelity.py {{input}}
+
+# OpenRPC type-fidelity audit gate. Fails on P0 only (missing oneOf / discover RPCs / unpatched getaddednodeinfo).
+# P1/P2 (enums, integer domains, missing discriminator metadata) are advisory for upstream.
+openrpc-type-fidelity-gate input="resources/ir/openrpc.json" report="resources/reports/openrpc_type_fidelity_report.json":
+    cargo run {{RELEASE}} -p ethos-adapters --bin openrpc_type_fidelity_audit -- {{input}} --json-report {{report}}
+
 # Generate client from IR. Set output_path to write into a repo (e.g. ../ethos-bitcoind); use version for a pinned release.
 # Extra arguments (e.g. --exclude-hidden-rpcs) are forwarded to the pipeline and applied before codegen.
 # Examples:
@@ -134,6 +145,7 @@ corpus-pull:
 # Full sanity check.
 [group('ci')]
 @sane: lint
+  just openrpc-type-fidelity-gate
   cargo test --quiet --all-targets --no-default-features
   cargo test --quiet --all-targets --all-features
 
@@ -144,7 +156,9 @@ examples:
     @echo "  just generate-from-ir            # Generate client from IR (full RPC surface)"
     @echo "  just generate-from-ir ../ethos-bitcoind {{LATEST_VERSION}}   # Generate into repo with version (full RPC surface)"
     @echo "  just generate-from-ir ../ethos-bitcoind {{LATEST_VERSION}} --exclude-hidden-rpcs   # Generate without hidden/testing-only RPCs"
+    @echo "  just patch-openrpc-fidelity        # After copying OpenRPC from Core: restore strict Ethos schema overlays"
     @echo "  just process-openrpc resources/ir/openrpc.json resources/ir/bitcoin.ir.json"
+    @echo "  just openrpc-type-fidelity-gate   # Enforce schema fidelity checks and emit JSON report"
     @echo "  just process-openrpc-and-generate ../ethos-bitcoind   # OpenRPC → IR → generate into repo"
     @echo "  just process-openrpc-and-generate-stage ../ethos-bitcoind {{LATEST_VERSION}}   # …then stage + ethos HEAD subject as suggested commit"
     @echo "  STAGE_DOWNSTREAM=1 just process-openrpc-and-generate ../ethos-bitcoind {{LATEST_VERSION}}   # same as -stage"

@@ -23,6 +23,10 @@ types = { package = "ethos-types", version = "0.1.0", path = "../primitives/type
 name = "process_bitcoin_openrpc"
 path = "src/bin/process_bitcoin_openrpc.rs"
 
+[[bin]]
+name = "openrpc_type_fidelity_audit"
+path = "src/bin/openrpc_type_fidelity_audit.rs"
+
 [features]
 default = ["bitcoin-core", "runtime-backend"]
 bitcoin-core = []

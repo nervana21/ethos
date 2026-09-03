@@ -59,6 +59,7 @@ pub fn suggest_canonical_key(rpc_method: &str) -> String {
     match rpc_method {
         // Bitcoin Core OpenRPC helper method: keep "RPC" fully capitalized.
         "getopenrpcinfo" => return "GetOpenRpcInfo".to_string(),
+        "rpc.discover" => return "RpcDiscover".to_string(),
         _ => {}
     }
 
@@ -133,6 +134,7 @@ const METHOD_WORDS: &[&str] = &[
     "unspent",
     "wallets",
     "openrpc",
+    "discover",
     "accept",
     "active",
     "backup",

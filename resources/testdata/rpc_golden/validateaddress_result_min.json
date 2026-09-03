@@ -1,3 +1,5 @@
 {
-  "isvalid": false
+  "isvalid": false,
+  "error": "",
+  "error_locations": []
 }

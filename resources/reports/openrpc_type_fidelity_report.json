@@ -1,0 +1,43 @@
+{
+  "finding_count": 5,
+  "findings": [
+    {
+      "field": "result.schema",
+      "message": "Advisory: x-bitcoin-discriminatedResult missing (upstream follow-up).",
+      "method": "getmempoolancestors",
+      "rule": "discriminated_result_missing_metadata",
+      "severity": "P2"
+    },
+    {
+      "field": "result.schema",
+      "message": "Advisory: x-bitcoin-discriminatedResult missing (upstream follow-up).",
+      "method": "getmempooldescendants",
+      "rule": "discriminated_result_missing_metadata",
+      "severity": "P2"
+    },
+    {
+      "field": "result.schema",
+      "message": "Advisory: x-bitcoin-discriminatedResult missing (upstream follow-up).",
+      "method": "getrawmempool",
+      "rule": "discriminated_result_missing_metadata",
+      "severity": "P2"
+    },
+    {
+      "field": "result.schema",
+      "message": "Advisory: x-bitcoin-discriminatedResult missing (upstream follow-up).",
+      "method": "scanblocks",
+      "rule": "discriminated_result_missing_metadata",
+      "severity": "P2"
+    },
+    {
+      "field": "result.schema",
+      "message": "Advisory: x-bitcoin-discriminatedResult missing (upstream follow-up).",
+      "method": "scantxoutset",
+      "rule": "discriminated_result_missing_metadata",
+      "severity": "P2"
+    }
+  ],
+  "openrpc_path": "resources/ir/openrpc.json",
+  "openrpc_version": "1.4.1",
+  "rule_count": 1
+}

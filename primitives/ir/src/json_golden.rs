@@ -43,8 +43,24 @@ fn validate_json_matches_type_at(ty: &TypeDef, value: &Value, path: &str) -> Res
                 )?;
             validate_json_matches_type_at(inner, value, path)
         }
-        TypeKind::Union =>
-            Err(format!("{path}: TypeKind::Union is not supported by json golden validation")),
+        TypeKind::Union => {
+            let variants = ty
+                .union_variants
+                .as_ref()
+                .ok_or_else(|| format!("{path}: Union TypeDef missing union_variants"))?;
+            let mut errs = Vec::new();
+            for v in variants {
+                match validate_json_matches_type_at(&v.type_def, value, path) {
+                    Ok(()) => return Ok(()),
+                    Err(e) => errs.push(e),
+                }
+            }
+            Err(format!(
+                "{path}: JSON matched no union variant ({}): {}",
+                variants.len(),
+                errs.join(" | ")
+            ))
+        }
         TypeKind::Primitive | TypeKind::Enum | TypeKind::Alias | TypeKind::Custom =>
             validate_primitive_loose(ty, value, path),
     }

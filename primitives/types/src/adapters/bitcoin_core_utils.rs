@@ -47,6 +47,10 @@ pub fn normalize_field_name(name: &str) -> String {
 pub fn map_parameter_type_to_rust(param_type: &str, param_name: &str) -> String {
     let normalized_param = normalize_field_name(param_name);
 
+    if normalized_param == "hashorheight" {
+        return "HashOrHeight".to_owned();
+    }
+
     if matches!(param_type, "string" | "hex") {
         // Specific field-name rules for strongly-typed Bitcoin types
         // Fall back to String for generic string/hex parameters

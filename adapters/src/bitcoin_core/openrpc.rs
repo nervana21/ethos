@@ -23,6 +23,69 @@ use types::ProtocolVersion;
 
 use crate::conversion_helpers::{determine_requires_private_keys, sort_definitions_by_name};
 
+/// Param / field names that are integer-only across the RPC surface despite Core's
+/// OpenRPC often declaring `type: number` (ported from `corpus/rust-btc-codegen`).
+pub static INTEGER_PARAM_NAMES: &[&str] = &[
+    "height",
+    "verbosity",
+    "verbose",
+    "minconf",
+    "maxconf",
+    "conf_target",
+    "nblocks",
+    "blocks",
+    "count",
+    "num_blocks",
+    "n",
+    "version",
+    "locktime",
+    "port",
+    "timeout",
+    "millis",
+    "block_timeout",
+    "node_id",
+    "rescan_height",
+    "start_height",
+    "stop_height",
+    "depth",
+    "index",
+    "nout",
+    "vout",
+    "skip",
+    "nodeid",
+    "id",
+    "uid",
+    "peer_id",
+    "timestamp",
+    "confirmations",
+    "size",
+    "vsize",
+    "weight",
+    "strippedsize",
+    "time",
+    "mediantime",
+    "nonce",
+    "sequence",
+];
+
+fn default_openrpc_category() -> String { "misc".to_string() }
+
+fn is_integerish_name(name: &str) -> bool {
+    let n = name.to_ascii_lowercase();
+    if INTEGER_PARAM_NAMES.iter().any(|e| *e == n) {
+        return true;
+    }
+    n.ends_with("_height")
+        || n.ends_with("_count")
+        || n.ends_with("_index")
+        || n.ends_with("_version")
+        || n.ends_with("_id")
+        || n.ends_with("conf")
+}
+
+/// Whether Core's `type: number` for this name should be treated as an integer domain.
+pub fn openrpc_name_is_integer_domain(name: &str) -> bool { is_integerish_name(name) }
+
 /// Canonical PascalCase method name used as a stable prefix for generated types.
 fn canonical_method_pascal(method_name: &str) -> String {
     bitcoin_canonical_from_adapter_method(method_name, None)
@@ -45,6 +108,64 @@ fn result_key_pascal_suffix(key: &str) -> String {
         }
     }
     out
+}
+
+fn sanitize_identity_segment(input: &str) -> String {
+    let mut out = String::new();
+    let mut prev_us = false;
+    for ch in input.chars() {
+        let mapped = if ch.is_ascii_alphanumeric() { ch.to_ascii_lowercase() } else { '_' };
+        if mapped == '_' {
+            if !prev_us {
+                out.push(mapped);
+            }
+            prev_us = true;
+        } else {
+            out.push(mapped);
+            prev_us = false;
+        }
+    }
+    out.trim_matches('_').to_string()
+}
+
+fn annotate_type_identity(
+    type_def: &mut TypeDef,
+    method_name: Option<&str>,
+    parent_key: Option<&str>,
+    raw: &RawResult,
+) {
+    if !matches!(
+        type_def.kind,
+        TypeKind::Object | TypeKind::Array | TypeKind::Union | TypeKind::Map
+    ) {
+        return;
+    }
+    let Some(method) = method_name else { return };
+    let method_seg = sanitize_identity_segment(&canonical_method_pascal(method));
+    let kind_seg = sanitize_identity_segment(&format!("{:?}", type_def.kind));
+    let key_seg = if !raw.key_name.is_empty() {
+        sanitize_identity_segment(&raw.key_name)
+    } else {
+        sanitize_identity_segment(parent_key.unwrap_or("result"))
+    };
+    let cond_seg = if raw.condition.is_empty() {
+        "always".to_string()
+    } else {
+        sanitize_identity_segment(&raw.condition)
+    };
+    let identity = format!("{method_seg}__{kind_seg}__{key_seg}__{cond_seg}");
+    if type_def.type_identity.is_none() {
+        // Prefer a method-scoped PascalCase name for rust_emit_name(); keep the slug only when
+        // the type is still anonymous (`object` / `array`).
+        if type_def.name != "object"
+            && type_def.name != "array"
+            && type_def.name.chars().next().is_some_and(|c| c.is_ascii_uppercase())
+        {
+            type_def.type_identity = Some(type_def.name.clone());
+        } else {
+            type_def.type_identity = Some(identity);
+        }
+    }
 }
 
 /// OpenRPC document produced by Bitcoin Core's `getopenrpcinfo`
@@ -111,7 +232,7 @@ pub(crate) struct OpenRpcMethod {
     #[serde(default)]
     /// The result of the OpenRPC method.
     pub result: Option<OpenRpcResult>,
-    #[serde(rename = "x-bitcoin-category")]
+    #[serde(rename = "x-bitcoin-category", default = "default_openrpc_category")]
     /// The category of the OpenRPC method.
     pub x_bitcoin_category: String,
     #[serde(rename = "x-bitcoin-examples")]
@@ -314,6 +435,7 @@ fn determine_type_kind<T: HasTypeAndInner>(bc_type: &str, inner: &[T]) -> TypeKi
             }
         }
         "object" => TypeKind::Object,
+        "object-dynamic" => TypeKind::Map,
         // Arguments should not use this; results are handled in `convert_result` before `kind` is used.
         "object-one-of" => TypeKind::Union,
         // Results only; lowered to a two-branch union in `convert_result`.
@@ -769,7 +891,9 @@ fn convert_result(
                 result_key_pascal_suffix(disambig.unwrap())
             )
         };
-        return build_union_from_raw_results(&raw.inner, m, schema_hint, &union_type_name);
+        let mut union = build_union_from_raw_results(&raw.inner, m, schema_hint, &union_type_name);
+        annotate_type_identity(&mut union, method_name, parent_key, raw);
+        return union;
     }
 
     if raw.r#type == "string-or-string-array" {
@@ -827,7 +951,7 @@ fn convert_result(
         let mut anon_2 = 0usize;
         uniquify_anonymous_types(&mut array_branch, &method_pascal, 2, &mut anon_2);
 
-        return TypeDef {
+        let mut td = TypeDef {
             name: union_name,
             description: raw.description.clone(),
             kind: TypeKind::Union,
@@ -850,6 +974,8 @@ fn convert_result(
             condition: if raw.condition.is_empty() { None } else { Some(raw.condition.clone()) },
             ..Default::default()
         };
+        annotate_type_identity(&mut td, method_name, parent_key, raw);
+        return td;
     }
 
     if raw.r#type == "bool-or-object" {
@@ -891,7 +1017,7 @@ fn convert_result(
         let mut anon_2 = 0usize;
         uniquify_anonymous_types(&mut object_branch, &method_pascal, 2, &mut anon_2);
 
-        return TypeDef {
+        let mut td = TypeDef {
             name: union_name,
             description: raw.description.clone(),
             kind: TypeKind::Union,
@@ -913,6 +1039,42 @@ fn convert_result(
             condition: if raw.condition.is_empty() { None } else { Some(raw.condition.clone()) },
             ..Default::default()
         };
+        annotate_type_identity(&mut td, method_name, parent_key, raw);
+        return td;
+    }
+
+    if raw.r#type == "object-dynamic" {
+        let key_protocol = match raw.key_name.as_str() {
+            "txid" | "wtxid" | "blockhash" => "hex",
+            _ => "string",
+        };
+        let mut value_type = if let Some(first) = raw.inner.first() {
+            convert_result(first, Some("map_value"), method_name, None)
+        } else {
+            TypeDef {
+                name: "any".to_string(),
+                description: raw.description.clone(),
+                kind: TypeKind::Primitive,
+                protocol_type: Some("any".to_string()),
+                ..Default::default()
+            }
+        };
+        if value_type.type_identity.is_none() {
+            value_type.type_identity =
+                Some(format!("{}MapValue", canonical_method_pascal(method_name.unwrap_or("rpc"))));
+        }
+        let mut td = TypeDef {
+            name: "object_dynamic".to_string(),
+            description: raw.description.clone(),
+            kind: TypeKind::Map,
+            protocol_type: Some("object-dynamic".to_string()),
+            map_key_protocol_type: Some(key_protocol.to_string()),
+            map_value: Some(Box::new(value_type)),
+            condition: if raw.condition.is_empty() { None } else { Some(raw.condition.clone()) },
+            ..Default::default()
+        };
+        annotate_type_identity(&mut td, method_name, parent_key, raw);
+        return td;
     }
 
     let (type_name, protocol_type) = build_base_type_def(&raw.r#type);
@@ -941,7 +1103,7 @@ fn convert_result(
             }
         }
         type_def.fields = Some(vec![FieldDef {
-            key: FieldKey::Named("field_0".to_string()),
+            key: FieldKey::Anonymous(0),
             field_type: element_type,
             required: !raw.optional,
             description: raw.description.clone(),
@@ -951,6 +1113,7 @@ fn convert_result(
             emit_in_struct: None,
             force_optional: None,
         }]);
+        annotate_type_identity(&mut type_def, method_name, parent_key, raw);
         return type_def;
     }
 
@@ -1020,21 +1183,660 @@ fn convert_result(
         }
     }
 
+    annotate_type_identity(&mut type_def, method_name, parent_key, raw);
     type_def
 }
 
 /// Bitcoin Core OpenRPC: `schema.x-bitcoin-discriminatedResult` when the result is a keyed `oneOf`.
 fn parse_result_discriminator(schema: &serde_json::Value) -> Option<RpcResultDiscriminator> {
     let disc = schema.get("x-bitcoin-discriminatedResult")?;
+    let (parameter, parameter_index) = if let (Some(params), Some(indices)) = (
+        disc.get("parameters").and_then(|v| v.as_array()),
+        disc.get("parameterIndices").and_then(|v| v.as_array()),
+    ) {
+        let param_joined = params.iter().filter_map(|v| v.as_str()).collect::<Vec<_>>().join("|");
+        let first_idx = indices.first().and_then(|v| v.as_i64())?;
+        (param_joined, u32::try_from(first_idx).ok()?)
+    } else {
+        (
+            disc.get("parameter")?.as_str()?.to_string(),
+            u32::try_from(disc.get("parameterIndex")?.as_i64()?).ok()?,
+        )
+    };
     Some(RpcResultDiscriminator {
-        parameter: disc.get("parameter")?.as_str()?.to_string(),
-        parameter_index: u32::try_from(disc.get("parameterIndex")?.as_i64()?).ok()?,
+        parameter,
+        parameter_index,
         values: disc.get("values")?.as_array()?.clone(),
         nested_parameter_key: disc
             .get("nestedParameterKey")
             .and_then(|v| v.as_str())
             .map(str::to_string),
     })
+}
+
+fn protocol_type_from_schema_type(schema_type: &str) -> Option<&'static str> {
+    match schema_type {
+        "string" => Some("string"),
+        "number" => Some("number"),
+        "integer" => Some("number"),
+        "boolean" => Some("boolean"),
+        "object" => Some("object"),
+        "array" => Some("array"),
+        "null" => Some("none"),
+        _ => None,
+    }
+}
+
+fn schema_description<'a>(schema: &'a serde_json::Value, fallback: &'a str) -> &'a str {
+    schema.get("description").and_then(|v| v.as_str()).unwrap_or(fallback)
+}
+
+fn primary_json_schema_type(schema: &serde_json::Value) -> Option<&str> {
+    match schema.get("type") {
+        Some(serde_json::Value::String(s)) => Some(s.as_str()),
+        Some(serde_json::Value::Array(arr)) => arr
+            .iter()
+            .filter_map(|v| v.as_str())
+            .find(|t| *t != "null")
+            .or_else(|| arr.iter().filter_map(|v| v.as_str()).next()),
+        _ => None,
+    }
+}
+
+fn schema_allows_null(schema: &serde_json::Value) -> bool {
+    match schema.get("type") {
+        Some(serde_json::Value::String(s)) => s == "null",
+        Some(serde_json::Value::Array(arr)) => arr.iter().any(|v| v.as_str() == Some("null")),
+        _ => false,
+    }
+}
+
+fn object_type_name(method_name: Option<&str>, field_name: Option<&str>, fallback: &str) -> String {
+    match (method_name, field_name) {
+        (Some(method), Some(key)) if !key.is_empty() && key != "result" => {
+            format!("{}{}", canonical_method_pascal(method), result_key_pascal_suffix(key))
+        }
+        _ => fallback.to_string(),
+    }
+}
+
+fn annotate_schema_type_identity(
+    type_def: &mut TypeDef,
+    method_name: Option<&str>,
+    parent_key: Option<&str>,
+    condition: Option<&str>,
+) {
+    if !matches!(
+        type_def.kind,
+        TypeKind::Object | TypeKind::Array | TypeKind::Union | TypeKind::Map
+    ) {
+        return;
+    }
+    let Some(method) = method_name else { return };
+    let method_seg = sanitize_identity_segment(&canonical_method_pascal(method));
+    let kind_seg = sanitize_identity_segment(&format!("{:?}", type_def.kind));
+    let key_seg = sanitize_identity_segment(parent_key.unwrap_or("result"));
+    let cond_seg = sanitize_identity_segment(condition.unwrap_or("always"));
+    let identity = format!("{method_seg}__{kind_seg}__{key_seg}__{cond_seg}");
+    if type_def.type_identity.is_none() {
+        // Prefer a method-scoped PascalCase name for rust_emit_name(); keep the slug only when
+        // the type is still anonymous (`object` / `array`).
+        if type_def.name != "object"
+            && type_def.name != "array"
+            && type_def.name.chars().next().is_some_and(|c| c.is_ascii_uppercase())
+        {
+            type_def.type_identity = Some(type_def.name.clone());
+        } else {
+            type_def.type_identity = Some(identity);
+        }
+    }
+}
+
+fn infer_union_protocol_type(field_name: Option<&str>) -> &'static str {
+    let Some(name) = field_name else {
+        return "any";
+    };
+    let n: String =
+        name.chars().filter(|c| *c != '_' && *c != '-').flat_map(|c| c.to_lowercase()).collect();
+    match n.as_str() {
+        // Core emits number|string oneOf for amounts and fee rates; keep amount domain so
+        // map_parameter_type_to_rust can pick FeeRate / bitcoin::Amount from the field name.
+        "amount" | "fee" | "feerate" | "maxfeerate" | "maxburnamount" => "amount",
+        "range" => "range",
+        _ => "any",
+    }
+}
+
+fn union_from_schema_branches(
+    branches: &[serde_json::Value],
+    fallback_name: &str,
+    description_fallback: &str,
+    method_name: Option<&str>,
+    field_name: Option<&str>,
+) -> TypeDef {
+    let method_pascal = canonical_method_pascal(method_name.unwrap_or("rpc"));
+    let union_variants = branches
+        .iter()
+        .enumerate()
+        .map(|(idx, branch)| {
+            let cond = branch
+                .get("description")
+                .and_then(|v| v.as_str())
+                .filter(|s| !s.is_empty())
+                .map(str::to_string);
+            let branch_fallback = format!("{fallback_name}Branch{}", idx + 1);
+            let mut branch_type = type_def_from_json_schema_ctx(
+                branch,
+                &branch_fallback,
+                schema_description(branch, description_fallback),
+                method_name,
+                Some(&format!("branch_{}", idx + 1)),
+            );
+            let mut anon_counter = 0usize;
+            uniquify_anonymous_types(&mut branch_type, &method_pascal, idx + 1, &mut anon_counter);
+            UnionVariantDef {
+                name: format!("Branch{}", idx + 1),
+                description: schema_description(branch, description_fallback).to_string(),
+                condition: cond,
+                type_def: branch_type,
+            }
+        })
+        .collect();
+
+    let protocol = infer_union_protocol_type(field_name);
+    let mut name = fallback_name.to_string();
+    // Stable dialect type for hash_or_height params (client import + signature).
+    if field_name.is_some_and(|n| {
+        n.chars()
+            .filter(|c| *c != '_' && *c != '-')
+            .flat_map(|c| c.to_lowercase())
+            .eq("hashorheight".chars())
+    }) {
+        name = "HashOrHeight".to_string();
+    }
+
+    let mut td = TypeDef {
+        name,
+        description: "Union result preserved from OpenRPC oneOf/anyOf branches".to_string(),
+        kind: TypeKind::Union,
+        union_variants: Some(union_variants),
+        protocol_type: Some(protocol.to_string()),
+        ..Default::default()
+    };
+    annotate_schema_type_identity(&mut td, method_name, field_name.or(Some("result")), None);
+    td
+}
+
+fn type_def_from_json_schema(
+    schema: &serde_json::Value,
+    fallback_name: &str,
+    description_fallback: &str,
+) -> TypeDef {
+    type_def_from_json_schema_ctx(schema, fallback_name, description_fallback, None, None)
+}
+
+/// JSON Schema → [`TypeDef`] walker for Core schema-first OpenRPC (`params` / `result.schema`).
+fn type_def_from_json_schema_ctx(
+    schema: &serde_json::Value,
+    fallback_name: &str,
+    description_fallback: &str,
+    method_name: Option<&str>,
+    field_name: Option<&str>,
+) -> TypeDef {
+    let desc = schema_description(schema, description_fallback).to_string();
+
+    if let Some(branches) =
+        schema.get("oneOf").or_else(|| schema.get("anyOf")).and_then(|v| v.as_array())
+    {
+        if branches.len() >= 2 {
+            return union_from_schema_branches(
+                branches,
+                fallback_name,
+                description_fallback,
+                method_name,
+                field_name,
+            );
+        }
+        if branches.len() == 1 {
+            return type_def_from_json_schema_ctx(
+                &branches[0],
+                fallback_name,
+                description_fallback,
+                method_name,
+                field_name,
+            );
+        }
+    }
+
+    if schema.get("x-bitcoin-unit").and_then(|v| v.as_str()) == Some("amount") {
+        return TypeDef {
+            name: "amount".to_string(),
+            description: desc,
+            kind: TypeKind::Primitive,
+            protocol_type: Some("amount".to_string()),
+            ..Default::default()
+        };
+    }
+
+    if schema.get("x-bitcoin-unit").and_then(|v| v.as_str()) == Some("unix-time") {
+        return TypeDef {
+            name: "timestamp".to_string(),
+            description: desc,
+            kind: TypeKind::Primitive,
+            protocol_type: Some("timestamp".to_string()),
+            ..Default::default()
+        };
+    }
+
+    let schema_type = primary_json_schema_type(schema);
+
+    match schema_type {
+        Some("object") => {
+            let props_empty = schema
+                .get("properties")
+                .and_then(|v| v.as_object())
+                .map(|o| o.is_empty())
+                .unwrap_or(true);
+            let additional_is_open = schema
+                .get("additionalProperties")
+                .is_some_and(|ap| ap.as_bool() == Some(true) || ap.is_object());
+            let is_dynamic =
+                schema.get("x-bitcoin-object-dynamic").and_then(|v| v.as_bool()).unwrap_or(false)
+                    || (props_empty && additional_is_open);
+
+            if is_dynamic {
+                if let Some(additional) = schema.get("additionalProperties") {
+                    if additional.as_bool() != Some(false) {
+                        let value_type = if let Some(true) = additional.as_bool() {
+                            TypeDef {
+                                name: "any".to_string(),
+                                kind: TypeKind::Primitive,
+                                protocol_type: Some("any".to_string()),
+                                ..Default::default()
+                            }
+                        } else {
+                            type_def_from_json_schema_ctx(
+                                additional,
+                                &format!("{fallback_name}Value"),
+                                &desc,
+                                method_name,
+                                Some("map_value"),
+                            )
+                        };
+                        let map_name = object_type_name(
+                            method_name,
+                            field_name,
+                            &format!("{fallback_name}Map"),
+                        );
+                        let mut td = TypeDef {
+                            name: map_name,
+                            description: desc,
+                            kind: TypeKind::Map,
+                            protocol_type: Some("object-dynamic".to_string()),
+                            map_value: Some(Box::new(value_type)),
+                            map_key_protocol_type: Some(
+                                schema
+                                    .get("x-ethos-map-key-protocol-type")
+                                    .and_then(|v| v.as_str())
+                                    .unwrap_or("string")
+                                    .to_string(),
+                            ),
+                            ..Default::default()
+                        };
+                        annotate_schema_type_identity(
+                            &mut td,
+                            method_name,
+                            field_name.or(Some("result")),
+                            None,
+                        );
+                        return td;
+                    }
+                }
+            }
+
+            let required_set: std::collections::BTreeSet<String> = schema
+                .get("required")
+                .and_then(|v| v.as_array())
+                .map(|arr| {
+                    arr.iter()
+                        .filter_map(|x| x.as_str().map(str::to_string))
+                        .collect::<std::collections::BTreeSet<_>>()
+                })
+                .unwrap_or_default();
+            let fields = schema
+                .get("properties")
+                .and_then(|v| v.as_object())
+                .map(|props| {
+                    props
+                        .iter()
+                        .map(|(name, prop_schema)| {
+                            let child_fallback = format!(
+                                "{}{}",
+                                object_type_name(method_name, field_name, fallback_name),
+                                result_key_pascal_suffix(name)
+                            );
+                            FieldDef {
+                                key: FieldKey::Named(name.clone()),
+                                field_type: type_def_from_json_schema_ctx(
+                                    prop_schema,
+                                    &child_fallback,
+                                    prop_schema
+                                        .get("description")
+                                        .and_then(|v| v.as_str())
+                                        .unwrap_or_default(),
+                                    method_name,
+                                    Some(name.as_str()),
+                                ),
+                                required: required_set.contains(name),
+                                description: prop_schema
+                                    .get("description")
+                                    .and_then(|v| v.as_str())
+                                    .unwrap_or_default()
+                                    .to_string(),
+                                default_value: None,
+                                version_added: None,
+                                version_removed: None,
+                                emit_in_struct: None,
+                                force_optional: None,
+                            }
+                        })
+                        .collect::<Vec<_>>()
+                })
+                .unwrap_or_default();
+            let mut td = TypeDef {
+                name: object_type_name(method_name, field_name, fallback_name),
+                description: desc,
+                kind: TypeKind::Object,
+                fields: Some(fields),
+                protocol_type: Some("object".to_string()),
+                ..Default::default()
+            };
+            annotate_schema_type_identity(
+                &mut td,
+                method_name,
+                field_name.or(Some("result")),
+                None,
+            );
+            td
+        }
+        Some("array") => {
+            let fields =
+                if let Some(prefix_items) = schema.get("prefixItems").and_then(|v| v.as_array()) {
+                    prefix_items
+                        .iter()
+                        .enumerate()
+                        .map(|(idx, item_schema)| FieldDef {
+                            key: FieldKey::Anonymous(idx),
+                            field_type: type_def_from_json_schema_ctx(
+                                item_schema,
+                                &format!("{}Item{}", fallback_name, idx),
+                                description_fallback,
+                                method_name,
+                                field_name,
+                            ),
+                            required: true,
+                            description: String::new(),
+                            default_value: None,
+                            version_added: None,
+                            version_removed: None,
+                            emit_in_struct: None,
+                            force_optional: None,
+                        })
+                        .collect::<Vec<_>>()
+                } else {
+                    let items = schema.get("items");
+                    // Draft-07 tuple form: items is an array of schemas.
+                    let element = if let Some(serde_json::Value::Array(tuple)) = items {
+                        if tuple.len() > 1 {
+                            return type_def_from_json_schema_ctx(
+                                &serde_json::json!({
+                                    "type": "array",
+                                    "prefixItems": tuple,
+                                    "description": desc,
+                                }),
+                                fallback_name,
+                                description_fallback,
+                                method_name,
+                                field_name,
+                            );
+                        }
+                        tuple.first().map(|item| {
+                            type_def_from_json_schema_ctx(
+                                item,
+                                &format!("{}Item", fallback_name),
+                                description_fallback,
+                                method_name,
+                                field_name,
+                            )
+                        })
+                    } else {
+                        items.map(|item| {
+                            type_def_from_json_schema_ctx(
+                                item,
+                                &format!("{}Item", fallback_name),
+                                description_fallback,
+                                method_name,
+                                field_name,
+                            )
+                        })
+                    };
+                    let element = element.unwrap_or(TypeDef {
+                        name: "any".to_string(),
+                        kind: TypeKind::Primitive,
+                        protocol_type: Some("any".to_string()),
+                        ..Default::default()
+                    });
+                    vec![FieldDef {
+                        key: FieldKey::Anonymous(0),
+                        field_type: element,
+                        required: true,
+                        description: String::new(),
+                        default_value: None,
+                        version_added: None,
+                        version_removed: None,
+                        emit_in_struct: None,
+                        force_optional: None,
+                    }]
+                };
+            let mut td = TypeDef {
+                name: "array".to_string(),
+                description: desc,
+                kind: TypeKind::Array,
+                fields: Some(fields),
+                protocol_type: Some("array".to_string()),
+                ..Default::default()
+            };
+            annotate_schema_type_identity(
+                &mut td,
+                method_name,
+                field_name.or(Some("result")),
+                None,
+            );
+            td
+        }
+        Some("integer") => TypeDef {
+            name: "number".to_string(),
+            description: desc,
+            kind: TypeKind::Primitive,
+            protocol_type: Some("number".to_string()),
+            ..Default::default()
+        },
+        Some("number") => TypeDef {
+            name: "number".to_string(),
+            description: desc,
+            kind: TypeKind::Primitive,
+            protocol_type: Some("number".to_string()),
+            // Integer-looking names stay protocol `number`; BitcoinCoreTypeRegistry maps via field name.
+            // `is_integerish_name` / INTEGER_PARAM_NAMES document the Core `number`→integer gap.
+            ..Default::default()
+        },
+        Some("string") => {
+            let protocol = if schema
+                .get("pattern")
+                .and_then(|v| v.as_str())
+                .is_some_and(|p| p.contains("0-9a-fA-F") || p.contains("0-9a-f"))
+                && field_name.is_some_and(|n| {
+                    let n = n.to_ascii_lowercase();
+                    n.contains("hash")
+                        || n.contains("txid")
+                        || n.contains("wtxid")
+                        || n == "hex"
+                        || n.ends_with("hex")
+                }) {
+                "hex"
+            } else {
+                "string"
+            };
+            TypeDef {
+                name: protocol.to_string(),
+                description: desc,
+                kind: TypeKind::Primitive,
+                protocol_type: Some(protocol.to_string()),
+                ..Default::default()
+            }
+        }
+        Some("boolean") => TypeDef {
+            name: "boolean".to_string(),
+            description: desc,
+            kind: TypeKind::Primitive,
+            protocol_type: Some("boolean".to_string()),
+            ..Default::default()
+        },
+        Some("null") => TypeDef {
+            name: "none".to_string(),
+            description: desc,
+            kind: TypeKind::Primitive,
+            protocol_type: Some("none".to_string()),
+            ..Default::default()
+        },
+        Some(other) => {
+            let protocol = protocol_type_from_schema_type(other).unwrap_or("any");
+            TypeDef {
+                name: protocol.to_string(),
+                description: desc,
+                kind: TypeKind::Primitive,
+                protocol_type: Some(protocol.to_string()),
+                ..Default::default()
+            }
+        }
+        None => {
+            if schema_allows_null(schema) {
+                return TypeDef {
+                    name: "none".to_string(),
+                    description: desc,
+                    kind: TypeKind::Primitive,
+                    protocol_type: Some("none".to_string()),
+                    ..Default::default()
+                };
+            }
+            TypeDef {
+                name: "any".to_string(),
+                description: desc,
+                kind: TypeKind::Primitive,
+                protocol_type: Some("any".to_string()),
+                ..Default::default()
+            }
+        }
+    }
+}
+
+fn convert_param_from_openrpc_value(param: &serde_json::Value) -> ParamDef {
+    let name = param.get("name").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let required = param.get("required").and_then(|v| v.as_bool()).unwrap_or(false);
+    let mut description =
+        param.get("description").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    if let Some(aliases) = param.get("x-bitcoin-aliases").and_then(|v| v.as_array()) {
+        let alias_strs: Vec<&str> = aliases.iter().filter_map(|v| v.as_str()).collect();
+        if !alias_strs.is_empty() {
+            description = format!("{description} (aliases: {})", alias_strs.join(", "));
+        }
+    }
+    if param.get("x-bitcoin-placeholder").and_then(|v| v.as_bool()).unwrap_or(false) {
+        description = format!("{description} [x-bitcoin-placeholder]");
+    }
+    let schema = param.get("schema").cloned().unwrap_or(serde_json::Value::Null);
+    let default_value = schema
+        .get("default")
+        .map(|v| match v {
+            serde_json::Value::String(s) => s.clone(),
+            other => other.to_string(),
+        })
+        .or_else(|| {
+            schema.get("x-bitcoin-default-hint").and_then(|v| v.as_str()).map(str::to_string)
+        });
+    let mut param_type = type_def_from_json_schema_ctx(
+        &schema,
+        if name.is_empty() { "param" } else { &name },
+        &description,
+        None,
+        Some(name.as_str()),
+    );
+    if param_type.protocol_type.is_none() {
+        param_type.protocol_type = Some(
+            match param_type.kind {
+                TypeKind::Object => "object",
+                TypeKind::Array => "array",
+                TypeKind::Map => "object-dynamic",
+                TypeKind::Union => infer_union_protocol_type(Some(name.as_str())),
+                TypeKind::Primitive => param_type.name.as_str(),
+                _ => "any",
+            }
+            .to_string(),
+        );
+    }
+    if name
+        .chars()
+        .filter(|c| *c != '_' && *c != '-')
+        .flat_map(|c| c.to_lowercase())
+        .eq("hashorheight".chars())
+    {
+        param_type.name = "HashOrHeight".to_string();
+    }
+    ParamDef {
+        name,
+        param_type,
+        required,
+        description,
+        default_value,
+        version_added: None,
+        version_removed: None,
+    }
+}
+
+fn convert_result_from_schema(schema: &serde_json::Value, method_name: &str) -> TypeDef {
+    let fallback = format!("{}Result", canonical_method_pascal(method_name));
+    let desc = schema_description(schema, "");
+    type_def_from_json_schema_ctx(schema, &fallback, desc, Some(method_name), Some("result"))
+}
+
+fn maybe_map_from_dynamic_object_schema(
+    method_name: &str,
+    raw: &RawResult,
+    schema: Option<&serde_json::Value>,
+) -> Option<TypeDef> {
+    if raw.r#type != "object-dynamic"
+        && !schema
+            .and_then(|s| s.get("type").and_then(|v| v.as_str()))
+            .is_some_and(|t| t == "object")
+    {
+        return None;
+    }
+    let schema = schema?;
+    let additional = schema.get("additionalProperties")?;
+    let map_name = format!("{}ResultMap", canonical_method_pascal(method_name));
+    let value_name = format!("{}Value", map_name);
+    let value_type = type_def_from_json_schema(additional, &value_name, &raw.description);
+    let mut td = TypeDef {
+        name: map_name,
+        description: raw.description.clone(),
+        kind: TypeKind::Map,
+        protocol_type: Some("object-dynamic".to_string()),
+        map_value: Some(Box::new(value_type)),
+        map_key_protocol_type: Some("string".to_string()),
+        ..Default::default()
+    };
+    annotate_type_identity(&mut td, Some(method_name), Some("result"), raw);
+    Some(td)
 }
 
 /// Picks the longer description when RPC help repeats the same key with more detail later.
@@ -1185,6 +1987,14 @@ fn ensure_unique_merged_field_name(
     name
 }
 
+fn stable_merge_field_key(base_name: &str, fallback_index: usize) -> FieldKey {
+    if base_name.is_empty() || base_name.starts_with("field_") {
+        FieldKey::Anonymous(fallback_index)
+    } else {
+        FieldKey::Named(base_name.to_string())
+    }
+}
+
 /// Merges multiple results into a single object `TypeDef`.
 /// `method_name`: RPC method name so nested object types get stable names (e.g. DecodepsbtTx).
 fn merge_results_to_object(results: &[RawResult], method_name: &str) -> TypeDef {
@@ -1256,14 +2066,15 @@ fn merge_results_to_object(results: &[RawResult], method_name: &str) -> TypeDef 
                     continue;
                 }
 
-                let key_name = if !inner.key_name.is_empty() {
-                    inner.key_name.clone()
+                let key = if !inner.key_name.is_empty() {
+                    let name =
+                        ensure_unique_merged_field_name(&mut field_names, inner.key_name.clone());
+                    FieldKey::Named(name)
                 } else {
-                    ensure_unique_merged_field_name(&mut field_names, format!("field_{}", idx))
+                    stable_merge_field_key("", idx)
                 };
-                let name = ensure_unique_merged_field_name(&mut field_names, key_name);
                 fields.push(FieldDef {
-                    key: FieldKey::Named(name),
+                    key,
                     field_type: new_field_type,
                     required: is_required,
                     description: inner.description.clone(),
@@ -1302,7 +2113,7 @@ fn merge_results_to_object(results: &[RawResult], method_name: &str) -> TypeDef 
                 if desc_lower.contains("address") && !desc_lower.contains("address_") {
                     "addresses".to_string()
                 } else {
-                    ensure_unique_merged_field_name(&mut field_names, format!("field_{}", idx))
+                    format!("field_{}", idx)
                 }
             };
 
@@ -1326,9 +2137,13 @@ fn merge_results_to_object(results: &[RawResult], method_name: &str) -> TypeDef 
                 continue;
             }
 
-            let name = ensure_unique_merged_field_name(&mut field_names, base_field_name);
+            let key = if result.key_name.is_empty() {
+                stable_merge_field_key(&base_field_name, idx)
+            } else {
+                FieldKey::Named(ensure_unique_merged_field_name(&mut field_names, base_field_name))
+            };
             fields.push(FieldDef {
-                key: FieldKey::Named(name),
+                key,
                 field_type: new_field_type,
                 required: is_required_leaf,
                 description: result.description.clone(),
@@ -1367,36 +2182,44 @@ fn convert_argument(raw: RawArgument) -> ParamDef {
 
 /// Converts an OpenRPC method to an `RpcDef`.
 ///
+/// Primary path (Bitcoin Core OpenRPC 1.4.1+): `params[]` + `result.schema`.
+/// Legacy fallback: `x-bitcoin-arguments` / `x-bitcoin-results` when present.
+///
 /// version_added should be determined by the caller to avoid redundant lookups.
 fn convert_openrpc_method(method: OpenRpcMethod, version_added: Option<String>) -> RpcDef {
-    let arguments = method.x_bitcoin_arguments;
     let openrpc_result = method.result.as_ref();
-    let results = openrpc_result.map(|r| r.x_bitcoin_results.clone()).unwrap_or_default();
+    let legacy_results = openrpc_result.map(|r| r.x_bitcoin_results.clone()).unwrap_or_default();
     let result_discriminator =
         openrpc_result.and_then(|r| r.schema.as_ref()).and_then(parse_result_discriminator);
 
-    let params: Vec<ParamDef> = arguments.into_iter().map(convert_argument).collect();
-
-    let result = if results.is_empty() {
-        None
-    } else if results.len() == 1 {
-        Some(convert_result(
-            &results[0],
-            None,
-            Some(&method.name),
-            openrpc_result.and_then(|r| r.schema.as_ref()),
-        ))
-    } else if openrpc_result
-        .and_then(|r| r.schema.as_ref())
-        .is_some_and(has_schema_discriminated_oneof)
-    {
-        Some(build_union_result_type(
-            &results,
-            &method.name,
-            openrpc_result.and_then(|r| r.schema.as_ref()),
-        ))
+    let params: Vec<ParamDef> = if !method.x_bitcoin_arguments.is_empty() {
+        method.x_bitcoin_arguments.into_iter().map(convert_argument).collect()
     } else {
-        Some(merge_results_to_object(&results, &method.name))
+        method.params.iter().map(convert_param_from_openrpc_value).collect()
+    };
+
+    let result = if !legacy_results.is_empty() {
+        if legacy_results.len() == 1 {
+            let schema = openrpc_result.and_then(|r| r.schema.as_ref());
+            maybe_map_from_dynamic_object_schema(&method.name, &legacy_results[0], schema).or_else(
+                || Some(convert_result(&legacy_results[0], None, Some(&method.name), schema)),
+            )
+        } else if openrpc_result
+            .and_then(|r| r.schema.as_ref())
+            .is_some_and(has_schema_discriminated_oneof)
+        {
+            Some(build_union_result_type(
+                &legacy_results,
+                &method.name,
+                openrpc_result.and_then(|r| r.schema.as_ref()),
+            ))
+        } else {
+            Some(merge_results_to_object(&legacy_results, &method.name))
+        }
+    } else if let Some(schema) = openrpc_result.and_then(|r| r.schema.as_ref()) {
+        Some(convert_result_from_schema(schema, &method.name))
+    } else {
+        None
     };
 
     let category = method.x_bitcoin_category.clone();
@@ -1433,6 +2256,7 @@ fn convert_openrpc_method(method: OpenRpcMethod, version_added: Option<String>) 
 fn has_schema_oneof_branch_metadata(schema: &serde_json::Value) -> bool {
     schema
         .get("x-bitcoin-oneof-branches")
+        .or_else(|| schema.get("x-bitcoin-oneOfBranchConditions"))
         .and_then(|v| v.as_array())
         .is_some_and(|branches| branches.len() >= 2)
 }
@@ -1451,12 +2275,22 @@ fn build_union_from_raw_results(
 ) -> TypeDef {
     let method_pascal = canonical_method_pascal(method_name);
     let branch_conditions: Vec<String> = schema
-        .and_then(|s| s.get("x-bitcoin-oneof-branches"))
+        .and_then(|s| {
+            s.get("x-bitcoin-oneof-branches").or_else(|| s.get("x-bitcoin-oneOfBranchConditions"))
+        })
         .and_then(|v| v.as_array())
         .map(|branches| {
             branches
                 .iter()
-                .map(|b| b.get("condition").and_then(|v| v.as_str()).unwrap_or("").to_string())
+                .map(|b| {
+                    if let Some(s) = b.as_str() {
+                        s.to_string()
+                    } else if let Some(arr) = b.as_array() {
+                        arr.iter().filter_map(|v| v.as_str()).collect::<Vec<_>>().join(" | ")
+                    } else {
+                        b.get("condition").and_then(|v| v.as_str()).unwrap_or("").to_string()
+                    }
+                })
                 .collect()
         })
         .unwrap_or_default();
@@ -1493,6 +2327,7 @@ fn build_union_from_raw_results(
         description: "Union result preserved from OpenRPC oneOf branches".to_string(),
         kind: TypeKind::Union,
         union_variants: Some(union_variants),
+        protocol_type: Some("any".to_string()),
         ..Default::default()
     }
 }
@@ -1546,22 +2381,8 @@ mod tests {
 
     use super::*;
 
-    fn type_def_contains_named_field_recursive(td: &TypeDef, name: &str) -> bool {
-        if let Some(fields) = &td.fields {
-            for f in fields {
-                if f.key.json_key() == Some(name) {
-                    return true;
-                }
-                if type_def_contains_named_field_recursive(&f.field_type, name) {
-                    return true;
-                }
-            }
-        }
-        false
-    }
-
     #[test]
-    fn getrawtransaction_merged_results_drop_duplicate_json_keys_no_suffix() {
+    fn getrawtransaction_schema_oneof_yields_union_not_merged_scaffold_keys() {
         let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../resources/ir/openrpc.json");
         let content = std::fs::read_to_string(&path)
             .unwrap_or_else(|e| panic!("read {}: {e}", path.display()));
@@ -1572,41 +2393,21 @@ mod tests {
             .find(|m| m.name == "getrawtransaction")
             .expect("getrawtransaction in openrpc");
         let rpc = convert_openrpc_method(method.clone(), Some("30".to_string()));
-        let merged = rpc.result.expect("getrawtransaction result");
-        assert_eq!(
-            merged.kind,
-            TypeKind::Object,
-            "without explicit discriminator metadata, results should stay mechanically merged"
-        );
-        let fields = merged.fields.as_ref().expect("merged fields");
-        for bad in [
-            "in_active_chain_1",
-            "blockhash_1",
-            "confirmations_1",
-            "blocktime_1",
-            "time_1",
-            "hex_1",
-            "txid_1",
-            "hash_1",
-            "size_1",
-            "vsize_1",
-            "weight_1",
-            "version_1",
-            "locktime_1",
-            "vin_1",
-            "vout_1",
-        ] {
-            assert!(
-                !fields.iter().any(|f| f.key.as_ident() == bad),
-                "duplicate help branches must merge to real JSON keys (unexpected {bad}); got {:?}",
-                fields.iter().map(|f| f.key.as_ident()).collect::<Vec<_>>()
-            );
+        assert!(!rpc.params.is_empty(), "schema-first params must be non-empty");
+        let result = rpc.result.expect("getrawtransaction result");
+        assert_eq!(result.kind, TypeKind::Union, "schema-first oneOf must lower to Union");
+        let variants = result.union_variants.as_ref().expect("union variants");
+        assert!(variants.len() >= 2);
+        for bad in ["in_active_chain_1", "blockhash_1", "vin_1", "vout_1"] {
+            for uv in variants {
+                if let Some(fields) = uv.type_def.fields.as_ref() {
+                    assert!(
+                        !fields.iter().any(|f| f.key.as_ident() == bad),
+                        "unexpected scaffold key {bad}"
+                    );
+                }
+            }
         }
-        let vin = fields.iter().find(|f| f.key.as_ident() == "vin").expect("vin field");
-        assert!(
-            type_def_contains_named_field_recursive(&vin.field_type, "prevout"),
-            "merged vin type should include prevout (verbosity 2)"
-        );
     }
 
     #[test]
@@ -1618,11 +2419,18 @@ mod tests {
         let method =
             doc.methods.iter().find(|m| m.name == "getblock").expect("getblock in openrpc");
         let rpc = convert_openrpc_method(method.clone(), Some("31".to_string()));
-        let merged = rpc.result.expect("getblock result");
-        assert_eq!(merged.kind, TypeKind::Object);
-        let fields = merged.fields.as_ref().expect("getblock object fields");
+        assert_eq!(rpc.params.len(), 2);
+        let result = rpc.result.expect("getblock result");
+        assert_eq!(result.kind, TypeKind::Union);
+        assert!(rpc.result_discriminator.is_some(), "getblock has x-bitcoin-discriminatedResult");
+        let variants = result.union_variants.as_ref().expect("union variants");
         assert!(
-            !fields.iter().any(|f| f.key.as_ident() == "tx_1"),
+            !variants.iter().any(|uv| {
+                uv.type_def
+                    .fields
+                    .as_ref()
+                    .is_some_and(|fields| fields.iter().any(|f| f.key.as_ident() == "tx_1"))
+            }),
             "merged scaffold key tx_1 must not appear"
         );
     }
@@ -1758,16 +2566,17 @@ mod tests {
         let net_el = networks.field_type.array_element_type().expect("networks is array");
         let loc_el = locals.field_type.array_element_type().expect("localaddresses is array");
         assert_ne!(
-            net_el.rust_emit_name(),
-            loc_el.rust_emit_name(),
+            net_el.name, loc_el.name,
             "network row vs local address row must not share one IR type name"
         );
-        assert_eq!(net_el.rust_emit_name(), "GetNetworkInfoNetworks");
-        assert_eq!(loc_el.rust_emit_name(), "GetNetworkInfoLocaladdresses");
+        assert_eq!(net_el.name, "GetNetworkInfoNetworks");
+        assert_eq!(loc_el.name, "GetNetworkInfoLocaladdresses");
+        assert!(net_el.type_identity.is_some());
+        assert!(loc_el.type_identity.is_some());
     }
 
     #[test]
-    fn getrawmempool_mempool_sequence_object_is_named_not_anonymous_object() {
+    fn getrawmempool_schema_oneof_yields_union_with_sequence_branch() {
         let manifest = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         let openrpc_path = manifest.join("../resources/ir/openrpc.json");
         let file = std::fs::File::open(&openrpc_path)
@@ -1780,12 +2589,55 @@ mod tests {
             .expect("getrawmempool present in openrpc.json");
         let rpc = convert_openrpc_method(method.clone(), Some("30".to_string()));
         let result_ty = rpc.result.expect("getrawmempool result");
-        assert_eq!(result_ty.kind, TypeKind::Object);
-        let fields = result_ty.fields.as_ref().expect("merged fields");
+        assert_eq!(result_ty.kind, TypeKind::Union);
+        let variants = result_ty.union_variants.as_ref().expect("union variants");
         assert!(
-            fields.iter().any(|f| f.key.as_ident() == "mempool_sequence"),
-            "mechanical merge should preserve mempool_sequence key"
+            variants.iter().any(|uv| {
+                uv.type_def.fields.as_ref().is_some_and(|fields| {
+                    fields.iter().any(|f| f.key.as_ident() == "mempool_sequence")
+                })
+            }),
+            "oneOf branches should preserve mempool_sequence key"
         );
+    }
+
+    #[test]
+    fn getbalance_amount_unit_maps_to_protocol_amount() {
+        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../resources/ir/openrpc.json");
+        let content = std::fs::read_to_string(&path)
+            .unwrap_or_else(|e| panic!("read {}: {e}", path.display()));
+        let doc: OpenRpcDoc = serde_json::from_str(&content).expect("openrpc json");
+        let method =
+            doc.methods.iter().find(|m| m.name == "getbalance").expect("getbalance in openrpc");
+        let rpc = convert_openrpc_method(method.clone(), Some("31".to_string()));
+        let ty = rpc.result.expect("getbalance result");
+        assert_eq!(ty.protocol_type.as_deref(), Some("amount"));
+        assert!(!rpc.params.is_empty());
+    }
+
+    #[test]
+    fn rpc_discover_and_getopenrpcinfo_present_with_schema_results() {
+        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../resources/ir/openrpc.json");
+        let content = std::fs::read_to_string(&path)
+            .unwrap_or_else(|e| panic!("read {}: {e}", path.display()));
+        let doc: OpenRpcDoc = serde_json::from_str(&content).expect("openrpc json");
+        for name in ["rpc.discover", "getopenrpcinfo"] {
+            let method = doc
+                .methods
+                .iter()
+                .find(|m| m.name == name)
+                .unwrap_or_else(|| panic!("{name} missing from openrpc.json"));
+            let rpc = convert_openrpc_method(method.clone(), Some("31".to_string()));
+            let ty = rpc.result.expect("discover result");
+            assert_eq!(ty.kind, TypeKind::Object);
+            assert!(
+                ty.fields.as_ref().is_some_and(|f| !f.is_empty()),
+                "{name} result object must have fields"
+            );
+        }
+        let info = doc.methods.iter().find(|m| m.name == "getopenrpcinfo").expect("getopenrpcinfo");
+        let rpc = convert_openrpc_method(info.clone(), Some("31".to_string()));
+        assert!(rpc.params.iter().any(|p| p.name == "show_hidden"));
     }
 
     #[test]
@@ -1819,6 +2671,114 @@ mod tests {
                 );
             }
         }
+    }
+
+    #[test]
+    fn logging_dynamic_object_result_is_lowered_to_map_type() {
+        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../resources/ir/openrpc.json");
+        let content = std::fs::read_to_string(&path)
+            .unwrap_or_else(|e| panic!("read {}: {e}", path.display()));
+        let doc: OpenRpcDoc = serde_json::from_str(&content).expect("openrpc json");
+        let method = doc.methods.iter().find(|m| m.name == "logging").expect("logging method");
+        let rpc = convert_openrpc_method(method.clone(), Some("30".to_string()));
+        let ty = rpc.result.expect("logging result");
+        assert_eq!(ty.kind, TypeKind::Map, "logging should produce a typed dynamic map");
+        assert_eq!(ty.protocol_type.as_deref(), Some("object-dynamic"));
+        let mv = ty.map_value_type().expect("map value type");
+        assert_eq!(mv.protocol_type.as_deref(), Some("boolean"));
+    }
+
+    #[test]
+    fn getaddressesbylabel_dynamic_object_value_is_typed_object() {
+        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../resources/ir/openrpc.json");
+        let content = std::fs::read_to_string(&path)
+            .unwrap_or_else(|e| panic!("read {}: {e}", path.display()));
+        let doc: OpenRpcDoc = serde_json::from_str(&content).expect("openrpc json");
+        let method = doc
+            .methods
+            .iter()
+            .find(|m| m.name == "getaddressesbylabel")
+            .expect("getaddressesbylabel method");
+        let rpc = convert_openrpc_method(method.clone(), Some("30".to_string()));
+        let ty = rpc.result.expect("getaddressesbylabel result");
+        assert_eq!(ty.kind, TypeKind::Map, "must lower to map");
+        let mv = ty.map_value_type().expect("map value");
+        assert_eq!(mv.kind, TypeKind::Object, "value must be typed object");
+        let fields = mv.fields.as_ref().expect("value object fields");
+        assert!(
+            fields.iter().any(|f| f.key.as_ident() == "purpose"),
+            "typed map value should include purpose field"
+        );
+    }
+
+    #[test]
+    fn discriminated_mempool_methods_stay_union_typed() {
+        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../resources/ir/openrpc.json");
+        let content = std::fs::read_to_string(&path)
+            .unwrap_or_else(|e| panic!("read {}: {e}", path.display()));
+        let doc: OpenRpcDoc = serde_json::from_str(&content).expect("openrpc json");
+        for method_name in ["getrawmempool", "getmempoolancestors", "getmempooldescendants"] {
+            let method =
+                doc.methods.iter().find(|m| m.name == method_name).expect("method in openrpc");
+            let rpc = convert_openrpc_method(method.clone(), Some("30".to_string()));
+            let ty = rpc.result.expect("result type");
+            assert_eq!(ty.kind, TypeKind::Union, "{method_name} must remain a union");
+            assert!(
+                ty.union_variants.as_ref().is_some_and(|v| !v.is_empty()),
+                "{method_name} union must have at least one variant"
+            );
+        }
+    }
+
+    #[test]
+    fn scan_action_methods_stay_union_typed() {
+        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../resources/ir/openrpc.json");
+        let content = std::fs::read_to_string(&path)
+            .unwrap_or_else(|e| panic!("read {}: {e}", path.display()));
+        let doc: OpenRpcDoc = serde_json::from_str(&content).expect("openrpc json");
+        for method_name in ["scanblocks", "scantxoutset"] {
+            let method =
+                doc.methods.iter().find(|m| m.name == method_name).expect("method in openrpc");
+            let rpc = convert_openrpc_method(method.clone(), Some("30".to_string()));
+            let ty = rpc.result.expect("result type");
+            assert_eq!(ty.kind, TypeKind::Union, "{method_name} must remain a union");
+        }
+    }
+
+    #[test]
+    fn integer_param_names_cover_core_integer_domains() {
+        assert!(is_integerish_name("height"));
+        assert!(is_integerish_name("verbosity"));
+        assert!(is_integerish_name("conf_target"));
+        assert!(is_integerish_name("start_height"));
+        assert!(!is_integerish_name("fee_rate"));
+        assert!(INTEGER_PARAM_NAMES.contains(&"vout"));
+    }
+
+    #[test]
+    fn adapter_assigns_type_identity_for_non_primitives() {
+        let raw = RawResult {
+            r#type: "object".to_string(),
+            optional: false,
+            description: "example".to_string(),
+            skip_type_check: false,
+            key_name: String::new(),
+            condition: "for test".to_string(),
+            inner: vec![RawResult {
+                r#type: "string".to_string(),
+                optional: false,
+                description: "name".to_string(),
+                skip_type_check: false,
+                key_name: "name".to_string(),
+                condition: String::new(),
+                inner: vec![],
+            }],
+        };
+        let td = convert_result(&raw, Some("result"), Some("examplemethod"), None);
+        assert!(
+            td.type_identity.as_ref().is_some_and(|s| !s.is_empty()),
+            "object/array/union/map typedefs should carry a stable type_identity"
+        );
     }
 
     #[test]
