@@ -155,8 +155,9 @@ corpus-pull:
 [group('ci')]
 @sane: lint
   just openrpc-type-fidelity-gate
-  cargo test --quiet --all-targets --no-default-features
-  cargo test --quiet --all-targets --all-features
+  # Match CI: --workspace required (default member is root ethos only).
+  cargo test --workspace --quiet --all-targets --no-default-features
+  cargo test --workspace --quiet --all-targets --all-features
 
 # Examples
 examples:
