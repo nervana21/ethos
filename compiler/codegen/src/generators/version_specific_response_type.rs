@@ -3559,8 +3559,8 @@ mod tests {
             .map(|(_, content)| content)
             .expect("responses.rs");
         assert!(
-            responses.contains("pub struct AnalyzepsbtObjectMissingAlways "),
-            "expected AnalyzepsbtObjectMissingAlways definition; codegen may skip emitting nested types referenced by fields"
+            responses.contains("pub struct AnalyzePsbtMissing "),
+            "expected AnalyzePsbtMissing definition; codegen may skip emitting nested types referenced by fields"
         );
     }
 
