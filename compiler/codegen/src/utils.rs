@@ -89,6 +89,7 @@ const METHOD_WORDS: &[&str] = &[
     "reconsider",
     "validation",
     "addresses",
+    "watchonly",
     "ancestors",
     "broadcast",
     "enumerate",
