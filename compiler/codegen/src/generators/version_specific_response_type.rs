@@ -517,24 +517,35 @@ impl VersionSpecificResponseTypeGenerator {
             visit_type_for_registry(ty, reg);
         }
 
+        fn register_named_type(ty: &TypeDef, reg: &mut BTreeMap<String, TypeDef>) {
+            let label = ty.rust_emit_name();
+            if label.is_empty() || label == "object" || label == "array" {
+                return;
+            }
+            let key = sanitize_type_name_for_rust(label);
+            match ty.kind {
+                TypeKind::Object => {
+                    let replace = match reg.get(&key) {
+                        None => true,
+                        // Nested maps are visited before their leaf object. First-wins would keep
+                        // the map and codegen would emit `pub type Foo = BTreeMap<String, Foo>`.
+                        Some(existing) if existing.kind == TypeKind::Map => true,
+                        Some(_) => false,
+                    };
+                    if replace {
+                        reg.insert(key, ty.clone());
+                    }
+                }
+                TypeKind::Map | TypeKind::Union => {
+                    reg.entry(key).or_insert_with(|| ty.clone());
+                }
+                _ => {}
+            }
+        }
+
         fn visit_type_for_registry(ty: &TypeDef, reg: &mut BTreeMap<String, TypeDef>) {
-            if matches!(ty.kind, TypeKind::Object) {
-                let label = ty.rust_emit_name();
-                if !label.is_empty() && label != "object" && label != "array" {
-                    reg.entry(sanitize_type_name_for_rust(label)).or_insert_with(|| ty.clone());
-                }
-            }
-            if matches!(ty.kind, TypeKind::Map) {
-                let label = ty.rust_emit_name();
-                if !label.is_empty() && label != "object" && label != "array" {
-                    reg.entry(sanitize_type_name_for_rust(label)).or_insert_with(|| ty.clone());
-                }
-            }
-            if matches!(ty.kind, TypeKind::Union) {
-                let label = ty.rust_emit_name();
-                if !label.is_empty() && label != "object" && label != "array" {
-                    reg.entry(sanitize_type_name_for_rust(label)).or_insert_with(|| ty.clone());
-                }
+            if matches!(ty.kind, TypeKind::Object | TypeKind::Map | TypeKind::Union) {
+                register_named_type(ty, reg);
             }
             if let Some(uvars) = &ty.union_variants {
                 for uv in uvars {
@@ -3261,6 +3272,84 @@ mod tests {
         assert!(
             code.contains("pub child: Option<Box<RecursiveRow>>"),
             "nested recursive IR object needs Box, got:\n{code}"
+        );
+    }
+
+    #[test]
+    fn nested_map_of_map_does_not_emit_recursive_type_alias() {
+        let version = ProtocolVersion::from_str("30.0.0").unwrap();
+        let gen = VersionSpecificResponseTypeGenerator::new(version, "bitcoin_core".to_string());
+
+        let leaf = TypeDef {
+            name: "GetRawAddrManMapValue".to_string(),
+            type_identity: Some("GetRawAddrManMapValue".to_string()),
+            kind: TypeKind::Object,
+            fields: Some(vec![ir::FieldDef {
+                key: ir::FieldKey::Named("address".to_string()),
+                field_type: TypeDef {
+                    name: "string".to_string(),
+                    kind: TypeKind::Primitive,
+                    protocol_type: Some("string".to_string()),
+                    ..Default::default()
+                },
+                required: true,
+                description: String::new(),
+                default_value: None,
+                version_added: None,
+                version_removed: None,
+                emit_in_struct: None,
+                force_optional: None,
+            }]),
+            protocol_type: Some("object".to_string()),
+            ..Default::default()
+        };
+
+        let inner_map = TypeDef {
+            name: "GetRawAddrManMapValue".to_string(),
+            type_identity: Some("GetRawAddrManMapValue".to_string()),
+            kind: TypeKind::Map,
+            protocol_type: Some("object-dynamic".to_string()),
+            map_value: Some(Box::new(leaf)),
+            map_key_protocol_type: Some("string".to_string()),
+            ..Default::default()
+        };
+
+        let outer_map = TypeDef {
+            name: "GetRawAddrManResultMap".to_string(),
+            type_identity: Some("GetRawAddrManResultMap".to_string()),
+            kind: TypeKind::Map,
+            protocol_type: Some("object-dynamic".to_string()),
+            map_value: Some(Box::new(inner_map)),
+            map_key_protocol_type: Some("string".to_string()),
+            ..Default::default()
+        };
+
+        let method = RpcDef {
+            name: "getrawaddrman".to_string(),
+            result: Some(outer_map),
+            ..Default::default()
+        };
+
+        let files = gen.generate(&[method]).expect("generate");
+        let code =
+            files.iter().find(|(name, _)| name == "responses.rs").expect("responses.rs").1.clone();
+
+        assert!(
+            code.contains("pub struct GetRawAddrManMapValue"),
+            "leaf object must be a struct, got:\n{code}"
+        );
+        assert!(code.contains("pub address:"), "leaf object must keep address field, got:\n{code}");
+        assert!(
+            !code.contains(
+                "pub type GetRawAddrManMapValue = BTreeMap<String, GetRawAddrManMapValue>"
+            ),
+            "must not emit recursive map alias, got:\n{code}"
+        );
+        assert!(
+            code.contains(
+                "pub struct GetRawAddrManResponse(pub BTreeMap<String, BTreeMap<String, GetRawAddrManMapValue>>)"
+            ),
+            "response must be map of map of leaf object, got:\n{code}"
         );
     }
 
