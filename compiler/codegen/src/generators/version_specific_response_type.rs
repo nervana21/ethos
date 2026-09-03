@@ -1156,11 +1156,14 @@ impl VersionSpecificResponseTypeGenerator {
                 rust_type.to_string()
             }
             ir::TypeKind::Array => {
-                if let Some(elem) = type_def.array_element_type() {
+                if let Some(elem) = type_def.homogeneous_array_element_type() {
                     return format!(
                         "Vec<{}>",
                         self.map_ir_type_to_rust(elem, field_name, enclosing_struct)
                     );
+                }
+                if type_def.prefix_items_tuple_fields().is_some() {
+                    return "Vec<serde_json::Value>".to_string();
                 }
                 // Fallback when IR omits element metadata.
                 let method_result = types::MethodResult {
@@ -1940,7 +1943,7 @@ impl VersionSpecificResponseTypeGenerator {
         result: &ir::TypeDef,
     ) -> Result<String> {
         let mut buf = String::new();
-        let value_ty = if let Some(elem_ty) = Self::array_element_type_from_ir(result) {
+        let value_ty = if let Some(elem_ty) = result.homogeneous_array_element_type() {
             // When the IR describes an array of objects with a named element
             // type (e.g. for top-level array RPCs such as getpeerinfo), use
             // that named type so changes to the OpenRPC element schema are
