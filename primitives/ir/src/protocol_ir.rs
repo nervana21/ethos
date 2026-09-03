@@ -187,6 +187,72 @@ impl TypeDef {
         Some(&field.field_type)
     }
 
+    /// When an array encodes OpenRPC `prefixItems` as multiple anonymous fields
+    /// that all share the same element type (e.g. fixed-size numeric tuples like
+    /// `feerate_percentiles`), returns that shared element type. Heterogeneous
+    /// tuples return `None`.
+    pub fn homogeneous_array_element_type(&self) -> Option<&TypeDef> {
+        if !matches!(self.kind, TypeKind::Array) {
+            return None;
+        }
+        if let Some(elem) = self.array_element_type() {
+            return Some(elem);
+        }
+        let fields = self.fields.as_ref()?;
+        if fields.is_empty() || !fields.iter().all(|f| f.key.is_anonymous()) {
+            return None;
+        }
+        let first = &fields[0].field_type;
+        if fields.iter().skip(1).all(|f| Self::array_element_types_equivalent(&f.field_type, first))
+        {
+            Some(first)
+        } else {
+            None
+        }
+    }
+
+    /// OpenRPC `prefixItems` encoded as multiple anonymous fields with differing
+    /// element types (e.g. `listaddressgroupings` address/amount/account rows).
+    pub fn prefix_items_tuple_fields(&self) -> Option<&[FieldDef]> {
+        if !matches!(self.kind, TypeKind::Array) {
+            return None;
+        }
+        if self.array_element_type().is_some() {
+            return None;
+        }
+        let fields = self.fields.as_ref()?;
+        if fields.len() < 2 || !fields.iter().all(|f| f.key.is_anonymous()) {
+            return None;
+        }
+        let first = &fields[0].field_type;
+        if fields.iter().skip(1).all(|f| Self::array_element_types_equivalent(&f.field_type, first))
+        {
+            return None;
+        }
+        Some(fields.as_slice())
+    }
+
+    fn array_element_types_equivalent(a: &TypeDef, b: &TypeDef) -> bool {
+        if a.kind != b.kind {
+            return false;
+        }
+        match a.kind {
+            TypeKind::Primitive => a.protocol_type == b.protocol_type,
+            TypeKind::Object
+            | TypeKind::Map
+            | TypeKind::Union
+            | TypeKind::Enum
+            | TypeKind::Alias
+            | TypeKind::Custom => a.rust_emit_name() == b.rust_emit_name(),
+            TypeKind::Array =>
+                match (a.homogeneous_array_element_type(), b.homogeneous_array_element_type()) {
+                    (Some(ae), Some(be)) => Self::array_element_types_equivalent(ae, be),
+                    _ => false,
+                },
+            TypeKind::Optional => false,
+        }
+    }
+
     /// Value type for a `TypeKind::Map` (dynamic JSON object keys).
     pub fn map_value_type(&self) -> Option<&TypeDef> {
         if !matches!(self.kind, TypeKind::Map) {

@@ -173,6 +173,107 @@ fn array_element_type_helper_supports_anonymous_and_named_field_0() {
 }
 
 #[test]
+fn homogeneous_array_element_type_supports_prefix_items_tuples() {
+    let number_elem = TypeDef {
+        name: "number".to_string(),
+        description: String::new(),
+        kind: TypeKind::Primitive,
+        fields: None,
+        variants: None,
+        union_variants: None,
+        base_type: None,
+        protocol_type: Some("number".to_string()),
+        canonical_name: None,
+        condition: None,
+        ..Default::default()
+    };
+    let tuple_array = TypeDef {
+        name: "array".to_string(),
+        description: String::new(),
+        kind: TypeKind::Array,
+        fields: Some(
+            (0..5)
+                .map(|idx| FieldDef {
+                    key: FieldKey::Anonymous(idx),
+                    field_type: number_elem.clone(),
+                    required: true,
+                    description: String::new(),
+                    default_value: None,
+                    version_added: None,
+                    version_removed: None,
+                    emit_in_struct: None,
+                    force_optional: None,
+                })
+                .collect(),
+        ),
+        variants: None,
+        union_variants: None,
+        base_type: None,
+        protocol_type: Some("array".to_string()),
+        canonical_name: None,
+        condition: None,
+        ..Default::default()
+    };
+
+    let elem = tuple_array
+        .homogeneous_array_element_type()
+        .expect("homogeneous prefixItems tuple must yield shared element type");
+    assert_eq!(elem.protocol_type.as_deref(), Some("number"));
+
+    let string_elem = TypeDef {
+        name: "string".to_string(),
+        description: String::new(),
+        kind: TypeKind::Primitive,
+        fields: None,
+        variants: None,
+        union_variants: None,
+        base_type: None,
+        protocol_type: Some("string".to_string()),
+        canonical_name: None,
+        condition: None,
+        ..Default::default()
+    };
+    let mixed_tuple = TypeDef {
+        name: "array".to_string(),
+        description: String::new(),
+        kind: TypeKind::Array,
+        fields: Some(vec![
+            FieldDef {
+                key: FieldKey::Anonymous(0),
+                field_type: number_elem,
+                required: true,
+                description: String::new(),
+                default_value: None,
+                version_added: None,
+                version_removed: None,
+                emit_in_struct: None,
+                force_optional: None,
+            },
+            FieldDef {
+                key: FieldKey::Anonymous(1),
+                field_type: string_elem,
+                required: true,
+                description: String::new(),
+                default_value: None,
+                version_added: None,
+                version_removed: None,
+                emit_in_struct: None,
+                force_optional: None,
+            },
+        ]),
+        variants: None,
+        union_variants: None,
+        base_type: None,
+        protocol_type: Some("array".to_string()),
+        canonical_name: None,
+        condition: None,
+        ..Default::default()
+    };
+    assert!(mixed_tuple.homogeneous_array_element_type().is_none());
+    assert!(mixed_tuple.prefix_items_tuple_fields().is_some());
+}
+
+#[test]
 fn test_typekind_map_json_roundtrip() {
     let value_ty = minimal_type_def();
     let map_ty = TypeDef {
