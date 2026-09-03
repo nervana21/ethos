@@ -85,6 +85,15 @@ process-openrpc-and-generate-stage output_path version="" *pipeline_flags:
     just process-openrpc-and-generate {{output_path}} {{version}} {{pipeline_flags}}
     just _stage-downstream "{{output_path}}"
 
+# Edit Core → incremental bitcoind build → dump getopenrpcinfo → IR → ../ethos-bitcoind → ../ethos-test-client core-test.
+# Flags: --skip-build --skip-dump --skip-codegen --skip-client --dance --stage --no-hidden
+loop-openrpc *flags:
+    bash {{justfile_directory()}}/scripts/loop_openrpc.sh {{flags}}
+
+# Adapter/codegen only: reuse pinned openrpc.json (no Core rebuild or dump).
+loop-openrpc-ethos *flags:
+    bash {{justfile_directory()}}/scripts/loop_openrpc.sh --skip-build --skip-dump {{flags}}
+
 
 # Code quality
 # Format workspace.
@@ -161,5 +170,7 @@ examples:
     @echo "  just openrpc-type-fidelity-gate   # Enforce schema fidelity checks and emit JSON report"
     @echo "  just process-openrpc-and-generate ../ethos-bitcoind   # OpenRPC → IR → generate into repo"
     @echo "  just process-openrpc-and-generate-stage ../ethos-bitcoind {{LATEST_VERSION}}   # …then stage + ethos HEAD subject as suggested commit"
+    @echo "  just loop-openrpc            # Core build → dump → IR → ../ethos-bitcoind → ethos-test-client"
+    @echo "  just loop-openrpc-ethos      # skip Core build/dump; codegen + core-test"
     @echo "  STAGE_DOWNSTREAM=1 just process-openrpc-and-generate ../ethos-bitcoind {{LATEST_VERSION}}   # same as -stage"
     @echo "  just corpus-pull         # Pull all corpus repositories"
