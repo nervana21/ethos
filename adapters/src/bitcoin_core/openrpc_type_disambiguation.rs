@@ -141,6 +141,37 @@ fn apply_field_object_renames(ty: &mut TypeDef, rules: &RpcRules) {
     }
 }
 
+/// Nested `additionalProperties` maps must not share `rust_emit_name` with their value.
+///
+/// Schema conversion used to name every nested map `{Method}MapValue`, the same label as the
+/// leaf object. Codegen then emitted `pub type Foo = BTreeMap<String, Foo>` (E0391).
+pub(super) fn uniquify_map_and_value_name_collisions(ty: &mut TypeDef) {
+    if let Some(fields) = ty.fields.as_mut() {
+        for f in fields {
+            uniquify_map_and_value_name_collisions(&mut f.field_type);
+        }
+    }
+    if let Some(uvs) = ty.union_variants.as_mut() {
+        for uv in uvs {
+            uniquify_map_and_value_name_collisions(&mut uv.type_def);
+        }
+    }
+    if let Some(mv) = ty.map_value.as_mut() {
+        uniquify_map_and_value_name_collisions(mv);
+    }
+    if ty.kind == TypeKind::Map {
+        if let Some(mv) = ty.map_value.as_ref() {
+            let map_id = ty.rust_emit_name().to_string();
+            let val_id = mv.rust_emit_name().to_string();
+            if !map_id.is_empty() && map_id != "object" && map_id != "array" && map_id == val_id {
+                let renamed = format!("{map_id}Map");
+                ty.name = renamed.clone();
+                ty.type_identity = Some(renamed);
+            }
+        }
+    }
+}
+
 /// Run after converting OpenRPC → IR, before writing or merging canonical IR.
 pub(super) fn disambiguate_conflated_type_names(ir: &mut ProtocolIR) {
     let table = rules_table();
@@ -150,6 +181,7 @@ pub(super) fn disambiguate_conflated_type_names(ir: &mut ProtocolIR) {
                 let Some(result) = rpc.result.as_mut() else {
                     continue;
                 };
+                uniquify_map_and_value_name_collisions(result);
                 let Some(rules) = table.rpcs.get(rpc.name.as_str()) else {
                     continue;
                 };
@@ -199,6 +231,41 @@ mod tests {
         assert!(t.rpcs.contains_key("decodepsbt"));
         assert!(t.rpcs.contains_key("analyzepsbt"));
         assert!(t.rpcs.contains_key("listdescriptors"));
+    }
+
+    #[test]
+    fn nested_map_renames_when_value_reuses_map_emit_name() {
+        let leaf = object_named(
+            "Collide",
+            vec![FieldDef {
+                key: FieldKey::Named("address".to_string()),
+                field_type: TypeDef {
+                    name: "string".to_string(),
+                    kind: TypeKind::Primitive,
+                    protocol_type: Some("string".to_string()),
+                    ..Default::default()
+                },
+                required: true,
+                description: String::new(),
+                default_value: None,
+                version_added: None,
+                version_removed: None,
+                emit_in_struct: None,
+                force_optional: None,
+            }],
+        );
+        let mut inner = TypeDef {
+            name: "Collide".to_string(),
+            kind: TypeKind::Map,
+            protocol_type: Some("object-dynamic".to_string()),
+            type_identity: Some("Collide".to_string()),
+            map_value: Some(Box::new(leaf)),
+            map_key_protocol_type: Some("string".to_string()),
+            ..Default::default()
+        };
+        uniquify_map_and_value_name_collisions(&mut inner);
+        assert_eq!(inner.rust_emit_name(), "CollideMap");
+        assert_eq!(inner.map_value_type().unwrap().rust_emit_name(), "Collide");
     }
 
     #[test]

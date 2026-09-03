@@ -1059,7 +1059,7 @@ fn convert_result(
                 ..Default::default()
             }
         };
-        if value_type.type_identity.is_none() {
+        if value_type.type_identity.is_none() && !matches!(value_type.kind, TypeKind::Map) {
             value_type.type_identity =
                 Some(format!("{}MapValue", canonical_method_pascal(method_name.unwrap_or("rpc"))));
         }
@@ -1463,11 +1463,15 @@ fn type_def_from_json_schema_ctx(
                                 Some("map_value"),
                             )
                         };
-                        let map_name = object_type_name(
-                            method_name,
-                            field_name,
-                            &format!("{fallback_name}Map"),
-                        );
+                        // `map_value` is a synthetic parent key, not a JSON field. Using it in
+                        // `object_type_name` collapses every nested map onto `{Method}MapValue`,
+                        // the same emit name as the leaf object (recursive `pub type`, E0391).
+                        let map_fallback = format!("{fallback_name}Map");
+                        let map_name = if field_name == Some("map_value") {
+                            map_fallback
+                        } else {
+                            object_type_name(method_name, field_name, &map_fallback)
+                        };
                         let mut td = TypeDef {
                             name: map_name,
                             description: desc,
@@ -2198,7 +2202,7 @@ fn convert_openrpc_method(method: OpenRpcMethod, version_added: Option<String>) 
         method.params.iter().map(convert_param_from_openrpc_value).collect()
     };
 
-    let result = if !legacy_results.is_empty() {
+    let mut result = if !legacy_results.is_empty() {
         if legacy_results.len() == 1 {
             let schema = openrpc_result.and_then(|r| r.schema.as_ref());
             maybe_map_from_dynamic_object_schema(&method.name, &legacy_results[0], schema).or_else(
@@ -2221,6 +2225,9 @@ fn convert_openrpc_method(method: OpenRpcMethod, version_added: Option<String>) 
     } else {
         None
     };
+    if let Some(td) = result.as_mut() {
+        super::openrpc_type_disambiguation::uniquify_map_and_value_name_collisions(td);
+    }
 
     let category = method.x_bitcoin_category.clone();
     let access_level = method_categorization::access_level_for(&category, &method.name);
@@ -2686,6 +2693,33 @@ mod tests {
         assert_eq!(ty.protocol_type.as_deref(), Some("object-dynamic"));
         let mv = ty.map_value_type().expect("map value type");
         assert_eq!(mv.protocol_type.as_deref(), Some("boolean"));
+    }
+
+    #[test]
+    fn getrawaddrman_nested_maps_keep_distinct_leaf_object_name() {
+        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../resources/ir/openrpc.json");
+        let content = std::fs::read_to_string(&path)
+            .unwrap_or_else(|e| panic!("read {}: {e}", path.display()));
+        let doc: OpenRpcDoc = serde_json::from_str(&content).expect("openrpc json");
+        let method =
+            doc.methods.iter().find(|m| m.name == "getrawaddrman").expect("getrawaddrman method");
+        let rpc = convert_openrpc_method(method.clone(), Some("30".to_string()));
+        let ty = rpc.result.expect("getrawaddrman result");
+        assert_eq!(ty.kind, TypeKind::Map, "must lower to map of tables");
+        let inner = ty.map_value_type().expect("table map");
+        assert_eq!(inner.kind, TypeKind::Map, "each table is a map of entries");
+        let leaf = inner.map_value_type().expect("entry object");
+        assert_eq!(leaf.kind, TypeKind::Object, "entry must be a typed object");
+        assert_ne!(
+            inner.rust_emit_name(),
+            leaf.rust_emit_name(),
+            "inner map must not reuse leaf object emit name (recursive type alias)"
+        );
+        let fields = leaf.fields.as_ref().expect("entry fields");
+        assert!(
+            fields.iter().any(|f| f.key.as_ident() == "address"),
+            "typed map value should include address field"
+        );
     }
 
     #[test]
