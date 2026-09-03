@@ -17,10 +17,9 @@ use serde_json::{self, Value};
 const BITCOIN_NORMALIZATION_JSON: &str =
     include_str!("../../../resources/adapters/normalization/bitcoin.json");
 
-/// Relative dirs (from workspace root) for the two copies of each normalization JSON file.
+/// Relative dirs (from workspace root) for normalization JSON files.
 /// Used for error messages and by the pipeline when writing suggested mappings.
-pub const NORMALIZATION_JSON_DIRS: [&str; 2] =
-    ["compiler/codegen/resources/adapters/normalization", "resources/adapters/normalization"];
+pub const NORMALIZATION_JSON_DIRS: [&str; 1] = ["resources/adapters/normalization"];
 
 /// Optional context for unmapped RPC methods, used to build a rich error message
 /// with category and description from the schema.
@@ -44,7 +43,7 @@ pub struct SuggestedMapping {
 /// Error when one or more RPC methods have no mapping in the normalization presets.
 #[derive(Debug)]
 pub struct UnmappedMethodsError {
-    /// Suggested entries to add to both normalization JSON files.
+    /// Suggested entries to add to the normalization JSON file.
     pub suggestions: Vec<SuggestedMapping>,
 }
 
@@ -108,8 +107,8 @@ pub fn canonical_from_adapter_method(
 
     let mut msg = format!(
         "Unmapped RPC method '{}' for '{}'.\n\
-         When using the compiler pipeline, suggested mappings are written automatically to both \
-         normalization JSON files—review the changes (e.g. `git diff`) and re-run.\n\
+         When using the compiler pipeline, suggested mappings are written automatically to the \
+         normalization JSON file. Review the changes (e.g. `git diff`) and re-run.\n\
          Otherwise add to method_mappings.{} in:\n\
          {}\n\
          Suggested entry:\n  \"{}\": \"{}\"",

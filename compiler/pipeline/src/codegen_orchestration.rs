@@ -69,7 +69,7 @@ pub fn analyze_implementation(
     Ok(ctx)
 }
 
-/// Writes suggested method mappings into both normalization JSON files under `workspace_root`.
+/// Writes suggested method mappings into normalization JSON files under `workspace_root`.
 /// Inserts only new keys, each at its alphabetical position; existing key order is preserved.
 fn apply_suggested_mappings(
     workspace_root: &Path,
@@ -81,15 +81,17 @@ fn apply_suggested_mappings(
     let paths: Vec<_> = normalization::NORMALIZATION_JSON_DIRS
         .iter()
         .map(|dir| workspace_root.join(dir).join(format!("{filename}.json")))
+        .filter(|p| p.exists())
         .collect();
+    if paths.is_empty() {
+        return Err(PipelineError::Message(format!(
+            "Normalization file not found under workspace root {} (looked in {:?})",
+            workspace_root.display(),
+            normalization::NORMALIZATION_JSON_DIRS
+        )));
+    }
 
     for path in &paths {
-        if !path.exists() {
-            return Err(PipelineError::Message(format!(
-                "Normalization file not found: {}",
-                path.display()
-            )));
-        }
         let contents = fs::read_to_string(path)?;
         let mut data: Value = serde_json::from_str(&contents).map_err(|e| {
             PipelineError::Message(format!("Invalid JSON in {}: {}", path.display(), e))
@@ -161,15 +163,15 @@ pub fn generate_into(out_dir: &Path, compiler_ctx: &CompilerContext) -> Result<(
     let rpc_methods: Vec<_> = compiler_ctx.ir.get_rpc_methods().into_iter().cloned().collect();
 
     // Validate method mappings before generating. If any are missing, write suggestions
-    // into both normalization JSON files and ask the user to re-run.
+    // into the normalization JSON file and ask the user to re-run.
     if let Err(e) = validate_method_mappings(implementation.as_str(), &rpc_methods) {
         let workspace_root =
             find_project_root().map_err(|err| PipelineError::Message(err.to_string()))?;
         apply_suggested_mappings(&workspace_root, implementation, &e.suggestions)?;
         let n = e.suggestions.len();
         return Err(PipelineError::Message(format!(
-            "Suggested mapping(s) for {} unmapped RPC method(s) have been written to both \
-             normalization JSON files. Review the changes before committing, \
+            "Suggested mapping(s) for {} unmapped RPC method(s) have been written to the \
+             normalization JSON file. Review the changes before committing, \
              then re-run the same command to continue.",
             n
         )));
