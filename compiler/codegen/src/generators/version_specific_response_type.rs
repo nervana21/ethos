@@ -775,7 +775,8 @@ impl VersionSpecificResponseTypeGenerator {
 
     /// When multiple union variants embed the same named object (e.g. `getorphantxs` verbose 1 vs 2
     /// both use `GetOrphanTxsElement` with different fields), merge into one struct: fields that do
-    /// not appear in every variant become optional in Rust.
+    /// not appear in every variant become optional in Rust. Nested object / array-of-object field
+    /// types are deep-merged so a later arm's nested members (e.g. `prevout`) are not dropped.
     fn merge_object_type_defs_for_union_branches(
         &self,
         type_defs: &[TypeDef],
@@ -823,10 +824,49 @@ impl VersionSpecificResponseTypeGenerator {
             };
             let mut mf = (*template).clone();
             mf.required = in_all && present.iter().all(|f| f.required);
+            if present.len() > 1 {
+                mf.field_type = self.merge_field_types_for_union_branches(
+                    &present.iter().map(|f| f.field_type.clone()).collect::<Vec<_>>(),
+                    _rpc_name,
+                );
+            }
             merged_fields.push(mf);
         }
         merged.fields = Some(merged_fields);
         merged
+    }
+
+    /// Deep-merges nested field types across union branches that share a Rust emit name.
+    fn merge_field_types_for_union_branches(
+        &self,
+        type_defs: &[TypeDef],
+        rpc_name: &str,
+    ) -> TypeDef {
+        assert!(!type_defs.is_empty());
+        if type_defs.len() == 1 {
+            return type_defs[0].clone();
+        }
+        let all_object = type_defs.iter().all(|t| matches!(t.kind, TypeKind::Object));
+        if all_object {
+            return self.merge_object_type_defs_for_union_branches(type_defs, rpc_name);
+        }
+        let all_array = type_defs.iter().all(|t| matches!(t.kind, TypeKind::Array));
+        if all_array {
+            let mut merged = type_defs[0].clone();
+            let elems: Vec<TypeDef> =
+                type_defs.iter().filter_map(|t| t.array_element_type().cloned()).collect();
+            if elems.len() == type_defs.len() && !elems.is_empty() {
+                let merged_elem = self.merge_field_types_for_union_branches(&elems, rpc_name);
+                if let Some(fields) = merged.fields.as_mut() {
+                    if let Some(first) = fields.first_mut() {
+                        first.field_type = merged_elem;
+                    }
+                }
+            }
+            return merged;
+        }
+        // Divergent kinds / maps: keep first (identity collision should be rare after arm-scope).
+        type_defs[0].clone()
     }
 
     /// JSON-RPC result is a top-level alternation (e.g. hex string vs object): `#[serde(untagged)]` enum.
@@ -3273,6 +3313,102 @@ mod tests {
             code.contains("pub child: Option<Box<RecursiveRow>>"),
             "nested recursive IR object needs Box, got:\n{code}"
         );
+    }
+
+    #[test]
+    fn union_branch_merge_deep_merges_nested_prevout() {
+        let version = ProtocolVersion::from_str("30.0.0").unwrap();
+        let gen = VersionSpecificResponseTypeGenerator::new(version, "bitcoin_core".to_string());
+
+        let string_ty = TypeDef {
+            name: "string".to_string(),
+            kind: TypeKind::Primitive,
+            protocol_type: Some("string".to_string()),
+            ..Default::default()
+        };
+        let vin_v2 = TypeDef {
+            name: "GetBlockVin".to_string(),
+            type_identity: Some("GetBlockVin".to_string()),
+            kind: TypeKind::Object,
+            fields: Some(vec![ir::FieldDef {
+                key: ir::FieldKey::Named("txid".to_string()),
+                field_type: string_ty.clone(),
+                required: false,
+                description: String::new(),
+                default_value: None,
+                version_added: None,
+                version_removed: None,
+                emit_in_struct: None,
+                force_optional: None,
+            }]),
+            protocol_type: Some("object".to_string()),
+            ..Default::default()
+        };
+        let prevout = TypeDef {
+            name: "GetBlockPrevout".to_string(),
+            type_identity: Some("GetBlockPrevout".to_string()),
+            kind: TypeKind::Object,
+            fields: Some(vec![ir::FieldDef {
+                key: ir::FieldKey::Named("height".to_string()),
+                field_type: TypeDef {
+                    name: "number".to_string(),
+                    kind: TypeKind::Primitive,
+                    protocol_type: Some("number".to_string()),
+                    ..Default::default()
+                },
+                required: true,
+                description: String::new(),
+                default_value: None,
+                version_added: None,
+                version_removed: None,
+                emit_in_struct: None,
+                force_optional: None,
+            }]),
+            protocol_type: Some("object".to_string()),
+            ..Default::default()
+        };
+        let vin_v3 = TypeDef {
+            name: "GetBlockVin".to_string(),
+            type_identity: Some("GetBlockVin".to_string()),
+            kind: TypeKind::Object,
+            fields: Some(vec![
+                ir::FieldDef {
+                    key: ir::FieldKey::Named("txid".to_string()),
+                    field_type: string_ty.clone(),
+                    required: false,
+                    description: String::new(),
+                    default_value: None,
+                    version_added: None,
+                    version_removed: None,
+                    emit_in_struct: None,
+                    force_optional: None,
+                },
+                ir::FieldDef {
+                    key: ir::FieldKey::Named("prevout".to_string()),
+                    field_type: prevout,
+                    required: false,
+                    description: String::new(),
+                    default_value: None,
+                    version_added: None,
+                    version_removed: None,
+                    emit_in_struct: None,
+                    force_optional: None,
+                },
+            ]),
+            protocol_type: Some("object".to_string()),
+            ..Default::default()
+        };
+
+        let merged = gen.merge_object_type_defs_for_union_branches(&[vin_v2, vin_v3], "getblock");
+        let keys: Vec<_> =
+            merged.fields.as_ref().unwrap().iter().map(|f| f.key.as_ident()).collect();
+        assert!(
+            keys.iter().any(|k| k == "prevout"),
+            "deep-merge must keep verbosity-3 prevout, got {keys:?}"
+        );
+        let prevout_field =
+            merged.fields.as_ref().unwrap().iter().find(|f| f.key.as_ident() == "prevout").unwrap();
+        assert!(!prevout_field.required, "prevout only on one arm ⇒ optional after merge");
     }
 
     #[test]
