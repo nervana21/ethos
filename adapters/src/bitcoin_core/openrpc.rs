@@ -1538,11 +1538,15 @@ fn union_from_schema_branches(
                 Some(variant_name.as_str()),
             );
             let mut anon_counter = 0usize;
-            uniquify_anonymous_types(
+            // One walk: uniquifies anonymous names and (when disc-aligned) arm-scopes nested
+            // compound identities so Verbosity2/3 keep distinct shapes (`…Verbosity3Vin` + prevout).
+            refine_union_branch_types(
                 &mut branch_type,
                 &method_pascal,
                 &variant_name,
                 &mut anon_counter,
+                disc_aligned.is_some(),
+                true,
             );
             UnionVariantDef {
                 name: variant_name,
@@ -2617,31 +2621,96 @@ fn uniquify_anonymous_types(
     branch_label: &str,
     anon_counter: &mut usize,
 ) {
+    refine_union_branch_types(td, method_pascal, branch_label, anon_counter, false, true);
+}
+
+/// Inserts a disc-arm label into a method-scoped type name: `GetBlockTx` + `Verbosity3`
+/// becomes `GetBlockVerbosity3Tx`. Leaves names that already contain the arm alone.
+fn arm_scope_type_name(current: &str, method_pascal: &str, arm: &str) -> String {
+    if current.is_empty() || current.contains(arm) {
+        return current.to_string();
+    }
+    match current {
+        "string" | "number" | "boolean" | "any" | "amount" | "timestamp" | "hex" => {
+            return current.to_string();
+        }
+        "array" | "Array" => return format!("{method_pascal}{arm}Array"),
+        "object" | "Object" => return format!("{method_pascal}{arm}Object"),
+        _ => {}
+    }
+    if let Some(rest) = current.strip_prefix(method_pascal) {
+        format!("{method_pascal}{arm}{rest}")
+    } else {
+        format!("{current}{arm}")
+    }
+}
+
+/// Walks a union branch once: renames anonymous object/array shells and, when
+/// `scope_to_arm`, makes nested compound `name` / `type_identity` arm-unique so disc arms
+/// that share JSON keys (`tx`, `vin`) do not collapse in codegen.
+fn refine_union_branch_types(
+    td: &mut TypeDef,
+    method_pascal: &str,
+    branch_label: &str,
+    anon_counter: &mut usize,
+    scope_to_arm: bool,
+    is_root: bool,
+) {
     let is_anon_object = td.name == "object" || td.name == "Object";
     let is_anon_array = td.name == "array" || td.name == "Array";
     if is_anon_object || is_anon_array {
         *anon_counter += 1;
         let kind = if is_anon_object { "Object" } else { "Array" };
         td.name = format!("{method_pascal}{branch_label}{kind}{anon_counter}");
+        // `rust_emit_name` prefers `type_identity`; keep it aligned with the rename.
+        td.type_identity = Some(td.name.clone());
+    } else if scope_to_arm
+        && !is_root
+        && matches!(td.kind, TypeKind::Object | TypeKind::Array | TypeKind::Map | TypeKind::Union)
+    {
+        if td.name.contains(branch_label) {
+            // Anon uniquify already arm-scoped the name; sync identity so emit uses it.
+            td.type_identity = Some(td.name.clone());
+        } else {
+            let new_name = arm_scope_type_name(&td.name, method_pascal, branch_label);
+            td.name = new_name.clone();
+            td.type_identity = Some(new_name);
+        }
     }
 
     if let Some(fields) = td.fields.as_mut() {
         for field in fields {
-            uniquify_anonymous_types(
+            refine_union_branch_types(
                 &mut field.field_type,
                 method_pascal,
                 branch_label,
                 anon_counter,
+                scope_to_arm,
+                false,
             );
         }
     }
     if let Some(value) = td.map_value.as_mut() {
-        uniquify_anonymous_types(value, method_pascal, branch_label, anon_counter);
+        refine_union_branch_types(
+            value,
+            method_pascal,
+            branch_label,
+            anon_counter,
+            scope_to_arm,
+            false,
+        );
     }
     if let Some(uvs) = td.union_variants.as_mut() {
         for uv in uvs {
             let label = if uv.name.is_empty() { branch_label } else { uv.name.as_str() };
-            uniquify_anonymous_types(&mut uv.type_def, method_pascal, label, anon_counter);
+            refine_union_branch_types(
+                &mut uv.type_def,
+                method_pascal,
+                label,
+                anon_counter,
+                scope_to_arm,
+                false,
+            );
         }
     }
 }
@@ -2722,6 +2791,50 @@ mod tests {
                     .is_some_and(|fields| fields.iter().any(|f| f.key.as_ident() == "tx_1"))
             }),
             "merged scaffold key tx_1 must not appear"
+        );
+
+        // Verbosity2 vin must not carry prevout; Verbosity3 vin must. Nested identities must
+        // differ so codegen cannot smash both onto one GetBlockVin struct.
+        fn find_named_field<'a>(td: &'a TypeDef, key: &str) -> Option<&'a FieldDef> {
+            td.fields.as_ref()?.iter().find(|f| f.key.as_ident() == key)
+        }
+        fn array_elem(td: &TypeDef) -> &TypeDef {
+            td.fields
+                .as_ref()
+                .and_then(|f| f.first())
+                .map(|f| &f.field_type)
+                .expect("array element")
+        }
+        let v2_tx = find_named_field(&variants[2].type_def, "tx").expect("v2 tx");
+        let v3_tx = find_named_field(&variants[3].type_def, "tx").expect("v3 tx");
+        let v2_tx_elem = array_elem(&v2_tx.field_type);
+        let v3_tx_elem = array_elem(&v3_tx.field_type);
+        let v2_vin = find_named_field(v2_tx_elem, "vin").expect("v2 vin");
+        let v3_vin = find_named_field(v3_tx_elem, "vin").expect("v3 vin");
+        let v2_vin_elem = array_elem(&v2_vin.field_type);
+        let v3_vin_elem = array_elem(&v3_vin.field_type);
+        assert!(
+            find_named_field(v2_vin_elem, "prevout").is_none(),
+            "verbosity 2 vin must not include prevout"
+        );
+        assert!(
+            find_named_field(v3_vin_elem, "prevout").is_some(),
+            "verbosity 3 vin must include prevout"
+        );
+        assert_ne!(
+            v2_vin_elem.rust_emit_name(),
+            v3_vin_elem.rust_emit_name(),
+            "v2/v3 vin emit names must differ when shapes differ"
+        );
+        assert!(
+            v2_vin_elem.rust_emit_name().contains("Verbosity2"),
+            "v2 vin emit name should be arm-scoped, got {}",
+            v2_vin_elem.rust_emit_name()
+        );
+        assert!(
+            v3_vin_elem.rust_emit_name().contains("Verbosity3"),
+            "v3 vin emit name should be arm-scoped, got {}",
+            v3_vin_elem.rust_emit_name()
         );
     }
 
