@@ -947,9 +947,9 @@ fn convert_result(
             ..Default::default()
         };
         let mut anon_1 = 0usize;
-        uniquify_anonymous_types(&mut string_branch, &method_pascal, 1, &mut anon_1);
+        uniquify_anonymous_types(&mut string_branch, &method_pascal, "Branch1", &mut anon_1);
         let mut anon_2 = 0usize;
-        uniquify_anonymous_types(&mut array_branch, &method_pascal, 2, &mut anon_2);
+        uniquify_anonymous_types(&mut array_branch, &method_pascal, "Branch2", &mut anon_2);
 
         let mut td = TypeDef {
             name: union_name,
@@ -1013,9 +1013,9 @@ fn convert_result(
         };
 
         let mut anon_1 = 0usize;
-        uniquify_anonymous_types(&mut bool_branch, &method_pascal, 1, &mut anon_1);
+        uniquify_anonymous_types(&mut bool_branch, &method_pascal, "Branch1", &mut anon_1);
         let mut anon_2 = 0usize;
-        uniquify_anonymous_types(&mut object_branch, &method_pascal, 2, &mut anon_2);
+        uniquify_anonymous_types(&mut object_branch, &method_pascal, "Branch2", &mut anon_2);
 
         let mut td = TypeDef {
             name: union_name,
@@ -1214,6 +1214,200 @@ fn parse_result_discriminator(schema: &serde_json::Value) -> Option<RpcResultDis
     })
 }
 
+/// Parse a single oneOf branch description of the form `for <param> = <value>`.
+///
+/// Rejects multi-clause text (`… and …`) so methods like getrawmempool stay on BranchN
+/// until Core stamps a real multi-param discriminator.
+fn parse_for_param_equals_description(desc: &str) -> Option<(String, serde_json::Value)> {
+    let desc = desc.trim();
+    let lower = desc.to_ascii_lowercase();
+    if !lower.starts_with("for ") || lower.contains(" and ") {
+        return None;
+    }
+    let rest = desc[4..].trim_start();
+    let eq = rest.find('=')?;
+    let param = rest[..eq].trim();
+    let value_tok = rest[eq + 1..].trim();
+    if param.is_empty()
+        || value_tok.is_empty()
+        || !param.chars().all(|c| c.is_ascii_alphanumeric() || c == '_')
+    {
+        return None;
+    }
+    let value = match value_tok {
+        "true" => serde_json::Value::Bool(true),
+        "false" => serde_json::Value::Bool(false),
+        "null" => serde_json::Value::Null,
+        s if s.starts_with('"') && s.ends_with('"') && s.len() >= 2 =>
+            serde_json::Value::String(s[1..s.len() - 1].to_string()),
+        s =>
+            if let Ok(i) = s.parse::<i64>() {
+                serde_json::Value::Number(i.into())
+            } else if let Ok(u) = s.parse::<u64>() {
+                serde_json::Value::Number(u.into())
+            } else {
+                return None;
+            },
+    };
+    Some((param.to_string(), value))
+}
+
+/// Soft fallback when Core omits `x-bitcoin-discriminatedResult`.
+///
+/// Many oneOf branches still document the arm as `for verbosity = 1`. Infer a
+/// **numeric** single-param disc so union variants stay `Verbosity0`… instead of
+/// `BranchN` across stamped and unstamped Core dumps. Bool/string arms
+/// (`for verbose = true`) stay on BranchN until Core stamps metadata — avoids
+/// renaming consumers that already match `Branch1`/`Branch2`.
+fn infer_result_discriminator_from_oneof_descriptions(
+    branches: &[serde_json::Value],
+    param_names: Option<&[String]>,
+) -> Option<RpcResultDiscriminator> {
+    if branches.len() < 2 {
+        return None;
+    }
+    let mut parameter: Option<String> = None;
+    let mut values = Vec::with_capacity(branches.len());
+    for branch in branches {
+        let desc = branch.get("description").and_then(|v| v.as_str())?;
+        let (param, value) = parse_for_param_equals_description(desc)?;
+        if !value.is_i64() && !value.is_u64() {
+            return None;
+        }
+        match &parameter {
+            None => parameter = Some(param),
+            Some(existing) if *existing == param => {}
+            Some(_) => return None,
+        }
+        values.push(value);
+    }
+    let parameter = parameter?;
+    let parameter_index = if let Some(names) = param_names {
+        let idx = names
+            .iter()
+            .position(|n| n == &parameter || n.split('|').any(|part| part == parameter))?;
+        u32::try_from(idx).ok()?
+    } else {
+        // Naming-only callers do not need a real index; refine runs with param_names set.
+        0
+    };
+    Some(RpcResultDiscriminator { parameter, parameter_index, values, nested_parameter_key: None })
+}
+
+fn resolve_result_discriminator(
+    schema: &serde_json::Value,
+    param_names: Option<&[String]>,
+) -> Option<RpcResultDiscriminator> {
+    parse_result_discriminator(schema).or_else(|| {
+        let branches =
+            schema.get("oneOf").or_else(|| schema.get("anyOf")).and_then(|v| v.as_array())?;
+        infer_result_discriminator_from_oneof_descriptions(branches, param_names)
+    })
+}
+
+/// Enum variant / branch type label from a discriminator value (e.g. `verbosity` + `0` → `Verbosity0`).
+fn union_variant_name_from_disc(parameter: &str, value: &serde_json::Value, idx: usize) -> String {
+    let param_stem = parameter.split('|').next().unwrap_or(parameter);
+    let param_pascal = result_key_pascal_suffix(param_stem);
+    let value_part = match value {
+        serde_json::Value::Number(n) => n
+            .as_i64()
+            .map(|i| i.to_string())
+            .or_else(|| n.as_u64().map(|u| u.to_string()))
+            .unwrap_or_else(|| format!("Arm{}", idx + 1)),
+        serde_json::Value::Bool(true) => "True".to_string(),
+        serde_json::Value::Bool(false) => "False".to_string(),
+        serde_json::Value::String(s) => {
+            let p = result_key_pascal_suffix(s);
+            if p.is_empty() {
+                format!("Arm{}", idx + 1)
+            } else {
+                p
+            }
+        }
+        serde_json::Value::Null => "Null".to_string(),
+        serde_json::Value::Array(items) => {
+            let parts: Vec<String> = items
+                .iter()
+                .enumerate()
+                .map(|(i, v)| match v {
+                    serde_json::Value::Bool(true) => "T".to_string(),
+                    serde_json::Value::Bool(false) => "F".to_string(),
+                    serde_json::Value::Number(n) => n
+                        .as_i64()
+                        .map(|x| x.to_string())
+                        .or_else(|| n.as_u64().map(|x| x.to_string()))
+                        .unwrap_or_else(|| format!("A{i}")),
+                    serde_json::Value::String(s) => {
+                        let p = result_key_pascal_suffix(s);
+                        if p.is_empty() {
+                            format!("A{i}")
+                        } else {
+                            p
+                        }
+                    }
+                    _ => format!("A{i}"),
+                })
+                .collect();
+            if parts.is_empty() {
+                format!("Arm{}", idx + 1)
+            } else {
+                parts.join("")
+            }
+        }
+        _ => format!("Arm{}", idx + 1),
+    };
+    let name = format!("{param_pascal}{value_part}");
+    if name.is_empty() {
+        format!("Branch{}", idx + 1)
+    } else {
+        name
+    }
+}
+
+fn unique_union_variant_name(base: String, used: &mut std::collections::HashSet<String>) -> String {
+    if used.insert(base.clone()) {
+        return base;
+    }
+    let mut n = 2u32;
+    loop {
+        let candidate = format!("{base}{n}");
+        if used.insert(candidate.clone()) {
+            return candidate;
+        }
+        n += 1;
+    }
+}
+
+/// Tightens the matching request param from `any` to `number` when
+/// `x-bitcoin-discriminatedResult` lists only JSON numbers for one param.
+/// Codegen then emits `i64` or `Option<i64>`.
+fn refine_params_from_result_discriminator(
+    params: &mut [ParamDef],
+    disc: Option<&RpcResultDiscriminator>,
+) {
+    let Some(disc) = disc else { return };
+    if disc.parameter.contains('|') {
+        // Multi-name / multi-param discs stay loose (e.g. verbose|mempool_sequence arrays).
+        return;
+    }
+    if !disc.values.iter().all(|v| v.is_i64() || v.is_u64()) {
+        return;
+    }
+    let idx = disc.parameter_index as usize;
+    let Some(param) = params.get_mut(idx) else { return };
+    let stem = disc.parameter.split('|').next().unwrap_or(disc.parameter.as_str());
+    if !param.name.split('|').any(|n| n == stem) && param.name != disc.parameter {
+        return;
+    }
+    if param.param_type.protocol_type.as_deref() != Some("any") {
+        return;
+    }
+    param.param_type.name = "number".to_string();
+    param.param_type.kind = TypeKind::Primitive;
+    param.param_type.protocol_type = Some("number".to_string());
+}
+
 fn protocol_type_from_schema_type(schema_type: &str) -> Option<&'static str> {
     match schema_type {
         "string" => Some("string"),
@@ -1313,8 +1507,11 @@ fn union_from_schema_branches(
     description_fallback: &str,
     method_name: Option<&str>,
     field_name: Option<&str>,
+    discriminator: Option<&RpcResultDiscriminator>,
 ) -> TypeDef {
     let method_pascal = canonical_method_pascal(method_name.unwrap_or("rpc"));
+    let disc_aligned = discriminator.filter(|d| d.values.len() == branches.len());
+    let mut used_names = std::collections::HashSet::new();
     let union_variants = branches
         .iter()
         .enumerate()
@@ -1324,18 +1521,31 @@ fn union_from_schema_branches(
                 .and_then(|v| v.as_str())
                 .filter(|s| !s.is_empty())
                 .map(str::to_string);
-            let branch_fallback = format!("{fallback_name}Branch{}", idx + 1);
+            let variant_name = if let Some(disc) = disc_aligned {
+                unique_union_variant_name(
+                    union_variant_name_from_disc(&disc.parameter, &disc.values[idx], idx),
+                    &mut used_names,
+                )
+            } else {
+                unique_union_variant_name(format!("Branch{}", idx + 1), &mut used_names)
+            };
+            let branch_fallback = format!("{fallback_name}{variant_name}");
             let mut branch_type = type_def_from_json_schema_ctx(
                 branch,
                 &branch_fallback,
                 schema_description(branch, description_fallback),
                 method_name,
-                Some(&format!("branch_{}", idx + 1)),
+                Some(variant_name.as_str()),
             );
             let mut anon_counter = 0usize;
-            uniquify_anonymous_types(&mut branch_type, &method_pascal, idx + 1, &mut anon_counter);
+            uniquify_anonymous_types(
+                &mut branch_type,
+                &method_pascal,
+                &variant_name,
+                &mut anon_counter,
+            );
             UnionVariantDef {
-                name: format!("Branch{}", idx + 1),
+                name: variant_name,
                 description: schema_description(branch, description_fallback).to_string(),
                 condition: cond,
                 type_def: branch_type,
@@ -1389,12 +1599,14 @@ fn type_def_from_json_schema_ctx(
         schema.get("oneOf").or_else(|| schema.get("anyOf")).and_then(|v| v.as_array())
     {
         if branches.len() >= 2 {
+            let disc = resolve_result_discriminator(schema, None);
             return union_from_schema_branches(
                 branches,
                 fallback_name,
                 description_fallback,
                 method_name,
                 field_name,
+                disc.as_ref(),
             );
         }
         if branches.len() == 1 {
@@ -2193,14 +2405,15 @@ fn convert_argument(raw: RawArgument) -> ParamDef {
 fn convert_openrpc_method(method: OpenRpcMethod, version_added: Option<String>) -> RpcDef {
     let openrpc_result = method.result.as_ref();
     let legacy_results = openrpc_result.map(|r| r.x_bitcoin_results.clone()).unwrap_or_default();
-    let result_discriminator =
-        openrpc_result.and_then(|r| r.schema.as_ref()).and_then(parse_result_discriminator);
-
-    let params: Vec<ParamDef> = if !method.x_bitcoin_arguments.is_empty() {
+    let mut params: Vec<ParamDef> = if !method.x_bitcoin_arguments.is_empty() {
         method.x_bitcoin_arguments.into_iter().map(convert_argument).collect()
     } else {
         method.params.iter().map(convert_param_from_openrpc_value).collect()
     };
+    let param_names: Vec<String> = params.iter().map(|p| p.name.clone()).collect();
+    let result_discriminator = openrpc_result
+        .and_then(|r| r.schema.as_ref())
+        .and_then(|schema| resolve_result_discriminator(schema, Some(param_names.as_slice())));
 
     let mut result = if !legacy_results.is_empty() {
         if legacy_results.len() == 1 {
@@ -2228,6 +2441,7 @@ fn convert_openrpc_method(method: OpenRpcMethod, version_added: Option<String>) 
     if let Some(td) = result.as_mut() {
         super::openrpc_type_disambiguation::uniquify_map_and_value_name_collisions(td);
     }
+    refine_params_from_result_discriminator(&mut params, result_discriminator.as_ref());
 
     let category = method.x_bitcoin_category.clone();
     let access_level = method_categorization::access_level_for(&category, &method.name);
@@ -2302,18 +2516,35 @@ fn build_union_from_raw_results(
         })
         .unwrap_or_default();
 
+    let disc = schema.and_then(|s| resolve_result_discriminator(s, None));
+    let disc_aligned = disc.as_ref().filter(|d| d.values.len() == results.len());
+    let mut used_names = std::collections::HashSet::new();
+
     let union_variants = results
         .iter()
         .enumerate()
         .map(|(idx, raw)| {
+            let variant_name = if let Some(disc) = disc_aligned {
+                unique_union_variant_name(
+                    union_variant_name_from_disc(&disc.parameter, &disc.values[idx], idx),
+                    &mut used_names,
+                )
+            } else {
+                unique_union_variant_name(format!("Branch{}", idx + 1), &mut used_names)
+            };
             let mut branch_type = convert_result(raw, None, Some(method_name), None);
             // Preserve oneOf branches while giving every anonymous object/array in the branch
             // a stable unique name. Without this, many methods collapse to repeated `Object`.
             let mut anon_counter = 0usize;
-            uniquify_anonymous_types(&mut branch_type, &method_pascal, idx + 1, &mut anon_counter);
+            uniquify_anonymous_types(
+                &mut branch_type,
+                &method_pascal,
+                &variant_name,
+                &mut anon_counter,
+            );
 
             UnionVariantDef {
-                name: format!("Branch{}", idx + 1),
+                name: variant_name,
                 description: raw.description.clone(),
                 condition: branch_conditions.get(idx).cloned().filter(|s| !s.is_empty()).or_else(
                     || {
@@ -2351,7 +2582,7 @@ fn build_union_result_type(
 fn uniquify_anonymous_types(
     td: &mut TypeDef,
     method_pascal: &str,
-    branch_idx: usize,
+    branch_label: &str,
     anon_counter: &mut usize,
 ) {
     let is_anon_object = td.name == "object" || td.name == "Object";
@@ -2359,7 +2590,7 @@ fn uniquify_anonymous_types(
     if is_anon_object || is_anon_array {
         *anon_counter += 1;
         let kind = if is_anon_object { "Object" } else { "Array" };
-        td.name = format!("{method_pascal}Branch{branch_idx}{kind}{anon_counter}");
+        td.name = format!("{method_pascal}{branch_label}{kind}{anon_counter}");
     }
 
     if let Some(fields) = td.fields.as_mut() {
@@ -2367,17 +2598,18 @@ fn uniquify_anonymous_types(
             uniquify_anonymous_types(
                 &mut field.field_type,
                 method_pascal,
-                branch_idx,
+                branch_label,
                 anon_counter,
             );
         }
     }
     if let Some(value) = td.map_value.as_mut() {
-        uniquify_anonymous_types(value, method_pascal, branch_idx, anon_counter);
+        uniquify_anonymous_types(value, method_pascal, branch_label, anon_counter);
     }
     if let Some(uvs) = td.union_variants.as_mut() {
         for uv in uvs {
-            uniquify_anonymous_types(&mut uv.type_def, method_pascal, branch_idx, anon_counter);
+            let label = if uv.name.is_empty() { branch_label } else { uv.name.as_str() };
+            uniquify_anonymous_types(&mut uv.type_def, method_pascal, label, anon_counter);
         }
     }
 }
@@ -2427,10 +2659,29 @@ mod tests {
             doc.methods.iter().find(|m| m.name == "getblock").expect("getblock in openrpc");
         let rpc = convert_openrpc_method(method.clone(), Some("31".to_string()));
         assert_eq!(rpc.params.len(), 2);
+        assert_eq!(
+            rpc.params[1].param_type.protocol_type.as_deref(),
+            Some("number"),
+            "verbosity should not stay any/Value when default/disc are numeric"
+        );
         let result = rpc.result.expect("getblock result");
         assert_eq!(result.kind, TypeKind::Union);
-        assert!(rpc.result_discriminator.is_some(), "getblock has x-bitcoin-discriminatedResult");
+        assert!(
+            rpc.result_discriminator.is_some(),
+            "getblock disc from stamp or oneOf `for verbosity = N` descriptions"
+        );
         let variants = result.union_variants.as_ref().expect("union variants");
+        let names: Vec<&str> = variants.iter().map(|uv| uv.name.as_str()).collect();
+        assert_eq!(
+            names,
+            ["Verbosity0", "Verbosity1", "Verbosity2", "Verbosity3"],
+            "disc values must name union variants, got {names:?}"
+        );
+        assert_eq!(
+            variants[1].type_def.name, "GetBlockVerbosity1",
+            "object branch type should follow disc label, got {}",
+            variants[1].type_def.name
+        );
         assert!(
             !variants.iter().any(|uv| {
                 uv.type_def
@@ -2439,6 +2690,40 @@ mod tests {
                     .is_some_and(|fields| fields.iter().any(|f| f.key.as_ident() == "tx_1"))
             }),
             "merged scaffold key tx_1 must not appear"
+        );
+    }
+
+    #[test]
+    fn infer_numeric_disc_from_oneof_descriptions_without_stamp() {
+        let branches = vec![
+            serde_json::json!({"type": "string", "description": "for verbosity = 0"}),
+            serde_json::json!({"type": "object", "description": "for verbosity = 1"}),
+        ];
+        let params = vec!["blockhash".to_string(), "verbosity".to_string()];
+        let disc = infer_result_discriminator_from_oneof_descriptions(&branches, Some(&params))
+            .expect("numeric for-param descriptions");
+        assert_eq!(disc.parameter, "verbosity");
+        assert_eq!(disc.parameter_index, 1);
+        assert_eq!(disc.values, vec![serde_json::json!(0), serde_json::json!(1)]);
+
+        let bool_branches = vec![
+            serde_json::json!({"description": "for verbose = true"}),
+            serde_json::json!({"description": "for verbose = false"}),
+        ];
+        assert!(
+            infer_result_discriminator_from_oneof_descriptions(&bool_branches, None).is_none(),
+            "bool arms stay BranchN until Core stamps"
+        );
+
+        let multi = vec![
+            serde_json::json!({"description": "for verbose = false"}),
+            serde_json::json!({
+                "description": "for verbose = false and mempool_sequence = true"
+            }),
+        ];
+        assert!(
+            infer_result_discriminator_from_oneof_descriptions(&multi, None).is_none(),
+            "multi-clause descriptions must not soft-infer"
         );
     }
 
