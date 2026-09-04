@@ -1051,38 +1051,6 @@ fn convert_result(
         let mut value_type = if let Some(first) = raw.inner.first() {
             convert_result(first, Some("map_value"), method_name, None)
         } else {
-            // Core sometimes omits `type` when skip_type_check / aliases apply (e.g. getblock
-            // verbosity schema is `{ "default": 1 }`). Infer a primitive from the default when
-            // present so codegen does not collapse to `serde_json::Value`.
-            if let Some(default) = schema.get("default") {
-                if default.is_i64() || default.is_u64() || default.is_f64() {
-                    return TypeDef {
-                        name: "number".to_string(),
-                        description: desc,
-                        kind: TypeKind::Primitive,
-                        protocol_type: Some("number".to_string()),
-                        ..Default::default()
-                    };
-                }
-                if default.is_boolean() {
-                    return TypeDef {
-                        name: "boolean".to_string(),
-                        description: desc,
-                        kind: TypeKind::Primitive,
-                        protocol_type: Some("boolean".to_string()),
-                        ..Default::default()
-                    };
-                }
-                if default.is_string() {
-                    return TypeDef {
-                        name: "string".to_string(),
-                        description: desc,
-                        kind: TypeKind::Primitive,
-                        protocol_type: Some("string".to_string()),
-                        ..Default::default()
-                    };
-                }
-            }
             TypeDef {
                 name: "any".to_string(),
                 description: raw.description.clone(),
@@ -1976,6 +1944,38 @@ fn type_def_from_json_schema_ctx(
                     protocol_type: Some("none".to_string()),
                     ..Default::default()
                 };
+            }
+            // Core sometimes omits `type` when skip_type_check / aliases apply (e.g. getblock
+            // verbosity schema is `{ "default": 1 }`). Infer a primitive from the default when
+            // present so codegen does not collapse to `serde_json::Value`.
+            if let Some(default) = schema.get("default") {
+                if default.is_i64() || default.is_u64() || default.is_f64() {
+                    return TypeDef {
+                        name: "number".to_string(),
+                        description: desc,
+                        kind: TypeKind::Primitive,
+                        protocol_type: Some("number".to_string()),
+                        ..Default::default()
+                    };
+                }
+                if default.is_boolean() {
+                    return TypeDef {
+                        name: "boolean".to_string(),
+                        description: desc,
+                        kind: TypeKind::Primitive,
+                        protocol_type: Some("boolean".to_string()),
+                        ..Default::default()
+                    };
+                }
+                if default.is_string() {
+                    return TypeDef {
+                        name: "string".to_string(),
+                        description: desc,
+                        kind: TypeKind::Primitive,
+                        protocol_type: Some("string".to_string()),
+                        ..Default::default()
+                    };
+                }
             }
             TypeDef {
                 name: "any".to_string(),
