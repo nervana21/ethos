@@ -14,7 +14,7 @@ use super::fee_rate_utils::{methods_use_amounts_map, methods_use_get_block_templ
 use crate::generators::version_specific_response_type::record_external_symbol_usage;
 use crate::utils::{
     canonical_from_adapter_method, protocol_rpc_method_to_rust_name, sanitize_external_identifier,
-    snake_to_pascal_case,
+    sanitize_type_name_for_rust, snake_to_pascal_case,
 };
 use crate::CodeGenerator;
 
@@ -416,12 +416,18 @@ impl VersionSpecificClientTraitGenerator {
                         .expect("Failed to write required parameter serialization");
                 }
             }
-            writeln!(
-                buf,
-                "        self.call::<{}>(\"{}\", &rpc_params).await",
-                response_type, rpc.name
-            )
-            .expect("Failed to write method body");
+            if let Some(decode_body) =
+                self.render_discriminator_aware_decode(rpc, &params, &response_type)
+            {
+                buf.push_str(&decode_body);
+            } else {
+                writeln!(
+                    buf,
+                    "        self.call::<{}>(\"{}\", &rpc_params).await",
+                    response_type, rpc.name
+                )
+                .expect("Failed to write method body");
+            }
         } else {
             // For methods with no parameters, use empty array
             writeln!(buf, "        self.call::<{}>(\"{}\", &[]).await", response_type, rpc.name)
@@ -430,6 +436,95 @@ impl VersionSpecificClientTraitGenerator {
         writeln!(buf, "    }}").expect("Failed to write method closing brace");
 
         buf
+    }
+
+    /// Renders a discriminator-aware decode body for a simple top-level `result_discriminator`.
+    ///
+    /// Selects the union arm from the request discriminator value (number/bool) instead of
+    /// relying on `#[serde(untagged)]`, which cannot separate overlapping object arms (e.g.
+    /// getblock verbosity 2 vs 3).
+    fn render_discriminator_aware_decode(
+        &self,
+        rpc: &RpcDef,
+        params: &[ParamDef],
+        response_type: &str,
+    ) -> Option<String> {
+        let discriminator = rpc.result_discriminator.as_ref()?;
+        if discriminator.nested_parameter_key.is_some() {
+            return None;
+        }
+        let uvs = rpc.result.as_ref()?.union_variants.as_ref()?;
+        if uvs.len() != discriminator.values.len() || uvs.is_empty() {
+            return None;
+        }
+        // Only handle plain numeric / bool discriminators (getblock verbosity, etc.).
+        if !discriminator.values.iter().all(|v| v.is_i64() || v.is_u64() || v.is_boolean()) {
+            return None;
+        }
+        let stem =
+            discriminator.parameter.split('|').next().unwrap_or(discriminator.parameter.as_str());
+        let param =
+            params.iter().find(|p| p.name == stem || p.name.split('|').any(|part| part == stem))?;
+        let param_rust = sanitize_external_identifier(&param.name);
+        let is_bool = discriminator.values.iter().all(|v| v.is_boolean());
+        let default_lit = param.default_value.as_deref().unwrap_or(if is_bool {
+            "true"
+        } else {
+            // Core getblock/getrawtransaction default verbosity is 1 when omitted.
+            "1"
+        });
+
+        let mut buf = String::new();
+        writeln!(
+            buf,
+            "        let raw = self.call::<serde_json::Value>(\"{}\", &rpc_params).await?;",
+            rpc.name
+        )
+        .ok()?;
+
+        let disc_expr = if param.required {
+            param_rust.clone()
+        } else if is_bool {
+            let default_bool = default_lit.parse::<bool>().unwrap_or(true);
+            format!("{param_rust}.unwrap_or({default_bool})")
+        } else {
+            let default_num: i64 = default_lit.parse().unwrap_or(1);
+            format!("{param_rust}.unwrap_or({default_num})")
+        };
+        // Generated local stays short: match arm on the discriminator value.
+        writeln!(buf, "        let disc = {disc_expr};").ok()?;
+        writeln!(buf, "        Ok(match disc {{").ok()?;
+        for (value, uv) in discriminator.values.iter().zip(uvs.iter()) {
+            let variant = sanitize_type_name_for_rust(&uv.name);
+            let lit = if is_bool {
+                if value.as_bool() == Some(true) {
+                    "true".to_string()
+                } else {
+                    "false".to_string()
+                }
+            } else {
+                value
+                    .as_i64()
+                    .or_else(|| value.as_u64().map(|u| u as i64))
+                    .expect("numeric discriminator value")
+                    .to_string()
+            };
+            writeln!(
+                buf,
+                "            {lit} => {response_type}::{variant}(serde_json::from_value(raw)?),"
+            )
+            .ok()?;
+        }
+        if !is_bool {
+            writeln!(
+                buf,
+                "            other => {{\n                return Err(TransportError::Json(format!(\n                    \"{}: unsupported {} discriminant {{other}}\",\n                )));\n            }}",
+                rpc.name, stem
+            )
+            .ok()?;
+        }
+        writeln!(buf, "        }})").ok()?;
+        Some(buf)
     }
 
     /// Get response type for a method
