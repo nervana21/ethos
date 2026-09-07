@@ -319,8 +319,14 @@ fn main() {
             fs::create_dir_all(parent)
                 .unwrap_or_else(|e| panic!("failed to create {}: {e}", parent.display()));
         }
-        fs::write(&path, serde_json::to_string_pretty(&payload).expect("serialize report"))
-            .unwrap_or_else(|e| panic!("failed to write {}: {e}", path.display()));
+        // serde_json pretty output has no trailing newline. pre-commit
+        // end-of-file-fixer adds one and aborts the commit, then the next
+        // regen deletes it again.
+        let mut out = serde_json::to_string_pretty(&payload).expect("serialize report");
+        if !out.ends_with('\n') {
+            out.push('\n');
+        }
+        fs::write(&path, out).unwrap_or_else(|e| panic!("failed to write {}: {e}", path.display()));
         println!("wrote {}", path.display());
     }
 
