@@ -4,7 +4,7 @@
 //!
 //! Hard fail (exit 1): P0 findings only.
 //! P1/P2 are reported for upstream follow-ups but do not fail the gate (Core still omits
-//! enums, `type: integer`, and most `x-bitcoin-discriminatedResult` metadata).
+//! enums, `type: integer`, and most `x-bitcoin-discriminated-result` metadata).
 
 use std::collections::BTreeSet;
 use std::fs;
@@ -254,15 +254,15 @@ fn main() {
                 });
                 seen_rules.insert("discriminated_result_missing_oneof".to_string());
             }
-            // Soft: Core currently only stamps x-bitcoin-discriminatedResult on a few methods.
-            if result_schema.get("x-bitcoin-discriminatedResult").is_none() {
+            // Soft: Core currently only stamps x-bitcoin-discriminated-result on a few methods.
+            if result_schema.get("x-bitcoin-discriminated-result").is_none() {
                 findings.push(Finding {
                     rule: "discriminated_result_missing_metadata".to_string(),
                     severity: "P2".to_string(),
                     method: method_name.clone(),
                     field: "result.schema".to_string(),
                     message:
-                        "Advisory: x-bitcoin-discriminatedResult missing (upstream follow-up)."
+                        "Advisory: x-bitcoin-discriminated-result missing (upstream follow-up)."
                             .to_string(),
                 });
                 seen_rules.insert("discriminated_result_missing_metadata".to_string());

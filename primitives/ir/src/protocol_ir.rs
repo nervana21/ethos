@@ -40,7 +40,7 @@ pub enum ProtocolDef {
 }
 
 /// When an RPC result is a `oneOf` keyed by a parameter (e.g. `verbosity`), as in Bitcoin Core OpenRPC
-/// `x-bitcoin-discriminatedResult`.
+/// `x-bitcoin-discriminated-result`.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct RpcResultDiscriminator {
     /// Primary parameter name (may be a pipe-joined alias in Core docs, e.g. `verbosity|verbose`).

@@ -1187,9 +1187,13 @@ fn convert_result(
     type_def
 }
 
-/// Bitcoin Core OpenRPC: `schema.x-bitcoin-discriminatedResult` when the result is a keyed `oneOf`.
+fn result_discriminator_value(schema: &serde_json::Value) -> Option<&serde_json::Value> {
+    schema.get("x-bitcoin-discriminated-result")
+}
+
+/// Bitcoin Core OpenRPC: `schema.x-bitcoin-discriminated-result` when the result is a keyed `oneOf`.
 fn parse_result_discriminator(schema: &serde_json::Value) -> Option<RpcResultDiscriminator> {
-    let disc = schema.get("x-bitcoin-discriminatedResult")?;
+    let disc = result_discriminator_value(schema)?;
     let (parameter, parameter_index) = if let (Some(params), Some(indices)) = (
         disc.get("parameters").and_then(|v| v.as_array()),
         disc.get("parameterIndices").and_then(|v| v.as_array()),
@@ -1252,7 +1256,7 @@ fn parse_for_param_equals_description(desc: &str) -> Option<(String, serde_json:
     Some((param.to_string(), value))
 }
 
-/// Soft fallback when Core omits `x-bitcoin-discriminatedResult`.
+/// Soft fallback when Core omits `x-bitcoin-discriminated-result`.
 ///
 /// Many oneOf branches still document the arm as `for verbosity = 1`. Infer a
 /// **numeric** single-param disc so union variants stay `Verbosity0`… instead of
@@ -1380,7 +1384,7 @@ fn unique_union_variant_name(base: String, used: &mut std::collections::HashSet<
 }
 
 /// Tightens the matching request param from `any` to `number` when
-/// `x-bitcoin-discriminatedResult` lists only JSON numbers for one param.
+/// `x-bitcoin-discriminated-result` lists only JSON numbers for one param.
 /// Codegen then emits `i64` or `Option<i64>`.
 fn refine_params_from_result_discriminator(
     params: &mut [ParamDef],
@@ -2519,8 +2523,7 @@ fn has_schema_oneof_branch_metadata(schema: &serde_json::Value) -> bool {
 }
 
 fn has_schema_discriminated_oneof(schema: &serde_json::Value) -> bool {
-    has_schema_oneof_branch_metadata(schema)
-        && schema.get("x-bitcoin-discriminatedResult").is_some()
+    has_schema_oneof_branch_metadata(schema) && result_discriminator_value(schema).is_some()
 }
 
 /// Builds a [`TypeKind::Union`] from parallel `x-bitcoin-results` or `object-one-of` branches.
