@@ -498,7 +498,7 @@ impl VersionSpecificResponseTypeGenerator {
     }
 
     /// Build a registry of named object types by walking all method result types recursively.
-    /// First occurrence of each type name wins. Used to generate structs from IR (e.g. DecodedScriptPubKey).
+    /// First occurrence of each type name wins. Used to generate structs from IR.
     /// BTreeMap so keys are iterated in stable, sorted order.
     fn build_type_registry(methods: &[RpcDef]) -> BTreeMap<String, TypeDef> {
         let mut reg = BTreeMap::new();
@@ -1345,22 +1345,15 @@ impl VersionSpecificResponseTypeGenerator {
                     };
                 }
 
-                match field_name {
-                    "vin" => "Vec<DecodedVin>".to_string(),
-                    "vout" => "Vec<DecodedVout>".to_string(),
-                    _ => {
-                        record_fallback_event(FallbackEvent {
-                            rpc_method: current_rpc_method_or_unknown(),
-                            schema_or_ir_path: format!("object_field:{}", field_name),
-                            fallback_kind: "opaque_object_fallback".to_string(),
-                            chosen_rust_type: "serde_json::Map<String, serde_json::Value>"
-                                .to_string(),
-                            reason: "generic_object_without_named_shape".to_string(),
-                            severity: "P1".to_string(),
-                        });
-                        "serde_json::Map<String, serde_json::Value>".to_string()
-                    }
-                }
+                record_fallback_event(FallbackEvent {
+                    rpc_method: current_rpc_method_or_unknown(),
+                    schema_or_ir_path: format!("object_field:{}", field_name),
+                    fallback_kind: "opaque_object_fallback".to_string(),
+                    chosen_rust_type: "serde_json::Map<String, serde_json::Value>".to_string(),
+                    reason: "generic_object_without_named_shape".to_string(),
+                    severity: "P1".to_string(),
+                });
+                "serde_json::Map<String, serde_json::Value>".to_string()
             }
             _ => {
                 record_fallback_event(FallbackEvent {
