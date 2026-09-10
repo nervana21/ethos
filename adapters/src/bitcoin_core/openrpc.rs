@@ -1218,96 +1218,11 @@ fn parse_result_discriminator(schema: &serde_json::Value) -> Option<RpcResultDis
     })
 }
 
-/// Parse a single oneOf branch description of the form `for <param> = <value>`.
-///
-/// Rejects multi-clause text (`… and …`) so methods like getrawmempool stay on BranchN
-/// until Core stamps a real multi-param discriminator.
-fn parse_for_param_equals_description(desc: &str) -> Option<(String, serde_json::Value)> {
-    let desc = desc.trim();
-    let lower = desc.to_ascii_lowercase();
-    if !lower.starts_with("for ") || lower.contains(" and ") {
-        return None;
-    }
-    let rest = desc[4..].trim_start();
-    let eq = rest.find('=')?;
-    let param = rest[..eq].trim();
-    let value_tok = rest[eq + 1..].trim();
-    if param.is_empty()
-        || value_tok.is_empty()
-        || !param.chars().all(|c| c.is_ascii_alphanumeric() || c == '_')
-    {
-        return None;
-    }
-    let value = match value_tok {
-        "true" => serde_json::Value::Bool(true),
-        "false" => serde_json::Value::Bool(false),
-        "null" => serde_json::Value::Null,
-        s if s.starts_with('"') && s.ends_with('"') && s.len() >= 2 =>
-            serde_json::Value::String(s[1..s.len() - 1].to_string()),
-        s =>
-            if let Ok(i) = s.parse::<i64>() {
-                serde_json::Value::Number(i.into())
-            } else if let Ok(u) = s.parse::<u64>() {
-                serde_json::Value::Number(u.into())
-            } else {
-                return None;
-            },
-    };
-    Some((param.to_string(), value))
-}
-
-/// Soft fallback when Core omits `x-bitcoin-discriminated-result`.
-///
-/// Retained for dumps that predate the fidelity stack. After refreshing
-/// `resources/ir/openrpc.json` from a Core tip that stamps every request-param
-/// discriminator, callers should hit [`parse_result_discriminator`] only.
-/// Numeric `for <param> = <n>` oneOf descriptions still soft-infer so variant
-/// names stay `Verbosity0`… across transitional dumps. Bool/string arms stay
-/// BranchN unless Core stamps metadata.
-fn infer_result_discriminator_from_oneof_descriptions(
-    branches: &[serde_json::Value],
-    param_names: Option<&[String]>,
-) -> Option<RpcResultDiscriminator> {
-    if branches.len() < 2 {
-        return None;
-    }
-    let mut parameter: Option<String> = None;
-    let mut values = Vec::with_capacity(branches.len());
-    for branch in branches {
-        let desc = branch.get("description").and_then(|v| v.as_str())?;
-        let (param, value) = parse_for_param_equals_description(desc)?;
-        if !value.is_i64() && !value.is_u64() {
-            return None;
-        }
-        match &parameter {
-            None => parameter = Some(param),
-            Some(existing) if *existing == param => {}
-            Some(_) => return None,
-        }
-        values.push(value);
-    }
-    let parameter = parameter?;
-    let parameter_index = if let Some(names) = param_names {
-        let idx = names
-            .iter()
-            .position(|n| n == &parameter || n.split('|').any(|part| part == parameter))?;
-        u32::try_from(idx).ok()?
-    } else {
-        // Naming-only callers do not need a real index; refine runs with param_names set.
-        0
-    };
-    Some(RpcResultDiscriminator { parameter, parameter_index, values, nested_parameter_key: None })
-}
-
 fn resolve_result_discriminator(
     schema: &serde_json::Value,
-    param_names: Option<&[String]>,
+    _param_names: Option<&[String]>,
 ) -> Option<RpcResultDiscriminator> {
-    parse_result_discriminator(schema).or_else(|| {
-        let branches =
-            schema.get("oneOf").or_else(|| schema.get("anyOf")).and_then(|v| v.as_array())?;
-        infer_result_discriminator_from_oneof_descriptions(branches, param_names)
-    })
+    parse_result_discriminator(schema)
 }
 
 /// Enum variant / branch type label from a discriminator value (e.g. `verbosity` + `0` → `Verbosity0`).
@@ -2844,37 +2759,34 @@ mod tests {
     }
 
     #[test]
-    fn infer_numeric_disc_from_oneof_descriptions_without_stamp() {
-        let branches = vec![
-            serde_json::json!({"type": "string", "description": "for verbosity = 0"}),
-            serde_json::json!({"type": "object", "description": "for verbosity = 1"}),
-        ];
-        let params = vec!["blockhash".to_string(), "verbosity".to_string()];
-        let disc = infer_result_discriminator_from_oneof_descriptions(&branches, Some(&params))
-            .expect("numeric for-param descriptions");
+    fn resolve_result_discriminator_requires_stamp() {
+        let schema = serde_json::json!({
+            "oneOf": [
+                {"type": "string", "description": "for verbosity = 0"},
+                {"type": "object", "description": "for verbosity = 1"},
+            ]
+        });
+        assert!(
+            resolve_result_discriminator(&schema, Some(&["blockhash".into(), "verbosity".into()]))
+                .is_none(),
+            "unstamped oneOf must not soft-infer a disc"
+        );
+
+        let stamped = serde_json::json!({
+            "oneOf": [
+                {"type": "string"},
+                {"type": "object"},
+            ],
+            "x-bitcoin-discriminated-result": {
+                "parameter": "verbosity",
+                "parameterIndex": 1,
+                "values": [0, 1],
+            }
+        });
+        let disc = resolve_result_discriminator(&stamped, None).expect("stamped disc");
         assert_eq!(disc.parameter, "verbosity");
         assert_eq!(disc.parameter_index, 1);
         assert_eq!(disc.values, vec![serde_json::json!(0), serde_json::json!(1)]);
-
-        let bool_branches = vec![
-            serde_json::json!({"description": "for verbose = true"}),
-            serde_json::json!({"description": "for verbose = false"}),
-        ];
-        assert!(
-            infer_result_discriminator_from_oneof_descriptions(&bool_branches, None).is_none(),
-            "bool arms stay BranchN until Core stamps"
-        );
-
-        let multi = vec![
-            serde_json::json!({"description": "for verbose = false"}),
-            serde_json::json!({
-                "description": "for verbose = false and mempool_sequence = true"
-            }),
-        ];
-        assert!(
-            infer_result_discriminator_from_oneof_descriptions(&multi, None).is_none(),
-            "multi-clause descriptions must not soft-infer"
-        );
     }
 
     #[test]

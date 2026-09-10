@@ -263,7 +263,7 @@ fn main() {
                     method: method_name.clone(),
                     field: "result.schema".to_string(),
                     message:
-                        "Advisory: x-bitcoin-discriminated-result missing (upstream follow-up)."
+                        "Advisory: x-bitcoin-discriminated-result missing; refresh dump from Core fidelity tip."
                             .to_string(),
                 });
                 seen_rules.insert("discriminated_result_missing_metadata".to_string());
