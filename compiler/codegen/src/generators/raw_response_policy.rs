@@ -38,9 +38,7 @@ pub const RPC_DECODE_GOLDEN_FIXTURES: &[(&str, &str)] = &[
 ///
 /// Keep sorted lexicographically by `(0, 1)`.
 pub const RPC_FIELD_TYPE_OVERRIDES: &[(&str, &str, &str)] = &[
-    ("getblocktemplate", "coinbaseaux", "HashMap<String, String>"),
     ("getblocktemplate", "transactions", "Vec<GetBlockTemplateTransaction>"),
-    ("getblocktemplate", "vbavailable", "HashMap<String, u32>"),
 ];
 
 /// One golden JSON fixture per RPC that appears in [`RPC_FIELD_TYPE_OVERRIDES`].
