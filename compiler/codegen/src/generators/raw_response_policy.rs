@@ -37,9 +37,8 @@ pub const RPC_DECODE_GOLDEN_FIXTURES: &[(&str, &str)] = &[
 /// `(rpc_name, json_field_ident, rust_type_fragment)` — sorted by `(rpc, field)` for review diffs.
 ///
 /// Keep sorted lexicographically by `(0, 1)`.
-pub const RPC_FIELD_TYPE_OVERRIDES: &[(&str, &str, &str)] = &[
-    ("getblocktemplate", "transactions", "Vec<GetBlockTemplateTransaction>"),
-];
+pub const RPC_FIELD_TYPE_OVERRIDES: &[(&str, &str, &str)] =
+    &[("getblocktemplate", "transactions", "Vec<GetBlockTemplateTransaction>")];
 
 /// One golden JSON fixture per RPC that appears in [`RPC_FIELD_TYPE_OVERRIDES`].
 ///
