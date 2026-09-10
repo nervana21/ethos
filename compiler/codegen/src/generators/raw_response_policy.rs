@@ -59,16 +59,6 @@ pub const FIELD_NAMES_ALWAYS_OPTIONAL: &[&str] = &[
     "permitbaremultisig",
 ];
 
-/// Nested response structs emitted by hand-written helpers instead of the IR type registry.
-pub const MANUAL_RESPONSE_TYPE_NAMES: &[&str] = &[
-    "DecodedScriptSig",
-    "DecodedPrevout",
-    "DecodedVin",
-    "DecodedVout",
-    "DecodedTxDetails",
-    "GetBlockTemplateTransaction",
-];
-
 /// Stronger Rust type for a specific response field, if allowlisted.
 #[must_use]
 pub fn rpc_field_type_rust_override(rpc_name: &str, field_name: &str) -> Option<&'static str> {
