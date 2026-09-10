@@ -225,7 +225,8 @@ fn main() {
                     method: method_name.clone(),
                     field: "result[].addresses".to_string(),
                     message: "addresses is required but docs say only when connected=true. \
-                              Run `just patch-openrpc-fidelity` after refreshing from Core."
+                              Refresh openrpc.json from a Core build that emits \
+                              getaddednodeinfo if/then (required_when_true)."
                         .to_string(),
                 });
                 seen_rules

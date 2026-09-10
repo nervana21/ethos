@@ -1258,11 +1258,12 @@ fn parse_for_param_equals_description(desc: &str) -> Option<(String, serde_json:
 
 /// Soft fallback when Core omits `x-bitcoin-discriminated-result`.
 ///
-/// Many oneOf branches still document the arm as `for verbosity = 1`. Infer a
-/// **numeric** single-param disc so union variants stay `Verbosity0`… instead of
-/// `BranchN` across stamped and unstamped Core dumps. Bool/string arms
-/// (`for verbose = true`) stay on BranchN until Core stamps metadata — avoids
-/// renaming consumers that already match `Branch1`/`Branch2`.
+/// Retained for dumps that predate the fidelity stack. After refreshing
+/// `resources/ir/openrpc.json` from a Core tip that stamps every request-param
+/// discriminator, callers should hit [`parse_result_discriminator`] only.
+/// Numeric `for <param> = <n>` oneOf descriptions still soft-infer so variant
+/// names stay `Verbosity0`… across transitional dumps. Bool/string arms stay
+/// BranchN unless Core stamps metadata.
 fn infer_result_discriminator_from_oneof_descriptions(
     branches: &[serde_json::Value],
     param_names: Option<&[String]>,
@@ -1700,7 +1701,8 @@ fn type_def_from_json_schema_ctx(
                             map_value: Some(Box::new(value_type)),
                             map_key_protocol_type: Some(
                                 schema
-                                    .get("x-ethos-map-key-protocol-type")
+                                    .get("x-bitcoin-map-key-type")
+                                    .or_else(|| schema.get("x-ethos-map-key-protocol-type"))
                                     .and_then(|v| v.as_str())
                                     .unwrap_or("string")
                                     .to_string(),
