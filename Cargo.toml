@@ -23,6 +23,7 @@ members = [
     "compiler/config",
     "compiler/fuzzctl",
     "compiler/pipeline",
+    "compiler/schema-oracle",
     "compiler/semantics",
     "primitives/*",
 ]

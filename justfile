@@ -165,10 +165,17 @@ schema-oracle-test:
   cargo test -p ethos-analysis --lib schema_oracle
   cargo test -p ethos-analysis --test test_schema_oracle
 
+# Live regtest smoke (spawns bitcoind; set BITCOIND_PATH or use corpus build)
+[group('test')]
+schema-oracle-smoke *args:
+  cargo run -p ethos-schema-oracle -- {{args}}
+
 # Examples
 examples:
     @echo "Examples:"
+    @echo "  just schema-oracle-smoke --rounds 16 --verbose"
     @echo "  just schema-oracle-test  # Schema-oracle unit + IR/golden integration"
+    @echo "  just schema-oracle-smoke # Live regtest Δ oracle (spawns bitcoind)"
     @echo "  just sane                # Full check before push (lint + tests)"
     @echo "  just generate-from-ir            # Generate client from IR (full RPC surface)"
     @echo "  just generate-from-ir ../ethos-bitcoind {{LATEST_VERSION}}   # Generate into repo with version (full RPC surface)"

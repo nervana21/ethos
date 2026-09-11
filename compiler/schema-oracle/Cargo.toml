@@ -1,0 +1,19 @@
+[package]
+name = "ethos-schema-oracle"
+version = "0.1.0"
+edition = "2021"
+description = "Live schema-oracle smoke: IR-guided RPC calls against regtest bitcoind"
+license = "CC0-1.0"
+publish = false
+
+[[bin]]
+name = "schema-oracle"
+path = "src/main.rs"
+
+[dependencies]
+clap = { version = "4", features = ["derive", "env"] }
+ethos-analysis = { path = "../analysis" }
+ethos-bitcoind = { path = "../../../ethos-bitcoind", default-features = false, features = ["core"] }
+ir = { package = "ethos-ir", path = "../../primitives/ir" }
+serde_json = "1"
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
