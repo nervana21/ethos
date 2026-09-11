@@ -1,24 +1,23 @@
 # Bitcoin RPC Fuzzing - Justfile
-# Provides commands for running fuzzing tests with Docker
+# All fuzz runs through Docker. Never host cargo fuzz (see FUZZING-DOCKER.md).
 
 # Default recipe - show available commands
 default:
     @just --list
 
-# Build fuzzing targets
-build:
-    cargo build --release
+# Ensure persistent ethos-fuzz box
+box:
+    bash scripts/ensure-ethos-fuzz.sh
 
-# Build with fuzz features
-build-fuzz:
-    cargo build --release --features fuzz
+# Coverage-guided schema_oracle (Docker libFuzzer)
+schema-oracle-cov *args:
+    bash scripts/run-schema-oracle-cov.sh {{args}}
 
-# Run fuzzing for a specific target and duration
+# Run fuzzing for a specific target and duration (compose one-shot)
 fuzz-duration target duration="1h":
-    @echo "Running fuzz target '{{target}}' for {{duration}}"
-    @bash -lc 'DUR={{duration}}; case "$DUR" in *h) SECS=$(( ${DUR%h} * 3600 )) ;; *m) SECS=$(( ${DUR%m} * 60 )) ;; *s) SECS=$(( ${DUR%s} )) ;; *) SECS=$DUR ;; esac; export FUZZ_TARGET={{target}} SECS; docker-compose run --rm fuzz bash -c "cd /work/compiler/fuzz && cargo fuzz run {{target}} -- -max_total_time=${SECS}"'
+    @echo "Running fuzz target '{{target}}' for {{duration}} (Docker)"
+    @bash -c 'DUR={{duration}}; case "$DUR" in *h) SECS=$(( ${DUR%h} * 3600 )) ;; *m) SECS=$(( ${DUR%m} * 60 )) ;; *s) SECS=$(( ${DUR%s} )) ;; *) SECS=$DUR ;; esac; docker compose run --rm fuzz bash -c "set -euo pipefail; export PATH=/usr/local/cargo/bin:\${PATH:-/usr/bin:/bin}; cd /work/compiler/fuzz && cargo +nightly fuzz run {{target}} -- -max_total_time=${SECS}"'
 
-# Quick fuzzing runs
 fuzz-1m target:
     @just fuzz-duration {{target}} 1m
 
@@ -28,66 +27,29 @@ fuzz-5m target:
 fuzz-1h target:
     @just fuzz-duration {{target}} 1h
 
-fuzz-2h target:
-    @just fuzz-duration {{target}} 2h
-
-fuzz-6h target:
-    @just fuzz-duration {{target}} 6h
-
-# Generate corpus
-codegen:
-    @echo "Generating fuzzing corpus..."
-    cargo run --release --bin main -- corpus-gen
-
-# Run all fuzz targets for 7 seconds each (compile once, run all)
+# Smoke all cargo-fuzz targets in Docker (schema_oracle + schema alias)
 fuzz-all:
-    @echo "Running all fuzz targets for 7 seconds each..."
-    @echo "=== Compiling fuzz targets once ==="
-    docker-compose run --rm fuzz bash -c "cd /work/compiler/fuzz && cargo fuzz build && mkdir -p fuzz/corpus/_smoke_empty"
-    @echo "=== Fuzzing schema ==="
-    @export FUZZ_TARGET=schema && docker-compose run --rm fuzz bash -c "cd /work/compiler/fuzz && cargo fuzz run schema fuzz/corpus/_smoke_empty -- -max_total_time=7 -runs=10000"
-    @echo "=== Fuzzing rpc ==="
-    @export FUZZ_TARGET=rpc && docker-compose run --rm fuzz bash -c "cd /work/compiler/fuzz && cargo fuzz run rpc fuzz/corpus/_smoke_empty -- -max_total_time=7 -runs=10000"
-    @echo "=== Fuzzing transport ==="
-    @export FUZZ_TARGET=transport && docker-compose run --rm fuzz bash -c "cd /work/compiler/fuzz && cargo fuzz run transport fuzz/corpus/_smoke_empty -- -max_total_time=7 -runs=10000"
-    @echo "✅ All fuzz targets completed!"
-
-# Check fuzzing status
-status:
-    @echo "Fuzzing status:"
-    @echo "Corpus entries:"
-    @find ../../outputs/generated/fuzz/bitcoin_core/corpus -name "*.json" | wc -l
-    @echo "Crash inputs:"
-    @find ../../outputs/generated/fuzz/bitcoin_core/crashes -name "*.json" | wc -l
-
-# Clean fuzzing artifacts
-clean:
-    @echo "Cleaning fuzzing artifacts..."
-    rm -rf ../../outputs/generated/fuzz/bitcoin_core/corpus/* ../../outputs/generated/fuzz/bitcoin_core/crashes/* target/debug target/release
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "=== Docker fuzz-all (schema_oracle) ==="
+    bash scripts/ensure-ethos-fuzz.sh
+    docker exec -i ethos-fuzz bash -c '
+    set -euo pipefail
+    export PATH="/usr/local/cargo/bin:${PATH:-/usr/bin:/bin}"
+    cd /work/compiler/fuzz
+    export CARGO_PROFILE_RELEASE_LTO=false
+    cargo +nightly fuzz build schema_oracle
+    cargo +nightly fuzz run schema_oracle -- -max_total_time=7 -max_len=128
+    '
 
 # Docker-based fuzzing (recommended)
 docker-fuzz target duration="1h":
     @just fuzz-duration {{target}} {{duration}}
 
-# Pipeline generation (orthogonal to fuzzing)
-pipeline-generate:
-    @echo "Generating client code with pipeline..."
-    docker-compose --profile pipeline up --build pipeline-generate
-
-# Full workflow: generate code, then fuzz
-full-workflow:
-    @echo "🔄 Full workflow: Generate code, then fuzz..."
-    @echo "Step 1: Generating client code..."
-    docker-compose --profile pipeline up --build pipeline-generate
-    @echo "Step 2: Run fuzzing with: just fuzz-duration transport 1h"
-
-# Examples
 examples:
     @echo "Examples:"
-    @echo "  just fuzz-duration schema 1h"
-    @echo "  just fuzz-1h rpc"
+    @echo "  just box"
+    @echo "  just schema-oracle-cov"
+    @echo "  just schema-oracle-cov -- -max_total_time=60"
+    @echo "  just fuzz-duration schema_oracle 5m"
     @echo "  just fuzz-all"
-    @echo "  just codegen"
-    @echo "  just docker-fuzz transport 2h"
-    @echo "  just pipeline-generate"
-    @echo "  just full-workflow"

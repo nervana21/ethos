@@ -11,8 +11,9 @@ RUN rustup toolchain install nightly && rustup component add rust-src --toolchai
 RUN rustup default nightly
 RUN cargo install cargo-fuzz
 
-# Cache-friendly envs
+# Cache-friendly envs (PATH must stay explicit — bash -lc resets it)
 ENV CARGO_HOME=/usr/local/cargo
 ENV RUSTUP_HOME=/usr/local/rustup
+ENV PATH=/usr/local/cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 WORKDIR /work

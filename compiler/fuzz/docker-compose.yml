@@ -34,7 +34,7 @@ services:
       - BITCOIND_RPC_URL=http://bitcoind:18443
       - BITCOIND_RPC_USER=user
       - BITCOIND_RPC_PASS=pass
-      - FUZZ_TARGET=${FUZZ_TARGET:-transport}
+      - FUZZ_TARGET=${FUZZ_TARGET:-schema_oracle}
       - FUZZ_SEED=${FUZZ_SEED:-42}
       - ARTIFACT_DIR=/corpus_data/crashes
     command: tail -f /dev/null
@@ -47,7 +47,7 @@ services:
 
   fuzz-target:
     extends: fuzz
-    command: /bin/sh -lc "/usr/local/cargo/bin/cargo fuzz run ${FUZZ_TARGET:-transport}"
+    command: /bin/sh -lc "/usr/local/cargo/bin/cargo +nightly fuzz run ${FUZZ_TARGET:-schema_oracle}"
     profiles: ["fuzz"]
 
   regtest-init:
