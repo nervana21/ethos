@@ -12,8 +12,9 @@ use std::time::{Duration, Instant};
 
 use clap::Parser;
 use ethos_analysis::{
-    default_allowlist, find_rpc, finding_basename, generate_params, invoke_error_from_rpc_body,
-    mutate_params, pick_rpc, report_to_finding, summarize, InvokeError, OracleReport,
+    default_allowlist, find_rpc, finding_basename, generate_params, generate_params_with_pool,
+    invoke_error_from_rpc_body, mutate_params, pick_rpc, report_to_finding, summarize, InvokeError,
+    OracleClass, OracleReport, ValuePool,
 };
 use ethos_bitcoind::transport::{DefaultTransport, TransportError, TransportTrait};
 use ethos_bitcoind::{BitcoinNodeManager, NodeManager, TestConfig};
@@ -73,6 +74,10 @@ struct Args {
     /// Print every report line (not only summary + findings).
     #[arg(long)]
     verbose: bool,
+
+    /// Disable value recycle (tip hash / height / txid overlay).
+    #[arg(long, default_value_t = false)]
+    no_recycle: bool,
 }
 
 fn repo_root() -> PathBuf { PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..") }
@@ -186,16 +191,117 @@ async fn classify_call(
     ir: &ProtocolIR,
     params: Vec<serde_json::Value>,
     session: &LiveSession,
+    pool: &mut ValuePool,
     verbose: bool,
 ) -> Option<OracleReport> {
     let rpc = find_rpc(ir, rpc_name)?;
     let outcome = session.invoke(&rpc.name, &params).await;
+    let wire = match &outcome {
+        Ok(v) => Some(v.clone()),
+        Err(_) => None,
+    };
     let class = ethos_analysis::classify(rpc, outcome, None);
+    if let Some(ref v) = wire {
+        if matches!(class, OracleClass::Ok) || class.is_oracle_finding() {
+            pool.ingest_method_result(&rpc.name, v);
+        }
+    }
     let report = OracleReport { method: rpc.name.clone(), params, class };
     if verbose || report.class.is_oracle_finding() {
         println!("  {} params={} class={:?}", report.method, report.params.len(), report.class);
     }
     Some(report)
+}
+
+/// Seed pool from tip + mine a few regtest blocks so `getblock` can succeed.
+async fn bootstrap_pool(session: &LiveSession, pool: &mut ValuePool, verbose: bool) {
+    eprintln!("bootstrap value pool…");
+    for method in ["getbestblockhash", "getblockcount", "getrawmempool"] {
+        match session.invoke(method, &[]).await {
+            Ok(v) => {
+                pool.ingest_method_result(method, &v);
+                if verbose {
+                    eprintln!("  seeded {method}");
+                }
+            }
+            Err(e) =>
+                if verbose {
+                    eprintln!("  skip seed {method}: {e}");
+                },
+        }
+    }
+
+    let mine_params =
+        vec![serde_json::Value::Number(3.into()), serde_json::Value::String("raw(55)".into())];
+    match session.invoke("generatetodescriptor", &mine_params).await {
+        Ok(v) => {
+            pool.ingest_method_result("generatetodescriptor", &v);
+            eprintln!(
+                "  mined blocks; pool blockhash={} height={}",
+                pool.len("blockhash"),
+                pool.len("height")
+            );
+        }
+        Err(e) => eprintln!("  generatetodescriptor skipped: {e}"),
+    }
+
+    if let Ok(v) = session.invoke("getbestblockhash", &[]).await {
+        pool.ingest_method_result("getbestblockhash", &v);
+    }
+    if let Ok(v) = session.invoke("getblockcount", &[]).await {
+        pool.ingest_method_result("getblockcount", &v);
+    }
+
+    if let Some(hash) = pool.pick("blockhash", 0).cloned() {
+        for verbosity in 0..=3 {
+            let params = vec![hash.clone(), serde_json::Value::Number(verbosity.into())];
+            match session.invoke("getblock", &params).await {
+                Ok(v) => {
+                    // Classify tip getblock against IR — first disc-union exercise.
+                    pool.ingest_method_result("getblock", &v);
+                    if verbose {
+                        eprintln!("  tip getblock verbosity={verbosity} ok");
+                    }
+                }
+                Err(e) =>
+                    if verbose {
+                        eprintln!("  tip getblock verbosity={verbosity}: {e}");
+                    },
+            }
+        }
+    }
+    eprintln!(
+        "pool ready blockhash={} height={} txid={}",
+        pool.len("blockhash"),
+        pool.len("height"),
+        pool.len("txid")
+    );
+}
+
+fn build_params(
+    rpc: &ir::RpcDef,
+    seed: &[u8],
+    pool: &ValuePool,
+    recycle: bool,
+    last: Option<&[serde_json::Value]>,
+    mutate: bool,
+) -> Vec<serde_json::Value> {
+    let mut params = if mutate {
+        if let Some(prev) = last {
+            mutate_params(rpc, prev, seed)
+        } else {
+            generate_params(rpc, seed)
+        }
+    } else if recycle {
+        generate_params_with_pool(rpc, seed, Some(pool), pool.has("blockhash"))
+    } else {
+        generate_params(rpc, seed)
+    };
+    if recycle && mutate {
+        let salt = seed.first().copied().unwrap_or(0);
+        pool.apply_to_params(rpc, &mut params, salt, pool.has("blockhash"));
+    }
+    params
 }
 
 #[tokio::main]
@@ -231,18 +337,56 @@ async fn main() -> ExitCode {
         }
     };
 
+    let mut pool = ValuePool::new();
+    if !args.no_recycle {
+        bootstrap_pool(&session, &mut pool, args.verbose).await;
+    }
+
     let exit = if args.continuous {
-        run_continuous(&args, &ir, &session).await
+        run_continuous(&args, &ir, &session, &mut pool).await
     } else {
-        run_smoke(&args, &ir, &session).await
+        run_smoke(&args, &ir, &session, &mut pool).await
     };
 
     session.shutdown().await;
     exit
 }
 
-async fn run_smoke(args: &Args, ir: &ProtocolIR, session: &LiveSession) -> ExitCode {
+async fn run_smoke(
+    args: &Args,
+    ir: &ProtocolIR,
+    session: &LiveSession,
+    pool: &mut ValuePool,
+) -> ExitCode {
     let mut reports: Vec<OracleReport> = Vec::new();
+    let recycle = !args.no_recycle;
+
+    // Explicit disc-union tip sweep classified against IR.
+    if recycle {
+        if let Some(hash) = pool.pick("blockhash", 1).cloned() {
+            eprintln!("disc-union tip getblock sweep…");
+            for verbosity in 0..=3 {
+                let params = vec![hash.clone(), serde_json::Value::Number(verbosity.into())];
+                if let Some(r) =
+                    classify_call("getblock", ir, params, session, pool, args.verbose).await
+                {
+                    reports.push(r);
+                }
+            }
+            if let Some(r) = classify_call(
+                "getblockheader",
+                ir,
+                vec![hash, serde_json::Value::Bool(true)],
+                session,
+                pool,
+                args.verbose,
+            )
+            .await
+            {
+                reports.push(r);
+            }
+        }
+    }
 
     if args.sweep {
         eprintln!("sweep allowlist…");
@@ -252,8 +396,8 @@ async fn run_smoke(args: &Args, ir: &ProtocolIR, session: &LiveSession) -> ExitC
                 eprintln!("  skip {name} (not in IR)");
                 continue;
             };
-            let params = generate_params(rpc, &seed);
-            if let Some(r) = classify_call(name, ir, params, session, args.verbose).await {
+            let params = build_params(rpc, &seed, pool, recycle, None, false);
+            if let Some(r) = classify_call(name, ir, params, session, pool, args.verbose).await {
                 reports.push(r);
             }
         }
@@ -270,8 +414,8 @@ async fn run_smoke(args: &Args, ir: &ProtocolIR, session: &LiveSession) -> ExitC
             continue;
         };
         let seed = &buf[1..];
-        let params = generate_params(rpc, seed);
-        if let Some(r) = classify_call(&rpc.name, ir, params, session, args.verbose).await {
+        let params = build_params(rpc, seed, pool, recycle, None, false);
+        if let Some(r) = classify_call(&rpc.name, ir, params, session, pool, args.verbose).await {
             reports.push(r);
         }
     }
@@ -298,7 +442,12 @@ async fn run_smoke(args: &Args, ir: &ProtocolIR, session: &LiveSession) -> ExitC
     ExitCode::SUCCESS
 }
 
-async fn run_continuous(args: &Args, ir: &ProtocolIR, session: &LiveSession) -> ExitCode {
+async fn run_continuous(
+    args: &Args,
+    ir: &ProtocolIR,
+    session: &LiveSession,
+    pool: &mut ValuePool,
+) -> ExitCode {
     let corpus = resolve_corpus_dir(&args.corpus_dir);
     if let Err(e) = std::fs::create_dir_all(&corpus) {
         eprintln!("corpus dir {}: {e}", corpus.display());
@@ -311,9 +460,9 @@ async fn run_continuous(args: &Args, ir: &ProtocolIR, session: &LiveSession) -> 
     let mut iters: u64 = 0;
     let mut saved_findings = 0usize;
     let mut saved_rejects = 0usize;
-    // Keep last params per method for mutate_params.
     let mut last_params: std::collections::HashMap<String, Vec<serde_json::Value>> =
         std::collections::HashMap::new();
+    let recycle = !args.no_recycle;
 
     while Instant::now() < deadline {
         iters += 1;
@@ -330,18 +479,13 @@ async fn run_continuous(args: &Args, ir: &ProtocolIR, session: &LiveSession) -> 
             continue;
         };
         let seed = &buf[1..];
-        let params = if let Some(prev) = last_params.get(&rpc.name) {
-            if buf[0] & 1 == 1 {
-                mutate_params(rpc, prev, seed)
-            } else {
-                generate_params(rpc, seed)
-            }
-        } else {
-            generate_params(rpc, seed)
-        };
+        let mutate = buf[0] & 1 == 1;
+        let prev = last_params.get(&rpc.name).map(|v| v.as_slice());
+        let params = build_params(rpc, seed, pool, recycle, prev, mutate);
         last_params.insert(rpc.name.clone(), params.clone());
 
-        let Some(report) = classify_call(&rpc.name, ir, params, session, args.verbose).await else {
+        let Some(report) = classify_call(&rpc.name, ir, params, session, pool, args.verbose).await
+        else {
             continue;
         };
 
@@ -355,7 +499,7 @@ async fn run_continuous(args: &Args, ir: &ProtocolIR, session: &LiveSession) -> 
             }
         } else if args.save_rejects
             && saved_rejects < args.max_rejects
-            && matches!(report.class, ethos_analysis::OracleClass::ExpectedReject { .. })
+            && matches!(report.class, OracleClass::ExpectedReject { .. })
         {
             if write_finding(&corpus, &report, seed).is_ok() {
                 saved_rejects += 1;
@@ -367,7 +511,8 @@ async fn run_continuous(args: &Args, ir: &ProtocolIR, session: &LiveSession) -> 
 
     let summary = summarize(&reports);
     eprintln!(
-        "continuous done iters={iters} findings_saved={saved_findings} rejects_saved={saved_rejects}"
+        "continuous done iters={iters} findings_saved={saved_findings} rejects_saved={saved_rejects} pool_blockhash={}",
+        pool.len("blockhash")
     );
     eprintln!("summary: {summary:?} (n={})", reports.len());
     ExitCode::SUCCESS
