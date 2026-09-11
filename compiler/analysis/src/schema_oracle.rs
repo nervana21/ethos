@@ -10,7 +10,7 @@
 //! Does not compete with Core in-process crash fuzz or Fuzzamoto snapshot full-system fuzz.
 //! First vertical slice: positional param generation + IR response validation + pluggable invoker.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 
 use ir::json_golden::validate_json_matches_type;
 use ir::{ProtocolIR, RpcDef, TypeDef, TypeKind, VariantDef};
@@ -499,6 +499,144 @@ pub fn pick_rpc<'a>(ir: &'a ProtocolIR, data: &[u8], allowlist: &[&str]) -> Opti
     Some(available[idx])
 }
 
+/// Recycled live values so param RPCs can hit success paths (e.g. tip hash → `getblock`).
+///
+/// Roles: `blockhash`, `height`, `txid`.
+#[derive(Debug, Default, Clone)]
+pub struct ValuePool {
+    by_role: HashMap<String, Vec<Value>>,
+    /// Cap per role to bound memory under continuous fuzz.
+    cap: usize,
+}
+
+impl ValuePool {
+    /// Create an empty pool (default cap 64 values per role).
+    pub fn new() -> Self { Self { by_role: HashMap::new(), cap: 64 } }
+
+    /// Number of values stored under `role`.
+    pub fn len(&self, role: &str) -> usize { self.by_role.get(role).map(|v| v.len()).unwrap_or(0) }
+
+    /// True when role has at least one value.
+    pub fn has(&self, role: &str) -> bool { self.len(role) > 0 }
+
+    /// Push a value for `role` (dedup exact JSON; FIFO trim at cap).
+    pub fn push(&mut self, role: &str, value: Value) {
+        let entry = self.by_role.entry(role.to_string()).or_default();
+        if entry.iter().any(|v| v == &value) {
+            return;
+        }
+        entry.push(value);
+        while entry.len() > self.cap {
+            entry.remove(0);
+        }
+    }
+
+    /// Pick a pooled value for `role` using `salt` (None if empty).
+    pub fn pick(&self, role: &str, salt: u8) -> Option<&Value> {
+        let vals = self.by_role.get(role)?;
+        if vals.is_empty() {
+            return None;
+        }
+        Some(&vals[(salt as usize) % vals.len()])
+    }
+
+    /// Ingest a successful RPC `result` into role buckets.
+    pub fn ingest_method_result(&mut self, method: &str, result: &Value) {
+        match method {
+            "getbestblockhash" | "getblockhash" =>
+                if let Some(s) = result.as_str() {
+                    self.push("blockhash", Value::String(s.to_string()));
+                },
+            "getblockcount" =>
+                if result.is_number() {
+                    self.push("height", result.clone());
+                },
+            "generatetodescriptor" | "generatetoaddress" | "generate" => {
+                if let Some(arr) = result.as_array() {
+                    for h in arr {
+                        if let Some(s) = h.as_str() {
+                            self.push("blockhash", Value::String(s.to_string()));
+                        }
+                    }
+                }
+            }
+            "getrawmempool" =>
+                if let Some(arr) = result.as_array() {
+                    for tx in arr {
+                        if let Some(s) = tx.as_str() {
+                            self.push("txid", Value::String(s.to_string()));
+                        }
+                    }
+                },
+            "getblock" | "getblockheader" => {
+                if let Some(obj) = result.as_object() {
+                    if let Some(h) = obj.get("hash").and_then(|v| v.as_str()) {
+                        self.push("blockhash", Value::String(h.to_string()));
+                    }
+                    if let Some(txs) = obj.get("tx").and_then(|v| v.as_array()) {
+                        for tx in txs {
+                            if let Some(s) = tx.as_str() {
+                                self.push("txid", Value::String(s.to_string()));
+                            } else if let Some(oid) =
+                                tx.as_object().and_then(|o| o.get("txid")).and_then(|v| v.as_str())
+                            {
+                                self.push("txid", Value::String(oid.to_string()));
+                            }
+                        }
+                    }
+                } else if let Some(s) = result.as_str() {
+                    // verbosity 0 = hex string; still not a hash, skip
+                    let _ = s;
+                }
+            }
+            _ => {}
+        }
+    }
+
+    /// Overlay pooled tip values onto generated params when param names match roles.
+    ///
+    /// When `force`, always overlay if pool has the role. Otherwise ~75% of the time.
+    pub fn apply_to_params(&self, rpc: &RpcDef, params: &mut [Value], salt: u8, force: bool) {
+        for (i, param) in rpc.params.iter().enumerate() {
+            if i >= params.len() {
+                break;
+            }
+            let hint = param.name.to_ascii_lowercase();
+            let role = if looks_like_blockhash(&hint) {
+                "blockhash"
+            } else if hint.contains("height") {
+                "height"
+            } else if looks_like_txid(&hint) {
+                "txid"
+            } else {
+                continue;
+            };
+            let use_pool = force || (salt.wrapping_add(i as u8) % 4 != 0);
+            if !use_pool {
+                continue;
+            }
+            if let Some(v) = self.pick(role, salt.wrapping_add(i as u8)) {
+                params[i] = v.clone();
+            }
+        }
+    }
+}
+
+/// Generate params then optionally overlay [`ValuePool`] tip values.
+pub fn generate_params_with_pool(
+    rpc: &RpcDef,
+    data: &[u8],
+    pool: Option<&ValuePool>,
+    force_pool: bool,
+) -> Vec<Value> {
+    let mut params = generate_params(rpc, data);
+    if let Some(pool) = pool {
+        let salt = data.first().copied().unwrap_or(0);
+        pool.apply_to_params(rpc, &mut params, salt, force_pool);
+    }
+    params
+}
+
 /// JSON object for a corpus finding (method, params, class, detail, seed_hex).
 pub fn report_to_finding(report: &OracleReport, seed: &[u8]) -> Value {
     let (class, detail) = match &report.class {
@@ -726,6 +864,67 @@ mod tests {
         let s = params[0].as_str().expect("hex string");
         assert_eq!(s.len(), 64, "blockhash should be 32-byte hex");
         assert!(s.chars().all(|c| c.is_ascii_hexdigit()));
+    }
+
+    #[test]
+    fn value_pool_recycle_blockhash_into_getblock() {
+        let mut pool = ValuePool::new();
+        pool.ingest_method_result("getbestblockhash", &Value::String("ab".repeat(32)));
+        assert_eq!(pool.len("blockhash"), 1);
+
+        let mut rpc = primitive_number_rpc();
+        rpc.name = "getblock".into();
+        rpc.params = vec![
+            ParamDef {
+                name: "blockhash".into(),
+                param_type: TypeDef {
+                    name: "string".into(),
+                    description: String::new(),
+                    kind: TypeKind::Primitive,
+                    fields: None,
+                    variants: None,
+                    union_variants: None,
+                    base_type: None,
+                    protocol_type: Some("hex".into()),
+                    canonical_name: None,
+                    type_identity: None,
+                    condition: None,
+                    map_value: None,
+                    map_key_protocol_type: None,
+                },
+                required: true,
+                description: String::new(),
+                default_value: None,
+                version_added: None,
+                version_removed: None,
+            },
+            ParamDef {
+                name: "verbosity".into(),
+                param_type: TypeDef {
+                    name: "number".into(),
+                    description: String::new(),
+                    kind: TypeKind::Primitive,
+                    fields: None,
+                    variants: None,
+                    union_variants: None,
+                    base_type: None,
+                    protocol_type: Some("integer".into()),
+                    canonical_name: None,
+                    type_identity: None,
+                    condition: None,
+                    map_value: None,
+                    map_key_protocol_type: None,
+                },
+                required: false,
+                description: String::new(),
+                default_value: None,
+                version_added: None,
+                version_removed: None,
+            },
+        ];
+        // Force optional verbosity on: odd first bool after required fills.
+        let params = generate_params_with_pool(&rpc, &[0xff; 16], Some(&pool), true);
+        assert_eq!(params[0].as_str().unwrap(), &"ab".repeat(32));
     }
 
     #[test]
