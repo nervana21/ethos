@@ -26,6 +26,8 @@ services:
     working_dir: /work/compiler/fuzz
     volumes:
       - ../../:/work
+      # Path dep of ethos-schema-oracle (compiler/schema-oracle → ../../../ethos-bitcoind).
+      - ${ETHOS_BITCOIND_HOST_PATH:-../../../ethos-bitcoind}:/ethos-bitcoind:ro
       - corpus_data:${FUZZ_CORPUS_PATH:-/work/outputs/generated/fuzz/${FUZZ_TARGET:-transport}/corpus}
       - crashes_data:${FUZZ_CRASHES_PATH:-/work/outputs/generated/fuzz/${FUZZ_TARGET:-transport}/crashes}
     environment:

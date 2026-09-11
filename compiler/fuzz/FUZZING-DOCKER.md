@@ -16,7 +16,7 @@ just schema-oracle-cov -- -max_total_time=60
 just schema-oracle-cov -- -runs=500
 ```
 
-Image: `bitcoin-rpc-fuzz:latest` (`compiler/fuzz/Dockerfile.fuzz`). Mount: ethos root → `/work`.
+Image: `bitcoin-rpc-fuzz:latest` (`compiler/fuzz/Dockerfile.fuzz`). Mounts: ethos root → `/work`; sibling `ethos-bitcoind` → `/ethos-bitcoind` (path dep of `ethos-schema-oracle`; override with `ETHOS_BITCOIND_PATH`).
 
 Scripts use `bash -c` + explicit `PATH=/usr/local/cargo/bin:…` inside the container. Avoid `bash -lc` — login shells reset PATH and yield `cargo: command not found`.
 
