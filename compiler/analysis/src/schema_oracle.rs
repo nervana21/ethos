@@ -176,7 +176,7 @@ pub fn generate_params(rpc: &RpcDef, data: &[u8]) -> Vec<Value> {
         if !param.required && !cur.next_bool() {
             break;
         }
-        out.push(generate_value(&param.param_type, &mut cur, 0));
+        out.push(generate_value(&param.name, &param.param_type, &mut cur, 0));
     }
     out
 }
@@ -195,11 +195,10 @@ pub fn mutate_params(rpc: &RpcDef, base: &[Value], data: &[u8]) -> Vec<Value> {
     }
     let idx = cur.next_usize(out.len());
     if let Some(param) = rpc.params.get(idx) {
-        out[idx] = generate_value(&param.param_type, &mut cur, 0);
+        out[idx] = generate_value(&param.name, &param.param_type, &mut cur, 0);
     } else {
         out[idx] = Value::String(cur.next_string(8));
     }
-    // Occasionally append an extra junk arg (still useful for reject classification).
     if cur.next_bool() && out.len() < rpc.params.len().saturating_add(2) {
         out.push(Value::String(cur.next_string(4)));
     }
@@ -208,10 +207,30 @@ pub fn mutate_params(rpc: &RpcDef, base: &[Value], data: &[u8]) -> Vec<Value> {
 
 const MAX_GEN_DEPTH: usize = 4;
 
-fn generate_value(ty: &TypeDef, cur: &mut ByteCursor<'_>, depth: usize) -> Value {
+fn name_hint(s: &str) -> String { s.to_ascii_lowercase() }
+
+fn looks_like_blockhash(hint: &str) -> bool {
+    hint.contains("blockhash") || hint.contains("block_hash") || hint == "hash"
+}
+
+fn looks_like_txid(hint: &str) -> bool {
+    hint.contains("txid") || hint.contains("transactionid") || hint.contains("wtxid")
+}
+
+fn looks_like_hex_hash(hint: &str, ty: &TypeDef) -> bool {
+    if ty.protocol_type.as_deref() == Some("hex") {
+        return true;
+    }
+    looks_like_blockhash(hint) || looks_like_txid(hint) || hint.contains("hash")
+}
+
+fn looks_like_verbosity(hint: &str) -> bool { hint.contains("verbosity") || hint == "verbose" }
+
+fn generate_value(param_name: &str, ty: &TypeDef, cur: &mut ByteCursor<'_>, depth: usize) -> Value {
     if depth >= MAX_GEN_DEPTH {
         return Value::Null;
     }
+    let hint = name_hint(param_name);
     match ty.kind {
         TypeKind::Optional => {
             if cur.next_bool() {
@@ -219,7 +238,7 @@ fn generate_value(ty: &TypeDef, cur: &mut ByteCursor<'_>, depth: usize) -> Value
             }
             let inner = ty.fields.as_ref().and_then(|f| f.first()).map(|fd| &fd.field_type);
             match inner {
-                Some(inner_ty) => generate_value(inner_ty, cur, depth + 1),
+                Some(inner_ty) => generate_value(param_name, inner_ty, cur, depth + 1),
                 None => Value::Null,
             }
         }
@@ -229,7 +248,7 @@ fn generate_value(ty: &TypeDef, cur: &mut ByteCursor<'_>, depth: usize) -> Value
                 return Value::Null;
             }
             let i = cur.next_usize(variants.len());
-            generate_value(&variants[i].type_def, cur, depth + 1)
+            generate_value(param_name, &variants[i].type_def, cur, depth + 1)
         }
         TypeKind::Array => {
             let n = cur.next_usize(3);
@@ -238,7 +257,7 @@ fn generate_value(ty: &TypeDef, cur: &mut ByteCursor<'_>, depth: usize) -> Value
                 ty.homogeneous_array_element_type().or_else(|| ty.array_element_type())
             {
                 for _ in 0..n {
-                    arr.push(generate_value(elem, cur, depth + 1));
+                    arr.push(generate_value(param_name, elem, cur, depth + 1));
                 }
             }
             Value::Array(arr)
@@ -250,7 +269,7 @@ fn generate_value(ty: &TypeDef, cur: &mut ByteCursor<'_>, depth: usize) -> Value
             for _ in 0..n {
                 let key = cur.next_string(8);
                 let v = match val_ty {
-                    Some(t) => generate_value(t, cur, depth + 1),
+                    Some(t) => generate_value(param_name, t, cur, depth + 1),
                     None => Value::Null,
                 };
                 map.insert(key, v);
@@ -264,7 +283,12 @@ fn generate_value(ty: &TypeDef, cur: &mut ByteCursor<'_>, depth: usize) -> Value
                 if let Some(fields) = ty.fields.as_ref() {
                     if let Some(elem) = fields.first() {
                         for _ in 0..n {
-                            arr.push(generate_value(&elem.field_type, cur, depth + 1));
+                            arr.push(generate_value(
+                                elem.key.as_ident().as_str(),
+                                &elem.field_type,
+                                cur,
+                                depth + 1,
+                            ));
                         }
                     }
                 }
@@ -286,13 +310,17 @@ fn generate_value(ty: &TypeDef, cur: &mut ByteCursor<'_>, depth: usize) -> Value
                     if !required && !cur.next_bool() {
                         continue;
                     }
-                    map.insert(key.to_string(), generate_value(&field.field_type, cur, depth + 1));
+                    map.insert(
+                        key.to_string(),
+                        generate_value(key, &field.field_type, cur, depth + 1),
+                    );
                 }
             }
             Value::Object(map)
         }
         TypeKind::Enum => generate_enum_value(ty, cur),
-        TypeKind::Primitive | TypeKind::Alias | TypeKind::Custom => generate_primitive(ty, cur),
+        TypeKind::Primitive | TypeKind::Alias | TypeKind::Custom =>
+            generate_primitive(&hint, ty, cur),
     }
 }
 
@@ -303,7 +331,7 @@ fn generate_enum_value(ty: &TypeDef, cur: &mut ByteCursor<'_>) -> Value {
             return variant_to_value(&variants[i]);
         }
     }
-    generate_primitive(ty, cur)
+    generate_primitive(&name_hint(&ty.name), ty, cur)
 }
 
 fn variant_to_value(v: &VariantDef) -> Value {
@@ -314,31 +342,71 @@ fn variant_to_value(v: &VariantDef) -> Value {
     Value::String(wire.to_string())
 }
 
-fn generate_primitive(ty: &TypeDef, cur: &mut ByteCursor<'_>) -> Value {
+fn generate_hex(cur: &mut ByteCursor<'_>, nbytes: usize) -> Value {
+    let mut s = String::with_capacity(nbytes * 2);
+    for _ in 0..nbytes {
+        let b = cur.next_u8();
+        s.push(char::from_digit((b >> 4) as u32, 16).unwrap_or('0'));
+        s.push(char::from_digit((b & 0xf) as u32, 16).unwrap_or('0'));
+    }
+    Value::String(s)
+}
+
+fn generate_primitive(hint: &str, ty: &TypeDef, cur: &mut ByteCursor<'_>) -> Value {
     let p = ty.protocol_type.as_deref().unwrap_or(ty.name.as_str());
+
+    if hint.contains("estimate_mode") {
+        const MODES: &[&str] = &["UNSET", "ECONOMICAL", "CONSERVATIVE"];
+        return Value::String(MODES[cur.next_usize(MODES.len())].to_string());
+    }
+    if hint.contains("sighashtype") {
+        const SIGS: &[&str] = &[
+            "DEFAULT",
+            "ALL",
+            "NONE",
+            "SINGLE",
+            "ALL|ANYONECANPAY",
+            "NONE|ANYONECANPAY",
+            "SINGLE|ANYONECANPAY",
+        ];
+        return Value::String(SIGS[cur.next_usize(SIGS.len())].to_string());
+    }
+
     match p {
         "boolean" | "bool" => Value::Bool(cur.next_bool()),
         "number" | "integer" | "float" => {
+            if looks_like_verbosity(hint) {
+                return Value::Number((cur.next_u8() % 4).into());
+            }
+            if hint.contains("height") || hint == "n" || hint.contains("vout") {
+                return Value::Number((cur.next_u8() as u64 % 64).into());
+            }
+            if hint.contains("conf_target") || hint.contains("nblocks") {
+                return Value::Number((1 + (cur.next_u8() % 25) as u64).into());
+            }
             let n = cur.next_i64().saturating_abs() % 10_000;
             Value::Number(n.into())
         }
         "amount" => {
-            // JSON number; keep small non-negative.
             let n = (cur.next_u8() as u64) % 1000;
             Value::Number(n.into())
         }
         "null" | "none" => Value::Null,
         "hex" => {
-            let len = cur.next_usize(9);
-            let mut s = String::with_capacity(len * 2);
-            for _ in 0..len {
-                let b = cur.next_u8();
-                s.push(char::from_digit((b >> 4) as u32, 16).unwrap_or('0'));
-                s.push(char::from_digit((b & 0xf) as u32, 16).unwrap_or('0'));
-            }
-            Value::String(s)
+            let nbytes = if looks_like_blockhash(hint) || looks_like_txid(hint) {
+                32
+            } else if looks_like_hex_hash(hint, ty) {
+                if cur.next_bool() {
+                    32
+                } else {
+                    cur.next_usize(33).max(1)
+                }
+            } else {
+                cur.next_usize(33)
+            };
+            generate_hex(cur, nbytes)
         }
-        // string and unknown protocol types
+        "string" if looks_like_blockhash(hint) || looks_like_txid(hint) => generate_hex(cur, 32),
         _ => Value::String(cur.next_string(12)),
     }
 }
@@ -386,9 +454,12 @@ pub fn find_rpc<'a>(ir: &'a ProtocolIR, name: &str) -> Option<&'a RpcDef> {
     ir.get_rpc_methods().into_iter().find(|r| r.name == name)
 }
 
-/// Allowlisted methods that are safe for early oracle smoke (no wallet, no destructive).
+/// Allowlisted methods that are safe for oracle smoke/fuzz (no wallet, no destructive).
+///
+/// Includes zero-arg probes plus read-only param methods so generators get exercised.
 pub fn default_allowlist() -> &'static [&'static str] {
     &[
+        // zero-arg probes
         "getblockchaininfo",
         "getblockcount",
         "getconnectioncount",
@@ -403,6 +474,17 @@ pub fn default_allowlist() -> &'static [&'static str] {
         "getpeerinfo",
         "listbanned",
         "getaddrmaninfo",
+        // param-taking (expect many ExpectedReject on empty chain; still oracle-useful)
+        "getblockhash",
+        "getblock",
+        "getblockheader",
+        "getrawmempool",
+        "getnetworkhashps",
+        "estimatesmartfee",
+        "validateaddress",
+        "getdescriptorinfo",
+        "gettxout",
+        "decoderawtransaction",
     ]
 }
 
@@ -569,5 +651,39 @@ mod tests {
         let params = generate_params(&rpc, b"\x01\x02\x03\x04\x05\x06\x07\x08");
         assert_eq!(params.len(), 1);
         assert!(params[0].is_number());
+    }
+
+    #[test]
+    fn blockhash_param_is_64_hex() {
+        let mut rpc = primitive_number_rpc();
+        rpc.name = "getblock".into();
+        rpc.params = vec![ParamDef {
+            name: "blockhash".into(),
+            param_type: TypeDef {
+                name: "string".into(),
+                description: String::new(),
+                kind: TypeKind::Primitive,
+                fields: None,
+                variants: None,
+                union_variants: None,
+                base_type: None,
+                protocol_type: Some("hex".into()),
+                canonical_name: None,
+                type_identity: None,
+                condition: None,
+                map_value: None,
+                map_key_protocol_type: None,
+            },
+            required: true,
+            description: String::new(),
+            default_value: None,
+            version_added: None,
+            version_removed: None,
+        }];
+        let params = generate_params(&rpc, &[0u8; 64]);
+        assert_eq!(params.len(), 1);
+        let s = params[0].as_str().expect("hex string");
+        assert_eq!(s.len(), 64, "blockhash should be 32-byte hex");
+        assert!(s.chars().all(|c| c.is_ascii_hexdigit()));
     }
 }
