@@ -1,0 +1,120 @@
+//! Integration: schema oracle against pinned IR + golden fixtures.
+
+use std::path::PathBuf;
+
+use ethos_analysis::{
+    classify, default_allowlist, find_rpc, generate_params, pick_rpc, run_oracle_case, summarize,
+    InvokeError, OracleClass, RpcInvoker,
+};
+use ir::ProtocolIR;
+use serde_json::{json, Value};
+
+fn repo_root() -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..")
+}
+
+fn load_ir() -> ProtocolIR {
+    let path = repo_root().join("resources/ir/bitcoin.ir.json");
+    ProtocolIR::from_file(&path).unwrap_or_else(|e| panic!("load IR {}: {e}", path.display()))
+}
+
+fn load_golden(name: &str) -> Value {
+    let path = repo_root().join(format!("resources/testdata/rpc_golden/{name}"));
+    let raw = std::fs::read_to_string(&path)
+        .unwrap_or_else(|e| panic!("read golden {}: {e}", path.display()));
+    serde_json::from_str(&raw).unwrap_or_else(|e| panic!("parse golden {}: {e}", path.display()))
+}
+
+struct FixtureInvoker {
+    by_method: std::collections::HashMap<String, Value>,
+}
+
+impl RpcInvoker for FixtureInvoker {
+    fn invoke(&mut self, method: &str, _params: &[Value]) -> Result<Value, InvokeError> {
+        self.by_method.get(method).cloned().ok_or_else(|| {
+            InvokeError::Rpc {
+                code: Some(-32601),
+                message: format!("Unknown method: {method}"),
+            }
+        })
+    }
+}
+
+#[test]
+fn golden_getdifficulty_matches_ir() {
+    let ir = load_ir();
+    let rpc = find_rpc(&ir, "getdifficulty").expect("getdifficulty in IR");
+    let golden = load_golden("getdifficulty_result_min.json");
+    let class = classify(rpc, Ok(golden), None);
+    assert_eq!(class, OracleClass::Ok, "golden must match IR result");
+}
+
+#[test]
+fn golden_getblockchaininfo_matches_ir() {
+    let ir = load_ir();
+    let rpc = find_rpc(&ir, "getblockchaininfo").expect("getblockchaininfo in IR");
+    let golden = load_golden("getblockchaininfo_result_min.json");
+    let class = classify(rpc, Ok(golden), None);
+    assert_eq!(class, OracleClass::Ok, "golden must match IR result");
+}
+
+#[test]
+fn injected_wrong_shape_is_schema_mismatch() {
+    let ir = load_ir();
+    let rpc = find_rpc(&ir, "getdifficulty").expect("getdifficulty in IR");
+    let class = classify(rpc, Ok(json!({"nope": true})), None);
+    assert!(
+        matches!(class, OracleClass::SchemaMismatch { .. }),
+        "wrong shape must be schema_mismatch, got {class:?}"
+    );
+}
+
+#[test]
+fn fixture_invoker_end_to_end_ok() {
+    let ir = load_ir();
+    let mut inv = FixtureInvoker {
+        by_method: [(
+            "getconnectioncount".to_string(),
+            load_golden("getconnectioncount_result_min.json"),
+        )]
+        .into_iter()
+        .collect(),
+    };
+    let rpc = find_rpc(&ir, "getconnectioncount").expect("getconnectioncount");
+    let report = run_oracle_case(rpc, b"abc", &mut inv, None);
+    assert_eq!(report.class, OracleClass::Ok);
+}
+
+#[test]
+fn allowlist_pick_and_generate_smoke() {
+    let ir = load_ir();
+    let rpc = pick_rpc(&ir, b"\x03\x04\x05", default_allowlist()).expect("allowlist hit");
+    let params = generate_params(rpc, b"\x10\x11\x12\x13");
+    // Allowlisted methods are mostly zero-arg; generation must not panic.
+    assert!(params.len() <= rpc.params.len());
+}
+
+#[test]
+fn summarize_counts_findings() {
+    let reports = vec![
+        ethos_analysis::OracleReport {
+            method: "a".into(),
+            params: vec![],
+            class: OracleClass::Ok,
+        },
+        ethos_analysis::OracleReport {
+            method: "b".into(),
+            params: vec![],
+            class: OracleClass::SchemaMismatch { detail: "x".into() },
+        },
+        ethos_analysis::OracleReport {
+            method: "c".into(),
+            params: vec![],
+            class: OracleClass::ExpectedReject { code: Some(-8), message: "y".into() },
+        },
+    ];
+    let s = summarize(&reports);
+    assert_eq!(s.get("ok"), Some(&1));
+    assert_eq!(s.get("schema_mismatch"), Some(&1));
+    assert_eq!(s.get("expected_reject"), Some(&1));
+}

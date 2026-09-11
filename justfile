@@ -159,9 +159,16 @@ corpus-pull:
   cargo test --workspace --quiet --all-targets --no-default-features
   cargo test --workspace --quiet --all-targets --all-features
 
+# Schema-oracle RPC fuzz (Δ as response oracle)
+[group('test')]
+schema-oracle-test:
+  cargo test -p ethos-analysis --lib schema_oracle
+  cargo test -p ethos-analysis --test test_schema_oracle
+
 # Examples
 examples:
     @echo "Examples:"
+    @echo "  just schema-oracle-test  # Schema-oracle unit + IR/golden integration"
     @echo "  just sane                # Full check before push (lint + tests)"
     @echo "  just generate-from-ir            # Generate client from IR (full RPC surface)"
     @echo "  just generate-from-ir ../ethos-bitcoind {{LATEST_VERSION}}   # Generate into repo with version (full RPC surface)"

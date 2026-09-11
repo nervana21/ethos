@@ -28,6 +28,7 @@ members = [
 ]
 exclude = [
     "corpus/",
+    "compiler/fuzz",
 ]
 resolver = "2"
 

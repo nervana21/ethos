@@ -18,6 +18,7 @@ use types::{Implementation, ProtocolVersion};
 pub mod canonicalizer;
 pub mod differential;
 pub mod normalizer;
+pub mod schema_oracle;
 pub mod semantic;
 pub mod validator;
 
@@ -25,6 +26,10 @@ pub mod validator;
 pub use canonicalizer::TypeCanonicalizer;
 pub use differential::DifferentialAnalyzer;
 pub use normalizer::IRNormalizer;
+pub use schema_oracle::{
+    classify, default_allowlist, find_rpc, generate_params, mutate_params, pick_rpc,
+    run_oracle_case, summarize, ByteCursor, InvokeError, OracleClass, OracleReport, RpcInvoker,
+};
 pub use semantic::SemanticAnalyzer;
 pub use validator::IrValidator;
 
