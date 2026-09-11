@@ -181,6 +181,15 @@ pub fn generate_params(rpc: &RpcDef, data: &[u8]) -> Vec<Value> {
     out
 }
 
+/// Synthesize a JSON value shaped like `ty` (IR result / nested types).
+///
+/// Used by the coverage-guided offline runner to return IR-plausible success bodies
+/// when no golden fixture exists for a method.
+pub fn generate_result_value(ty: &TypeDef, data: &[u8]) -> Value {
+    let mut cur = ByteCursor::new(data);
+    generate_value("result", ty, &mut cur, 0)
+}
+
 /// Mutate an existing positional param list while staying loosely inside schema.
 ///
 /// Empty `base` falls back to [`generate_params`].
