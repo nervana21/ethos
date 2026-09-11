@@ -164,6 +164,7 @@ corpus-pull:
 schema-oracle-test:
   cargo test -p ethos-analysis --lib schema_oracle
   cargo test -p ethos-analysis --test test_schema_oracle
+  cargo test -p ethos-schema-oracle --lib
 
 # Live regtest smoke (spawns bitcoind; set BITCOIND_PATH or use corpus build)
 [group('test')]

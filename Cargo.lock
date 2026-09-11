@@ -691,6 +691,7 @@ dependencies = [
  "ethos-analysis",
  "ethos-bitcoind",
  "ethos-ir",
+ "serde",
  "serde_json",
  "tokio",
 ]

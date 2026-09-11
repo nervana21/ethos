@@ -6,6 +6,10 @@ description = "Live schema-oracle smoke: IR-guided RPC calls against regtest bit
 license = "CC0-1.0"
 publish = false
 
+[lib]
+name = "ethos_schema_oracle"
+path = "src/lib.rs"
+
 [[bin]]
 name = "schema-oracle"
 path = "src/main.rs"
@@ -15,5 +19,6 @@ clap = { version = "4", features = ["derive", "env"] }
 ethos-analysis = { path = "../analysis" }
 ethos-bitcoind = { path = "../../../ethos-bitcoind", default-features = false, features = ["core"] }
 ir = { package = "ethos-ir", path = "../../primitives/ir" }
+serde = "1"
 serde_json = "1"
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
