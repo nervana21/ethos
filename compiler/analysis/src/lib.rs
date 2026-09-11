@@ -27,9 +27,9 @@ pub use canonicalizer::TypeCanonicalizer;
 pub use differential::DifferentialAnalyzer;
 pub use normalizer::IRNormalizer;
 pub use schema_oracle::{
-    classify, default_allowlist, find_rpc, generate_params, invoke_error_from_rpc_body,
-    mutate_params, pick_rpc, run_oracle_case, summarize, ByteCursor, ClosureInvoker, InvokeError,
-    OracleClass, OracleReport, RpcInvoker,
+    classify, default_allowlist, find_rpc, finding_basename, generate_params,
+    invoke_error_from_rpc_body, mutate_params, pick_rpc, report_to_finding, run_oracle_case,
+    summarize, ByteCursor, ClosureInvoker, InvokeError, OracleClass, OracleReport, RpcInvoker,
 };
 pub use semantic::SemanticAnalyzer;
 pub use validator::IrValidator;

@@ -499,6 +499,47 @@ pub fn pick_rpc<'a>(ir: &'a ProtocolIR, data: &[u8], allowlist: &[&str]) -> Opti
     Some(available[idx])
 }
 
+/// JSON object for a corpus finding (method, params, class, detail, seed_hex).
+pub fn report_to_finding(report: &OracleReport, seed: &[u8]) -> Value {
+    let (class, detail) = match &report.class {
+        OracleClass::Ok => ("ok", Value::Null),
+        OracleClass::ExpectedReject { code, message } =>
+            ("expected_reject", serde_json::json!({ "code": code, "message": message })),
+        OracleClass::SchemaMismatch { detail } =>
+            ("schema_mismatch", Value::String(detail.clone())),
+        OracleClass::DecodeFail { detail } => ("decode_fail", Value::String(detail.clone())),
+        OracleClass::TransportError { detail } =>
+            ("transport_error", Value::String(detail.clone())),
+    };
+    serde_json::json!({
+        "method": report.method,
+        "params": report.params,
+        "class": class,
+        "detail": detail,
+        "seed_hex": seed.iter().map(|b| format!("{b:02x}")).collect::<String>(),
+    })
+}
+
+/// Stable basename for writing a finding under a corpus directory.
+pub fn finding_basename(report: &OracleReport) -> String {
+    use sha2::{Digest, Sha256};
+    let mut hasher = Sha256::new();
+    hasher.update(report.method.as_bytes());
+    if let Ok(bytes) = serde_json::to_vec(&report.params) {
+        hasher.update(&bytes);
+    }
+    let class = match &report.class {
+        OracleClass::Ok => "ok",
+        OracleClass::ExpectedReject { .. } => "reject",
+        OracleClass::SchemaMismatch { .. } => "mismatch",
+        OracleClass::DecodeFail { .. } => "decode",
+        OracleClass::TransportError { .. } => "transport",
+    };
+    let digest = hasher.finalize();
+    let short = digest.iter().take(8).map(|b| format!("{b:02x}")).collect::<String>();
+    format!("{}_{}_{}.json", report.method, class, short)
+}
+
 /// Summarize a batch of reports (counts by class).
 pub fn summarize(reports: &[OracleReport]) -> BTreeMap<&'static str, usize> {
     let mut map = BTreeMap::new();
@@ -685,5 +726,21 @@ mod tests {
         let s = params[0].as_str().expect("hex string");
         assert_eq!(s.len(), 64, "blockhash should be 32-byte hex");
         assert!(s.chars().all(|c| c.is_ascii_hexdigit()));
+    }
+
+    #[test]
+    fn finding_basename_stable() {
+        let report = OracleReport {
+            method: "getdifficulty".into(),
+            params: vec![],
+            class: OracleClass::SchemaMismatch { detail: "x".into() },
+        };
+        let a = finding_basename(&report);
+        let b = finding_basename(&report);
+        assert_eq!(a, b);
+        assert!(a.contains("mismatch"));
+        let finding = report_to_finding(&report, b"abc");
+        assert_eq!(finding["class"], "schema_mismatch");
+        assert_eq!(finding["seed_hex"], "616263");
     }
 }

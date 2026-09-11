@@ -1,37 +1,60 @@
-//! Live schema-oracle smoke against regtest bitcoind.
+//! Live schema-oracle smoke + continuous fuzz against regtest bitcoind.
 //!
-//! Spawns (or attaches to) a node, generates IR-shaped params, classifies wire
-//! results against Δ. Exit 1 on any `schema_mismatch` / `decode_fail`.
+//! Spawns (or attaches to) a node, generates/mutates IR-shaped params, classifies
+//! wire results against Δ. Continuous mode writes oracle findings to a corpus dir.
+//! Exit 1 on any `schema_mismatch` / `decode_fail` in smoke mode; continuous mode
+//! exits 0 after duration (findings on disk are the signal).
 
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 use std::sync::Arc;
+use std::time::{Duration, Instant};
 
 use clap::Parser;
 use ethos_analysis::{
-    default_allowlist, find_rpc, generate_params, invoke_error_from_rpc_body, pick_rpc, summarize,
-    InvokeError, OracleReport,
+    default_allowlist, find_rpc, finding_basename, generate_params, invoke_error_from_rpc_body,
+    mutate_params, pick_rpc, report_to_finding, summarize, InvokeError, OracleReport,
 };
 use ethos_bitcoind::transport::{DefaultTransport, TransportError, TransportTrait};
 use ethos_bitcoind::{BitcoinNodeManager, NodeManager, TestConfig};
 use ir::ProtocolIR;
 
 #[derive(Debug, Parser)]
-#[command(name = "schema-oracle", about = "Δ-driven RPC schema oracle smoke")]
+#[command(name = "schema-oracle", about = "Δ-driven RPC schema oracle smoke / continuous fuzz")]
 struct Args {
     /// Path to bitcoin.ir.json (default: resources/ir/bitcoin.ir.json from repo root).
     #[arg(long, env = "SCHEMA_ORACLE_IR")]
     ir: Option<PathBuf>,
 
-    /// Rounds of allowlist fuzz (each round picks one method + generates params).
+    /// Rounds of allowlist fuzz (smoke mode).
     #[arg(long, default_value_t = 32)]
     rounds: usize,
 
-    /// Also call each allowlisted method once with empty/generated params (coverage pass).
+    /// Also call each allowlisted method once with generated params (coverage pass).
     #[arg(long, default_value_t = true)]
     sweep: bool,
 
-    /// Attach to existing RPC URL instead of spawning bitcoind (e.g. http://127.0.0.1:18443/).
+    /// Continuous fuzz until --duration-secs elapses (writes findings corpus).
+    #[arg(long)]
+    continuous: bool,
+
+    /// How long continuous mode runs.
+    #[arg(long, default_value_t = 30)]
+    duration_secs: u64,
+
+    /// Directory for schema_mismatch / decode_fail JSON findings.
+    #[arg(long, default_value = "resources/testdata/schema_oracle_corpus")]
+    corpus_dir: PathBuf,
+
+    /// Also persist expected_reject samples (capped) for triage.
+    #[arg(long, default_value_t = false)]
+    save_rejects: bool,
+
+    /// Max reject files to keep when --save-rejects.
+    #[arg(long, default_value_t = 32)]
+    max_rejects: usize,
+
+    /// Attach to existing RPC URL instead of spawning bitcoind.
     #[arg(long, env = "SCHEMA_ORACLE_RPC_URL")]
     rpc_url: Option<String>,
 
@@ -43,7 +66,7 @@ struct Args {
     #[arg(long, env = "RPC_PASS", default_value = "rpcpassword")]
     rpc_pass: String,
 
-    /// Path to bitcoind when spawning (BITCOIND_PATH / corpus build / PATH).
+    /// Path to bitcoind when spawning.
     #[arg(long, env = "BITCOIND_PATH")]
     bitcoind: Option<PathBuf>,
 
@@ -95,9 +118,24 @@ fn map_transport(err: TransportError) -> InvokeError {
     }
 }
 
+fn resolve_corpus_dir(arg: &Path) -> PathBuf {
+    if arg.is_absolute() {
+        arg.to_path_buf()
+    } else {
+        repo_root().join(arg)
+    }
+}
+
+fn write_finding(dir: &Path, report: &OracleReport, seed: &[u8]) -> std::io::Result<PathBuf> {
+    std::fs::create_dir_all(dir)?;
+    let path = dir.join(finding_basename(report));
+    let finding = report_to_finding(report, seed);
+    std::fs::write(&path, serde_json::to_vec_pretty(&finding)?)?;
+    Ok(path)
+}
+
 struct LiveSession {
     transport: Arc<DefaultTransport>,
-    /// Keep node alive for the session when we spawned it.
     node: Option<BitcoinNodeManager>,
 }
 
@@ -110,7 +148,6 @@ impl LiveSession {
 
         let mut config = TestConfig::default();
         config.bitcoind_path = Some(bitcoind);
-        // Keep node light for oracle smoke.
         config.extra_args = vec!["-prune=1".into()];
 
         let node = BitcoinNodeManager::new_with_config(&config).map_err(|e| e.to_string())?;
@@ -144,15 +181,14 @@ impl LiveSession {
     }
 }
 
-async fn run_one(
+async fn classify_call(
     rpc_name: &str,
     ir: &ProtocolIR,
-    data: &[u8],
+    params: Vec<serde_json::Value>,
     session: &LiveSession,
     verbose: bool,
 ) -> Option<OracleReport> {
     let rpc = find_rpc(ir, rpc_name)?;
-    let params = generate_params(rpc, data);
     let outcome = session.invoke(&rpc.name, &params).await;
     let class = ethos_analysis::classify(rpc, outcome, None);
     let report = OracleReport { method: rpc.name.clone(), params, class };
@@ -165,7 +201,7 @@ async fn run_one(
 #[tokio::main]
 async fn main() -> ExitCode {
     let args = Args::parse();
-    let ir_path = args.ir.unwrap_or_else(default_ir_path);
+    let ir_path = args.ir.clone().unwrap_or_else(default_ir_path);
     let ir = match ProtocolIR::from_file(&ir_path) {
         Ok(ir) => ir,
         Err(e) => {
@@ -174,11 +210,11 @@ async fn main() -> ExitCode {
         }
     };
 
-    let session = if let Some(url) = args.rpc_url {
-        eprintln!("attach {}", url);
-        LiveSession::attach(url, args.rpc_user, args.rpc_pass)
+    let session = if let Some(url) = args.rpc_url.clone() {
+        eprintln!("attach {url}");
+        LiveSession::attach(url, args.rpc_user.clone(), args.rpc_pass.clone())
     } else {
-        let bitcoind = match resolve_bitcoind(args.bitcoind) {
+        let bitcoind = match resolve_bitcoind(args.bitcoind.clone()) {
             Ok(p) => p,
             Err(e) => {
                 eprintln!("{e}");
@@ -195,16 +231,30 @@ async fn main() -> ExitCode {
         }
     };
 
+    let exit = if args.continuous {
+        run_continuous(&args, &ir, &session).await
+    } else {
+        run_smoke(&args, &ir, &session).await
+    };
+
+    session.shutdown().await;
+    exit
+}
+
+async fn run_smoke(args: &Args, ir: &ProtocolIR, session: &LiveSession) -> ExitCode {
     let mut reports: Vec<OracleReport> = Vec::new();
 
     if args.sweep {
         eprintln!("sweep allowlist…");
         for (i, name) in default_allowlist().iter().enumerate() {
             let seed = [i as u8, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77];
-            if let Some(r) = run_one(name, &ir, &seed, &session, args.verbose).await {
-                reports.push(r);
-            } else {
+            let Some(rpc) = find_rpc(ir, name) else {
                 eprintln!("  skip {name} (not in IR)");
+                continue;
+            };
+            let params = generate_params(rpc, &seed);
+            if let Some(r) = classify_call(name, ir, params, session, args.verbose).await {
+                reports.push(r);
             }
         }
     }
@@ -216,41 +266,109 @@ async fn main() -> ExitCode {
         buf[1] = ((i >> 8) & 0xff) as u8;
         buf[2] = 0xA5;
         buf[3] = 0x5A;
-        let Some(rpc) = pick_rpc(&ir, &buf, default_allowlist()) else {
+        let Some(rpc) = pick_rpc(ir, &buf, default_allowlist()) else {
             continue;
         };
         let seed = &buf[1..];
         let params = generate_params(rpc, seed);
-        let outcome = session.invoke(&rpc.name, &params).await;
-        let class = ethos_analysis::classify(rpc, outcome, None);
-        let report = OracleReport { method: rpc.name.clone(), params, class };
-        if args.verbose || report.class.is_oracle_finding() {
-            println!("  {} params={} class={:?}", report.method, report.params.len(), report.class);
+        if let Some(r) = classify_call(&rpc.name, ir, params, session, args.verbose).await {
+            reports.push(r);
         }
-        reports.push(report);
     }
 
     let summary = summarize(&reports);
     eprintln!("summary: {summary:?} (n={})", reports.len());
 
     let findings: Vec<_> = reports.iter().filter(|r| r.class.is_oracle_finding()).collect();
-    let exit = if !findings.is_empty() {
+    if !findings.is_empty() {
         eprintln!("oracle findings: {}", findings.len());
         for f in &findings {
             eprintln!("  {} -> {:?}", f.method, f.class);
         }
-        ExitCode::from(1)
-    } else {
-        let oks = summary.get("ok").copied().unwrap_or(0);
-        if oks == 0 {
-            eprintln!("no Ok classifications — node or IR likely broken");
-            ExitCode::from(1)
-        } else {
-            eprintln!("schema-oracle smoke ok ({oks} Ok)");
-            ExitCode::SUCCESS
-        }
-    };
+        return ExitCode::from(1);
+    }
 
-    session.shutdown().await;
-    exit
+    let oks = summary.get("ok").copied().unwrap_or(0);
+    if oks == 0 {
+        eprintln!("no Ok classifications — node or IR likely broken");
+        return ExitCode::from(1);
+    }
+
+    eprintln!("schema-oracle smoke ok ({oks} Ok)");
+    ExitCode::SUCCESS
+}
+
+async fn run_continuous(args: &Args, ir: &ProtocolIR, session: &LiveSession) -> ExitCode {
+    let corpus = resolve_corpus_dir(&args.corpus_dir);
+    if let Err(e) = std::fs::create_dir_all(&corpus) {
+        eprintln!("corpus dir {}: {e}", corpus.display());
+        return ExitCode::from(2);
+    }
+    eprintln!("continuous fuzz duration={}s corpus={}", args.duration_secs, corpus.display());
+
+    let deadline = Instant::now() + Duration::from_secs(args.duration_secs);
+    let mut reports = Vec::new();
+    let mut iters: u64 = 0;
+    let mut saved_findings = 0usize;
+    let mut saved_rejects = 0usize;
+    // Keep last params per method for mutate_params.
+    let mut last_params: std::collections::HashMap<String, Vec<serde_json::Value>> =
+        std::collections::HashMap::new();
+
+    while Instant::now() < deadline {
+        iters += 1;
+        let mut buf = [0u8; 32];
+        let t = iters.to_le_bytes();
+        buf[..8].copy_from_slice(&t);
+        let nanos = Instant::now().elapsed().as_nanos().to_le_bytes();
+        buf[8..16].copy_from_slice(&nanos[..8]);
+        for (i, b) in buf[16..].iter_mut().enumerate() {
+            *b = ((iters as u8).wrapping_mul(31).wrapping_add(i as u8)).wrapping_add(0x3C);
+        }
+
+        let Some(rpc) = pick_rpc(ir, &buf, default_allowlist()) else {
+            continue;
+        };
+        let seed = &buf[1..];
+        let params = if let Some(prev) = last_params.get(&rpc.name) {
+            if buf[0] & 1 == 1 {
+                mutate_params(rpc, prev, seed)
+            } else {
+                generate_params(rpc, seed)
+            }
+        } else {
+            generate_params(rpc, seed)
+        };
+        last_params.insert(rpc.name.clone(), params.clone());
+
+        let Some(report) = classify_call(&rpc.name, ir, params, session, args.verbose).await else {
+            continue;
+        };
+
+        if report.class.is_oracle_finding() {
+            match write_finding(&corpus, &report, seed) {
+                Ok(path) => {
+                    saved_findings += 1;
+                    eprintln!("FINDING {} -> {}", report.method, path.display());
+                }
+                Err(e) => eprintln!("write finding: {e}"),
+            }
+        } else if args.save_rejects
+            && saved_rejects < args.max_rejects
+            && matches!(report.class, ethos_analysis::OracleClass::ExpectedReject { .. })
+        {
+            if write_finding(&corpus, &report, seed).is_ok() {
+                saved_rejects += 1;
+            }
+        }
+
+        reports.push(report);
+    }
+
+    let summary = summarize(&reports);
+    eprintln!(
+        "continuous done iters={iters} findings_saved={saved_findings} rejects_saved={saved_rejects}"
+    );
+    eprintln!("summary: {summary:?} (n={})", reports.len());
+    ExitCode::SUCCESS
 }

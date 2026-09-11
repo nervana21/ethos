@@ -170,9 +170,15 @@ schema-oracle-test:
 schema-oracle-smoke *args:
   cargo run -p ethos-schema-oracle -- {{args}}
 
+# Continuous Δ fuzz (writes resources/testdata/schema_oracle_corpus on findings)
+[group('test')]
+schema-oracle-fuzz *args:
+  cargo run -p ethos-schema-oracle -- --continuous --save-rejects {{args}}
+
 # Examples
 examples:
     @echo "Examples:"
+    @echo "  just schema-oracle-fuzz -- --duration-secs 60"
     @echo "  just schema-oracle-smoke --rounds 16 --verbose"
     @echo "  just schema-oracle-test  # Schema-oracle unit + IR/golden integration"
     @echo "  just schema-oracle-smoke # Live regtest Δ oracle (spawns bitcoind)"
