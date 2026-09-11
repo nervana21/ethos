@@ -9,9 +9,7 @@ use ethos_analysis::{
 use ir::ProtocolIR;
 use serde_json::{json, Value};
 
-fn repo_root() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..")
-}
+fn repo_root() -> PathBuf { PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..") }
 
 fn load_ir() -> ProtocolIR {
     let path = repo_root().join("resources/ir/bitcoin.ir.json");
@@ -31,11 +29,9 @@ struct FixtureInvoker {
 
 impl RpcInvoker for FixtureInvoker {
     fn invoke(&mut self, method: &str, _params: &[Value]) -> Result<Value, InvokeError> {
-        self.by_method.get(method).cloned().ok_or_else(|| {
-            InvokeError::Rpc {
-                code: Some(-32601),
-                message: format!("Unknown method: {method}"),
-            }
+        self.by_method.get(method).cloned().ok_or_else(|| InvokeError::Rpc {
+            code: Some(-32601),
+            message: format!("Unknown method: {method}"),
         })
     }
 }
@@ -97,11 +93,7 @@ fn allowlist_pick_and_generate_smoke() {
 #[test]
 fn summarize_counts_findings() {
     let reports = vec![
-        ethos_analysis::OracleReport {
-            method: "a".into(),
-            params: vec![],
-            class: OracleClass::Ok,
-        },
+        ethos_analysis::OracleReport { method: "a".into(), params: vec![], class: OracleClass::Ok },
         ethos_analysis::OracleReport {
             method: "b".into(),
             params: vec![],

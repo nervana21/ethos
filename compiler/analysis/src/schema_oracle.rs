@@ -80,10 +80,40 @@ pub enum InvokeError {
     Transport(String),
 }
 
-/// Pluggable RPC caller (mock in tests; HTTP transport later).
+/// Parse a JSON-RPC `error` object body (as returned by ethos-bitcoind `TransportError::Rpc`).
+///
+/// Accepts either a JSON object string (`{"code":-8,"message":"..."}`) or opaque text.
+pub fn invoke_error_from_rpc_body(body: &str) -> InvokeError {
+    if let Ok(v) = serde_json::from_str::<Value>(body) {
+        let code = v.get("code").and_then(|c| c.as_i64()).map(|c| c as i32);
+        let message = v.get("message").and_then(|m| m.as_str()).unwrap_or(body).to_string();
+        return InvokeError::Rpc { code, message };
+    }
+    InvokeError::Rpc { code: None, message: body.to_string() }
+}
+
+/// Pluggable RPC caller (mock in tests; HTTP via smoke binary).
 pub trait RpcInvoker {
     /// Invoke `method` with positional `params`. `Ok` = JSON-RPC `result` value.
     fn invoke(&mut self, method: &str, params: &[Value]) -> Result<Value, InvokeError>;
+}
+
+/// Sync invoker backed by a mutable closure (wraps async transports with `block_on`).
+pub struct ClosureInvoker<F>
+where
+    F: FnMut(&str, &[Value]) -> Result<Value, InvokeError>,
+{
+    /// Inner call.
+    pub call: F,
+}
+
+impl<F> RpcInvoker for ClosureInvoker<F>
+where
+    F: FnMut(&str, &[Value]) -> Result<Value, InvokeError>,
+{
+    fn invoke(&mut self, method: &str, params: &[Value]) -> Result<Value, InvokeError> {
+        (self.call)(method, params)
+    }
 }
 
 /// Byte cursor for deterministic, fuzz-friendly value generation.
@@ -95,9 +125,7 @@ pub struct ByteCursor<'a> {
 
 impl<'a> ByteCursor<'a> {
     /// Create a cursor over `data`.
-    pub fn new(data: &'a [u8]) -> Self {
-        Self { data, pos: 0 }
-    }
+    pub fn new(data: &'a [u8]) -> Self { Self { data, pos: 0 } }
 
     fn next_u8(&mut self) -> u8 {
         if self.pos >= self.data.len() {
@@ -109,9 +137,7 @@ impl<'a> ByteCursor<'a> {
         b
     }
 
-    fn next_bool(&mut self) -> bool {
-        self.next_u8() & 1 == 1
-    }
+    fn next_bool(&mut self) -> bool { self.next_u8() & 1 == 1 }
 
     fn next_usize(&mut self, max_exclusive: usize) -> usize {
         if max_exclusive == 0 {
@@ -191,11 +217,7 @@ fn generate_value(ty: &TypeDef, cur: &mut ByteCursor<'_>, depth: usize) -> Value
             if cur.next_bool() {
                 return Value::Null;
             }
-            let inner = ty
-                .fields
-                .as_ref()
-                .and_then(|f| f.first())
-                .map(|fd| &fd.field_type);
+            let inner = ty.fields.as_ref().and_then(|f| f.first()).map(|fd| &fd.field_type);
             match inner {
                 Some(inner_ty) => generate_value(inner_ty, cur, depth + 1),
                 None => Value::Null,
@@ -212,7 +234,8 @@ fn generate_value(ty: &TypeDef, cur: &mut ByteCursor<'_>, depth: usize) -> Value
         TypeKind::Array => {
             let n = cur.next_usize(3);
             let mut arr = Vec::with_capacity(n);
-            if let Some(elem) = ty.homogeneous_array_element_type().or_else(|| ty.array_element_type())
+            if let Some(elem) =
+                ty.homogeneous_array_element_type().or_else(|| ty.array_element_type())
             {
                 for _ in 0..n {
                     arr.push(generate_value(elem, cur, depth + 1));
@@ -412,9 +435,10 @@ pub fn summarize(reports: &[OracleReport]) -> BTreeMap<&'static str, usize> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use ir::ParamDef;
     use serde_json::json;
+
+    use super::*;
 
     struct MockInvoker {
         response: Result<Value, InvokeError>,
@@ -484,6 +508,19 @@ mod tests {
             class,
             OracleClass::ExpectedReject { code: Some(-8), message: "invalid".into() }
         );
+    }
+
+    #[test]
+    fn parse_transport_rpc_body() {
+        let err = invoke_error_from_rpc_body(
+            r#"{"code":-5,"message":"No such mempool or blockchain transaction"}"#,
+        );
+        match err {
+            InvokeError::Rpc { code: Some(-5), message } => {
+                assert!(message.contains("mempool") || message.contains("transaction"));
+            }
+            other => panic!("expected Rpc, got {other:?}"),
+        }
     }
 
     #[test]
