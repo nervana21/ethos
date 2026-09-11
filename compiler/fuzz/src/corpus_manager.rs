@@ -7,11 +7,11 @@
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
-use serde_json::{json, Value};
-use thiserror::Error;
 
 use ethos_analysis::differential::DifferentialResult;
 use fuzz_types::FuzzCase;
+use serde_json::{json, Value};
+use thiserror::Error;
 
 /// Errors that can occur during corpus management
 #[derive(Debug, Error)]
@@ -54,18 +54,12 @@ impl CorpusManager {
         fs::create_dir_all(&divergences_dir)?;
         fs::create_dir_all(&crashes_dir)?;
 
-        Ok(Self {
-            base_dir,
-            stable_dir,
-            divergences_dir,
-            crashes_dir,
-        })
+        Ok(Self { base_dir, stable_dir, divergences_dir, crashes_dir })
     }
 
     /// Create corpus manager from environment variables
     pub fn from_env() -> Result<Self, CorpusError> {
-        let base_dir = std::env::var("ARTIFACT_DIR")
-            .unwrap_or_else(|_| "/corpus_data".to_string());
+        let base_dir = std::env::var("ARTIFACT_DIR").unwrap_or_else(|_| "/corpus_data".to_string());
         Self::new(base_dir)
     }
 
@@ -182,7 +176,7 @@ impl CorpusManager {
 
     /// Generate a unique case ID
     fn generate_case_id(&self, case: &FuzzCase) -> String {
-        use sha2::{Sha256, Digest};
+        use sha2::{Digest, Sha256};
 
         let case_data = format!("{}{:?}", case.method_name, case.parameters);
         let mut hasher = Sha256::new();
@@ -212,13 +206,13 @@ impl CorpusManager {
         }
 
         let entries = fs::read_dir(dir)?;
-        let count = entries.filter_map(|entry| {
-            entry.ok().and_then(|e| {
-                e.path().extension().and_then(|ext| {
-                    if ext == "json" { Some(()) } else { None }
+        let count = entries
+            .filter_map(|entry| {
+                entry.ok().and_then(|e| {
+                    e.path().extension().and_then(|ext| if ext == "json" { Some(()) } else { None })
                 })
             })
-        }).count();
+            .count();
 
         Ok(count)
     }
@@ -275,9 +269,11 @@ impl CorpusStats {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::collections::HashMap;
+
     use serde_json::Value;
+
+    use super::*;
 
     #[test]
     fn test_corpus_manager_creation() {

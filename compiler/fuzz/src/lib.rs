@@ -9,6 +9,7 @@
 pub mod corpus_manager;
 pub mod deterministic_rng;
 pub mod observability;
+pub mod schema_oracle_cov;
 
 use std::collections::HashMap;
 use std::path::Path;
@@ -20,6 +21,10 @@ use ethos_analysis::{
 };
 use fuzz_types::{FuzzCase, ProtocolAdapter};
 use ir::ProtocolIR;
+pub use schema_oracle_cov::{
+    fuzz_schema_oracle_cov, run_cov_guided_case, schema_oracle_seed_corpus_dir, CovGuidedInvoker,
+    CovGuidedOutcome, ResponseBank,
+};
 use serde_json::Value;
 use types::Implementation;
 
@@ -83,30 +88,13 @@ pub fn summarize_oracle_reports(
 }
 
 /// Schema / JSON smoke entry used by the `schema` fuzz target.
-pub fn fuzz_schema_case(data: &[u8]) {
-    if data.is_empty() {
-        return;
-    }
-    let path = default_bitcoin_ir_path();
-    if path.is_file() {
-        if let Ok(ir) = load_bitcoin_ir(&path) {
-            let mut inv = StaticInvoker { outcome: Ok(Value::Number(1.into())) };
-            let _ = fuzz_schema_oracle_case(&ir, data, &mut inv);
-            return;
-        }
-    }
-    let _ = serde_json::from_slice::<serde_json::Value>(data);
-}
+pub fn fuzz_schema_case(data: &[u8]) { fuzz_schema_oracle_cov(data); }
 
 /// Transport fuzz placeholder.
-pub fn fuzz_transport_case(data: &[u8]) {
-    let _ = data;
-}
+pub fn fuzz_transport_case(data: &[u8]) { let _ = data; }
 
 /// Allowlisted Core RPC method names for fuzz input synthesis.
-pub fn enumerate_methods() -> Vec<&'static str> {
-    default_allowlist().to_vec()
-}
+pub fn enumerate_methods() -> Vec<&'static str> { default_allowlist().to_vec() }
 
 /// Parse raw fuzz bytes into a [`FuzzCase`].
 pub fn parse_fuzz_input_to_case(data: &[u8]) -> FuzzCase {

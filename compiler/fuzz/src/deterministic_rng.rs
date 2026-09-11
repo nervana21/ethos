@@ -3,18 +3,17 @@
 //! This module provides a deterministic RNG system that uses a seed from the
 //! FUZZ_SEED environment variable to ensure reproducible fuzzing runs.
 
+use std::sync::Mutex;
+
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha20Rng;
-use std::sync::Mutex;
 
 /// Global deterministic RNG instance
 static DETERMINISTIC_RNG: Mutex<Option<ChaCha20Rng>> = Mutex::new(None);
 
 /// Initialize the deterministic RNG with a seed from environment
 pub fn init_deterministic_rng() -> Result<u64, std::num::ParseIntError> {
-    let seed = std::env::var("FUZZ_SEED")
-        .unwrap_or_else(|_| "42".to_string())
-        .parse::<u64>()?;
+    let seed = std::env::var("FUZZ_SEED").unwrap_or_else(|_| "42".to_string()).parse::<u64>()?;
 
     let mut rng = ChaCha20Rng::seed_from_u64(seed);
     let mut global_rng = DETERMINISTIC_RNG.lock().unwrap();
@@ -26,15 +25,14 @@ pub fn init_deterministic_rng() -> Result<u64, std::num::ParseIntError> {
 /// Initialize the deterministic RNG with a seed from input data
 pub fn init_with_seed(seed_data: &[u8]) {
     // Create a seed from the input data by hashing it
-    use sha2::{Sha256, Digest};
+    use sha2::{Digest, Sha256};
     let mut hasher = Sha256::new();
     hasher.update(seed_data);
     let hash = hasher.finalize();
 
     // Use first 8 bytes of hash as u64 seed
     let seed = u64::from_le_bytes([
-        hash[0], hash[1], hash[2], hash[3],
-        hash[4], hash[5], hash[6], hash[7]
+        hash[0], hash[1], hash[2], hash[3], hash[4], hash[5], hash[6], hash[7],
     ]);
 
     let mut rng = ChaCha20Rng::seed_from_u64(seed);
@@ -127,9 +125,7 @@ pub fn random_choice<T>(choices: &[T]) -> Option<&T> {
 
 /// Get the current seed (for debugging)
 pub fn get_current_seed() -> Option<u64> {
-    std::env::var("FUZZ_SEED")
-        .ok()
-        .and_then(|s| s.parse().ok())
+    std::env::var("FUZZ_SEED").ok().and_then(|s| s.parse().ok())
 }
 
 #[cfg(test)]

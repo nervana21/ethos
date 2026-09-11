@@ -165,6 +165,7 @@ schema-oracle-test:
   cargo test -p ethos-analysis --lib schema_oracle
   cargo test -p ethos-analysis --test test_schema_oracle
   cargo test -p ethos-schema-oracle --lib
+  cargo test --manifest-path compiler/fuzz/Cargo.toml --lib schema_oracle_cov
 
 # Live regtest smoke (spawns bitcoind; set BITCOIND_PATH or use corpus build)
 [group('test')]
@@ -176,14 +177,30 @@ schema-oracle-smoke *args:
 schema-oracle-fuzz *args:
   cargo run -p ethos-schema-oracle -- --continuous --save-rejects {{args}}
 
+# Coverage-guided offline oracle (libFuzzer; seeds under fuzz/corpus/schema_oracle)
+# --sanitizer none: Darwin ASAN init can deadlock; libFuzzer cov tables still active.
+[group('test')]
+schema-oracle-cov *args:
+  #!/usr/bin/env bash
+  set -euo pipefail
+  SEED_SRC="resources/testdata/schema_oracle_cov_seeds"
+  CORPUS="compiler/fuzz/fuzz/corpus/schema_oracle"
+  mkdir -p "$CORPUS"
+  if [ -d "$SEED_SRC" ]; then
+    cp -n "$SEED_SRC"/*.bin "$CORPUS"/ 2>/dev/null || cp "$SEED_SRC"/*.bin "$CORPUS"/ || true
+  fi
+  cd compiler/fuzz
+  cargo fuzz run schema_oracle --sanitizer none -- -max_total_time=30 -max_len=256 {{args}}
+
 # Examples
 examples:
     @echo "Examples:"
     @echo "  just schema-oracle-fuzz -- --duration-secs 60"
+    @echo "  just schema-oracle-cov -- -max_total_time=60"
     @echo "  just schema-oracle-smoke --rounds 16 --verbose"
-    @echo "  just schema-oracle-test  # Schema-oracle unit + IR/golden integration"
+    @echo "  just schema-oracle-test  # Schema-oracle unit + IR/golden + cov unit"
     @echo "  just schema-oracle-smoke # Live regtest Δ oracle (spawns bitcoind)"
-    @echo "  just sane                # Full check before push (lint + tests)"
+    @echo "  just schema-oracle-cov   # libFuzzer cov-guided offline oracle"    @echo "  just sane                # Full check before push (lint + tests)"
     @echo "  just generate-from-ir            # Generate client from IR (full RPC surface)"
     @echo "  just generate-from-ir ../ethos-bitcoind {{LATEST_VERSION}}   # Generate into repo with version (full RPC surface)"
     @echo "  just generate-from-ir ../ethos-bitcoind {{LATEST_VERSION}} --exclude-hidden-rpcs   # Generate without hidden/testing-only RPCs"
