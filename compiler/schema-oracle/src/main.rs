@@ -78,6 +78,10 @@ struct Args {
     /// Disable value recycle (tip hash / height / txid overlay).
     #[arg(long, default_value_t = false)]
     no_recycle: bool,
+
+    /// Skip Raw serde second channel (`DecodeFail`).
+    #[arg(long, default_value_t = false)]
+    no_raw_decode: bool,
 }
 
 fn repo_root() -> PathBuf { PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..") }
@@ -193,6 +197,7 @@ async fn classify_call(
     session: &LiveSession,
     pool: &mut ValuePool,
     verbose: bool,
+    raw_decode: bool,
 ) -> Option<OracleReport> {
     let rpc = find_rpc(ir, rpc_name)?;
     let outcome = session.invoke(&rpc.name, &params).await;
@@ -200,7 +205,12 @@ async fn classify_call(
         Ok(v) => Some(v.clone()),
         Err(_) => None,
     };
-    let class = ethos_analysis::classify(rpc, outcome, None);
+    let raw = if raw_decode {
+        wire.as_ref().and_then(|v| ethos_schema_oracle::try_raw_decode(rpc_name, v))
+    } else {
+        None
+    };
+    let class = ethos_analysis::classify(rpc, outcome, raw);
     if let Some(ref v) = wire {
         if matches!(class, OracleClass::Ok) || class.is_oracle_finding() {
             pool.ingest_method_result(&rpc.name, v);
@@ -360,15 +370,16 @@ async fn run_smoke(
 ) -> ExitCode {
     let mut reports: Vec<OracleReport> = Vec::new();
     let recycle = !args.no_recycle;
+    let raw = !args.no_raw_decode;
 
-    // Explicit disc-union tip sweep classified against IR.
+    // Explicit disc-union tip sweep classified against IR + Raw.
     if recycle {
         if let Some(hash) = pool.pick("blockhash", 1).cloned() {
             eprintln!("disc-union tip getblock sweep…");
             for verbosity in 0..=3 {
                 let params = vec![hash.clone(), serde_json::Value::Number(verbosity.into())];
                 if let Some(r) =
-                    classify_call("getblock", ir, params, session, pool, args.verbose).await
+                    classify_call("getblock", ir, params, session, pool, args.verbose, raw).await
                 {
                     reports.push(r);
                 }
@@ -380,6 +391,7 @@ async fn run_smoke(
                 session,
                 pool,
                 args.verbose,
+                raw,
             )
             .await
             {
@@ -397,7 +409,8 @@ async fn run_smoke(
                 continue;
             };
             let params = build_params(rpc, &seed, pool, recycle, None, false);
-            if let Some(r) = classify_call(name, ir, params, session, pool, args.verbose).await {
+            if let Some(r) = classify_call(name, ir, params, session, pool, args.verbose, raw).await
+            {
                 reports.push(r);
             }
         }
@@ -415,7 +428,9 @@ async fn run_smoke(
         };
         let seed = &buf[1..];
         let params = build_params(rpc, seed, pool, recycle, None, false);
-        if let Some(r) = classify_call(&rpc.name, ir, params, session, pool, args.verbose).await {
+        if let Some(r) =
+            classify_call(&rpc.name, ir, params, session, pool, args.verbose, raw).await
+        {
             reports.push(r);
         }
     }
@@ -463,6 +478,7 @@ async fn run_continuous(
     let mut last_params: std::collections::HashMap<String, Vec<serde_json::Value>> =
         std::collections::HashMap::new();
     let recycle = !args.no_recycle;
+    let raw = !args.no_raw_decode;
 
     while Instant::now() < deadline {
         iters += 1;
@@ -484,7 +500,8 @@ async fn run_continuous(
         let params = build_params(rpc, seed, pool, recycle, prev, mutate);
         last_params.insert(rpc.name.clone(), params.clone());
 
-        let Some(report) = classify_call(&rpc.name, ir, params, session, pool, args.verbose).await
+        let Some(report) =
+            classify_call(&rpc.name, ir, params, session, pool, args.verbose, raw).await
         else {
             continue;
         };
