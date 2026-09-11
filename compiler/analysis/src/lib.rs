@@ -29,8 +29,9 @@ pub use normalizer::IRNormalizer;
 pub use schema_oracle::{
     classify, default_allowlist, find_rpc, finding_basename, generate_params,
     generate_params_with_pool, generate_result_value, invoke_error_from_rpc_body, mutate_params,
-    pick_rpc, report_to_finding, run_oracle_case, summarize, ByteCursor, ClosureInvoker,
-    InvokeError, OracleClass, OracleReport, RpcInvoker, ValuePool,
+    pick_rpc, report_to_finding, resolve_disc_arm, result_type_for_params, run_oracle_case,
+    summarize, ByteCursor, ClosureInvoker, InvokeError, OracleClass, OracleReport, RpcInvoker,
+    ValuePool,
 };
 pub use semantic::SemanticAnalyzer;
 pub use validator::IrValidator;

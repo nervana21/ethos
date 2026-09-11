@@ -422,9 +422,13 @@ fn generate_primitive(hint: &str, ty: &TypeDef, cur: &mut ByteCursor<'_>) -> Val
 
 /// Classify a successful or failed RPC outcome against `rpc.result`.
 ///
+/// When `rpc.result_discriminator` is set, validates only the union arm selected by
+/// request `params` (disc-arm oracle). Otherwise validates the full result type.
+///
 /// `raw_decode`: optional second channel — `Err` = Raw serde failed after IR ok.
 pub fn classify(
     rpc: &RpcDef,
+    params: &[Value],
     outcome: Result<Value, InvokeError>,
     raw_decode: Option<Result<(), String>>,
 ) -> OracleClass {
@@ -432,7 +436,7 @@ pub fn classify(
         Err(InvokeError::Transport(detail)) => OracleClass::TransportError { detail },
         Err(InvokeError::Rpc { code, message }) => OracleClass::ExpectedReject { code, message },
         Ok(value) => {
-            if let Some(result_ty) = rpc.result.as_ref() {
+            if let Some(result_ty) = result_type_for_params(rpc, params) {
                 if let Err(detail) = validate_json_matches_type(result_ty, &value) {
                     return OracleClass::SchemaMismatch { detail };
                 }
@@ -445,6 +449,142 @@ pub fn classify(
     }
 }
 
+/// Result [`TypeDef`] to validate against for this call (disc arm when known).
+pub fn result_type_for_params<'a>(rpc: &'a RpcDef, params: &[Value]) -> Option<&'a TypeDef> {
+    resolve_disc_arm(rpc, params).or(rpc.result.as_ref())
+}
+
+/// Pick the IR union arm keyed by `rpc.result_discriminator` + request `params`.
+///
+/// Returns `None` when there is no discriminator, arm count mismatch, or the
+/// observed discriminant cannot be matched (caller should fall back to full union).
+pub fn resolve_disc_arm<'a>(rpc: &'a RpcDef, params: &[Value]) -> Option<&'a TypeDef> {
+    let disc = rpc.result_discriminator.as_ref()?;
+    let result = rpc.result.as_ref()?;
+    if result.kind != TypeKind::Union {
+        return None;
+    }
+    let uvs = result.union_variants.as_ref()?;
+    if uvs.len() != disc.values.len() || uvs.is_empty() {
+        return None;
+    }
+    let observed = observed_disc_value(rpc, disc, params)?;
+    let idx = disc.values.iter().position(|v| disc_values_equal(v, &observed))?;
+    Some(&uvs[idx].type_def)
+}
+
+fn disc_values_equal(expected: &Value, observed: &Value) -> bool {
+    match (expected, observed) {
+        (Value::Null, Value::Null) => true,
+        (Value::Bool(a), Value::Bool(b)) => a == b,
+        (Value::String(a), Value::String(b)) => a == b,
+        (Value::Number(a), Value::Number(b)) => match (a.as_i64(), b.as_i64()) {
+            (Some(x), Some(y)) => x == y,
+            _ => match (a.as_u64(), b.as_u64()) {
+                (Some(x), Some(y)) => x == y,
+                _ => a.as_f64() == b.as_f64(),
+            },
+        },
+        (Value::Array(a), Value::Array(b)) =>
+            a.len() == b.len() && a.iter().zip(b.iter()).all(|(x, y)| disc_values_equal(x, y)),
+        _ => expected == observed,
+    }
+}
+
+fn parse_default_literal(raw: &str, prototype: &Value) -> Option<Value> {
+    let t = raw.trim();
+    if matches!(prototype, Value::Bool(_)) || t == "true" || t == "false" {
+        return match t {
+            "true" => Some(Value::Bool(true)),
+            "false" => Some(Value::Bool(false)),
+            _ => None,
+        };
+    }
+    if let Ok(i) = t.parse::<i64>() {
+        return Some(Value::Number(i.into()));
+    }
+    if t == "null" {
+        return Some(Value::Null);
+    }
+    if t.starts_with('"') {
+        if let Ok(v) = serde_json::from_str::<Value>(t) {
+            return Some(v);
+        }
+    }
+    Some(Value::String(t.to_string()))
+}
+
+fn core_default_for_prototype(prototype: &Value) -> Value {
+    match prototype {
+        Value::Bool(_) => Value::Bool(true),
+        Value::Number(_) => Value::Number(1.into()), // Core verbosity default
+        Value::Null => Value::Null,
+        Value::String(_) => Value::String(String::new()),
+        Value::Array(items) => Value::Array(items.iter().map(core_default_for_prototype).collect()),
+        Value::Object(_) => Value::Object(serde_json::Map::new()),
+    }
+}
+
+fn param_default(rpc: &RpcDef, name_stem: &str, prototype: &Value) -> Value {
+    if let Some(p) = rpc
+        .params
+        .iter()
+        .find(|p| p.name == name_stem || p.name.split('|').any(|part| part == name_stem))
+    {
+        if let Some(raw) = p.default_value.as_deref() {
+            if let Some(v) = parse_default_literal(raw, prototype) {
+                return v;
+            }
+        }
+    }
+    core_default_for_prototype(prototype)
+}
+
+fn observed_disc_value(
+    rpc: &RpcDef,
+    disc: &ir::RpcResultDiscriminator,
+    params: &[Value],
+) -> Option<Value> {
+    let idx = disc.parameter_index as usize;
+
+    // Nested: object param → field (e.g. template_request.mode).
+    if let Some(key) = disc.nested_parameter_key.as_deref() {
+        let obj = params.get(idx)?;
+        let proto = disc.values.first()?;
+        return match obj.get(key) {
+            Some(v) => Some(v.clone()),
+            None => Some(param_default(rpc, key, proto)),
+        };
+    }
+
+    // Multi-param disc: values are arrays parallel to pipe-joined names.
+    let names: Vec<&str> = disc.parameter.split('|').collect();
+    if names.len() > 1 {
+        let proto = disc.values.first()?.as_array()?;
+        if proto.len() != names.len() {
+            return None;
+        }
+        let mut parts = Vec::with_capacity(names.len());
+        for (i, (name, pproto)) in names.iter().zip(proto.iter()).enumerate() {
+            let pidx = idx + i;
+            let v = match params.get(pidx) {
+                Some(v) => v.clone(),
+                None => param_default(rpc, name, pproto),
+            };
+            parts.push(v);
+        }
+        return Some(Value::Array(parts));
+    }
+
+    // Single scalar disc (verbosity / verbose).
+    let proto = disc.values.first()?;
+    let stem = names.first().copied().unwrap_or(disc.parameter.as_str());
+    Some(match params.get(idx) {
+        Some(v) => v.clone(),
+        None => param_default(rpc, stem, proto),
+    })
+}
+
 /// Generate params, invoke, classify.
 pub fn run_oracle_case(
     rpc: &RpcDef,
@@ -454,7 +594,7 @@ pub fn run_oracle_case(
 ) -> OracleReport {
     let params = generate_params(rpc, data);
     let outcome = invoker.invoke(&rpc.name, &params);
-    let class = classify(rpc, outcome, raw_decode);
+    let class = classify(rpc, &params, outcome, raw_decode);
     OracleReport { method: rpc.name.clone(), params, class }
 }
 
@@ -754,14 +894,14 @@ mod tests {
     #[test]
     fn classify_ok_number() {
         let rpc = primitive_number_rpc();
-        let class = classify(&rpc, Ok(json!(1.5)), None);
+        let class = classify(&rpc, &[], Ok(json!(1.5)), None);
         assert_eq!(class, OracleClass::Ok);
     }
 
     #[test]
     fn classify_schema_mismatch_on_wrong_shape() {
         let rpc = primitive_number_rpc();
-        let class = classify(&rpc, Ok(json!("not-a-number")), None);
+        let class = classify(&rpc, &[], Ok(json!("not-a-number")), None);
         assert!(matches!(class, OracleClass::SchemaMismatch { .. }));
         assert!(class.is_oracle_finding());
     }
@@ -771,6 +911,7 @@ mod tests {
         let rpc = primitive_number_rpc();
         let class = classify(
             &rpc,
+            &[],
             Err(InvokeError::Rpc { code: Some(-8), message: "invalid".into() }),
             None,
         );
@@ -796,7 +937,7 @@ mod tests {
     #[test]
     fn classify_decode_fail_after_ir_ok() {
         let rpc = primitive_number_rpc();
-        let class = classify(&rpc, Ok(json!(2)), Some(Err("serde boom".into())));
+        let class = classify(&rpc, &[], Ok(json!(2)), Some(Err("serde boom".into())));
         assert_eq!(class, OracleClass::DecodeFail { detail: "serde boom".into() });
     }
 

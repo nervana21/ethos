@@ -210,7 +210,7 @@ async fn classify_call(
     } else {
         None
     };
-    let class = ethos_analysis::classify(rpc, outcome, raw);
+    let class = ethos_analysis::classify(rpc, &params, outcome, raw);
     if let Some(ref v) = wire {
         if matches!(class, OracleClass::Ok) || class.is_oracle_finding() {
             pool.ingest_method_result(&rpc.name, v);
