@@ -188,6 +188,11 @@ schema-oracle-cov *args:
 schema-oracle-fuzz-box:
   bash compiler/fuzz/scripts/ensure-ethos-fuzz.sh
 
+# Summarize corpus: oracle hits vs expected_reject noise
+[group('test')]
+schema-oracle-triage:
+  bash compiler/fuzz/scripts/triage-schema-oracle-corpus.sh
+
 # Examples
 examples:
     @echo "Examples:"
