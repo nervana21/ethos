@@ -135,12 +135,18 @@ fn resolve_corpus_dir(arg: &Path) -> PathBuf {
     }
 }
 
-fn write_finding(dir: &Path, report: &OracleReport, seed: &[u8]) -> std::io::Result<PathBuf> {
+/// Write finding JSON. Returns `(path, is_new)` where `is_new` is true iff file did not exist.
+fn write_finding(
+    dir: &Path,
+    report: &OracleReport,
+    seed: &[u8],
+) -> std::io::Result<(PathBuf, bool)> {
     std::fs::create_dir_all(dir)?;
     let path = dir.join(finding_basename(report));
+    let is_new = !path.exists();
     let finding = report_to_finding(report, seed);
     std::fs::write(&path, serde_json::to_vec_pretty(&finding)?)?;
-    Ok(path)
+    Ok((path, is_new))
 }
 
 struct LiveSession {
@@ -217,7 +223,8 @@ async fn classify_call(
         }
     }
     let report = OracleReport { method: rpc.name.clone(), params, class };
-    if verbose || report.class.is_oracle_finding() {
+    // Default quiet: only --verbose prints per-call lines (avoids continuous spam).
+    if verbose {
         println!("  {} params={} class={:?}", report.method, report.params.len(), report.class);
     }
     Some(report)
@@ -508,17 +515,23 @@ async fn run_continuous(
 
         if report.class.is_oracle_finding() {
             match write_finding(&corpus, &report, seed) {
-                Ok(path) => {
-                    saved_findings += 1;
-                    eprintln!("FINDING {} -> {}", report.method, path.display());
-                }
+                Ok((path, is_new)) =>
+                    if is_new {
+                        saved_findings += 1;
+                        eprintln!(
+                            "FINDING {} {:?} -> {}",
+                            report.method,
+                            report.class,
+                            path.display()
+                        );
+                    },
                 Err(e) => eprintln!("write finding: {e}"),
             }
         } else if args.save_rejects
             && saved_rejects < args.max_rejects
             && matches!(report.class, OracleClass::ExpectedReject { .. })
         {
-            if write_finding(&corpus, &report, seed).is_ok() {
+            if let Ok((_, true)) = write_finding(&corpus, &report, seed) {
                 saved_rejects += 1;
             }
         }
@@ -528,7 +541,7 @@ async fn run_continuous(
 
     let summary = summarize(&reports);
     eprintln!(
-        "continuous done iters={iters} findings_saved={saved_findings} rejects_saved={saved_rejects} pool_blockhash={}",
+        "continuous done iters={iters} findings_unique={saved_findings} rejects_unique={saved_rejects} pool_blockhash={}",
         pool.len("blockhash")
     );
     eprintln!("summary: {summary:?} (n={})", reports.len());
