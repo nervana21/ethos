@@ -11,6 +11,11 @@ pub mod deterministic_rng;
 pub mod observability;
 pub mod schema_oracle_cov;
 
+pub use schema_oracle_cov::{
+    fuzz_schema_oracle_cov, run_cov_guided_case, schema_oracle_seed_corpus_dir, CovGuidedInvoker,
+    CovGuidedOutcome, ResponseBank,
+};
+
 use std::collections::HashMap;
 use std::path::Path;
 
@@ -21,10 +26,6 @@ use ethos_analysis::{
 };
 use fuzz_types::{FuzzCase, ProtocolAdapter};
 use ir::ProtocolIR;
-pub use schema_oracle_cov::{
-    fuzz_schema_oracle_cov, run_cov_guided_case, schema_oracle_seed_corpus_dir, CovGuidedInvoker,
-    CovGuidedOutcome, ResponseBank,
-};
 use serde_json::Value;
 use types::Implementation;
 
@@ -88,13 +89,19 @@ pub fn summarize_oracle_reports(
 }
 
 /// Schema / JSON smoke entry used by the `schema` fuzz target.
-pub fn fuzz_schema_case(data: &[u8]) { fuzz_schema_oracle_cov(data); }
+pub fn fuzz_schema_case(data: &[u8]) {
+    fuzz_schema_oracle_cov(data);
+}
 
 /// Transport fuzz placeholder.
-pub fn fuzz_transport_case(data: &[u8]) { let _ = data; }
+pub fn fuzz_transport_case(data: &[u8]) {
+    let _ = data;
+}
 
 /// Allowlisted Core RPC method names for fuzz input synthesis.
-pub fn enumerate_methods() -> Vec<&'static str> { default_allowlist().to_vec() }
+pub fn enumerate_methods() -> Vec<&'static str> {
+    default_allowlist().to_vec()
+}
 
 /// Parse raw fuzz bytes into a [`FuzzCase`].
 pub fn parse_fuzz_input_to_case(data: &[u8]) -> FuzzCase {

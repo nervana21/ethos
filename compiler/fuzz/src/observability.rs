@@ -5,11 +5,11 @@
 
 use std::collections::HashMap;
 use std::time::Duration;
+use serde_json::{json, Value};
+use thiserror::Error;
 
 use ethos_analysis::differential::DifferentialResult;
 use fuzz_types::FuzzResult;
-use serde_json::{json, Value};
-use thiserror::Error;
 
 /// Errors that can occur during observability operations
 #[derive(Debug, Error)]
@@ -97,14 +97,17 @@ impl Default for FuzzingMetrics {
 
 impl FuzzingMetrics {
     /// Create a new metrics collector
-    pub fn new() -> Self { Self::default() }
+    pub fn new() -> Self {
+        Self::default()
+    }
 
     /// Record a differential result
     pub fn record_result(&mut self, result: &DifferentialResult, execution_time: Duration) {
         self.total_cases += 1;
         self.total_execution_time += execution_time;
-        self.average_execution_time =
-            Duration::from_millis(self.total_execution_time.as_millis() as u64 / self.total_cases);
+        self.average_execution_time = Duration::from_millis(
+            self.total_execution_time.as_millis() as u64 / self.total_cases
+        );
 
         if result.equivalent {
             self.equivalent_cases += 1;
@@ -122,15 +125,16 @@ impl FuzzingMetrics {
     /// Update metrics for a specific adapter
     fn update_adapter_metrics(&mut self, result: &FuzzResult) {
         let adapter_name = result.adapter_name.clone();
-        let metrics =
-            self.adapter_metrics.entry(adapter_name.clone()).or_insert_with(|| AdapterMetrics {
+        let metrics = self.adapter_metrics.entry(adapter_name.clone()).or_insert_with(|| {
+            AdapterMetrics {
                 name: adapter_name,
                 successful_calls: 0,
                 failed_calls: 0,
                 average_response_time: Duration::ZERO,
                 total_response_time: Duration::ZERO,
                 error_rate: 0.0,
-            });
+            }
+        });
 
         if result.success {
             metrics.successful_calls += 1;
@@ -140,8 +144,8 @@ impl FuzzingMetrics {
 
         metrics.total_response_time += Duration::from_millis(result.execution_time_ms);
         metrics.average_response_time = Duration::from_millis(
-            metrics.total_response_time.as_millis() as u64
-                / (metrics.successful_calls + metrics.failed_calls),
+            metrics.total_response_time.as_millis() as u64 /
+            (metrics.successful_calls + metrics.failed_calls)
         );
 
         let total_calls = metrics.successful_calls + metrics.failed_calls;
@@ -160,8 +164,8 @@ impl FuzzingMetrics {
 
         // Calculate growth rate (simplified)
         let total_entries = stable + divergences + crashes;
-        self.corpus_stats.growth_rate =
-            total_entries as f64 / (self.total_cases as f64 / 3600.0).max(1.0); // entries per hour
+        self.corpus_stats.growth_rate = total_entries as f64 /
+            (self.total_cases as f64 / 3600.0).max(1.0); // entries per hour
     }
 
     /// Get a summary of current metrics
@@ -187,27 +191,20 @@ impl FuzzingMetrics {
     pub fn print_summary(&self) {
         println!("=== Differential Fuzzing Metrics ===");
         println!("Total cases: {}", self.total_cases);
-        println!(
-            "Equivalent cases: {} ({:.1}%)",
+        println!("Equivalent cases: {} ({:.1}%)",
             self.equivalent_cases,
             if self.total_cases > 0 {
                 (self.equivalent_cases as f64 / self.total_cases as f64) * 100.0
-            } else {
-                0.0
-            }
+            } else { 0.0 }
         );
-        println!(
-            "Divergent cases: {} ({:.1}%)",
+        println!("Divergent cases: {} ({:.1}%)",
             self.divergent_cases,
             if self.total_cases > 0 {
                 (self.divergent_cases as f64 / self.total_cases as f64) * 100.0
-            } else {
-                0.0
-            }
+            } else { 0.0 }
         );
         println!("Total differences: {}", self.total_differences);
-        println!(
-            "Average execution time: {:.2}ms",
+        println!("Average execution time: {:.2}ms",
             self.average_execution_time.as_millis() as f64 / 1000.0
         );
         println!("=====================================");
@@ -233,7 +230,9 @@ pub enum LogLevel {
 
 impl StructuredLogger {
     /// Create a new structured logger
-    pub fn new(level: LogLevel, json_output: bool) -> Self { Self { level, json_output } }
+    pub fn new(level: LogLevel, json_output: bool) -> Self {
+        Self { level, json_output }
+    }
 
     /// Create logger from environment variables
     pub fn from_env() -> Self {
@@ -272,8 +271,7 @@ impl StructuredLogger {
             if self.json_output {
                 println!("{}", serde_json::to_string(&log_entry).unwrap());
             } else {
-                println!(
-                    "[{}] {} - {} differences, {}ms",
+                println!("[{}] {} - {} differences, {}ms",
                     chrono::Utc::now().format("%H:%M:%S"),
                     result.fuzz_case.method_name,
                     result.differences.len(),
@@ -300,8 +298,7 @@ impl StructuredLogger {
             if self.json_output {
                 println!("{}", serde_json::to_string(&log_entry).unwrap());
             } else {
-                println!(
-                    "[{}] WARN: Difference in {}: {} vs {}",
+                println!("[{}] WARN: Difference in {}: {} vs {}",
                     chrono::Utc::now().format("%H:%M:%S"),
                     difference.field_path,
                     difference.value_a,
@@ -346,11 +343,10 @@ impl std::str::FromStr for LogLevel {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use std::collections::HashMap;
 
     use fuzz_types::FuzzCase;
-
-    use super::*;
 
     #[test]
     fn test_metrics_collection() {
