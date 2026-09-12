@@ -236,7 +236,7 @@
           "name": "port",
           "required": true,
           "schema": {
-            "type": "integer"
+            "type": "number"
           },
           "description": "The port of the peer"
         },
@@ -633,7 +633,7 @@
           "name": "psbt_version",
           "required": false,
           "schema": {
-            "type": "integer",
+            "type": "number",
             "default": 2
           },
           "description": "The PSBT version number to use."
@@ -804,7 +804,7 @@
           "name": "locktime",
           "required": false,
           "schema": {
-            "type": "integer",
+            "type": "number",
             "default": 0
           },
           "description": "Raw locktime. Non-0 value also locktime-activates inputs"
@@ -822,7 +822,7 @@
           "name": "version",
           "required": false,
           "schema": {
-            "type": "integer",
+            "type": "number",
             "default": 2
           },
           "description": "Transaction version"
@@ -831,7 +831,7 @@
           "name": "psbt_version",
           "required": false,
           "schema": {
-            "type": "integer",
+            "type": "number",
             "default": 2
           },
           "description": "The PSBT version number to use."
@@ -932,7 +932,7 @@
           "name": "locktime",
           "required": false,
           "schema": {
-            "type": "integer",
+            "type": "number",
             "default": 0
           },
           "description": "Raw locktime. Non-0 value also locktime-activates inputs"
@@ -950,7 +950,7 @@
           "name": "version",
           "required": false,
           "schema": {
-            "type": "integer",
+            "type": "number",
             "default": 2
           },
           "description": "Transaction version"
@@ -1025,14 +1025,7 @@
           "name": "load_on_startup",
           "required": false,
           "schema": {
-            "oneOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "type": "boolean"
           },
           "description": "Save wallet name to persistent settings and load on startup. True to add wallet to startup list, false to remove, null to leave unchanged."
         },
@@ -2769,16 +2762,7 @@
           "required": false,
           "schema": {
             "type": "string",
-            "default": "DEFAULT for Taproot, ALL otherwise",
-            "enum": [
-              "DEFAULT",
-              "ALL",
-              "NONE",
-              "SINGLE",
-              "ALL|ANYONECANPAY",
-              "NONE|ANYONECANPAY",
-              "SINGLE|ANYONECANPAY"
-            ]
+            "default": "DEFAULT for Taproot, ALL otherwise"
           },
           "description": "The signature hash type to sign with if not specified by the PSBT. Must be one of\n       \"DEFAULT\"\n       \"ALL\"\n       \"NONE\"\n       \"SINGLE\"\n       \"ALL|ANYONECANPAY\"\n       \"NONE|ANYONECANPAY\"\n       \"SINGLE|ANYONECANPAY\""
         },
@@ -2846,7 +2830,7 @@
           "name": "nodeid",
           "required": false,
           "schema": {
-            "type": "integer",
+            "type": "number",
             "x-bitcoin-default-hint": "fallback to address"
           },
           "description": "The node ID (see getpeerinfo for node IDs)"
@@ -3165,7 +3149,7 @@
           "name": "conf_target",
           "required": true,
           "schema": {
-            "type": "integer"
+            "type": "number"
           },
           "description": "Confirmation target in blocks (1 - 1008)"
         },
@@ -3522,7 +3506,7 @@
           "name": "conf_target",
           "required": true,
           "schema": {
-            "type": "integer"
+            "type": "number"
           },
           "description": "Confirmation target in blocks (1 - 1008)"
         },
@@ -3531,12 +3515,7 @@
           "required": false,
           "schema": {
             "type": "string",
-            "default": "economical",
-            "enum": [
-              "unset",
-              "economical",
-              "conservative"
-            ]
+            "default": "economical"
           },
           "description": "The fee estimate mode.\nunset, economical, conservative \nunset means no mode set (default mode will be used). \neconomical mode potentially returns a lower fee rate estimate.\nconservative potentially returns a higher fee rate estimate.\n"
         },
@@ -4041,7 +4020,7 @@
           "name": "nblocks",
           "required": true,
           "schema": {
-            "type": "integer"
+            "type": "number"
           },
           "description": "How many blocks are generated."
         },
@@ -4083,7 +4062,7 @@
           "name": "num_blocks",
           "required": true,
           "schema": {
-            "type": "integer"
+            "type": "number"
           },
           "description": "How many blocks are generated."
         },
@@ -4172,33 +4151,8 @@
             "additionalProperties": false,
             "required": [
               "addednode",
-              "connected"
-            ],
-            "allOf": [
-              {
-                "if": {
-                  "properties": {
-                    "connected": {
-                      "const": true
-                    }
-                  },
-                  "required": [
-                    "connected"
-                  ]
-                },
-                "then": {
-                  "required": [
-                    "addresses"
-                  ]
-                },
-                "else": {
-                  "not": {
-                    "required": [
-                      "addresses"
-                    ]
-                  }
-                }
-              }
+              "connected",
+              "addresses"
             ]
           }
         }
@@ -4223,20 +4177,6 @@
         "schema": {
           "type": "object",
           "additionalProperties": {
-            "type": "object",
-            "properties": {
-              "purpose": {
-                "type": "string",
-                "description": "Purpose of address (\"send\" for sending address, \"receive\" for receiving address)"
-              }
-            },
-            "additionalProperties": false,
-            "required": [
-              "purpose"
-            ]
-          },
-          "x-ethos-map-key-protocol-type": "string",
-          "x-ethos-map-value-schema": {
             "type": "object",
             "properties": {
               "purpose": {
@@ -4568,7 +4508,7 @@
           "name": "minconf",
           "required": false,
           "schema": {
-            "type": "integer",
+            "type": "number",
             "default": 0
           },
           "description": "Only include transactions confirmed at least this many times."
@@ -5827,7 +5767,7 @@
           "name": "peer_id",
           "required": true,
           "schema": {
-            "type": "integer"
+            "type": "number"
           },
           "description": "The peer to fetch it from (see getpeerinfo for peer IDs)"
         }
@@ -5850,7 +5790,7 @@
           "name": "height",
           "required": true,
           "schema": {
-            "type": "integer"
+            "type": "number"
           },
           "description": "The height index"
         }
@@ -6571,7 +6511,7 @@
           "name": "nblocks",
           "required": false,
           "schema": {
-            "type": "integer",
+            "type": "number",
             "x-bitcoin-default-hint": "one month"
           },
           "description": "Size of the window in number of blocks"
@@ -8212,7 +8152,7 @@
           "name": "nblocks",
           "required": false,
           "schema": {
-            "type": "integer",
+            "type": "number",
             "default": 120
           },
           "description": "The number of previous blocks to calculate estimate from, or -1 for blocks since last difficulty change."
@@ -8221,7 +8161,7 @@
           "name": "height",
           "required": false,
           "schema": {
-            "type": "integer",
+            "type": "number",
             "default": -1
           },
           "description": "To estimate at the time of the given height."
@@ -8466,7 +8406,7 @@
           "name": "count",
           "required": false,
           "schema": {
-            "type": "integer",
+            "type": "number",
             "default": 1
           },
           "description": "The maximum number of addresses to return. Specify 0 to return all known addresses."
@@ -9970,7 +9910,7 @@
           "name": "minconf",
           "required": false,
           "schema": {
-            "type": "integer",
+            "type": "number",
             "default": 1
           },
           "description": "Only include transactions confirmed at least this many times."
@@ -10010,7 +9950,7 @@
           "name": "minconf",
           "required": false,
           "schema": {
-            "type": "integer",
+            "type": "number",
             "default": 1
           },
           "description": "Only include transactions confirmed at least this many times."
@@ -10507,7 +10447,7 @@
           "name": "n",
           "required": true,
           "schema": {
-            "type": "integer"
+            "type": "number"
           },
           "description": "vout number"
         },
@@ -10657,7 +10597,8 @@
               {
                 "type": "string"
               }
-            ]
+            ],
+            "x-bitcoin-default-hint": "the current best block"
           },
           "description": "The block hash or height of the target height (only available with coinstatsindex)."
         },
@@ -11556,7 +11497,7 @@
           "name": "minconf",
           "required": false,
           "schema": {
-            "type": "integer",
+            "type": "number",
             "default": 1
           },
           "description": "The minimum number of confirmations before payments are included."
@@ -11650,7 +11591,7 @@
           "name": "minconf",
           "required": false,
           "schema": {
-            "type": "integer",
+            "type": "number",
             "default": 1
           },
           "description": "The minimum number of confirmations before payments are included."
@@ -12121,7 +12062,7 @@
           "name": "count",
           "required": false,
           "schema": {
-            "type": "integer",
+            "type": "number",
             "default": 10
           },
           "description": "The number of transactions to return"
@@ -12130,7 +12071,7 @@
           "name": "skip",
           "required": false,
           "schema": {
-            "type": "integer",
+            "type": "number",
             "default": 0
           },
           "description": "The number of transactions to skip"
@@ -12314,7 +12255,7 @@
           "name": "minconf",
           "required": false,
           "schema": {
-            "type": "integer",
+            "type": "number",
             "default": 1
           },
           "description": "The minimum confirmations to filter"
@@ -12323,7 +12264,7 @@
           "name": "maxconf",
           "required": false,
           "schema": {
-            "type": "integer",
+            "type": "number",
             "default": 9999999
           },
           "description": "The maximum confirmations to filter"
@@ -12628,14 +12569,7 @@
           "name": "load_on_startup",
           "required": false,
           "schema": {
-            "oneOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "type": "boolean"
           },
           "description": "Save wallet name to persistent settings and load on startup. True to add wallet to startup list, false to remove, null to leave unchanged."
         }
@@ -12755,10 +12689,6 @@
         "schema": {
           "type": "object",
           "additionalProperties": {
-            "type": "boolean"
-          },
-          "x-ethos-map-key-protocol-type": "string",
-          "x-ethos-map-value-schema": {
             "type": "boolean"
           }
         }
@@ -12899,14 +12829,7 @@
           "name": "dummy",
           "required": false,
           "schema": {
-            "oneOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "type": "number"
           },
           "x-bitcoin-placeholder": true,
           "description": "API-Compatibility for previous API. Must be zero or null.\n                  DEPRECATED. For forward compatibility use named arguments and omit this parameter."
@@ -12936,7 +12859,7 @@
           "name": "height",
           "required": true,
           "schema": {
-            "type": "integer"
+            "type": "number"
           },
           "description": "The block height to prune up to. May be set to a discrete height, or to a UNIX epoch time\n                  to prune blocks whose block time is at least 2 hours older than the provided timestamp."
         }
@@ -13144,7 +13067,7 @@
           "name": "start_height",
           "required": false,
           "schema": {
-            "type": "integer",
+            "type": "number",
             "default": 0
           },
           "description": "block height where the rescan should start"
@@ -13153,7 +13076,7 @@
           "name": "stop_height",
           "required": false,
           "schema": {
-            "type": "integer"
+            "type": "number"
           },
           "description": "the last block height that should be scanned. If none is provided it will rescan up to the tip at return time of this call."
         }
@@ -13205,14 +13128,7 @@
           "name": "load_on_startup",
           "required": false,
           "schema": {
-            "oneOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "type": "boolean"
           },
           "description": "Save wallet name to persistent settings and load on startup. True to add wallet to startup list, false to remove, null to leave unchanged."
         }
@@ -13471,7 +13387,7 @@
           "name": "start_height",
           "required": false,
           "schema": {
-            "type": "integer",
+            "type": "number",
             "default": 0
           },
           "description": "Height to start to scan from"
@@ -13480,7 +13396,7 @@
           "name": "stop_height",
           "required": false,
           "schema": {
-            "type": "integer",
+            "type": "number",
             "x-bitcoin-default-hint": "chain tip"
           },
           "description": "Height to stop to scan"
@@ -13826,7 +13742,7 @@
           "name": "conf_target",
           "required": false,
           "schema": {
-            "type": "integer",
+            "type": "number",
             "x-bitcoin-default-hint": "wallet -txconfirmtarget"
           },
           "description": "Confirmation target in blocks"
@@ -13836,12 +13752,7 @@
           "required": false,
           "schema": {
             "type": "string",
-            "default": "unset",
-            "enum": [
-              "unset",
-              "economical",
-              "conservative"
-            ]
+            "default": "unset"
           },
           "description": "The fee estimate mode, must be one of (case insensitive):\nunset, economical, conservative \nunset means no mode set (economical mode is used if the transaction is replaceable;\notherwise, conservative mode is used). \neconomical mode potentially returns a lower fee rate estimate.\nconservative potentially returns a higher fee rate estimate.\n"
         },
@@ -14044,7 +13955,7 @@
           "name": "version",
           "required": false,
           "schema": {
-            "type": "integer",
+            "type": "number",
             "default": 2
           },
           "description": "Transaction version"
@@ -14119,7 +14030,7 @@
           "name": "conf_target",
           "required": false,
           "schema": {
-            "type": "integer",
+            "type": "number",
             "x-bitcoin-default-hint": "wallet -txconfirmtarget"
           },
           "description": "Confirmation target in blocks"
@@ -14129,12 +14040,7 @@
           "required": false,
           "schema": {
             "type": "string",
-            "default": "unset",
-            "enum": [
-              "unset",
-              "economical",
-              "conservative"
-            ]
+            "default": "unset"
           },
           "description": "The fee estimate mode, must be one of (case insensitive):\nunset, economical, conservative \nunset means no mode set (economical mode is used if the transaction is replaceable;\notherwise, conservative mode is used). \neconomical mode potentially returns a lower fee rate estimate.\nconservative potentially returns a higher fee rate estimate.\n"
         },
@@ -14370,7 +14276,7 @@
           "name": "minconf",
           "required": false,
           "schema": {
-            "type": "integer"
+            "type": "number"
           },
           "x-bitcoin-placeholder": true,
           "description": "Ignored dummy value"
@@ -14407,7 +14313,7 @@
           "name": "conf_target",
           "required": false,
           "schema": {
-            "type": "integer",
+            "type": "number",
             "x-bitcoin-default-hint": "wallet -txconfirmtarget"
           },
           "description": "Confirmation target in blocks"
@@ -14417,12 +14323,7 @@
           "required": false,
           "schema": {
             "type": "string",
-            "default": "unset",
-            "enum": [
-              "unset",
-              "economical",
-              "conservative"
-            ]
+            "default": "unset"
           },
           "description": "The fee estimate mode, must be one of (case insensitive):\nunset, economical, conservative \nunset means no mode set (economical mode is used if the transaction is replaceable;\notherwise, conservative mode is used). \neconomical mode potentially returns a lower fee rate estimate.\nconservative potentially returns a higher fee rate estimate.\n"
         },
@@ -14494,7 +14395,7 @@
           "name": "peer_id",
           "required": true,
           "schema": {
-            "type": "integer"
+            "type": "number"
           },
           "description": "The peer to send the message to."
         },
@@ -14646,7 +14547,7 @@
           "name": "conf_target",
           "required": false,
           "schema": {
-            "type": "integer",
+            "type": "number",
             "x-bitcoin-default-hint": "wallet -txconfirmtarget"
           },
           "description": "Confirmation target in blocks"
@@ -14656,12 +14557,7 @@
           "required": false,
           "schema": {
             "type": "string",
-            "default": "unset",
-            "enum": [
-              "unset",
-              "economical",
-              "conservative"
-            ]
+            "default": "unset"
           },
           "description": "The fee estimate mode, must be one of (case insensitive):\nunset, economical, conservative \nunset means no mode set (economical mode is used if the transaction is replaceable;\notherwise, conservative mode is used). \neconomical mode potentially returns a lower fee rate estimate.\nconservative potentially returns a higher fee rate estimate.\n"
         },
@@ -14818,7 +14714,7 @@
           "name": "timestamp",
           "required": true,
           "schema": {
-            "type": "integer"
+            "type": "number"
           },
           "description": "UNIX epoch time\nPass 0 to go back to using the system time."
         }
@@ -15041,16 +14937,7 @@
           "required": false,
           "schema": {
             "type": "string",
-            "default": "DEFAULT for Taproot, ALL otherwise",
-            "enum": [
-              "DEFAULT",
-              "ALL",
-              "NONE",
-              "SINGLE",
-              "ALL|ANYONECANPAY",
-              "NONE|ANYONECANPAY",
-              "SINGLE|ANYONECANPAY"
-            ]
+            "default": "DEFAULT for Taproot, ALL otherwise"
           },
           "description": "The signature hash type. Must be one of:\n       \"DEFAULT\"\n       \"ALL\"\n       \"NONE\"\n       \"SINGLE\"\n       \"ALL|ANYONECANPAY\"\n       \"NONE|ANYONECANPAY\"\n       \"SINGLE|ANYONECANPAY\"\n"
         }
@@ -15197,16 +15084,7 @@
           "required": false,
           "schema": {
             "type": "string",
-            "default": "DEFAULT for Taproot, ALL otherwise",
-            "enum": [
-              "DEFAULT",
-              "ALL",
-              "NONE",
-              "SINGLE",
-              "ALL|ANYONECANPAY",
-              "NONE|ANYONECANPAY",
-              "SINGLE|ANYONECANPAY"
-            ]
+            "default": "DEFAULT for Taproot, ALL otherwise"
           },
           "description": "The signature hash type. Must be one of\n       \"DEFAULT\"\n       \"ALL\"\n       \"NONE\"\n       \"SINGLE\"\n       \"ALL|ANYONECANPAY\"\n       \"NONE|ANYONECANPAY\"\n       \"SINGLE|ANYONECANPAY\""
         }
@@ -15708,14 +15586,7 @@
           "name": "load_on_startup",
           "required": false,
           "schema": {
-            "oneOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "type": "boolean"
           },
           "description": "Save wallet name to persistent settings and load on startup. True to add wallet to startup list, false to remove, null to leave unchanged."
         }
@@ -15907,7 +15778,7 @@
           "name": "nblocks",
           "required": false,
           "schema": {
-            "type": "integer",
+            "type": "number",
             "x-bitcoin-default-hint": "6, 0=all"
           },
           "description": "The number of blocks to check."
@@ -16001,7 +15872,7 @@
           "name": "timeout",
           "required": false,
           "schema": {
-            "type": "integer",
+            "type": "number",
             "default": 0
           },
           "description": "Time in milliseconds to wait for a response. 0 indicates no timeout."
@@ -16039,7 +15910,7 @@
           "name": "height",
           "required": true,
           "schema": {
-            "type": "integer"
+            "type": "number"
           },
           "description": "Block height to wait for."
         },
@@ -16047,7 +15918,7 @@
           "name": "timeout",
           "required": false,
           "schema": {
-            "type": "integer",
+            "type": "number",
             "default": 0
           },
           "description": "Time in milliseconds to wait for a response. 0 indicates no timeout."
@@ -16085,7 +15956,7 @@
           "name": "timeout",
           "required": false,
           "schema": {
-            "type": "integer",
+            "type": "number",
             "default": 0
           },
           "description": "Time in milliseconds to wait for a response. 0 indicates no timeout."
@@ -16216,7 +16087,7 @@
           "name": "locktime",
           "required": false,
           "schema": {
-            "type": "integer",
+            "type": "number",
             "default": 0
           },
           "description": "Raw locktime. Non-0 value also locktime-activates inputs"
@@ -16375,7 +16246,7 @@
           "name": "version",
           "required": false,
           "schema": {
-            "type": "integer",
+            "type": "number",
             "default": 2
           },
           "description": "Transaction version"
@@ -16384,7 +16255,7 @@
           "name": "psbt_version",
           "required": false,
           "schema": {
-            "type": "integer",
+            "type": "number",
             "default": 2
           },
           "description": "The PSBT version number to use."
@@ -16478,7 +16349,7 @@
           "name": "timeout",
           "required": true,
           "schema": {
-            "type": "integer"
+            "type": "number"
           },
           "description": "The time to keep the decryption key in seconds; capped at 100000000 (~3 years)."
         }
@@ -16546,16 +16417,7 @@
           "required": false,
           "schema": {
             "type": "string",
-            "default": "DEFAULT for Taproot, ALL otherwise",
-            "enum": [
-              "DEFAULT",
-              "ALL",
-              "NONE",
-              "SINGLE",
-              "ALL|ANYONECANPAY",
-              "NONE|ANYONECANPAY",
-              "SINGLE|ANYONECANPAY"
-            ]
+            "default": "DEFAULT for Taproot, ALL otherwise"
           },
           "description": "The signature hash type to sign with if not specified by the PSBT. Must be one of\n       \"DEFAULT\"\n       \"ALL\"\n       \"NONE\"\n       \"SINGLE\"\n       \"ALL|ANYONECANPAY\"\n       \"NONE|ANYONECANPAY\"\n       \"SINGLE|ANYONECANPAY\""
         },

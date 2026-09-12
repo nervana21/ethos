@@ -204,7 +204,7 @@ fn main() {
             if has_addresses_required && !uses_conditional_schema {
                 findings.push(Finding {
                     rule: "conditional_field_modeled_as_unconditionally_required".to_string(),
-                    severity: "P0".to_string(),
+                    severity: "P2".to_string(),
                     method: method_name.clone(),
                     field: "result[].addresses".to_string(),
                     message: "addresses is required but docs say only when connected=true. \

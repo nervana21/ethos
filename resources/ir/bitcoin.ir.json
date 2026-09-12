@@ -1135,7 +1135,8 @@
                               ],
                               "variants": null,
                               "base_type": null,
-                              "protocol_type": "array"
+                              "protocol_type": "array",
+                              "type_identity": "RpcBranch1Array1"
                             }
                           },
                           {
@@ -1884,7 +1885,8 @@
                         ],
                         "variants": null,
                         "base_type": null,
-                        "protocol_type": "array"
+                        "protocol_type": "array",
+                        "type_identity": "RpcBranch1Array1"
                       }
                     },
                     {
@@ -2196,7 +2198,8 @@
                         ],
                         "variants": null,
                         "base_type": null,
-                        "protocol_type": "array"
+                        "protocol_type": "array",
+                        "type_identity": "RpcBranch1Array1"
                       }
                     },
                     {
@@ -2379,41 +2382,13 @@
               {
                 "name": "load_on_startup",
                 "param_type": {
-                  "name": "load_on_startup",
-                  "description": "Union result preserved from OpenRPC oneOf/anyOf branches",
-                  "kind": "Union",
+                  "name": "boolean",
+                  "description": "Save wallet name to persistent settings and load on startup. True to add wallet to startup list, false to remove, null to leave unchanged.",
+                  "kind": "Primitive",
                   "fields": null,
                   "variants": null,
-                  "union_variants": [
-                    {
-                      "name": "Branch1",
-                      "description": "Save wallet name to persistent settings and load on startup. True to add wallet to startup list, false to remove, null to leave unchanged.",
-                      "type_def": {
-                        "name": "boolean",
-                        "description": "Save wallet name to persistent settings and load on startup. True to add wallet to startup list, false to remove, null to leave unchanged.",
-                        "kind": "Primitive",
-                        "fields": null,
-                        "variants": null,
-                        "base_type": null,
-                        "protocol_type": "boolean"
-                      }
-                    },
-                    {
-                      "name": "Branch2",
-                      "description": "Save wallet name to persistent settings and load on startup. True to add wallet to startup list, false to remove, null to leave unchanged.",
-                      "type_def": {
-                        "name": "none",
-                        "description": "Save wallet name to persistent settings and load on startup. True to add wallet to startup list, false to remove, null to leave unchanged.",
-                        "kind": "Primitive",
-                        "fields": null,
-                        "variants": null,
-                        "base_type": null,
-                        "protocol_type": "none"
-                      }
-                    }
-                  ],
                   "base_type": null,
-                  "protocol_type": "any"
+                  "protocol_type": "boolean"
                 },
                 "required": false,
                 "description": "Save wallet name to persistent settings and load on startup. True to add wallet to startup list, false to remove, null to leave unchanged.",
@@ -7327,7 +7302,8 @@
                         ],
                         "variants": null,
                         "base_type": null,
-                        "protocol_type": "array"
+                        "protocol_type": "array",
+                        "type_identity": "RpcBranch2Array1"
                       }
                     }
                   ],
@@ -7376,7 +7352,7 @@
                     "variants": null,
                     "base_type": null,
                     "protocol_type": "array",
-                    "type_identity": "deriveaddresses__array__branch_1__always"
+                    "type_identity": "DeriveAddressesBranch1Array1"
                   }
                 },
                 {
@@ -7418,7 +7394,7 @@
                           "variants": null,
                           "base_type": null,
                           "protocol_type": "array",
-                          "type_identity": "deriveaddresses__array__branch_2__always"
+                          "type_identity": "DeriveAddressesBranch2Array2"
                         },
                         "required": true,
                         "description": "",
@@ -7428,7 +7404,7 @@
                     "variants": null,
                     "base_type": null,
                     "protocol_type": "array",
-                    "type_identity": "deriveaddresses__array__branch_2__always"
+                    "type_identity": "DeriveAddressesBranch2Array1"
                   }
                 }
               ],
@@ -7726,7 +7702,8 @@
                                           ],
                                           "variants": null,
                                           "base_type": null,
-                                          "protocol_type": "array"
+                                          "protocol_type": "array",
+                                          "type_identity": "RpcBranch2Array1"
                                         }
                                       }
                                     ],
@@ -11404,7 +11381,7 @@
                           "protocol_type": "array",
                           "type_identity": "getaddednodeinfo__array__addresses__always"
                         },
-                        "required": false,
+                        "required": true,
                         "description": "Only when connected = true",
                         "default_value": null
                       },
@@ -12851,13 +12828,13 @@
               {
                 "name": "verbosity",
                 "param_type": {
-                  "name": "any",
+                  "name": "number",
                   "description": "0 for hex-encoded data, 1 for a JSON object, 2 for JSON object with transaction data, and 3 for JSON object with transaction data including prevout information for inputs (aliases: verbose)",
                   "kind": "Primitive",
                   "fields": null,
                   "variants": null,
                   "base_type": null,
-                  "protocol_type": "any"
+                  "protocol_type": "number"
                 },
                 "required": false,
                 "description": "0 for hex-encoded data, 1 for a JSON object, 2 for JSON object with transaction data, and 3 for JSON object with transaction data including prevout information for inputs (aliases: verbose)",
@@ -13300,7 +13277,7 @@
                           "variants": null,
                           "base_type": null,
                           "protocol_type": "array",
-                          "type_identity": "getblock__array__tx__always"
+                          "type_identity": "GetBlockBranch2Array1"
                         },
                         "required": true,
                         "description": "The transaction ids",
@@ -14038,7 +14015,7 @@
                                                   "variants": null,
                                                   "base_type": null,
                                                   "protocol_type": "array",
-                                                  "type_identity": "getblock__array__txinwitness__always"
+                                                  "type_identity": "GetBlockBranch3Array3"
                                                 },
                                                 "required": false,
                                                 "description": "",
@@ -14075,7 +14052,7 @@
                                       "variants": null,
                                       "base_type": null,
                                       "protocol_type": "array",
-                                      "type_identity": "getblock__array__vin__always"
+                                      "type_identity": "GetBlockBranch3Array2"
                                     },
                                     "required": true,
                                     "description": "",
@@ -14251,7 +14228,7 @@
                                       "variants": null,
                                       "base_type": null,
                                       "protocol_type": "array",
-                                      "type_identity": "getblock__array__vout__always"
+                                      "type_identity": "GetBlockBranch3Array4"
                                     },
                                     "required": true,
                                     "description": "",
@@ -14305,7 +14282,7 @@
                           "variants": null,
                           "base_type": null,
                           "protocol_type": "array",
-                          "type_identity": "getblock__array__tx__always"
+                          "type_identity": "GetBlockBranch3Array1"
                         },
                         "required": true,
                         "description": "",
@@ -15217,7 +15194,7 @@
                                                   "variants": null,
                                                   "base_type": null,
                                                   "protocol_type": "array",
-                                                  "type_identity": "getblock__array__txinwitness__always"
+                                                  "type_identity": "GetBlockBranch4Array3"
                                                 },
                                                 "required": false,
                                                 "description": "",
@@ -15254,7 +15231,7 @@
                                       "variants": null,
                                       "base_type": null,
                                       "protocol_type": "array",
-                                      "type_identity": "getblock__array__vin__always"
+                                      "type_identity": "GetBlockBranch4Array2"
                                     },
                                     "required": true,
                                     "description": "",
@@ -15430,7 +15407,7 @@
                                       "variants": null,
                                       "base_type": null,
                                       "protocol_type": "array",
-                                      "type_identity": "getblock__array__vout__always"
+                                      "type_identity": "GetBlockBranch4Array4"
                                     },
                                     "required": true,
                                     "description": "",
@@ -15484,7 +15461,7 @@
                           "variants": null,
                           "base_type": null,
                           "protocol_type": "array",
-                          "type_identity": "getblock__array__tx__always"
+                          "type_identity": "GetBlockBranch4Array1"
                         },
                         "required": true,
                         "description": "",
@@ -17542,7 +17519,7 @@
                           "variants": null,
                           "base_type": null,
                           "protocol_type": "array",
-                          "type_identity": "getblocktemplate__array__capabilities__always"
+                          "type_identity": "GetBlockTemplateBranch3Array1"
                         },
                         "required": true,
                         "description": "",
@@ -17708,7 +17685,7 @@
                           "variants": null,
                           "base_type": null,
                           "protocol_type": "array",
-                          "type_identity": "getblocktemplate__array__mutable__always"
+                          "type_identity": "GetBlockTemplateBranch3Array2"
                         },
                         "required": true,
                         "description": "list of ways the block template may be changed",
@@ -17778,7 +17755,7 @@
                           "variants": null,
                           "base_type": null,
                           "protocol_type": "array",
-                          "type_identity": "getblocktemplate__array__rules__always"
+                          "type_identity": "GetBlockTemplateBranch3Array3"
                         },
                         "required": true,
                         "description": "specific block rules that are to be enforced",
@@ -17917,7 +17894,7 @@
                                       "variants": null,
                                       "base_type": null,
                                       "protocol_type": "array",
-                                      "type_identity": "getblocktemplate__array__depends__always"
+                                      "type_identity": "GetBlockTemplateBranch3Array5"
                                     },
                                     "required": true,
                                     "description": "array of numbers",
@@ -18022,7 +17999,7 @@
                           "variants": null,
                           "base_type": null,
                           "protocol_type": "array",
-                          "type_identity": "getblocktemplate__array__transactions__always"
+                          "type_identity": "GetBlockTemplateBranch3Array4"
                         },
                         "required": true,
                         "description": "contents of non-coinbase transactions that should be included in the next block",
@@ -19301,7 +19278,8 @@
                                           ],
                                           "variants": null,
                                           "base_type": null,
-                                          "protocol_type": "array"
+                                          "protocol_type": "array",
+                                          "type_identity": "RpcBranch2Array1"
                                         }
                                       }
                                     ],
@@ -20623,7 +20601,7 @@
                     "variants": null,
                     "base_type": null,
                     "protocol_type": "array",
-                    "type_identity": "getmempoolancestors__array__branch_1__always"
+                    "type_identity": "GetMempoolAncestorsBranch1Array1"
                   }
                 },
                 {
@@ -20725,7 +20703,7 @@
                             "variants": null,
                             "base_type": null,
                             "protocol_type": "array",
-                            "type_identity": "getmempoolancestors__array__depends__always"
+                            "type_identity": "GetMempoolAncestorsBranch2Array1"
                           },
                           "required": true,
                           "description": "unconfirmed transactions used as inputs for this transaction",
@@ -20916,7 +20894,7 @@
                             "variants": null,
                             "base_type": null,
                             "protocol_type": "array",
-                            "type_identity": "getmempoolancestors__array__spentby__always"
+                            "type_identity": "GetMempoolAncestorsBranch2Array2"
                           },
                           "required": true,
                           "description": "unconfirmed transactions spending outputs from this transaction",
@@ -21314,7 +21292,7 @@
                     "variants": null,
                     "base_type": null,
                     "protocol_type": "array",
-                    "type_identity": "getmempooldescendants__array__branch_1__always"
+                    "type_identity": "GetMempoolDescendantsBranch1Array1"
                   }
                 },
                 {
@@ -21416,7 +21394,7 @@
                             "variants": null,
                             "base_type": null,
                             "protocol_type": "array",
-                            "type_identity": "getmempooldescendants__array__depends__always"
+                            "type_identity": "GetMempoolDescendantsBranch2Array1"
                           },
                           "required": true,
                           "description": "unconfirmed transactions used as inputs for this transaction",
@@ -21607,7 +21585,7 @@
                             "variants": null,
                             "base_type": null,
                             "protocol_type": "array",
-                            "type_identity": "getmempooldescendants__array__spentby__always"
+                            "type_identity": "GetMempoolDescendantsBranch2Array2"
                           },
                           "required": true,
                           "description": "unconfirmed transactions spending outputs from this transaction",
@@ -24384,13 +24362,13 @@
               {
                 "name": "verbosity",
                 "param_type": {
-                  "name": "any",
+                  "name": "number",
                   "description": "0 for an array of txids (may contain duplicates), 1 for an array of objects with tx details, and 2 for details from (1) and tx hex",
                   "kind": "Primitive",
                   "fields": null,
                   "variants": null,
                   "base_type": null,
-                  "protocol_type": "any"
+                  "protocol_type": "number"
                 },
                 "required": false,
                 "description": "0 for an array of txids (may contain duplicates), 1 for an array of objects with tx details, and 2 for details from (1) and tx hex",
@@ -24434,7 +24412,7 @@
                     "variants": null,
                     "base_type": null,
                     "protocol_type": "array",
-                    "type_identity": "getorphantxs__array__branch_1__always"
+                    "type_identity": "GetOrphanTxsBranch1Array1"
                   }
                 },
                 {
@@ -24502,7 +24480,7 @@
                                 "variants": null,
                                 "base_type": null,
                                 "protocol_type": "array",
-                                "type_identity": "getorphantxs__array__from__always"
+                                "type_identity": "GetOrphanTxsBranch2Array2"
                               },
                               "required": true,
                               "description": "",
@@ -24607,7 +24585,7 @@
                     "variants": null,
                     "base_type": null,
                     "protocol_type": "array",
-                    "type_identity": "getorphantxs__array__branch_2__always"
+                    "type_identity": "GetOrphanTxsBranch2Array1"
                   }
                 },
                 {
@@ -24675,7 +24653,7 @@
                                 "variants": null,
                                 "base_type": null,
                                 "protocol_type": "array",
-                                "type_identity": "getorphantxs__array__from__always"
+                                "type_identity": "GetOrphanTxsBranch3Array2"
                               },
                               "required": true,
                               "description": "",
@@ -24797,7 +24775,7 @@
                     "variants": null,
                     "base_type": null,
                     "protocol_type": "array",
-                    "type_identity": "getorphantxs__array__branch_3__always"
+                    "type_identity": "GetOrphanTxsBranch3Array1"
                   }
                 }
               ],
@@ -26254,7 +26232,7 @@
                     "variants": null,
                     "base_type": null,
                     "protocol_type": "array",
-                    "type_identity": "getrawmempool__array__branch_1__always"
+                    "type_identity": "GetRawMempoolBranch1Array1"
                   }
                 },
                 {
@@ -26356,7 +26334,7 @@
                             "variants": null,
                             "base_type": null,
                             "protocol_type": "array",
-                            "type_identity": "getrawmempool__array__depends__always"
+                            "type_identity": "GetRawMempoolBranch2Array1"
                           },
                           "required": true,
                           "description": "unconfirmed transactions used as inputs for this transaction",
@@ -26547,7 +26525,7 @@
                             "variants": null,
                             "base_type": null,
                             "protocol_type": "array",
-                            "type_identity": "getrawmempool__array__spentby__always"
+                            "type_identity": "GetRawMempoolBranch2Array2"
                           },
                           "required": true,
                           "description": "unconfirmed transactions spending outputs from this transaction",
@@ -26737,7 +26715,7 @@
                           "variants": null,
                           "base_type": null,
                           "protocol_type": "array",
-                          "type_identity": "getrawmempool__array__txids__always"
+                          "type_identity": "GetRawMempoolBranch3Array1"
                         },
                         "required": true,
                         "description": "",
@@ -26784,13 +26762,13 @@
               {
                 "name": "verbosity",
                 "param_type": {
-                  "name": "any",
+                  "name": "number",
                   "description": "0 for hex-encoded data, 1 for a JSON object, and 2 for JSON object with fee and prevout (aliases: verbose)",
                   "kind": "Primitive",
                   "fields": null,
                   "variants": null,
                   "base_type": null,
-                  "protocol_type": "any"
+                  "protocol_type": "number"
                 },
                 "required": false,
                 "description": "0 for hex-encoded data, 1 for a JSON object, and 2 for JSON object with fee and prevout (aliases: verbose)",
@@ -27181,7 +27159,7 @@
                                       "variants": null,
                                       "base_type": null,
                                       "protocol_type": "array",
-                                      "type_identity": "getrawtransaction__array__txinwitness__always"
+                                      "type_identity": "GetRawTransactionBranch2Array2"
                                     },
                                     "required": false,
                                     "description": "",
@@ -27218,7 +27196,7 @@
                           "variants": null,
                           "base_type": null,
                           "protocol_type": "array",
-                          "type_identity": "getrawtransaction__array__vin__always"
+                          "type_identity": "GetRawTransactionBranch2Array1"
                         },
                         "required": true,
                         "description": "",
@@ -27394,7 +27372,7 @@
                           "variants": null,
                           "base_type": null,
                           "protocol_type": "array",
-                          "type_identity": "getrawtransaction__array__vout__always"
+                          "type_identity": "GetRawTransactionBranch2Array3"
                         },
                         "required": true,
                         "description": "",
@@ -27997,7 +27975,7 @@
                                       "variants": null,
                                       "base_type": null,
                                       "protocol_type": "array",
-                                      "type_identity": "getrawtransaction__array__txinwitness__always"
+                                      "type_identity": "GetRawTransactionBranch3Array2"
                                     },
                                     "required": false,
                                     "description": "",
@@ -28034,7 +28012,7 @@
                           "variants": null,
                           "base_type": null,
                           "protocol_type": "array",
-                          "type_identity": "getrawtransaction__array__vin__always"
+                          "type_identity": "GetRawTransactionBranch3Array1"
                         },
                         "required": true,
                         "description": "",
@@ -28210,7 +28188,7 @@
                           "variants": null,
                           "base_type": null,
                           "protocol_type": "array",
-                          "type_identity": "getrawtransaction__array__vout__always"
+                          "type_identity": "GetRawTransactionBranch3Array3"
                         },
                         "required": true,
                         "description": "",
@@ -30236,7 +30214,7 @@
                 },
                 "required": false,
                 "description": "The block hash or height of the target height (only available with coinstatsindex).",
-                "default_value": null
+                "default_value": "the current best block"
               },
               {
                 "name": "use_index",
@@ -31485,7 +31463,8 @@
                                     ],
                                     "variants": null,
                                     "base_type": null,
-                                    "protocol_type": "array"
+                                    "protocol_type": "array",
+                                    "type_identity": "RpcBranch2Array1"
                                   }
                                 }
                               ],
@@ -35797,41 +35776,13 @@
               {
                 "name": "load_on_startup",
                 "param_type": {
-                  "name": "load_on_startup",
-                  "description": "Union result preserved from OpenRPC oneOf/anyOf branches",
-                  "kind": "Union",
+                  "name": "boolean",
+                  "description": "Save wallet name to persistent settings and load on startup. True to add wallet to startup list, false to remove, null to leave unchanged.",
+                  "kind": "Primitive",
                   "fields": null,
                   "variants": null,
-                  "union_variants": [
-                    {
-                      "name": "Branch1",
-                      "description": "Save wallet name to persistent settings and load on startup. True to add wallet to startup list, false to remove, null to leave unchanged.",
-                      "type_def": {
-                        "name": "boolean",
-                        "description": "Save wallet name to persistent settings and load on startup. True to add wallet to startup list, false to remove, null to leave unchanged.",
-                        "kind": "Primitive",
-                        "fields": null,
-                        "variants": null,
-                        "base_type": null,
-                        "protocol_type": "boolean"
-                      }
-                    },
-                    {
-                      "name": "Branch2",
-                      "description": "Save wallet name to persistent settings and load on startup. True to add wallet to startup list, false to remove, null to leave unchanged.",
-                      "type_def": {
-                        "name": "none",
-                        "description": "Save wallet name to persistent settings and load on startup. True to add wallet to startup list, false to remove, null to leave unchanged.",
-                        "kind": "Primitive",
-                        "fields": null,
-                        "variants": null,
-                        "base_type": null,
-                        "protocol_type": "none"
-                      }
-                    }
-                  ],
                   "base_type": null,
-                  "protocol_type": "any"
+                  "protocol_type": "boolean"
                 },
                 "required": false,
                 "description": "Save wallet name to persistent settings and load on startup. True to add wallet to startup list, false to remove, null to leave unchanged.",
@@ -36377,41 +36328,13 @@
               {
                 "name": "dummy",
                 "param_type": {
-                  "name": "dummy",
-                  "description": "Union result preserved from OpenRPC oneOf/anyOf branches",
-                  "kind": "Union",
+                  "name": "number",
+                  "description": "API-Compatibility for previous API. Must be zero or null.\n                  DEPRECATED. For forward compatibility use named arguments and omit this parameter. [x-bitcoin-placeholder]",
+                  "kind": "Primitive",
                   "fields": null,
                   "variants": null,
-                  "union_variants": [
-                    {
-                      "name": "Branch1",
-                      "description": "API-Compatibility for previous API. Must be zero or null.\n                  DEPRECATED. For forward compatibility use named arguments and omit this parameter. [x-bitcoin-placeholder]",
-                      "type_def": {
-                        "name": "number",
-                        "description": "API-Compatibility for previous API. Must be zero or null.\n                  DEPRECATED. For forward compatibility use named arguments and omit this parameter. [x-bitcoin-placeholder]",
-                        "kind": "Primitive",
-                        "fields": null,
-                        "variants": null,
-                        "base_type": null,
-                        "protocol_type": "number"
-                      }
-                    },
-                    {
-                      "name": "Branch2",
-                      "description": "API-Compatibility for previous API. Must be zero or null.\n                  DEPRECATED. For forward compatibility use named arguments and omit this parameter. [x-bitcoin-placeholder]",
-                      "type_def": {
-                        "name": "none",
-                        "description": "API-Compatibility for previous API. Must be zero or null.\n                  DEPRECATED. For forward compatibility use named arguments and omit this parameter. [x-bitcoin-placeholder]",
-                        "kind": "Primitive",
-                        "fields": null,
-                        "variants": null,
-                        "base_type": null,
-                        "protocol_type": "none"
-                      }
-                    }
-                  ],
                   "base_type": null,
-                  "protocol_type": "any"
+                  "protocol_type": "number"
                 },
                 "required": false,
                 "description": "API-Compatibility for previous API. Must be zero or null.\n                  DEPRECATED. For forward compatibility use named arguments and omit this parameter. [x-bitcoin-placeholder]",
@@ -36731,7 +36654,8 @@
                               ],
                               "variants": null,
                               "base_type": null,
-                              "protocol_type": "array"
+                              "protocol_type": "array",
+                              "type_identity": "RpcBranch1Array1"
                             }
                           },
                           {
@@ -37101,41 +37025,13 @@
               {
                 "name": "load_on_startup",
                 "param_type": {
-                  "name": "load_on_startup",
-                  "description": "Union result preserved from OpenRPC oneOf/anyOf branches",
-                  "kind": "Union",
+                  "name": "boolean",
+                  "description": "Save wallet name to persistent settings and load on startup. True to add wallet to startup list, false to remove, null to leave unchanged.",
+                  "kind": "Primitive",
                   "fields": null,
                   "variants": null,
-                  "union_variants": [
-                    {
-                      "name": "Branch1",
-                      "description": "Save wallet name to persistent settings and load on startup. True to add wallet to startup list, false to remove, null to leave unchanged.",
-                      "type_def": {
-                        "name": "boolean",
-                        "description": "Save wallet name to persistent settings and load on startup. True to add wallet to startup list, false to remove, null to leave unchanged.",
-                        "kind": "Primitive",
-                        "fields": null,
-                        "variants": null,
-                        "base_type": null,
-                        "protocol_type": "boolean"
-                      }
-                    },
-                    {
-                      "name": "Branch2",
-                      "description": "Save wallet name to persistent settings and load on startup. True to add wallet to startup list, false to remove, null to leave unchanged.",
-                      "type_def": {
-                        "name": "none",
-                        "description": "Save wallet name to persistent settings and load on startup. True to add wallet to startup list, false to remove, null to leave unchanged.",
-                        "kind": "Primitive",
-                        "fields": null,
-                        "variants": null,
-                        "base_type": null,
-                        "protocol_type": "none"
-                      }
-                    }
-                  ],
                   "base_type": null,
-                  "protocol_type": "any"
+                  "protocol_type": "boolean"
                 },
                 "required": false,
                 "description": "Save wallet name to persistent settings and load on startup. True to add wallet to startup list, false to remove, null to leave unchanged.",
@@ -37823,7 +37719,8 @@
                                           ],
                                           "variants": null,
                                           "base_type": null,
-                                          "protocol_type": "array"
+                                          "protocol_type": "array",
+                                          "type_identity": "RpcBranch2Array1"
                                         }
                                       }
                                     ],
@@ -38030,7 +37927,7 @@
                           "variants": null,
                           "base_type": null,
                           "protocol_type": "array",
-                          "type_identity": "scanblocks__array__relevant_blocks__always"
+                          "type_identity": "ScanBlocksBranch2Array1"
                         },
                         "required": true,
                         "description": "Blocks that may have matched a scanobject.",
@@ -38280,7 +38177,8 @@
                                           ],
                                           "variants": null,
                                           "base_type": null,
-                                          "protocol_type": "array"
+                                          "protocol_type": "array",
+                                          "type_identity": "RpcBranch2Array1"
                                         }
                                       }
                                     ],
@@ -38601,7 +38499,7 @@
                           "variants": null,
                           "base_type": null,
                           "protocol_type": "array",
-                          "type_identity": "scantxoutset__array__unspents__always"
+                          "type_identity": "ScanTxOutSetBranch1Array1"
                         },
                         "required": true,
                         "description": "",
@@ -38813,7 +38711,8 @@
                         ],
                         "variants": null,
                         "base_type": null,
-                        "protocol_type": "array"
+                        "protocol_type": "array",
+                        "type_identity": "RpcBranch1Array1"
                       }
                     },
                     {
@@ -43510,41 +43409,13 @@
               {
                 "name": "load_on_startup",
                 "param_type": {
-                  "name": "load_on_startup",
-                  "description": "Union result preserved from OpenRPC oneOf/anyOf branches",
-                  "kind": "Union",
+                  "name": "boolean",
+                  "description": "Save wallet name to persistent settings and load on startup. True to add wallet to startup list, false to remove, null to leave unchanged.",
+                  "kind": "Primitive",
                   "fields": null,
                   "variants": null,
-                  "union_variants": [
-                    {
-                      "name": "Branch1",
-                      "description": "Save wallet name to persistent settings and load on startup. True to add wallet to startup list, false to remove, null to leave unchanged.",
-                      "type_def": {
-                        "name": "boolean",
-                        "description": "Save wallet name to persistent settings and load on startup. True to add wallet to startup list, false to remove, null to leave unchanged.",
-                        "kind": "Primitive",
-                        "fields": null,
-                        "variants": null,
-                        "base_type": null,
-                        "protocol_type": "boolean"
-                      }
-                    },
-                    {
-                      "name": "Branch2",
-                      "description": "Save wallet name to persistent settings and load on startup. True to add wallet to startup list, false to remove, null to leave unchanged.",
-                      "type_def": {
-                        "name": "none",
-                        "description": "Save wallet name to persistent settings and load on startup. True to add wallet to startup list, false to remove, null to leave unchanged.",
-                        "kind": "Primitive",
-                        "fields": null,
-                        "variants": null,
-                        "base_type": null,
-                        "protocol_type": "none"
-                      }
-                    }
-                  ],
                   "base_type": null,
-                  "protocol_type": "any"
+                  "protocol_type": "boolean"
                 },
                 "required": false,
                 "description": "Save wallet name to persistent settings and load on startup. True to add wallet to startup list, false to remove, null to leave unchanged.",
@@ -43769,7 +43640,8 @@
                                           ],
                                           "variants": null,
                                           "base_type": null,
-                                          "protocol_type": "array"
+                                          "protocol_type": "array",
+                                          "type_identity": "RpcBranch2Array1"
                                         }
                                       }
                                     ],
@@ -44691,7 +44563,8 @@
                         ],
                         "variants": null,
                         "base_type": null,
-                        "protocol_type": "array"
+                        "protocol_type": "array",
+                        "type_identity": "RpcBranch1Array1"
                       }
                     },
                     {

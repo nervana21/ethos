@@ -1,42 +1,140 @@
 {
-  "finding_count": 5,
+  "finding_count": 19,
   "findings": [
     {
+      "field": "param:load_on_startup",
+      "message": "Description references null, but schema does not allow null.",
+      "method": "createwallet",
+      "rule": "nullable_in_description_but_schema_not_nullable",
+      "severity": "P1"
+    },
+    {
+      "field": "param:sighashtype",
+      "message": "Description constrains allowed values, but schema has no enum.",
+      "method": "descriptorprocesspsbt",
+      "rule": "enum_in_description_but_schema_missing_enum",
+      "severity": "P1"
+    },
+    {
+      "field": "result[].addresses",
+      "message": "addresses is required but docs say only when connected=true. Refresh openrpc.json from a Core build that emits getaddednodeinfo if/then (required_when_true).",
+      "method": "getaddednodeinfo",
+      "rule": "conditional_field_modeled_as_unconditionally_required",
+      "severity": "P2"
+    },
+    {
       "field": "result.schema",
-      "message": "Advisory: x-bitcoin-discriminated-result missing (upstream follow-up).",
+      "message": "Advisory: x-bitcoin-discriminated-result missing; refresh dump from Core fidelity tip.",
       "method": "getmempoolancestors",
       "rule": "discriminated_result_missing_metadata",
       "severity": "P2"
     },
     {
       "field": "result.schema",
-      "message": "Advisory: x-bitcoin-discriminated-result missing (upstream follow-up).",
+      "message": "Advisory: x-bitcoin-discriminated-result missing; refresh dump from Core fidelity tip.",
       "method": "getmempooldescendants",
       "rule": "discriminated_result_missing_metadata",
       "severity": "P2"
     },
     {
       "field": "result.schema",
-      "message": "Advisory: x-bitcoin-discriminated-result missing (upstream follow-up).",
+      "message": "Advisory: x-bitcoin-discriminated-result missing; refresh dump from Core fidelity tip.",
       "method": "getrawmempool",
       "rule": "discriminated_result_missing_metadata",
       "severity": "P2"
     },
     {
+      "field": "param:load_on_startup",
+      "message": "Description references null, but schema does not allow null.",
+      "method": "loadwallet",
+      "rule": "nullable_in_description_but_schema_not_nullable",
+      "severity": "P1"
+    },
+    {
+      "field": "param:dummy",
+      "message": "Description references null, but schema does not allow null.",
+      "method": "prioritisetransaction",
+      "rule": "nullable_in_description_but_schema_not_nullable",
+      "severity": "P1"
+    },
+    {
+      "field": "param:load_on_startup",
+      "message": "Description references null, but schema does not allow null.",
+      "method": "restorewallet",
+      "rule": "nullable_in_description_but_schema_not_nullable",
+      "severity": "P1"
+    },
+    {
       "field": "result.schema",
-      "message": "Advisory: x-bitcoin-discriminated-result missing (upstream follow-up).",
+      "message": "Advisory: x-bitcoin-discriminated-result missing; refresh dump from Core fidelity tip.",
       "method": "scanblocks",
       "rule": "discriminated_result_missing_metadata",
       "severity": "P2"
     },
     {
       "field": "result.schema",
-      "message": "Advisory: x-bitcoin-discriminated-result missing (upstream follow-up).",
+      "message": "Advisory: x-bitcoin-discriminated-result missing; refresh dump from Core fidelity tip.",
       "method": "scantxoutset",
       "rule": "discriminated_result_missing_metadata",
       "severity": "P2"
+    },
+    {
+      "field": "param:estimate_mode",
+      "message": "Description constrains allowed values, but schema has no enum.",
+      "method": "send",
+      "rule": "enum_in_description_but_schema_missing_enum",
+      "severity": "P1"
+    },
+    {
+      "field": "param:estimate_mode",
+      "message": "Description constrains allowed values, but schema has no enum.",
+      "method": "sendall",
+      "rule": "enum_in_description_but_schema_missing_enum",
+      "severity": "P1"
+    },
+    {
+      "field": "param:estimate_mode",
+      "message": "Description constrains allowed values, but schema has no enum.",
+      "method": "sendmany",
+      "rule": "enum_in_description_but_schema_missing_enum",
+      "severity": "P1"
+    },
+    {
+      "field": "param:estimate_mode",
+      "message": "Description constrains allowed values, but schema has no enum.",
+      "method": "sendtoaddress",
+      "rule": "enum_in_description_but_schema_missing_enum",
+      "severity": "P1"
+    },
+    {
+      "field": "param:sighashtype",
+      "message": "Description constrains allowed values, but schema has no enum.",
+      "method": "signrawtransactionwithkey",
+      "rule": "enum_in_description_but_schema_missing_enum",
+      "severity": "P1"
+    },
+    {
+      "field": "param:sighashtype",
+      "message": "Description constrains allowed values, but schema has no enum.",
+      "method": "signrawtransactionwithwallet",
+      "rule": "enum_in_description_but_schema_missing_enum",
+      "severity": "P1"
+    },
+    {
+      "field": "param:load_on_startup",
+      "message": "Description references null, but schema does not allow null.",
+      "method": "unloadwallet",
+      "rule": "nullable_in_description_but_schema_not_nullable",
+      "severity": "P1"
+    },
+    {
+      "field": "param:sighashtype",
+      "message": "Description constrains allowed values, but schema has no enum.",
+      "method": "walletprocesspsbt",
+      "rule": "enum_in_description_but_schema_missing_enum",
+      "severity": "P1"
     }
   ],
   "openrpc_version": "1.4.1",
-  "rule_count": 1
+  "rule_count": 4
 }
