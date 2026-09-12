@@ -7,6 +7,10 @@ COMPOSE_DIR="$ROOT/compiler/fuzz"
 BITCOIND_CRATE="${ETHOS_BITCOIND_PATH:-$ROOT/../ethos-bitcoind}"
 MODE="${1:-continuous}"
 shift || true
+# just recipe `*args` keeps the `--` from `just foo -- --flag` — strip for clap.
+if [[ "${1:-}" == "--" ]]; then
+  shift
+fi
 
 if [[ ! -f "$BITCOIND_CRATE/Cargo.toml" ]]; then
   echo "missing ethos-bitcoind at $BITCOIND_CRATE (set ETHOS_BITCOIND_PATH or clone sibling)" >&2
