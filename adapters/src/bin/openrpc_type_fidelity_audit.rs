@@ -293,7 +293,6 @@ fn main() {
 
     if let Some(path) = json_report {
         let payload = serde_json::json!({
-            "openrpc_path": openrpc_path,
             "openrpc_version": openrpc_ver,
             "rule_count": seen_rules.len(),
             "finding_count": findings.len(),
