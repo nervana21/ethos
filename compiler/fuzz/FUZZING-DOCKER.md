@@ -20,12 +20,24 @@ Image: `bitcoin-rpc-fuzz:latest` (`compiler/fuzz/Dockerfile.fuzz`). Mounts: etho
 
 Scripts use `bash -c` + explicit `PATH=/usr/local/cargo/bin:…` inside the container. Avoid `bash -lc` — login shells reset PATH and yield `cargo: command not found`.
 
-## Live Δ hunt (bitcoind + schema-oracle)
+## Live Δ hunt (host corpus bitcoind + Docker schema-oracle)
+
+IR dump (`resources/ir/openrpc.json`, e.g. `v31.99.0-dev`) must match the live node.
+Corpus `bitcoind` is Darwin Mach-O — cannot run inside Linux Docker — so the live
+script spawns **host** `$BITCOIND_PATH` (default `corpus/bitcoin/build/bin/bitcoind`)
+and points the Docker oracle at `http://host.docker.internal:18443`.
+
+Do **not** use compose `bitcoin/bitcoin:30.2` for this hunt (version skew → false
+`SchemaMismatch` on fields like `limitclustercount` / `coinbase_tx` / `inv_buckets`).
 
 ```sh
-just schema-oracle-fuzz -- --duration-secs 60   # docker bitcoind + continuous
-just schema-oracle-smoke -- --rounds 32         # docker bitcoind + smoke
+just schema-oracle-fuzz -- --duration-secs 60   # host corpus bitcoind + Docker continuous
+just schema-oracle-smoke -- --rounds 32         # host corpus bitcoind + Docker smoke
+# optional: BITCOIND_PATH=/path/to/bitcoind just schema-oracle-smoke -- --rounds 8
 ```
+
+Override: `BITCOIND_PATH`, `BITCOIN_CLI_PATH`, `SCHEMA_ORACLE_DATADIR`,
+`SCHEMA_ORACLE_RPC_PORT`, `SCHEMA_ORACLE_RPC_HOST`.
 
 ## Agent boundary
 

@@ -168,12 +168,12 @@ schema-oracle-test:
   cargo test -p ethos-schema-oracle --lib
   cargo test --manifest-path compiler/fuzz/Cargo.toml --lib schema_oracle_cov
 
-# Live regtest smoke via docker-compose bitcoind
+# Live regtest smoke: host corpus bitcoind (IR-matched) + Docker schema-oracle
 [group('test')]
 schema-oracle-smoke *args:
   bash compiler/fuzz/scripts/run-schema-oracle-live.sh smoke {{args}}
 
-# Continuous Δ hunt via docker-compose bitcoind
+# Continuous Δ hunt: host corpus bitcoind (IR-matched) + Docker schema-oracle
 [group('test')]
 schema-oracle-fuzz *args:
   bash compiler/fuzz/scripts/run-schema-oracle-live.sh continuous {{args}}
@@ -199,7 +199,7 @@ examples:
     @echo "  just schema-oracle-fuzz-box      # ensure Docker ethos-fuzz container"
     @echo "  just schema-oracle-cov           # Docker libFuzzer (continuous)"
     @echo "  just schema-oracle-cov -- -max_total_time=60"
-    @echo "  just schema-oracle-fuzz -- --duration-secs 60  # Docker bitcoind + continuous"
+    @echo "  just schema-oracle-fuzz -- --duration-secs 60  # host corpus bitcoind + Docker continuous"
     @echo "  just schema-oracle-smoke -- --rounds 16"
     @echo "  just schema-oracle-test  # unit/integration only (not fuzz)"
     @echo "  just sane                # Full check before push (lint + tests)"

@@ -1,5 +1,7 @@
 services:
 
+  # Fuzzamoto / legacy only. Schema-oracle live hunt uses host corpus bitcoind
+  # (IR-matched; see scripts/run-schema-oracle-live.sh) — not this v30.2 image.
   bitcoind:
     image: bitcoin/bitcoin:30.2
     command: bitcoind -regtest -rpcallowip=0.0.0.0/0 -rpcbind=0.0.0.0:18443 -rpcuser=user -rpcpassword=pass -fallbackfee=0.00001 -server -zmqpubrawblock=tcp://0.0.0.0:28332 -zmqpubrawtx=tcp://0.0.0.0:28333
@@ -41,6 +43,10 @@ services:
       - ARTIFACT_DIR=/corpus_data/crashes
     command: tail -f /dev/null
     networks: [ethos]
+    # Reach host corpus bitcoind (schema-oracle live). Docker Desktop Mac already
+    # has host.docker.internal; host-gateway covers Linux Engine.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       - bitcoind
     tmpfs:
