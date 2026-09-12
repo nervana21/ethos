@@ -3,14 +3,16 @@
 //! Schema-first OpenRPC fidelity gate for Bitcoin Core `getopenrpcinfo` / `rpc.discover` dumps.
 //!
 //! Hard fail (exit 1): P0 findings only.
-//! P1/P2 are reported for upstream follow-ups but do not fail the gate (Core still omits
-//! enums, `type: integer`, and most `x-bitcoin-discriminated-result` metadata).
+//! P1/P2 are reported for upstream follow-ups but do not fail the gate (Core may still omit
+//! call-site enums and some `x-bitcoin-discriminated-result` metadata).
+//!
+//! Core `RPCArg::Type::NUM` dumps as JSON Schema `type: number` by contract. Ethos must not
+//! treat that as a fidelity defect (name-heuristic `integer` is out of the final set).
 
 use std::collections::BTreeSet;
 use std::fs;
 use std::path::PathBuf;
 
-use ethos_adapters::bitcoin_core::openrpc::openrpc_name_is_integer_domain;
 use serde::Serialize;
 use serde_json::Value;
 
@@ -80,10 +82,6 @@ fn walk_has_enum(schema: &Value) -> bool {
         Value::Array(arr) => arr.iter().any(walk_has_enum),
         _ => false,
     }
-}
-
-fn schema_type_is_integer(schema: &Value) -> bool {
-    schema.get("type").and_then(Value::as_str).is_some_and(|t| t == "integer")
 }
 
 fn oneof_has_null_branch(schema: &Value) -> bool {
@@ -191,21 +189,6 @@ fn main() {
                         .to_string(),
                 });
                 seen_rules.insert("enum_in_description_but_schema_missing_enum".to_string());
-            }
-
-            if openrpc_name_is_integer_domain(&param_name)
-                && schema.get("type").and_then(Value::as_str).is_some_and(|t| t == "number")
-                && !schema_type_is_integer(&schema)
-            {
-                findings.push(Finding {
-                    rule: "integer_domain_modeled_as_number".to_string(),
-                    severity: "P1".to_string(),
-                    method: method_name.clone(),
-                    field: format!("param:{param_name}"),
-                    message: "Integer-like parameter uses type=number instead of type=integer."
-                        .to_string(),
-                });
-                seen_rules.insert("integer_domain_modeled_as_number".to_string());
             }
         }
 

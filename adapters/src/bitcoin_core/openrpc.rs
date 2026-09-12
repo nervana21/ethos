@@ -23,8 +23,10 @@ use types::ProtocolVersion;
 
 use crate::conversion_helpers::{determine_requires_private_keys, sort_definitions_by_name};
 
-/// Param / field names that are integer-only across the RPC surface despite Core's
-/// OpenRPC often declaring `type: number` (ported from `corpus/rust-btc-codegen`).
+/// Ethos-side names that are integer-only on the wire despite Core OpenRPC declaring
+/// `type: number` for `RPCArg::Type::NUM` (locked contract; not a Core fidelity gap).
+/// Ported from `corpus/rust-btc-codegen`. Used for docs / optional consumer narrowing —
+/// schema conversion keeps protocol `number`.
 pub static INTEGER_PARAM_NAMES: &[&str] = &[
     "height",
     "verbosity",
@@ -83,7 +85,7 @@ fn is_integerish_name(name: &str) -> bool {
         || n.ends_with("conf")
 }
 
-/// Whether Core's `type: number` for this name should be treated as an integer domain.
+/// Whether this name is an Ethos integer domain under Core's `type: number` NUM dump.
 pub fn openrpc_name_is_integer_domain(name: &str) -> bool { is_integerish_name(name) }
 
 /// Canonical PascalCase method name used as a stable prefix for generated types.
@@ -1807,8 +1809,9 @@ fn type_def_from_json_schema_ctx(
             description: desc,
             kind: TypeKind::Primitive,
             protocol_type: Some("number".to_string()),
-            // Integer-looking names stay protocol `number`; BitcoinCoreTypeRegistry maps via field name.
-            // `is_integerish_name` / INTEGER_PARAM_NAMES document the Core `number`→integer gap.
+            // NUM dumps as `number` by contract. BitcoinCoreTypeRegistry may narrow via field name.
+            // `INTEGER_PARAM_NAMES` documents Ethos integer domains; fidelity gate does not require
+            // Core `type: integer`.
             ..Default::default()
         },
         Some("string") => {
@@ -3127,7 +3130,7 @@ mod tests {
     }
 
     #[test]
-    fn integer_param_names_cover_core_integer_domains() {
+    fn integer_param_names_cover_ethos_integer_domains() {
         assert!(is_integerish_name("height"));
         assert!(is_integerish_name("verbosity"));
         assert!(is_integerish_name("conf_target"));

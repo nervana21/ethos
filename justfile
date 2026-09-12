@@ -27,7 +27,8 @@ patch-openrpc-fidelity input="resources/ir/openrpc.json":
     python3 {{justfile_directory()}}/scripts/patch_openrpc_fidelity.py {{input}}
 
 # OpenRPC type-fidelity audit gate. Fails on P0 only (missing oneOf / discover RPCs / getaddednodeinfo conditionals).
-# P1/P2 (enums, integer domains, missing discriminator metadata) are advisory for upstream.
+# P1/P2 (missing call-site enums, missing discriminator metadata) are advisory for upstream.
+# NUM as JSON Schema number is accepted; do not reintroduce integer_domain_modeled_as_number.
 openrpc-type-fidelity-gate input="resources/ir/openrpc.json" report="resources/reports/openrpc_type_fidelity_report.json":
     cargo run {{RELEASE}} -p ethos-adapters --bin openrpc_type_fidelity_audit -- {{input}} --json-report {{report}}
 
