@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: CC0-1.0
 
-use ir::RpcDef;
+use ir::{ParamDef, RpcDef};
 use normalization::UnmappedMethodContext;
 pub use normalization::{SuggestedMapping, UnmappedMethodsError};
 use types::Argument;
@@ -642,6 +642,34 @@ pub fn sanitize_type_name_for_rust(name: &str) -> String {
             }
         })
         .collect()
+}
+
+/// Convert an IR parameter definition to a [`types::Argument`] for codegen.
+pub fn param_def_to_argument(param: &ParamDef, method_name: &str) -> types::Argument {
+    let protocol_type = param.param_type.protocol_type.as_ref().unwrap_or_else(|| {
+        panic!(
+            "Parameter '{}' in method '{}' is missing protocol_type. Rust type name is '{}'. \
+             All parameters must have protocol_type set for proper type categorization.",
+            param.name, method_name, param.param_type.name
+        )
+    });
+    types::Argument {
+        names: vec![param.name.clone()],
+        type_: protocol_type.clone(),
+        required: param.required,
+        description: param.description.clone(),
+        oneline_description: String::new(),
+        also_positional: false,
+        hidden: false,
+        type_str: None,
+    }
+}
+
+/// Remove trailing blank lines from a line buffer.
+pub fn trim_trailing_empty_lines(lines: &mut Vec<String>) {
+    while matches!(lines.last(), Some(line) if line.trim().is_empty()) {
+        lines.pop();
+    }
 }
 
 /// Check if a method needs parameter reordering

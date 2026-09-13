@@ -277,9 +277,7 @@ max_width = 100
 fn clean_generated_source(src: &str) -> String {
     let mut lines: Vec<String> = src.lines().map(|l| l.trim_end().to_string()).collect();
 
-    while matches!(lines.last(), Some(line) if line.is_empty()) {
-        lines.pop();
-    }
+    crate::utils::trim_trailing_empty_lines(&mut lines);
 
     if lines.is_empty() {
         String::new()

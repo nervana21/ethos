@@ -8,19 +8,7 @@
 /// - Capitalizing the first letter of each word
 /// - Removing spaces and converting to uppercase
 pub fn camel(s: &str) -> String {
-    let mut out = String::new();
-    let mut up = true;
-    for ch in s.chars() {
-        if ch == '_' || ch == '-' {
-            up = true;
-        } else if up {
-            out.push(ch.to_ascii_uppercase());
-            up = false;
-        } else {
-            out.push(ch);
-        }
-    }
-    out
+    crate::utils::snake_to_pascal_case(&s.replace('-', "_"))
 }
 
 /// Generates a module file for the protocol-specific test node client.

@@ -202,26 +202,7 @@ impl VersionSpecificClientTraitGenerator {
         } else {
             let arguments: Vec<types::Argument> = params
                 .iter()
-                .map(|param| {
-                    let param_type = &param.param_type;
-                    let protocol_type = param_type.protocol_type.as_ref().unwrap_or_else(|| {
-                        panic!(
-							"Parameter '{}' in method '{}' is missing protocol_type. Rust type name is '{}'. \
-							All parameters must have protocol_type set for proper type categorization.",
-							param.name, rpc.name, param_type.name
-						)
-                    });
-                    types::Argument {
-                        names: vec![param.name.clone()],
-                        type_: protocol_type.clone(),
-                        required: param.required,
-                        description: param.description.clone(),
-                        oneline_description: String::new(),
-                        also_positional: false,
-                        hidden: false,
-                        type_str: None,
-                    }
-                })
+                .map(|param| crate::utils::param_def_to_argument(param, &rpc.name))
                 .collect();
 
             let adapter = self.get_adapter();
@@ -284,26 +265,7 @@ impl VersionSpecificClientTraitGenerator {
         let params = self.params_for_version(rpc);
         let arguments: Vec<types::Argument> = params
             .iter()
-            .map(|param| {
-                let param_type = &param.param_type;
-                let protocol_type = param_type.protocol_type.as_ref().unwrap_or_else(|| {
-                    panic!(
-                        "Parameter '{}' in method '{}' is missing protocol_type. Rust type name is '{}'. \
-                        All parameters must have protocol_type set for proper type categorization.",
-                        param.name, rpc.name, param_type.name
-                    )
-                });
-                types::Argument {
-                    names: vec![param.name.clone()],
-                    type_: protocol_type.clone(),
-                    required: param.required,
-                    description: param.description.clone(),
-                    oneline_description: String::new(),
-                    also_positional: false,
-                    hidden: false,
-                    type_str: None,
-                }
-            })
+            .map(|param| crate::utils::param_def_to_argument(param, &rpc.name))
             .collect();
 
         // Generate individual parameters instead of struct

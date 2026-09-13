@@ -25,25 +25,7 @@ impl<'a> MethodTemplate<'a> {
             .method
             .params
             .iter()
-            .map(|param| {
-                let protocol_type = param.param_type.protocol_type.as_ref().unwrap_or_else(|| {
-                    panic!(
-						"Parameter '{}' in method '{}' is missing protocol_type. Rust type name is '{}'. \
-						All parameters must have protocol_type set for proper type categorization.",
-						param.name, self.method.name, param.param_type.name
-					)
-                });
-                types::Argument {
-                    names: vec![param.name.clone()],
-                    type_: protocol_type.clone(),
-                    required: param.required,
-                    description: param.description.clone(),
-                    oneline_description: String::new(),
-                    also_positional: false,
-                    hidden: false,
-                    type_str: None,
-                }
-            })
+            .map(|param| crate::utils::param_def_to_argument(param, &self.method.name))
             .collect();
 
         if !needs_parameter_reordering(&arguments) {
@@ -168,9 +150,7 @@ impl<'a> MethodTemplate<'a> {
             }
         }
 
-        while matches!(lines.last(), Some(l) if l.trim().is_empty()) {
-            lines.pop();
-        }
+        crate::utils::trim_trailing_empty_lines(&mut lines);
 
         lines.join("\n")
     }
@@ -184,26 +164,7 @@ impl<'a> MethodTemplate<'a> {
             .method
             .params
             .iter()
-            .map(|param| {
-                // Require protocol_type for proper type categorization - must match IR data quality
-                let protocol_type = param.param_type.protocol_type.as_ref().unwrap_or_else(|| {
-                    panic!(
-						"Parameter '{}' in method '{}' is missing protocol_type. Rust type name is '{}'. \
-							All parameters must have protocol_type set for proper type categorization.",
-						param.name, self.method.name, param.param_type.name
-					)
-                });
-                types::Argument {
-                    names: vec![param.name.clone()],
-                    type_: protocol_type.clone(),
-                    required: param.required,
-                    description: param.description.clone(),
-                    oneline_description: String::new(),
-                    also_positional: false,
-                    hidden: false,
-                    type_str: None,
-                }
-            })
+            .map(|param| crate::utils::param_def_to_argument(param, &self.method.name))
             .collect();
 
         // Check if this method requires argument reordering
