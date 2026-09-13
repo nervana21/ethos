@@ -5,7 +5,7 @@
 //! Ethos Compiler Analysis and Transformation
 //!
 //! This crate provides analysis and transformation components for the Ethos compiler.
-//! Components include validators, normalizers, analyzers, and canonicalizers that
+//! Components include validators, analyzers, and canonicalizers that
 //! operate on the IR through various stages of compilation.
 
 use std::collections::HashMap;
@@ -17,7 +17,6 @@ use types::{Implementation, ProtocolVersion};
 // Import all analysis components
 pub mod canonicalizer;
 pub mod differential;
-pub mod normalizer;
 pub mod schema_oracle;
 pub mod semantic;
 pub mod validator;
@@ -25,7 +24,6 @@ pub mod validator;
 // Re-export analysis types
 pub use canonicalizer::TypeCanonicalizer;
 pub use differential::DifferentialAnalyzer;
-pub use normalizer::IRNormalizer;
 pub use schema_oracle::{
     classify, default_allowlist, find_rpc, finding_basename, generate_params,
     generate_params_with_pool, generate_result_value, invoke_error_from_rpc_body, mutate_params,
