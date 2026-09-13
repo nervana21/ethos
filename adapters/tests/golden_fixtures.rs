@@ -51,8 +51,8 @@ fn golden_fixtures_match_ir() {
     for &(rpc, filename) in GOLDEN_FIXTURES {
         let ty = rpc_result(&ir, rpc);
         let path = rpc_golden_path(&root, filename);
-        let raw =
-            std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("read {}: {e}", path.display()));
+        let raw = std::fs::read_to_string(&path)
+            .unwrap_or_else(|e| panic!("read {}: {e}", path.display()));
         let value: serde_json::Value = serde_json::from_str(&raw).expect("json");
         validate_json_matches_type(ty, &value)
             .unwrap_or_else(|e| panic!("{rpc} / {filename}: {e}"));

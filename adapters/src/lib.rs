@@ -28,9 +28,9 @@ pub mod rpc_adapter;
 // Re-export the main ProtocolAdapter types for convenience
 pub use adapter_facade::*;
 pub use bitcoin_core::types::{
-    BitcoinCoreRpcType, BitcoinCoreTypeRegistry, FidelityFallbackEvent, GetBlockTemplateRequest,
-    SendallRecipient, adapter_fallback_events_snapshot, clear_adapter_fallback_events,
-    clear_fallback_events, fallback_events_snapshot, record_fallback_event,
+    adapter_fallback_events_snapshot, clear_adapter_fallback_events, clear_fallback_events,
+    fallback_events_snapshot, record_fallback_event, BitcoinCoreRpcType, BitcoinCoreTypeRegistry,
+    FidelityFallbackEvent, GetBlockTemplateRequest, SendallRecipient,
 };
 pub use fuzz_types::{FuzzCase, FuzzResult, ProtocolAdapter as FuzzProtocolAdapter};
 pub use protocol_adapter::*;

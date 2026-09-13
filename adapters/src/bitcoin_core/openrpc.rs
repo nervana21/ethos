@@ -414,6 +414,32 @@ impl InnerFieldInfo for RawResult {
     }
 }
 
+/// How legacy inner elements name anonymous fields in IR.
+enum LegacyFieldNaming {
+    /// x-bitcoin-arguments: use the declared name even when empty.
+    UseFieldName,
+    /// x-bitcoin-results: synthesize `field_{index}` when `key_name` is empty.
+    AnonymousIndexFallback,
+}
+
+/// Extension of [`InnerFieldInfo`] for legacy x-bitcoin inner elements.
+trait LegacyInnerElement: InnerFieldInfo {
+    fn inner_description(&self) -> &str;
+    fn inner_key_name(&self) -> &str;
+}
+
+impl LegacyInnerElement for RawArgument {
+    fn inner_description(&self) -> &str { &self.description }
+
+    fn inner_key_name(&self) -> &str { self.names.first().map(|s| s.as_str()).unwrap_or("") }
+}
+
+impl LegacyInnerElement for RawResult {
+    fn inner_description(&self) -> &str { &self.description }
+
+    fn inner_key_name(&self) -> &str { &self.key_name }
+}
+
 /// Determines the `TypeKind` from a type string and inner elements.
 /// This unified function works for both arguments and results.
 fn determine_type_kind<T: HasTypeAndInner>(bc_type: &str, inner: &[T]) -> TypeKind {
@@ -448,12 +474,49 @@ fn determine_type_kind<T: HasTypeAndInner>(bc_type: &str, inner: &[T]) -> TypeKi
     }
 }
 
-/// Builds fields from inner argument elements.
-fn build_fields_from_inner<F>(inner: &[RawArgument], field_builder: F) -> Vec<FieldDef>
+/// Builds nested object fields from legacy x-bitcoin inner elements.
+fn fields_from_raw_inners<T, F>(
+    inners: &[T],
+    parent_key: Option<&str>,
+    parent_key_name: &str,
+    naming: LegacyFieldNaming,
+    convert: F,
+) -> Vec<FieldDef>
 where
-    F: Fn(&RawArgument) -> FieldDef,
+    T: LegacyInnerElement,
+    F: Fn(&T, Option<&str>) -> TypeDef,
 {
-    inner.iter().map(field_builder).collect()
+    inners
+        .iter()
+        .enumerate()
+        .map(|(i, inner)| {
+            let name = match naming {
+                LegacyFieldNaming::UseFieldName => inner.field_name(),
+                LegacyFieldNaming::AnonymousIndexFallback =>
+                    if inner.inner_key_name().is_empty() {
+                        format!("field_{i}")
+                    } else {
+                        inner.field_name()
+                    },
+            };
+            let child_parent = if inner.inner_key_name().is_empty() {
+                if parent_key_name.is_empty() {
+                    parent_key
+                } else {
+                    Some(parent_key_name)
+                }
+            } else {
+                Some(inner.inner_key_name())
+            };
+            FieldDef::named(
+                name,
+                convert(inner, child_parent),
+                inner.is_required(),
+                inner.inner_description().to_string(),
+            )
+            .with_default_value(inner.default_value())
+        })
+        .collect()
 }
 
 /// Builds an array-of-objects wrapper structure.
@@ -466,30 +529,63 @@ fn build_array_of_objects_wrapper(inner_fields: Vec<FieldDef>) -> Vec<FieldDef> 
         ..Default::default()
     };
 
-    vec![FieldDef {
-        key: FieldKey::Named("field".to_string()),
-        field_type: object_type,
-        required: true,
-        description: String::new(),
-        default_value: None,
-        version_added: None,
-        version_removed: None,
-        emit_in_struct: None,
-        force_optional: None,
-    }]
+    vec![FieldDef::named("field", object_type, true, "")]
 }
 
-/// Strips the build/metadata suffix from a version string (e.g. "30.99.0-705399b1d57a" -> "30.99.0").
-fn strip_version_suffix(version: &str) -> String {
-    let trimmed = version.trim_start_matches('v').trim();
-    let end = trimmed.find(|c: char| c == '-' || c == '+').unwrap_or(trimmed.len());
-    trimmed[..end].to_string()
+/// Attaches object fields to a legacy [`TypeDef`], wrapping array-of-objects rows when needed.
+fn attach_legacy_object_fields(type_def: &mut TypeDef, wire_type: &str, fields: Vec<FieldDef>) {
+    type_def.fields = Some(if matches!(wire_type, "array" | "array-fixed") {
+        build_array_of_objects_wrapper(fields)
+    } else {
+        fields
+    });
 }
 
-/// Returns true if the version string contains a build/metadata suffix (e.g. "-dirty", "-rc1", "+meta").
-fn has_version_suffix(version: &str) -> bool {
-    let trimmed = version.trim_start_matches('v').trim();
-    trimmed.chars().any(|c| c == '-' || c == '+')
+/// Builds the outer shell of a legacy x-bitcoin TypeDef before nested fields are attached.
+fn legacy_shell_type_def(
+    raw_type: &str,
+    description: &str,
+    kind: TypeKind,
+    condition: Option<String>,
+) -> TypeDef {
+    let (type_name, protocol_type) = build_base_type_def(raw_type);
+    TypeDef {
+        name: type_name,
+        description: description.to_string(),
+        kind,
+        protocol_type: Some(protocol_type),
+        condition,
+        ..Default::default()
+    }
+}
+
+/// Applies method-scoped object naming for legacy x-bitcoin-results.
+fn finalize_legacy_result_object_names(
+    type_def: &mut TypeDef,
+    raw: &RawResult,
+    parent_key: Option<&str>,
+    method_name: Option<&str>,
+) {
+    if let Some(p) = parent_key {
+        match p {
+            "array_child" if raw.r#type == "object" =>
+                if let Some(method) = method_name {
+                    type_def.name = format!("{}Row", canonical_method_pascal(method));
+                },
+            _ => {}
+        }
+    }
+    if type_def.name == "object" {
+        if let Some(method) = method_name {
+            let method_pascal = canonical_method_pascal(method);
+            if !raw.key_name.is_empty() {
+                type_def.name =
+                    format!("{}{}", method_pascal, result_key_pascal_suffix(&raw.key_name));
+            } else if let Some(p) = parent_key {
+                type_def.name = format!("{}{}", method_pascal, result_key_pascal_suffix(p));
+            }
+        }
+    }
 }
 
 /// Returns true if a param/field with the given version_added and version_removed is visible
@@ -500,14 +596,14 @@ pub fn item_visible_for_version(
     version_removed: Option<&str>,
     target_version: &str,
 ) -> bool {
-    let target_major = parse_version_for_ordering(target_version).major();
+    let target_major = ProtocolVersion::from_string_for_ordering(target_version).major();
     if let Some(added) = version_added {
-        if effective_major_for_comparison(added) > target_major {
+        if ProtocolVersion::effective_major_for_comparison(added) > target_major {
             return false;
         }
     }
     if let Some(removed) = version_removed {
-        if effective_major_for_comparison(removed) <= target_major {
+        if ProtocolVersion::effective_major_for_comparison(removed) <= target_major {
             return false;
         }
     }
@@ -574,42 +670,6 @@ pub fn filter_params_for_version(params: &[ir::ParamDef], target: &str) -> Vec<i
         .collect()
 }
 
-/// Computes the effective major version for inclusion comparison. We only use the major version: when building 30.2.8,
-/// include methods whose version_added is in major 30 or earlier. Unreleased (30.99.x or with a build suffix such as "-dirty")
-/// is treated as next major (31) so it is excluded when targeting 30. Supports "30" (major-only) and "30.2.8".
-pub fn effective_major_for_comparison(version: &str) -> u32 {
-    let stripped = strip_version_suffix(version);
-    if let Ok(pv) = ProtocolVersion::from_string(&stripped) {
-        let unreleased = pv.minor == 99 || has_version_suffix(version);
-        return if unreleased { pv.major.saturating_add(1) } else { pv.major };
-    }
-    stripped.trim().parse::<u32>().unwrap_or(u32::MAX)
-}
-
-/// Normalizes version_added for storage in IR: one or two numbers (e.g. 17, 28, 30, or 0.17).
-/// Unreleased (30.99.x or with a build suffix such as "-dirty") becomes the next major (31).
-pub(super) fn normalize_version_added_for_storage(version: &str) -> String {
-    let stripped = strip_version_suffix(version);
-    if let Ok(pv) = ProtocolVersion::from_string(&stripped) {
-        let unreleased = pv.minor == 99 || has_version_suffix(version);
-        if unreleased {
-            return format!("{}", pv.major.saturating_add(1));
-        }
-        if pv.major == 0 {
-            return format!("0.{}", pv.minor);
-        }
-        return format!("{}", pv.major);
-    }
-    stripped.trim().to_string()
-}
-
-/// Parses a version string for comparison. Uses the shared `ProtocolVersion` (major.minor.patch).
-/// Only used for target versions (releases); unparseable values are treated as 0.0.0.
-fn parse_version_for_ordering(version: &str) -> ProtocolVersion {
-    let normalized = strip_version_suffix(version);
-    ProtocolVersion::from_string(&normalized).unwrap_or_default()
-}
-
 /// Extracts the version string from an OpenRPC document.
 ///
 /// Tries to extract version from:
@@ -641,12 +701,13 @@ pub fn load_ir_and_version_map_from_path(
     // Extract version_added from each RPC method in the canonical IR (keep earlier by major)
     for rpc in ir.get_rpc_methods() {
         if let Some(ref version_added) = rpc.version_added {
-            let normalized = normalize_version_added_for_storage(version_added);
+            let normalized = ProtocolVersion::normalize_version_added_for_storage(version_added);
             method_to_version
                 .entry(rpc.name.clone())
                 .and_modify(|existing_version| {
-                    let existing_major = effective_major_for_comparison(existing_version);
-                    let new_major = effective_major_for_comparison(version_added);
+                    let existing_major =
+                        ProtocolVersion::effective_major_for_comparison(existing_version);
+                    let new_major = ProtocolVersion::effective_major_for_comparison(version_added);
                     if new_major < existing_major {
                         *existing_version = normalized.clone();
                     }
@@ -717,9 +778,6 @@ fn merge_version_into_type_def(our: &mut ir::TypeDef, existing: &ir::TypeDef) {
                 if ex_f.version_removed.is_some() {
                     our_f.version_removed = ex_f.version_removed.clone();
                 }
-                if ex_f.emit_in_struct.is_some() {
-                    our_f.emit_in_struct = ex_f.emit_in_struct;
-                }
                 if ex_f.force_optional.is_some() {
                     our_f.force_optional = ex_f.force_optional;
                 }
@@ -765,7 +823,7 @@ fn merge_version_from_existing_rpc(our: &mut ir::RpcDef, existing: &ir::RpcDef) 
 /// Methods with `version_added = None` (unreleased) are excluded. Unreleased (e.g. 30.99-)
 /// is treated as next major (31) so excluded when targeting 30.
 pub fn extract_version_ir(canonical_ir: ProtocolIR, target_version: &str) -> ProtocolIR {
-    let target_major = parse_version_for_ordering(target_version).major();
+    let target_major = ProtocolVersion::from_string_for_ordering(target_version).major();
     let mut definitions = Vec::new();
 
     for module in canonical_ir.modules() {
@@ -774,17 +832,17 @@ pub fn extract_version_ir(canonical_ir: ProtocolIR, target_version: &str) -> Pro
                 ProtocolDef::RpcMethod(rpc) => {
                     // Include only if the method was added in the target major or earlier.
                     let was_available = if let Some(ref v) = rpc.version_added {
-                        effective_major_for_comparison(v) <= target_major
+                        ProtocolVersion::effective_major_for_comparison(v) <= target_major
                     } else {
                         false
                     };
 
                     // Exclude methods that were removed on or before the target major.
-                    // Use `effective_major_for_comparison` so unreleased removals (e.g. 30.99 or with
-                    // build suffixes) are treated as the next major and remain available when
-                    // targeting the current major.
+                    // Use `ProtocolVersion::effective_major_for_comparison` so unreleased removals
+                    // (e.g. 30.99 or with build suffixes) are treated as the next major and remain
+                    // available when targeting the current major.
                     let not_removed = if let Some(ref v) = rpc.version_removed {
-                        effective_major_for_comparison(v) > target_major
+                        ProtocolVersion::effective_major_for_comparison(v) > target_major
                     } else {
                         true
                     };
@@ -835,36 +893,18 @@ fn build_base_type_def(type_str: &str) -> (String, String) {
 
 /// Converts a raw argument to a `TypeDef`.
 fn convert_argument_to_type_def(raw: &RawArgument) -> TypeDef {
-    let (type_name, protocol_type) = build_base_type_def(&raw.r#type);
     let kind = determine_type_kind(&raw.r#type, &raw.inner);
+    let mut type_def = legacy_shell_type_def(&raw.r#type, &raw.description, kind.clone(), None);
 
-    let mut type_def = TypeDef {
-        name: type_name,
-        description: raw.description.clone(),
-        kind: kind.clone(),
-        protocol_type: Some(protocol_type),
-        ..Default::default()
-    };
-
-    // Handle nested structures
     if matches!(kind, TypeKind::Object) && !raw.inner.is_empty() {
-        let fields = build_fields_from_inner(&raw.inner, |inner| FieldDef {
-            key: FieldKey::Named(inner.field_name()),
-            field_type: convert_argument_to_type_def(inner),
-            required: inner.is_required(),
-            description: inner.description.clone(),
-            default_value: inner.default_value(),
-            version_added: None,
-            version_removed: None,
-            emit_in_struct: None,
-            force_optional: None,
-        });
-
-        type_def.fields = Some(if matches!(raw.r#type.as_str(), "array" | "array-fixed") {
-            build_array_of_objects_wrapper(fields)
-        } else {
-            fields
-        });
+        let fields = fields_from_raw_inners(
+            &raw.inner,
+            None,
+            "",
+            LegacyFieldNaming::UseFieldName,
+            |inner, _| convert_argument_to_type_def(inner),
+        );
+        attach_legacy_object_fields(&mut type_def, &raw.r#type, fields);
     }
 
     type_def
@@ -929,23 +969,18 @@ fn convert_result(
             description: raw.description.clone(),
             kind: TypeKind::Array,
             protocol_type: Some("array".to_string()),
-            fields: Some(vec![FieldDef {
-                key: FieldKey::Named("field_0".to_string()),
-                field_type: TypeDef {
+            fields: Some(vec![FieldDef::named(
+                "field_0",
+                TypeDef {
                     name: "string".to_string(),
                     description: elem_desc,
                     kind: TypeKind::Primitive,
                     protocol_type: Some("string".to_string()),
                     ..Default::default()
                 },
-                required: true,
-                description: String::new(),
-                default_value: None,
-                version_added: None,
-                version_removed: None,
-                emit_in_struct: None,
-                force_optional: None,
-            }]),
+                true,
+                "",
+            )]),
             ..Default::default()
         };
         let mut anon_1 = 0usize;
@@ -1079,17 +1114,10 @@ fn convert_result(
         return td;
     }
 
-    let (type_name, protocol_type) = build_base_type_def(&raw.r#type);
     let kind = determine_type_kind(&raw.r#type, &raw.inner);
-
-    let mut type_def = TypeDef {
-        name: type_name,
-        description: raw.description.clone(),
-        kind: kind.clone(),
-        protocol_type: Some(protocol_type),
-        condition: if raw.condition.is_empty() { None } else { Some(raw.condition.clone()) },
-        ..Default::default()
-    };
+    let condition = if raw.condition.is_empty() { None } else { Some(raw.condition.clone()) };
+    let mut type_def =
+        legacy_shell_type_def(&raw.r#type, &raw.description, kind.clone(), condition);
 
     // JSON array with element template (including nested arrays, e.g. listaddressgroupings).
     if matches!(kind, TypeKind::Array) && !raw.inner.is_empty() {
@@ -1104,85 +1132,26 @@ fn convert_result(
                 }
             }
         }
-        type_def.fields = Some(vec![FieldDef {
-            key: FieldKey::Anonymous(0),
-            field_type: element_type,
-            required: !raw.optional,
-            description: raw.description.clone(),
-            default_value: None,
-            version_added: None,
-            version_removed: None,
-            emit_in_struct: None,
-            force_optional: None,
-        }]);
+        type_def.fields = Some(vec![FieldDef::new(
+            FieldKey::Anonymous(0),
+            element_type,
+            !raw.optional,
+            raw.description.clone(),
+        )]);
         annotate_type_identity(&mut type_def, method_name, parent_key, raw);
         return type_def;
     }
 
-    // Handle nested structures
     if matches!(kind, TypeKind::Object) && !raw.inner.is_empty() {
-        let fields: Vec<FieldDef> = raw
-            .inner
-            .iter()
-            .enumerate()
-            .map(|(i, inner)| {
-                let name = if inner.key_name.is_empty() {
-                    format!("field_{}", i)
-                } else {
-                    inner.field_name()
-                };
-                let child_parent = if inner.key_name.is_empty() {
-                    if raw.key_name.is_empty() {
-                        parent_key
-                    } else {
-                        Some(raw.key_name.as_str())
-                    }
-                } else {
-                    Some(inner.key_name.as_str())
-                };
-                FieldDef {
-                    key: FieldKey::Named(name),
-                    field_type: convert_result(inner, child_parent, method_name, None),
-                    required: inner.is_required(),
-                    description: inner.description.clone(),
-                    default_value: inner.default_value(),
-                    version_added: None,
-                    version_removed: None,
-                    emit_in_struct: None,
-                    force_optional: None,
-                }
-            })
-            .collect();
-
-        type_def.fields = Some(if matches!(raw.r#type.as_str(), "array" | "array-fixed") {
-            build_array_of_objects_wrapper(fields)
-        } else {
-            fields
-        });
-    }
-
-    if matches!(kind, TypeKind::Object) && !raw.inner.is_empty() {
-        if let Some(p) = parent_key {
-            match p {
-                "array_child" if raw.r#type == "object" =>
-                    if let Some(method) = method_name {
-                        type_def.name = format!("{}Row", canonical_method_pascal(method));
-                    },
-                _ => {}
-            }
-        }
-        // Method-scoped names for object types so codegen emits nested structs (e.g. DecodepsbtTx, DecodepsbtInput)
-        if type_def.name == "object" {
-            if let Some(method) = method_name {
-                let method_pascal = canonical_method_pascal(method);
-                if !raw.key_name.is_empty() {
-                    type_def.name =
-                        format!("{}{}", method_pascal, result_key_pascal_suffix(&raw.key_name));
-                } else if let Some(p) = parent_key {
-                    type_def.name = format!("{}{}", method_pascal, result_key_pascal_suffix(p));
-                }
-            }
-        }
+        let fields = fields_from_raw_inners(
+            &raw.inner,
+            parent_key,
+            &raw.key_name,
+            LegacyFieldNaming::AnonymousIndexFallback,
+            |inner, child_parent| convert_result(inner, child_parent, method_name, None),
+        );
+        attach_legacy_object_fields(&mut type_def, &raw.r#type, fields);
+        finalize_legacy_result_object_names(&mut type_def, raw, parent_key, method_name);
     }
 
     annotate_type_identity(&mut type_def, method_name, parent_key, raw);
@@ -1658,9 +1627,9 @@ fn type_def_from_json_schema_ctx(
                                 object_type_name(method_name, field_name, fallback_name),
                                 result_key_pascal_suffix(name)
                             );
-                            FieldDef {
-                                key: FieldKey::Named(name.clone()),
-                                field_type: type_def_from_json_schema_ctx(
+                            FieldDef::named(
+                                name.clone(),
+                                type_def_from_json_schema_ctx(
                                     prop_schema,
                                     &child_fallback,
                                     prop_schema
@@ -1670,18 +1639,13 @@ fn type_def_from_json_schema_ctx(
                                     method_name,
                                     Some(name.as_str()),
                                 ),
-                                required: required_set.contains(name),
-                                description: prop_schema
+                                required_set.contains(name),
+                                prop_schema
                                     .get("description")
                                     .and_then(|v| v.as_str())
                                     .unwrap_or_default()
                                     .to_string(),
-                                default_value: None,
-                                version_added: None,
-                                version_removed: None,
-                                emit_in_struct: None,
-                                force_optional: None,
-                            }
+                            )
                         })
                         .collect::<Vec<_>>()
                 })
@@ -1708,22 +1672,19 @@ fn type_def_from_json_schema_ctx(
                     prefix_items
                         .iter()
                         .enumerate()
-                        .map(|(idx, item_schema)| FieldDef {
-                            key: FieldKey::Anonymous(idx),
-                            field_type: type_def_from_json_schema_ctx(
-                                item_schema,
-                                &format!("{}Item{}", fallback_name, idx),
-                                description_fallback,
-                                method_name,
-                                field_name,
-                            ),
-                            required: true,
-                            description: String::new(),
-                            default_value: None,
-                            version_added: None,
-                            version_removed: None,
-                            emit_in_struct: None,
-                            force_optional: None,
+                        .map(|(idx, item_schema)| {
+                            FieldDef::new(
+                                FieldKey::Anonymous(idx),
+                                type_def_from_json_schema_ctx(
+                                    item_schema,
+                                    &format!("{}Item{}", fallback_name, idx),
+                                    description_fallback,
+                                    method_name,
+                                    field_name,
+                                ),
+                                true,
+                                "",
+                            )
                         })
                         .collect::<Vec<_>>()
                 } else {
@@ -1769,17 +1730,7 @@ fn type_def_from_json_schema_ctx(
                         protocol_type: Some("any".to_string()),
                         ..Default::default()
                     });
-                    vec![FieldDef {
-                        key: FieldKey::Anonymous(0),
-                        field_type: element,
-                        required: true,
-                        description: String::new(),
-                        default_value: None,
-                        version_added: None,
-                        version_removed: None,
-                        emit_in_struct: None,
-                        force_optional: None,
-                    }]
+                    vec![FieldDef::new(FieldKey::Anonymous(0), element, true, "")]
                 };
             let mut td = TypeDef {
                 name: "array".to_string(),
@@ -2074,20 +2025,12 @@ fn merge_duplicate_rpc_result_types(a: &TypeDef, b: &TypeDef) -> TypeDef {
                         name: a.name.clone(),
                         description: prefer_richer_description(&a.description, &b.description),
                         kind: TypeKind::Object,
-                        fields: Some(vec![FieldDef {
-                            key: fa.key.clone(),
-                            field_type: merged_inner,
-                            required: fa.required && fb.required,
-                            description: prefer_richer_description(
-                                &fa.description,
-                                &fb.description,
-                            ),
-                            default_value: None,
-                            version_added: None,
-                            version_removed: None,
-                            emit_in_struct: None,
-                            force_optional: None,
-                        }]),
+                        fields: Some(vec![FieldDef::new(
+                            fa.key.clone(),
+                            merged_inner,
+                            fa.required && fb.required,
+                            prefer_richer_description(&fa.description, &fb.description),
+                        )]),
                         condition: a.condition.clone().or_else(|| b.condition.clone()),
                         ..a.clone()
                     };
@@ -2249,17 +2192,12 @@ fn merge_results_to_object(results: &[RawResult], method_name: &str) -> TypeDef 
                 } else {
                     stable_merge_field_key("", idx)
                 };
-                fields.push(FieldDef {
+                fields.push(FieldDef::new(
                     key,
-                    field_type: new_field_type,
-                    required: is_required,
-                    description: inner.description.clone(),
-                    default_value: None,
-                    version_added: None,
-                    version_removed: None,
-                    emit_in_struct: None,
-                    force_optional: None,
-                });
+                    new_field_type,
+                    is_required,
+                    inner.description.clone(),
+                ));
             }
         } else {
             // For non-object results or objects without inner fields
@@ -2318,17 +2256,12 @@ fn merge_results_to_object(results: &[RawResult], method_name: &str) -> TypeDef 
             } else {
                 FieldKey::Named(ensure_unique_merged_field_name(&mut field_names, base_field_name))
             };
-            fields.push(FieldDef {
+            fields.push(FieldDef::new(
                 key,
-                field_type: new_field_type,
-                required: is_required_leaf,
-                description: result.description.clone(),
-                default_value: None,
-                version_added: None,
-                version_removed: None,
-                emit_in_struct: None,
-                force_optional: None,
-            });
+                new_field_type,
+                is_required_leaf,
+                result.description.clone(),
+            ));
         }
     }
 
@@ -2659,8 +2592,17 @@ mod tests {
         assert!(!rpc.params.is_empty(), "schema-first params must be non-empty");
         let result = rpc.result.expect("getrawtransaction result");
         assert_eq!(result.kind, TypeKind::Union, "schema-first oneOf must lower to Union");
+        assert!(
+            rpc.result_discriminator.is_some(),
+            "getrawtransaction disc requires x-bitcoin-discriminated-result stamp"
+        );
         let variants = result.union_variants.as_ref().expect("union variants");
-        assert!(variants.len() >= 2);
+        let names: Vec<&str> = variants.iter().map(|uv| uv.name.as_str()).collect();
+        assert_eq!(
+            names,
+            ["Verbosity0", "Verbosity1", "Verbosity2"],
+            "disc values must name union variants, got {names:?}"
+        );
         for bad in ["in_active_chain_1", "blockhash_1", "vin_1", "vout_1"] {
             for uv in variants {
                 if let Some(fields) = uv.type_def.fields.as_ref() {
@@ -2692,7 +2634,7 @@ mod tests {
         assert_eq!(result.kind, TypeKind::Union);
         assert!(
             rpc.result_discriminator.is_some(),
-            "getblock disc from stamp or oneOf `for verbosity = N` descriptions"
+            "getblock disc requires x-bitcoin-discriminated-result stamp"
         );
         let variants = result.union_variants.as_ref().expect("union variants");
         let names: Vec<&str> = variants.iter().map(|uv| uv.name.as_str()).collect();
@@ -3198,7 +3140,7 @@ pub fn convert_to_protocol_ir_with_version_map(
         let version_added = {
             let version_from_map = get_method_version_added_from_map(&method.name, version_map);
             let raw = version_from_map.or_else(|| version.as_ref().cloned());
-            raw.map(|v| normalize_version_added_for_storage(&v))
+            raw.map(|v| ProtocolVersion::normalize_version_added_for_storage(&v))
         };
 
         let rpc_def = convert_openrpc_method(method, version_added);

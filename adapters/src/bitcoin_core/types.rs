@@ -50,7 +50,10 @@ fn snapshot_slot(
     guard.clone()
 }
 
-fn push_slot(slot: &'static OnceLock<Mutex<Vec<FidelityFallbackEvent>>>, event: FidelityFallbackEvent) {
+fn push_slot(
+    slot: &'static OnceLock<Mutex<Vec<FidelityFallbackEvent>>>,
+    event: FidelityFallbackEvent,
+) {
     let mut guard = fallback_slot(slot).lock().expect("fallback event mutex poisoned");
     guard.push(event);
 }

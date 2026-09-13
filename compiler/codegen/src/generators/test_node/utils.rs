@@ -7,9 +7,7 @@
 /// - Converting underscores and hyphens to spaces
 /// - Capitalizing the first letter of each word
 /// - Removing spaces and converting to uppercase
-pub fn camel(s: &str) -> String {
-    crate::utils::snake_to_pascal_case(&s.replace('-', "_"))
-}
+pub fn camel(s: &str) -> String { crate::utils::snake_to_pascal_case(&s.replace('-', "_")) }
 
 /// Generates a module file for the protocol-specific test node client.
 ///
