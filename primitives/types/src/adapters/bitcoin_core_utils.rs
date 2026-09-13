@@ -207,9 +207,8 @@ fn result_category_to_rust_type(category: ResultCategory) -> &'static str {
         ResultCategory::Float => "f64",
         ResultCategory::Timestamp => "u64",
         ResultCategory::None => "()",
-        ResultCategory::Any | ResultCategory::Elision | ResultCategory::Range => {
-            "serde_json::Value"
-        }
+        ResultCategory::Any | ResultCategory::Elision | ResultCategory::Range =>
+            "serde_json::Value",
         ResultCategory::Dummy => "String",
     }
 }
@@ -427,10 +426,7 @@ mod tests {
         assert_eq!(map_result_type_to_rust("hex", "txid", ""), "bitcoin::Txid");
         assert_eq!(map_result_type_to_rust("hex", "data", ""), "String");
         assert_eq!(map_result_type_to_rust("number", "height", ""), "u64");
-        assert_eq!(
-            map_result_type_to_rust("number", "", "Current difficulty value"),
-            "f64"
-        );
+        assert_eq!(map_result_type_to_rust("number", "", "Current difficulty value"), "f64");
         assert_eq!(map_result_type_to_rust("boolean", "permitbaremultisig", ""), "bool");
         assert_eq!(map_result_type_to_rust("unknown_type", "field", ""), "serde_json::Value");
     }

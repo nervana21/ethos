@@ -10,10 +10,6 @@
 //! The design supports extensibility: add a new protocol by implementing an adapter and
 //! registering it in the registry.
 
-use std::path::Path;
-
-use ir::ProtocolIR;
-
 /// Bitcoin Core type definitions and utilities
 pub mod bitcoin_core {
     /// Bitcoin Core OpenRPC converter and version filtering (openrpc.json / getopenrpcinfo -> IR)
@@ -32,7 +28,9 @@ pub mod rpc_adapter;
 // Re-export the main ProtocolAdapter types for convenience
 pub use adapter_facade::*;
 pub use bitcoin_core::types::{
-    BitcoinCoreRpcType, BitcoinCoreTypeRegistry, GetBlockTemplateRequest, SendallRecipient,
+    BitcoinCoreRpcType, BitcoinCoreTypeRegistry, FidelityFallbackEvent, GetBlockTemplateRequest,
+    SendallRecipient, adapter_fallback_events_snapshot, clear_adapter_fallback_events,
+    clear_fallback_events, fallback_events_snapshot, record_fallback_event,
 };
 pub use fuzz_types::{FuzzCase, FuzzResult, ProtocolAdapter as FuzzProtocolAdapter};
 pub use protocol_adapter::*;
@@ -40,15 +38,3 @@ pub use rpc_adapter::RpcAdapter;
 
 /// Type alias for Bitcoin Core RPC adapter
 pub type BitcoinCoreRpcAdapter = RpcAdapter;
-
-/// Protocol-agnostic trait for loading IR from different Bitcoin protocol implementations
-pub trait IrLoader {
-    /// Load Protocol IR from the given path
-    fn load_ir(&self, path: &Path) -> ProtocolAdapterResult<ProtocolIR>;
-}
-
-impl<T: ProtocolAdapter> IrLoader for T {
-    fn load_ir(&self, path: &Path) -> ProtocolAdapterResult<ProtocolIR> {
-        self.extract_protocol_ir(path)
-    }
-}

@@ -9,13 +9,16 @@ use bitcoin::BlockHash;
 use serde::{Deserialize, Serialize};
 use serde_json;
 
-static ADAPTER_FALLBACK_EVENTS: OnceLock<Mutex<Vec<AdapterFallbackEvent>>> = OnceLock::new();
+static ADAPTER_FALLBACK_EVENTS: OnceLock<Mutex<Vec<FidelityFallbackEvent>>> = OnceLock::new();
+static CODEGEN_FALLBACK_EVENTS: OnceLock<Mutex<Vec<FidelityFallbackEvent>>> = OnceLock::new();
 
 #[derive(Debug, Clone, Serialize)]
-/// Broad-type fallback event emitted by Bitcoin Core type classification.
-pub struct AdapterFallbackEvent {
-    /// Raw schema type token observed by the adapter.
-    pub schema_type: String,
+/// Weak-typing / broad-type fallback event (adapter classify or codegen IR map).
+pub struct FidelityFallbackEvent {
+    /// RPC method name when known (`unknown` if not).
+    pub rpc_method: String,
+    /// Schema type token or best-effort IR/schema path.
+    pub schema_or_ir_path: String,
     /// Category of fallback behavior.
     pub fallback_kind: String,
     /// Rust type selected by the fallback path.
@@ -26,24 +29,55 @@ pub struct AdapterFallbackEvent {
     pub severity: String,
 }
 
-/// Clears all collected adapter fallback events.
-pub fn clear_adapter_fallback_events() {
-    let slot = ADAPTER_FALLBACK_EVENTS.get_or_init(|| Mutex::new(Vec::new()));
-    let mut guard = slot.lock().expect("adapter fallback event mutex poisoned");
+/// Alias kept for older adapter call sites / docs.
+pub type AdapterFallbackEvent = FidelityFallbackEvent;
+
+fn fallback_slot(
+    slot: &'static OnceLock<Mutex<Vec<FidelityFallbackEvent>>>,
+) -> &'static Mutex<Vec<FidelityFallbackEvent>> {
+    slot.get_or_init(|| Mutex::new(Vec::new()))
+}
+
+fn clear_slot(slot: &'static OnceLock<Mutex<Vec<FidelityFallbackEvent>>>) {
+    let mut guard = fallback_slot(slot).lock().expect("fallback event mutex poisoned");
     guard.clear();
 }
 
-/// Returns a snapshot of currently collected adapter fallback events.
-pub fn adapter_fallback_events_snapshot() -> Vec<AdapterFallbackEvent> {
-    let slot = ADAPTER_FALLBACK_EVENTS.get_or_init(|| Mutex::new(Vec::new()));
-    let guard = slot.lock().expect("adapter fallback event mutex poisoned");
+fn snapshot_slot(
+    slot: &'static OnceLock<Mutex<Vec<FidelityFallbackEvent>>>,
+) -> Vec<FidelityFallbackEvent> {
+    let guard = fallback_slot(slot).lock().expect("fallback event mutex poisoned");
     guard.clone()
 }
 
-fn record_adapter_fallback_event(event: AdapterFallbackEvent) {
-    let slot = ADAPTER_FALLBACK_EVENTS.get_or_init(|| Mutex::new(Vec::new()));
-    let mut guard = slot.lock().expect("adapter fallback event mutex poisoned");
+fn push_slot(slot: &'static OnceLock<Mutex<Vec<FidelityFallbackEvent>>>, event: FidelityFallbackEvent) {
+    let mut guard = fallback_slot(slot).lock().expect("fallback event mutex poisoned");
     guard.push(event);
+}
+
+/// Clears codegen-collected fidelity fallback events.
+pub fn clear_fallback_events() { clear_slot(&CODEGEN_FALLBACK_EVENTS); }
+
+/// Clears adapter-collected fidelity fallback events.
+pub fn clear_adapter_fallback_events() { clear_slot(&ADAPTER_FALLBACK_EVENTS); }
+
+/// Snapshot of codegen-collected fidelity fallback events.
+pub fn fallback_events_snapshot() -> Vec<FidelityFallbackEvent> {
+    snapshot_slot(&CODEGEN_FALLBACK_EVENTS)
+}
+
+/// Snapshot of adapter-collected fidelity fallback events.
+pub fn adapter_fallback_events_snapshot() -> Vec<FidelityFallbackEvent> {
+    snapshot_slot(&ADAPTER_FALLBACK_EVENTS)
+}
+
+/// Records one codegen fidelity fallback event.
+pub fn record_fallback_event(event: FidelityFallbackEvent) {
+    push_slot(&CODEGEN_FALLBACK_EVENTS, event);
+}
+
+fn record_adapter_fallback_event(event: AdapterFallbackEvent) {
+    push_slot(&ADAPTER_FALLBACK_EVENTS, event);
 }
 
 /// Fee rate type used for Bitcoin Core parameters and results.
@@ -252,7 +286,8 @@ impl BitcoinCoreRpcType {
             BitcoinCoreRpcType::None => "()",
             BitcoinCoreRpcType::Any => {
                 record_adapter_fallback_event(AdapterFallbackEvent {
-                    schema_type: "any".to_string(),
+                    rpc_method: "unknown".to_string(),
+                    schema_or_ir_path: "any".to_string(),
                     fallback_kind: "broad_adapter_any".to_string(),
                     chosen_rust_type: "serde_json::Value".to_string(),
                     reason: "adapter_category_any".to_string(),
@@ -262,7 +297,8 @@ impl BitcoinCoreRpcType {
             }
             BitcoinCoreRpcType::Elision => {
                 record_adapter_fallback_event(AdapterFallbackEvent {
-                    schema_type: "elision".to_string(),
+                    rpc_method: "unknown".to_string(),
+                    schema_or_ir_path: "elision".to_string(),
                     fallback_kind: "broad_adapter_any".to_string(),
                     chosen_rust_type: "serde_json::Value".to_string(),
                     reason: "adapter_category_elision".to_string(),
@@ -272,7 +308,8 @@ impl BitcoinCoreRpcType {
             }
             BitcoinCoreRpcType::Range => {
                 record_adapter_fallback_event(AdapterFallbackEvent {
-                    schema_type: "range".to_string(),
+                    rpc_method: "unknown".to_string(),
+                    schema_or_ir_path: "range".to_string(),
                     fallback_kind: "broad_adapter_any".to_string(),
                     chosen_rust_type: "serde_json::Value".to_string(),
                     reason: "adapter_category_range".to_string(),
@@ -401,12 +438,6 @@ impl BitcoinCoreTypeRegistry {
         Self::categorize(&arg.type_, &arg.names[0])
     }
 
-    /// Categorizes the MethodResult type
-    fn categorize_result(result: &MethodResult) -> BitcoinCoreRpcType {
-        let name = &result.key_name;
-        Self::categorize(&result.type_, name)
-    }
-
     /// Core mapper that returns the Rust type and whether the field is optional
     pub fn map(rpc_type: &str, field: &str) -> (&'static str, bool) {
         let category = Self::categorize(rpc_type, field);
@@ -422,15 +453,18 @@ impl BitcoinCoreTypeRegistry {
 
     /// Maps the MethodResult type to the Rust type and whether the field is optional
     pub fn map_result_type(result: &MethodResult) -> (&'static str, bool) {
-        let category = Self::categorize_result(result);
-        let ty = category.to_rust_type();
+        let ty = ::types::adapters::bitcoin_core_utils::map_result_type_to_rust(
+            &result.type_,
+            &result.key_name,
+            &result.description,
+        );
         (ty, result.optional)
     }
 }
 
 /// Normalizes names by lowercasing and stripping `_`, `-`, and spaces.
 fn normalize(name: &str) -> String {
-    name.chars().filter(|c| !matches!(c, '_' | '-' | ' ')).flat_map(|c| c.to_lowercase()).collect()
+    ::types::adapters::bitcoin_core_utils::normalize_field_name(name)
 }
 
 /// Internal JSON schema-like primitive classifier
@@ -496,7 +530,8 @@ impl RpcJsonType {
             "range" => Self::Range,
             _ => {
                 record_adapter_fallback_event(AdapterFallbackEvent {
-                    schema_type: s.to_string(),
+                    rpc_method: "unknown".to_string(),
+                    schema_or_ir_path: s.to_string(),
                     fallback_kind: "unknown_schema_type".to_string(),
                     chosen_rust_type: "serde_json::Value".to_string(),
                     reason: "schema_type_unrecognized".to_string(),
