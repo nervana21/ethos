@@ -15,3 +15,4 @@ sha2 = "0.10.9"
 thiserror = "2.0.17"
 tokio = { version = "1.49", features = ["rt", "rt-multi-thread"] }
 types = { package = "ethos-types", version = "0.1.0", path = "../../primitives/types" }
+path = { package = "ethos-path", version = "0.1.0", path = "../../primitives/path" }

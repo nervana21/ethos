@@ -496,6 +496,7 @@ dependencies = [
  "async-trait",
  "ethos-fuzz-types",
  "ethos-ir",
+ "ethos-path",
  "ethos-semantics",
  "ethos-types",
  "futures",
@@ -504,16 +505,6 @@ dependencies = [
  "sha2",
  "thiserror",
  "tokio",
-]
-
-[[package]]
-name = "ethos-backend-codegen"
-version = "0.1.0"
-dependencies = [
- "chrono",
- "ethos-ir",
- "serde",
- "thiserror",
 ]
 
 [[package]]
@@ -559,6 +550,7 @@ dependencies = [
  "ethos-adapters",
  "ethos-ir",
  "ethos-normalization",
+ "ethos-path",
  "ethos-registry",
  "ethos-semantics",
  "ethos-types",
@@ -577,6 +569,7 @@ dependencies = [
  "bitcoin",
  "ethos-codegen",
  "ethos-ir",
+ "ethos-path",
  "ethos-types",
  "serde",
  "serde_json",
@@ -690,6 +683,7 @@ dependencies = [
  "ethos-analysis",
  "ethos-bitcoind",
  "ethos-ir",
+ "ethos-path",
  "serde",
  "serde_json",
  "tokio",

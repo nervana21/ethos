@@ -84,9 +84,9 @@ struct Args {
     no_raw_decode: bool,
 }
 
-fn repo_root() -> PathBuf { PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..") }
+fn repo_root() -> PathBuf { path::workspace_root_from_manifest(env!("CARGO_MANIFEST_DIR"), 2) }
 
-fn default_ir_path() -> PathBuf { repo_root().join("resources/ir/bitcoin.ir.json") }
+fn default_ir_path() -> PathBuf { path::canonical_bitcoin_ir_path(&repo_root()) }
 
 fn corpus_bitcoind() -> PathBuf { repo_root().join("corpus/bitcoin/build/bin/bitcoind") }
 

@@ -18,6 +18,7 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0.145"
 thiserror = "2.0.17"
 types = { package = "ethos-types", version = "0.1.0", path = "../../primitives/types" }
+path = { package = "ethos-path", version = "0.1.0", path = "../../primitives/path" }
 
 [dev-dependencies]
 tempfile = "3.5.0"

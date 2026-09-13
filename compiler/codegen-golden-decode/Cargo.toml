@@ -23,9 +23,11 @@ serde_json = "1.0.145"
 ethos-codegen = { package = "ethos-codegen", path = "../codegen" }
 ethos-ir = { package = "ethos-ir", path = "../../primitives/ir" }
 ethos-types = { package = "ethos-types", path = "../../primitives/types" }
+ethos-path = { package = "ethos-path", path = "../../primitives/path" }
 
 [dev-dependencies]
 # Tests read `raw_response_policy::RPC_DECODE_GOLDEN_FIXTURES` (inventory for `decode_golden.rs`).
 ethos-codegen = { package = "ethos-codegen", path = "../codegen" }
 ethos-ir = { package = "ethos-ir", path = "../../primitives/ir" }
 ethos-types = { package = "ethos-types", path = "../../primitives/types" }
+ethos-path = { package = "ethos-path", path = "../../primitives/path" }

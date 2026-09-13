@@ -5,8 +5,6 @@
 //! Inventory: `ethos_codegen::generators::raw_response_policy::RPC_DECODE_GOLDEN_FIXTURES`.
 //! Override-linked fixtures must also appear there (enforced in `ethos-codegen` policy tests).
 
-use std::path::PathBuf;
-
 use ethos_codegen::generators::raw_response_policy::RPC_DECODE_GOLDEN_FIXTURES;
 use ethos_codegen_golden_decode::{
     AnalyzePsbtResponse, DecodePsbtResponse, DecodeRawTransactionResponse,
@@ -16,8 +14,10 @@ use ethos_codegen_golden_decode::{
 };
 
 fn fixture(name: &str) -> String {
-    let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../resources/testdata/rpc_golden");
-    let path = dir.join(name);
+    let path = ethos_path::rpc_golden_path(
+        &ethos_path::workspace_root_from_manifest(env!("CARGO_MANIFEST_DIR"), 2),
+        name,
+    );
     std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("read {}: {e}", path.display()))
 }
 

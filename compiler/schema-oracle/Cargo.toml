@@ -19,6 +19,7 @@ clap = { version = "4", features = ["derive", "env"] }
 ethos-analysis = { path = "../analysis" }
 ethos-bitcoind = { path = "../../../ethos-bitcoind", default-features = false, features = ["core"] }
 ir = { package = "ethos-ir", path = "../../primitives/ir" }
+path = { package = "ethos-path", path = "../../primitives/path" }
 serde = "1"
 serde_json = "1"
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }

@@ -79,7 +79,7 @@ mod tests {
     use super::*;
 
     fn rpc_golden_dir() -> PathBuf {
-        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../resources/testdata/rpc_golden")
+        path::rpc_golden_dir(&path::workspace_root_from_manifest(env!("CARGO_MANIFEST_DIR"), 2))
     }
 
     #[test]

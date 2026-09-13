@@ -11,12 +11,9 @@ fn main() {
     let out_dir = PathBuf::from(std::env::var("OUT_DIR").expect("OUT_DIR"));
     let manifest_dir =
         PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR"));
-    let workspace_root = manifest_dir
-        .parent()
-        .and_then(|p| p.parent())
-        .expect("manifest must live at workspace_root/compiler/codegen-golden-decode");
+    let workspace_root = ethos_path::workspace_root_from_manifest(&manifest_dir, 2);
 
-    let ir_path = workspace_root.join("resources/ir/bitcoin.ir.json");
+    let ir_path = ethos_path::canonical_bitcoin_ir_path(&workspace_root);
     println!("cargo:rerun-if-changed={}", ir_path.display());
     println!("cargo:rerun-if-changed={}", manifest_dir.join("../codegen").display());
 

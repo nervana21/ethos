@@ -1,23 +1,24 @@
 //! Integration: schema oracle against pinned IR + golden fixtures.
 
-use std::path::PathBuf;
-
 use ethos_analysis::{
     classify, default_allowlist, find_rpc, generate_params, pick_rpc, resolve_disc_arm,
     run_oracle_case, summarize, InvokeError, OracleClass, RpcInvoker,
 };
 use ir::ProtocolIR;
+use path::{canonical_bitcoin_ir_path, rpc_golden_path, workspace_root_from_manifest};
 use serde_json::{json, Value};
 
-fn repo_root() -> PathBuf { PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..") }
+fn repo_root() -> std::path::PathBuf {
+    workspace_root_from_manifest(env!("CARGO_MANIFEST_DIR"), 2)
+}
 
 fn load_ir() -> ProtocolIR {
-    let path = repo_root().join("resources/ir/bitcoin.ir.json");
+    let path = canonical_bitcoin_ir_path(&repo_root());
     ProtocolIR::from_file(&path).unwrap_or_else(|e| panic!("load IR {}: {e}", path.display()))
 }
 
 fn load_golden(name: &str) -> Value {
-    let path = repo_root().join(format!("resources/testdata/rpc_golden/{name}"));
+    let path = rpc_golden_path(&repo_root(), name);
     let raw = std::fs::read_to_string(&path)
         .unwrap_or_else(|e| panic!("read golden {}: {e}", path.display()));
     serde_json::from_str(&raw).unwrap_or_else(|e| panic!("parse golden {}: {e}", path.display()))
