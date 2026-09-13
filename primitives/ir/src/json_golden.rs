@@ -1,7 +1,6 @@
 //! Match JSON sample payloads against IR [`TypeDef`] trees for conformance tests.
 //!
-//! Rules: unknown JSON object keys are allowed. IR fields with
-//! `emit_in_struct == Some(false)` are skipped (not expected on the wire).
+//! Rules: unknown JSON object keys are allowed.
 
 use serde_json::Value;
 
@@ -102,18 +101,12 @@ fn validate_object(ty: &TypeDef, value: &Value, path: &str) -> Result<(), String
     // and do not contain a `field_0` key.
     if fields.len() == 1 {
         let f = &fields[0];
-        if f.key.as_ident() == "field_0"
-            && f.emit_in_struct != Some(false)
-            && !obj.contains_key("field_0")
-        {
+        if f.key.as_ident() == "field_0" && !obj.contains_key("field_0") {
             return validate_json_matches_type_at(&f.field_type, value, path);
         }
     }
 
     for field in fields {
-        if field.emit_in_struct == Some(false) {
-            continue;
-        }
         if field.field_type.protocol_type.as_deref() == Some("elision") {
             continue;
         }

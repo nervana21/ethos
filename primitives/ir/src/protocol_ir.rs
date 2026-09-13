@@ -396,10 +396,6 @@ pub struct FieldDef {
     /// Version when this field was removed (None = still present)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub version_removed: Option<String>,
-    /// When `Some(false)`, this field is omitted from generated response structs (OpenRPC verbosity
-    /// scaffolding that is not a separate JSON key on the wire). `None` means emit (default).
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub emit_in_struct: Option<bool>,
     /// When `true`, generated Rust uses `Option<T>` even if `required` is true (Core may omit).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub force_optional: Option<bool>,
@@ -427,8 +423,6 @@ impl<'de> Deserialize<'de> for FieldDef {
             version_added: Option<String>,
             #[serde(default)]
             version_removed: Option<String>,
-            #[serde(default)]
-            emit_in_struct: Option<bool>,
             #[serde(default)]
             force_optional: Option<bool>,
         }
@@ -481,7 +475,6 @@ impl<'de> Deserialize<'de> for FieldDef {
             default_value: helper.default_value,
             version_added: helper.version_added,
             version_removed: helper.version_removed,
-            emit_in_struct: helper.emit_in_struct,
             force_optional: helper.force_optional,
         })
     }

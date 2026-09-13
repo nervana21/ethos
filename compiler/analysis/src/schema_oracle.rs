@@ -306,9 +306,6 @@ fn generate_value(param_name: &str, ty: &TypeDef, cur: &mut ByteCursor<'_>, dept
             let mut map = serde_json::Map::new();
             if let Some(fields) = ty.fields.as_ref() {
                 for field in fields {
-                    if field.emit_in_struct == Some(false) {
-                        continue;
-                    }
                     if field.field_type.protocol_type.as_deref() == Some("elision") {
                         continue;
                     }

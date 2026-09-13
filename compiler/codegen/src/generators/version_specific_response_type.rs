@@ -730,18 +730,9 @@ impl VersionSpecificResponseTypeGenerator {
         field.field_type.protocol_type.as_deref() == Some("elision")
     }
 
-    /// Returns true iff the field should be skipped when emitting a struct field for the given RPC.
-    /// This includes elision placeholders and method-specific scaffolding fields that are not real
-    /// JSON keys in Core's responses.
-    fn should_skip_field_in_struct(field: &ir::FieldDef) -> bool {
-        if Self::is_elision_field(field) {
-            return true;
-        }
-        if field.emit_in_struct == Some(false) {
-            return true;
-        }
-        false
-    }
+    /// Returns true iff the field should be skipped when emitting a struct field.
+    /// Elision placeholders are not real JSON keys in Core responses.
+    fn should_skip_field_in_struct(field: &ir::FieldDef) -> bool { Self::is_elision_field(field) }
 
     /// Emit a plain object response struct (standard `Deserialize`), for union variants.
     fn emit_object_response_struct(
@@ -2323,7 +2314,6 @@ mod tests {
                 default_value: None,
                 version_added: None,
                 version_removed: None,
-                emit_in_struct: None,
                 force_optional: None,
             }]),
             variants: None,
@@ -2385,7 +2375,6 @@ mod tests {
                 default_value: None,
                 version_added: None,
                 version_removed: None,
-                emit_in_struct: None,
                 force_optional: None,
             }]),
             variants: None,
@@ -2447,7 +2436,6 @@ mod tests {
                 default_value: None,
                 version_added: None,
                 version_removed: None,
-                emit_in_struct: None,
                 force_optional: None,
             }]),
             variants: None,
@@ -2493,7 +2481,6 @@ mod tests {
                         default_value: None,
                         version_added: None,
                         version_removed: None,
-                        emit_in_struct: None,
                         force_optional: None,
                     }]),
                     variants: None,
@@ -2509,7 +2496,6 @@ mod tests {
                 default_value: None,
                 version_added: None,
                 version_removed: None,
-                emit_in_struct: None,
                 force_optional: None,
             }]),
             variants: None,
@@ -2537,7 +2523,6 @@ mod tests {
                     default_value: None,
                     version_added: None,
                     version_removed: None,
-                    emit_in_struct: None,
                     force_optional: None,
                 },
                 ir::FieldDef {
@@ -2548,7 +2533,6 @@ mod tests {
                     default_value: None,
                     version_added: None,
                     version_removed: None,
-                    emit_in_struct: None,
                     force_optional: None,
                 },
                 ir::FieldDef {
@@ -2559,7 +2543,6 @@ mod tests {
                     default_value: None,
                     version_added: None,
                     version_removed: None,
-                    emit_in_struct: None,
                     force_optional: None,
                 },
             ]),
@@ -2635,7 +2618,6 @@ mod tests {
                         default_value: None,
                         version_added: None,
                         version_removed: None,
-                        emit_in_struct: None,
                         force_optional: None,
                     }]),
                     variants: None,
@@ -2651,7 +2633,6 @@ mod tests {
                 default_value: None,
                 version_added: None,
                 version_removed: None,
-                emit_in_struct: None,
                 force_optional: None,
             }]),
             variants: None,
@@ -2676,7 +2657,6 @@ mod tests {
                 default_value: None,
                 version_added: None,
                 version_removed: None,
-                emit_in_struct: None,
                 force_optional: None,
             }]),
             variants: None,
@@ -2744,7 +2724,6 @@ mod tests {
                 default_value: None,
                 version_added: None,
                 version_removed: None,
-                emit_in_struct: None,
                 force_optional: None,
             }]),
             variants: None,
@@ -2821,7 +2800,6 @@ mod tests {
                     default_value: None,
                     version_added: None,
                     version_removed: None,
-                    emit_in_struct: None,
                     force_optional: Some(true),
                 },
                 ir::FieldDef {
@@ -2832,7 +2810,6 @@ mod tests {
                     default_value: None,
                     version_added: None,
                     version_removed: None,
-                    emit_in_struct: None,
                     force_optional: None,
                 },
             ]),
@@ -2899,7 +2876,6 @@ mod tests {
                     default_value: None,
                     version_added: None,
                     version_removed: None,
-                    emit_in_struct: None,
                     force_optional: None,
                 },
                 ir::FieldDef {
@@ -2910,7 +2886,6 @@ mod tests {
                     default_value: None,
                     version_added: None,
                     version_removed: None,
-                    emit_in_struct: None,
                     force_optional: None,
                 },
             ]),
@@ -2937,7 +2912,7 @@ mod tests {
         );
         assert!(
             code.contains("pub hash_1:"),
-            "without codegen fallback skipping, IR disambiguation key hash_1 is emitted unless IR marks emit_in_struct=false, got:\n{code}"
+            "IR disambiguation key hash_1 is emitted for distinct wire shapes, got:\n{code}"
         );
     }
 
@@ -2981,7 +2956,6 @@ mod tests {
                     default_value: None,
                     version_added: None,
                     version_removed: None,
-                    emit_in_struct: None,
                     force_optional: None,
                 }]),
                 variants: None,
@@ -3073,7 +3047,6 @@ mod tests {
                 default_value: None,
                 version_added: None,
                 version_removed: None,
-                emit_in_struct: None,
                 force_optional: None,
             }]),
             protocol_type: Some("object".to_string()),
@@ -3144,7 +3117,6 @@ mod tests {
                 default_value: None,
                 version_added: None,
                 version_removed: None,
-                emit_in_struct: None,
                 force_optional: None,
             }]),
             protocol_type: Some("object".to_string()),
@@ -3163,7 +3135,6 @@ mod tests {
                     default_value: None,
                     version_added: None,
                     version_removed: None,
-                    emit_in_struct: None,
                     force_optional: None,
                 },
                 ir::FieldDef {
@@ -3174,7 +3145,6 @@ mod tests {
                     default_value: None,
                     version_added: None,
                     version_removed: None,
-                    emit_in_struct: None,
                     force_optional: None,
                 },
             ]),
@@ -3193,7 +3163,6 @@ mod tests {
                 default_value: None,
                 version_added: None,
                 version_removed: None,
-                emit_in_struct: None,
                 force_optional: None,
             }]),
             protocol_type: Some("array".to_string()),
@@ -3267,7 +3236,6 @@ mod tests {
                 default_value: None,
                 version_added: None,
                 version_removed: None,
-                emit_in_struct: None,
                 force_optional: None,
             }]),
             protocol_type: Some("object".to_string()),
@@ -3285,7 +3253,6 @@ mod tests {
                 default_value: None,
                 version_added: None,
                 version_removed: None,
-                emit_in_struct: None,
                 force_optional: None,
             }]),
             protocol_type: Some("object".to_string()),
@@ -3331,7 +3298,6 @@ mod tests {
                 default_value: None,
                 version_added: None,
                 version_removed: None,
-                emit_in_struct: None,
                 force_optional: None,
             }]),
             protocol_type: Some("object".to_string()),
@@ -3354,7 +3320,6 @@ mod tests {
                 default_value: None,
                 version_added: None,
                 version_removed: None,
-                emit_in_struct: None,
                 force_optional: None,
             }]),
             protocol_type: Some("object".to_string()),
@@ -3373,7 +3338,6 @@ mod tests {
                     default_value: None,
                     version_added: None,
                     version_removed: None,
-                    emit_in_struct: None,
                     force_optional: None,
                 },
                 ir::FieldDef {
@@ -3384,7 +3348,6 @@ mod tests {
                     default_value: None,
                     version_added: None,
                     version_removed: None,
-                    emit_in_struct: None,
                     force_optional: None,
                 },
             ]),
@@ -3426,7 +3389,6 @@ mod tests {
                 default_value: None,
                 version_added: None,
                 version_removed: None,
-                emit_in_struct: None,
                 force_optional: None,
             }]),
             protocol_type: Some("object".to_string()),
@@ -3483,63 +3445,6 @@ mod tests {
     }
 
     #[test]
-    fn emit_in_struct_false_skips_field() {
-        let version = ProtocolVersion::from_str("30.0.0").unwrap();
-        let gen = VersionSpecificResponseTypeGenerator::new(version, "bitcoin_core".to_string());
-        let result_ty = TypeDef {
-            name: "object".to_string(),
-            kind: TypeKind::Object,
-            fields: Some(vec![
-                ir::FieldDef {
-                    key: ir::FieldKey::Named("keep_me".to_string()),
-                    field_type: TypeDef {
-                        name: "string".to_string(),
-                        kind: TypeKind::Primitive,
-                        protocol_type: Some("string".to_string()),
-                        ..Default::default()
-                    },
-                    required: true,
-                    description: String::new(),
-                    default_value: None,
-                    version_added: None,
-                    version_removed: None,
-                    emit_in_struct: None,
-                    force_optional: None,
-                },
-                ir::FieldDef {
-                    key: ir::FieldKey::Named("tx_1".to_string()),
-                    field_type: TypeDef {
-                        name: "string".to_string(),
-                        kind: TypeKind::Primitive,
-                        protocol_type: Some("string".to_string()),
-                        ..Default::default()
-                    },
-                    required: true,
-                    description: String::new(),
-                    default_value: None,
-                    version_added: None,
-                    version_removed: None,
-                    emit_in_struct: Some(false),
-                    force_optional: None,
-                },
-            ]),
-            protocol_type: Some("object".to_string()),
-            ..Default::default()
-        };
-        let method = RpcDef {
-            name: "emit_skip_demo".to_string(),
-            result: Some(result_ty),
-            ..Default::default()
-        };
-        let code = gen
-            .generate_method_response(&method)
-            .expect("generation must succeed")
-            .expect("response must be generated");
-        assert!(code.contains("keep_me"), "got:\n{code}");
-        assert!(!code.contains("tx_1"), "scaffold field should be omitted, got:\n{code}");
-    }
-
-    #[test]
     fn union_response_emits_vec_and_btreemap_variants() {
         let version = ProtocolVersion::from_str("30.0.0").unwrap();
         let gen = VersionSpecificResponseTypeGenerator::new(version, "bitcoin_core".to_string());
@@ -3570,7 +3475,6 @@ mod tests {
                 default_value: None,
                 version_added: None,
                 version_removed: None,
-                emit_in_struct: None,
                 force_optional: None,
             }]),
             variants: None,

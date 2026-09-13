@@ -49,7 +49,6 @@ fn convert_method_result_to_type_def(result: &MethodResult) -> ir::TypeDef {
                     default_value: None,
                     version_added: None,
                     version_removed: None,
-                    emit_in_struct: None,
                     force_optional: None,
                 })
                 .collect(),
