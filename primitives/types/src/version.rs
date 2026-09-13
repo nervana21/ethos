@@ -146,6 +146,57 @@ impl ProtocolVersion {
         self.version_string.trim_start_matches('v').trim_start_matches('V').replace('.', "_")
     }
 
+    /// Strips build/metadata suffix from a version string (e.g. `30.99.0-705399b1d57a` -> `30.99.0`).
+    pub fn strip_build_suffix(version: &str) -> String {
+        let trimmed = version.trim_start_matches('v').trim();
+        let end = trimmed.find(|c: char| c == '-' || c == '+').unwrap_or(trimmed.len());
+        trimmed[..end].to_string()
+    }
+
+    /// Returns true if the version string contains a build/metadata suffix (e.g. `-dirty`, `-rc1`, `+meta`).
+    pub fn has_build_suffix(version: &str) -> bool {
+        let trimmed = version.trim_start_matches('v').trim();
+        trimmed.chars().any(|c| c == '-' || c == '+')
+    }
+
+    /// Parse a version for ordering, stripping build suffix first. Unparseable values become `0.0.0`.
+    pub fn from_string_for_ordering(s: &str) -> Self {
+        let normalized = Self::strip_build_suffix(s);
+        Self::from_string(&normalized).unwrap_or_default()
+    }
+
+    /// Effective major for version_added inclusion comparison.
+    ///
+    /// When building 30.2.8, include methods whose version_added is in major 30 or earlier.
+    /// Unreleased (`30.99.x` or with a build suffix such as `-dirty`) is treated as next major (31)
+    /// so it is excluded when targeting 30. Supports `"30"` (major-only) and `"30.2.8"`.
+    pub fn effective_major_for_comparison(version: &str) -> u32 {
+        let stripped = Self::strip_build_suffix(version);
+        if let Ok(pv) = Self::from_string(&stripped) {
+            let unreleased = pv.minor == 99 || Self::has_build_suffix(version);
+            return if unreleased { pv.major.saturating_add(1) } else { pv.major };
+        }
+        stripped.trim().parse::<u32>().unwrap_or(u32::MAX)
+    }
+
+    /// Normalize `version_added` for storage in IR: one or two numbers (e.g. 17, 28, 30, or 0.17).
+    ///
+    /// Unreleased (`30.99.x` or with a build suffix such as `-dirty`) becomes the next major (31).
+    pub fn normalize_version_added_for_storage(version: &str) -> String {
+        let stripped = Self::strip_build_suffix(version);
+        if let Ok(pv) = Self::from_string(&stripped) {
+            let unreleased = pv.minor == 99 || Self::has_build_suffix(version);
+            if unreleased {
+                return format!("{}", pv.major.saturating_add(1));
+            }
+            if pv.major == 0 {
+                return format!("0.{}", pv.minor);
+            }
+            return format!("{}", pv.major);
+        }
+        stripped.trim().to_string()
+    }
+
     /// Check if this version matches a target version with flexible matching.
     ///
     /// Supports different levels of precision:
@@ -522,5 +573,53 @@ mod tests {
             protocol: None,
         };
         assert!(!self_exact_false.matches_target(&target_exact_false));
+    }
+
+    #[test]
+    fn test_strip_build_suffix() {
+        assert_eq!(ProtocolVersion::strip_build_suffix("30.99.0-705399b1d57a"), "30.99.0");
+        assert_eq!(ProtocolVersion::strip_build_suffix("v30.2.0-dirty"), "30.2.0");
+        assert_eq!(ProtocolVersion::strip_build_suffix("30.2.0+meta"), "30.2.0");
+        assert_eq!(ProtocolVersion::strip_build_suffix("30.99.0-rc1"), "30.99.0");
+    }
+
+    #[test]
+    fn test_has_build_suffix() {
+        assert!(ProtocolVersion::has_build_suffix("30.99.0-dirty"));
+        assert!(ProtocolVersion::has_build_suffix("30.2.0-rc1"));
+        assert!(ProtocolVersion::has_build_suffix("30.2.0+meta"));
+        assert!(!ProtocolVersion::has_build_suffix("30.2.0"));
+        assert!(!ProtocolVersion::has_build_suffix("30.99"));
+    }
+
+    #[test]
+    fn test_effective_major_for_comparison() {
+        assert_eq!(ProtocolVersion::effective_major_for_comparison("30.2.8"), 30);
+        assert_eq!(ProtocolVersion::effective_major_for_comparison("30.99.0"), 31);
+        assert_eq!(ProtocolVersion::effective_major_for_comparison("30.99.0-dirty"), 31);
+        assert_eq!(ProtocolVersion::effective_major_for_comparison("30.2.0-rc1"), 31);
+        assert_eq!(ProtocolVersion::effective_major_for_comparison("30"), 30);
+        assert_eq!(ProtocolVersion::effective_major_for_comparison("0.17.0"), 0);
+    }
+
+    #[test]
+    fn test_normalize_version_added_for_storage() {
+        assert_eq!(ProtocolVersion::normalize_version_added_for_storage("30.2.8"), "30");
+        assert_eq!(ProtocolVersion::normalize_version_added_for_storage("30.99.0"), "31");
+        assert_eq!(ProtocolVersion::normalize_version_added_for_storage("30.99.0-dirty"), "31");
+        assert_eq!(ProtocolVersion::normalize_version_added_for_storage("0.17.0"), "0.17");
+        assert_eq!(ProtocolVersion::normalize_version_added_for_storage("17"), "17");
+        assert_eq!(ProtocolVersion::normalize_version_added_for_storage("28"), "28");
+    }
+
+    #[test]
+    fn test_from_string_for_ordering() {
+        let pv = ProtocolVersion::from_string_for_ordering("30.2.8-dirty");
+        assert_eq!(pv.major, 30);
+        assert_eq!(pv.minor, 2);
+        assert_eq!(pv.patch, 8);
+
+        let default_pv = ProtocolVersion::from_string_for_ordering("invalid");
+        assert_eq!(default_pv.major, 0);
     }
 }
