@@ -559,7 +559,6 @@ dependencies = [
  "ethos-adapters",
  "ethos-ir",
  "ethos-normalization",
- "ethos-path",
  "ethos-registry",
  "ethos-semantics",
  "ethos-types",

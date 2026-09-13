@@ -20,7 +20,7 @@ use crate::PipelineError;
 /// Paths under the crate root that are fully generated and safe to remove.
 /// Excludes `.git` and other repo metadata so artifact repos can track changes.
 const GENERATED_PATHS: &[&str] =
-    &["src", "examples", "Cargo.toml", "README.md", "LICENSE", ".gitignore"];
+    &["src", "examples", "Cargo.toml", "README.md", "LICENSE", ".gitignore", ".rustfmt.toml"];
 
 /// Prepares the output directory for code generation.
 ///
@@ -166,6 +166,9 @@ pub fn compile_from_ir(
 
     // Generate code
     generate_into(&src_dir, &compiler_ctx)?;
+
+    // Match `cargo rbmt fmt`: nightly + crate `.rustfmt.toml` (written in setup).
+    codegen::format_crate(&crate_root);
 
     Ok(())
 }

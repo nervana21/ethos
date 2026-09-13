@@ -13,7 +13,7 @@ use types::{Implementation, ProtocolVersion};
 use crate::cargo_dependencies::{format_package_section, GENERATED_CRATE_DEPENDENCIES};
 use crate::PipelineError;
 
-/// Setup project files (Cargo.toml, README, license, .gitignore)
+/// Setup project files (Cargo.toml, README, license, .gitignore, .rustfmt.toml)
 ///
 /// # Arguments
 ///
@@ -37,7 +37,14 @@ pub fn setup_project_files(
     write_readme(crate_root, target_version, artifact_name)?;
     write_example_basic(crate_root, artifact_name)?;
     write_license(crate_root)?;
+    write_rustfmt_toml(crate_root)?;
 
+    Ok(())
+}
+
+/// Write `.rustfmt.toml` so codegen and `cargo rbmt fmt` share one style.
+fn write_rustfmt_toml(root: &Path) -> Result<(), PipelineError> {
+    fs::write(root.join(".rustfmt.toml"), codegen::GENERATED_RUSTFMT_TOML)?;
     Ok(())
 }
 

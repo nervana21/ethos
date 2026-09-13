@@ -13,7 +13,7 @@
 pub mod generators;
 
 use std::fs::{self};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use ir::{ProtocolIR, RpcDef, TypeDef, TypeKind};
@@ -206,17 +206,38 @@ pub trait CodeGenerator {
     fn validate(&self, _methods: &[RpcDef]) -> Result<()> { Ok(()) }
 }
 
-/// Formats a Rust source file using rustfmt with the project's .rustfmt.toml
-pub fn format_with_rustfmt(path: &Path) {
-    // Find the project root to use its .rustfmt.toml for consistent formatting
-    let config_path = path::find_project_root()
-        .map(|root| root.join(".rustfmt.toml"))
-        .ok()
-        .filter(|p| p.exists());
+/// Walk ancestors of `path` for a rustfmt config (`.rustfmt.toml` or `rustfmt.toml`).
+fn find_rustfmt_config_near(path: &Path) -> Option<PathBuf> {
+    let mut dir = path.parent()?.to_path_buf();
+    loop {
+        for name in [".rustfmt.toml", "rustfmt.toml"] {
+            let candidate = dir.join(name);
+            if candidate.is_file() {
+                return Some(candidate);
+            }
+        }
+        if !dir.pop() {
+            return None;
+        }
+    }
+}
 
-    let mut cmd = Command::new("rustfmt");
+/// Nightly rustfmt — stable ignores `group_imports` / other unstable knobs.
+fn rustfmt_cmd() -> Command {
+    let mut cmd = Command::new("rustup");
+    cmd.args(["run", "nightly", "rustfmt"]);
+    cmd
+}
+
+/// Formats a Rust source file using nightly rustfmt.
+///
+/// Config comes from the output crate tree (see [`GENERATED_RUSTFMT_TOML`]). Using
+/// PATH `rustfmt` (often stable) drops `group_imports` and leaves import churn that
+/// `cargo rbmt fmt` will not repair under `group_imports = Preserve` defaults.
+pub fn format_with_rustfmt(path: &Path) {
+    let mut cmd = rustfmt_cmd();
     cmd.arg("--edition=2021");
-    if let Some(config) = config_path {
+    if let Some(config) = find_rustfmt_config_near(path) {
         cmd.arg("--config-path").arg(config);
     }
     cmd.arg(path);
@@ -225,6 +246,31 @@ pub fn format_with_rustfmt(path: &Path) {
         if !status.success() {}
     }
 }
+
+/// Format every Rust source in a generated crate via `cargo +nightly fmt --all`.
+///
+/// Same toolchain as `cargo rbmt fmt`. With [`GENERATED_RUSTFMT_TOML`] in the crate
+/// root, codegen and rbmt agree — no second manual fmt pass.
+pub fn format_crate(crate_root: &Path) {
+    let mut cmd = Command::new("cargo");
+    cmd.args(["+nightly", "fmt", "--all"]).current_dir(crate_root);
+    if let Ok(status) = cmd.status() {
+        if !status.success() {}
+    }
+}
+
+/// `.rustfmt.toml` written into generated client crates (`ethos-bitcoind`, …).
+///
+/// Keeps import grouping stable (`StdExternalCrate`) while leaving chain/await
+/// breaking on rustfmt defaults (no `fn_single_line` / `use_small_heuristics = Max`),
+/// matching what `cargo rbmt fmt` produced after the old ethos-config pass.
+pub const GENERATED_RUSTFMT_TOML: &str = r#"edition = "2021"
+style_edition = "2021"
+group_imports = "StdExternalCrate"
+imports_granularity = "Module"
+reorder_imports = true
+max_width = 100
+"#;
 
 /// Trim trailing whitespace from each line and drop trailing blank lines.
 /// Always ensures the returned string ends with a single newline when not empty.
@@ -399,3 +445,38 @@ impl CodeGenerator for MethodWrapperGenerator {
 // separate processes with their own RPC servers.
 //
 // Start by creating a `components.rs` module defining `RpcComponent` and a registry of methods.
+
+#[cfg(test)]
+mod rustfmt_config_tests {
+    use std::fs;
+
+    use tempfile::tempdir;
+
+    use super::find_rustfmt_config_near;
+
+    #[test]
+    fn finds_dot_rustfmt_toml_in_ancestor() {
+        let dir = tempdir().expect("tempdir");
+        let crate_root = dir.path().join("out-crate");
+        let src = crate_root.join("src");
+        fs::create_dir_all(&src).expect("mkdir");
+        fs::write(crate_root.join(".rustfmt.toml"), "edition = \"2021\"\n").expect("write config");
+        let file = src.join("lib.rs");
+        fs::write(&file, "fn main() {}\n").expect("write rs");
+
+        let found = find_rustfmt_config_near(&file).expect("config");
+        assert_eq!(found, crate_root.join(".rustfmt.toml"));
+    }
+
+    #[test]
+    fn no_config_when_absent_from_tree() {
+        let dir = tempdir().expect("tempdir");
+        let src = dir.path().join("src");
+        fs::create_dir_all(&src).expect("mkdir");
+        let file = src.join("lib.rs");
+        fs::write(&file, "fn main() {}\n").expect("write rs");
+
+        // Sibling ethos-style configs must not leak in: only ancestors of `file`.
+        assert!(find_rustfmt_config_near(&file).is_none());
+    }
+}

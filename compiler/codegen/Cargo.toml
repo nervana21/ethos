@@ -11,7 +11,6 @@ development = ["tempfile", "tokio"]
 adapters = { package = "ethos-adapters", version = "0.1.0", path = "../../adapters" }
 ir = { package = "ethos-ir", version = "0.1.0", path = "../../primitives/ir" }
 normalization = { package = "ethos-normalization", version = "0.1.0", path = "../../primitives/normalization" }
-path = { package = "ethos-path", version = "0.1.0", path = "../../primitives/path" }
 semantics = { package = "ethos-semantics", version = "0.1.0", path = "../semantics" }
 regex = "1.10"
 registry = { package = "ethos-registry", version = "0.1.0", path = "../../primitives/registry" }
