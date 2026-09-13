@@ -47,7 +47,7 @@ impl ModuleGenerator for ResponseTypesModuleGenerator {
         writeln!(types_content, "#[derive(Debug, serde::Serialize)]")?;
         writeln!(
             types_content,
-            "pub enum HashOrHeight {{ Hash(bitcoin::BlockHash), Height(u32) }}"
+            "pub enum HashOrHeight {{ Hash(bitcoin::BlockHash), Height(i64) }}"
         )?;
         writeln!(types_content, "pub type FeeRate = bitcoin_units::FeeRate;")?;
         std::fs::write(&types_mod_rs, types_content)?;
