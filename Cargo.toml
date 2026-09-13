@@ -15,7 +15,6 @@ categories = ["development-tools::build-utilities", "cryptography::cryptocurrenc
 [workspace]
 members = [
     "adapters",
-    "backends/codegen",
     "cli/orchestrator",
     "compiler/analysis",
     "compiler/codegen",
