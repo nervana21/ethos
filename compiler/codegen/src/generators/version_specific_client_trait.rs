@@ -354,67 +354,101 @@ impl VersionSpecificClientTraitGenerator {
         // Generate individual parameter serialization
         if !rpc.params.is_empty() {
             let adapter = self.get_adapter();
-            // Create params array from individual parameters
-            // Optional parameters (Option<T>) should only be included if they're Some(...)
+            // Create params array from individual parameters.
+            // Optional trailing args: pad explicit JSON null for omitted middles when a later
+            // optional is set, so positional indices stay aligned (e.g. sendtoaddress verbose).
             // Use rpc_params as variable name to avoid conflict with parameter named "params"
             writeln!(buf, "        let mut rpc_params = vec![];")
                 .expect("Failed to write params array initialization");
-            for (param, arg) in rpc.params.iter().zip(arguments.iter()) {
-                let param_name = sanitize_external_identifier(&param.name);
-                let (base_ty, _) =
-                    TypeRegistry::map_argument_type_with_adapter(arg, adapter.as_ref());
-                let field_name = param.name.as_str();
-                let is_fee_rate = field_name == "fee_rate";
-                let is_max_fee_rate = field_name == "maxfeerate";
-                let is_amounts_map = field_name == "amounts"
-                    && base_ty.contains("HashMap")
-                    && base_ty.contains("Amount");
 
-                // Serialize parameters according to their semantic type and JSON unit.
-                // - FeeRate: fee_rate → sat/vB numeric, maxfeerate → BTC/kvB numeric
-                // - bitcoin::Amount: BTC floats via to_btc()
-                // - sendmany "amounts": HashMap<Address, Amount> → JSON object with BTC float values
-                // - everything else: default json!(param)
-                let push_expr = if base_ty == "FeeRate" && is_fee_rate {
-                    format!("serde_json::json!({}.to_sat_per_vb_floor())", param_name)
-                } else if base_ty == "FeeRate" && is_max_fee_rate {
-                    format!(
-                        "serde_json::json!(({}.to_sat_per_kvb_floor() as f64) / 100_000_000.0)",
-                        param_name
-                    )
-                } else if base_ty == "bitcoin::Amount" {
-                    format!("serde_json::json!({}.to_btc())", param_name)
-                } else if is_amounts_map {
-                    format!(
-                        "serde_json::to_value(SendmanyAmountsRef(&{})).map_err(|e| TransportError::Json(e.to_string()))?",
-                        param_name
-                    )
-                } else {
-                    format!("serde_json::json!({})", param_name)
-                };
-
-                if !param.required {
-                    let val_expr = if base_ty == "FeeRate" && is_fee_rate {
-                        "serde_json::json!(val.to_sat_per_vb_floor())"
+            let mut i = 0usize;
+            let params_args: Vec<_> = rpc.params.iter().zip(arguments.iter()).collect();
+            while i < params_args.len() {
+                let (param, arg) = params_args[i];
+                if param.required {
+                    let param_name = sanitize_external_identifier(&param.name);
+                    let (base_ty, _) =
+                        TypeRegistry::map_argument_type_with_adapter(arg, adapter.as_ref());
+                    let field_name = param.name.as_str();
+                    let is_fee_rate = field_name == "fee_rate";
+                    let is_max_fee_rate = field_name == "maxfeerate";
+                    let is_amounts_map = field_name == "amounts"
+                        && base_ty.contains("HashMap")
+                        && base_ty.contains("Amount");
+                    let push_expr = if base_ty == "FeeRate" && is_fee_rate {
+                        format!("serde_json::json!({}.to_sat_per_vb_floor())", param_name)
                     } else if base_ty == "FeeRate" && is_max_fee_rate {
-                        "serde_json::json!((val.to_sat_per_kvb_floor() as f64) / 100_000_000.0)"
+                        format!(
+                            "serde_json::json!(({}.to_sat_per_kvb_floor() as f64) / 100_000_000.0)",
+                            param_name
+                        )
                     } else if base_ty == "bitcoin::Amount" {
-                        "serde_json::json!(val.to_btc())"
+                        format!("serde_json::json!({}.to_btc())", param_name)
                     } else if is_amounts_map {
-                        "serde_json::to_value(SendmanyAmountsRef(&val)).map_err(|e| TransportError::Json(e.to_string()))?"
+                        format!(
+                            "serde_json::to_value(SendmanyAmountsRef(&{})).map_err(|e| TransportError::Json(e.to_string()))?",
+                            param_name
+                        )
                     } else {
-                        "serde_json::json!(val)"
+                        format!("serde_json::json!({})", param_name)
                     };
-                    writeln!(buf, "        if let Some(val) = {} {{", param_name)
-                        .expect("Failed to write optional parameter check");
-                    writeln!(buf, "            rpc_params.push({});", val_expr)
-                        .expect("Failed to write optional parameter push");
-                    writeln!(buf, "        }}")
-                        .expect("Failed to write optional parameter closing");
-                } else {
                     writeln!(buf, "        rpc_params.push({});", push_expr)
                         .expect("Failed to write required parameter serialization");
+                    i += 1;
+                    continue;
                 }
+
+                // Consecutive optional run: build Option<Value> list, pad nulls through last Some.
+                let mut run = Vec::new();
+                while i < params_args.len() && !params_args[i].0.required {
+                    let (param, arg) = params_args[i];
+                    let param_name = sanitize_external_identifier(&param.name);
+                    let (base_ty, _) =
+                        TypeRegistry::map_argument_type_with_adapter(arg, adapter.as_ref());
+                    let field_name = param.name.as_str();
+                    let is_fee_rate = field_name == "fee_rate";
+                    let is_max_fee_rate = field_name == "maxfeerate";
+                    let is_amounts_map = field_name == "amounts"
+                        && base_ty.contains("HashMap")
+                        && base_ty.contains("Amount");
+                    let some_expr = if base_ty == "FeeRate" && is_fee_rate {
+                        format!(
+                            "{}.as_ref().map(|val| serde_json::json!(val.to_sat_per_vb_floor()))",
+                            param_name
+                        )
+                    } else if base_ty == "FeeRate" && is_max_fee_rate {
+                        format!(
+                            "{}.as_ref().map(|val| serde_json::json!((val.to_sat_per_kvb_floor() as f64) / 100_000_000.0))",
+                            param_name
+                        )
+                    } else if base_ty == "bitcoin::Amount" {
+                        format!(
+                            "{}.as_ref().map(|val| serde_json::json!(val.to_btc()))",
+                            param_name
+                        )
+                    } else if is_amounts_map {
+                        format!(
+                            "match &{} {{ Some(val) => Some(serde_json::to_value(SendmanyAmountsRef(val)).map_err(|e| TransportError::Json(e.to_string()))?), None => None }}",
+                            param_name
+                        )
+                    } else {
+                        format!("{}.as_ref().map(|val| serde_json::json!(val))", param_name)
+                    };
+                    run.push(some_expr);
+                    i += 1;
+                }
+                writeln!(
+                    buf,
+                    "        let optional_params: [Option<serde_json::Value>; {}] = [{}];",
+                    run.len(),
+                    run.join(", ")
+                )
+                .expect("Failed to write optional_params array");
+                writeln!(
+                    buf,
+                    "        if let Some(last) = optional_params.iter().rposition(|o| o.is_some()) {{\n            for opt in &optional_params[..=last] {{\n                rpc_params.push(opt.clone().unwrap_or(serde_json::Value::Null));\n            }}\n        }}"
+                )
+                .expect("Failed to write optional null-padding");
             }
             if let Some(decode_body) =
                 self.render_discriminator_aware_decode(rpc, &params, &response_type)
