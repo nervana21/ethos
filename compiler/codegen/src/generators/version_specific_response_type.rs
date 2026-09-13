@@ -9,8 +9,8 @@ use std::fmt::Write as _;
 use std::str::FromStr;
 use std::sync::{Mutex, OnceLock};
 
+use adapters::{record_fallback_event, FidelityFallbackEvent};
 use ir::{ProtocolIR, RpcDef, TypeDef, TypeKind, UnionVariantDef};
-use serde::Serialize;
 use types::{Implementation, ProtocolVersion};
 
 use super::doc_comment::{write_doc_comment, write_doc_line};
@@ -22,45 +22,10 @@ type SymbolRecorder = fn(&str, &str);
 
 // Safe global to record external symbol usage via a callback
 static EXTERNAL_SYMBOL_RECORDER: OnceLock<Mutex<Option<SymbolRecorder>>> = OnceLock::new();
-static FALLBACK_EVENTS: OnceLock<Mutex<Vec<FallbackEvent>>> = OnceLock::new();
 static CURRENT_RPC_METHOD: OnceLock<Mutex<Option<String>>> = OnceLock::new();
 
-#[derive(Debug, Clone, Serialize)]
-/// One weak-typing event emitted while mapping IR to Rust response types.
-pub struct FallbackEvent {
-    /// RPC method name when known.
-    pub rpc_method: String,
-    /// Best-effort pointer to schema/IR location.
-    pub schema_or_ir_path: String,
-    /// Category of fallback behavior.
-    pub fallback_kind: String,
-    /// Rust type selected by the fallback.
-    pub chosen_rust_type: String,
-    /// Machine-readable reason for the fallback.
-    pub reason: String,
-    /// Severity bucket (`P0`/`P1`/`P2`).
-    pub severity: String,
-}
-
-/// Clears all collected fallback events.
-pub fn clear_fallback_events() {
-    let slot = FALLBACK_EVENTS.get_or_init(|| Mutex::new(Vec::new()));
-    let mut guard = slot.lock().expect("fallback event mutex poisoned");
-    guard.clear();
-}
-
-/// Returns a snapshot of currently collected fallback events.
-pub fn fallback_events_snapshot() -> Vec<FallbackEvent> {
-    let slot = FALLBACK_EVENTS.get_or_init(|| Mutex::new(Vec::new()));
-    let guard = slot.lock().expect("fallback event mutex poisoned");
-    guard.clone()
-}
-
-fn record_fallback_event(event: FallbackEvent) {
-    let slot = FALLBACK_EVENTS.get_or_init(|| Mutex::new(Vec::new()));
-    let mut guard = slot.lock().expect("fallback event mutex poisoned");
-    guard.push(event);
-}
+/// Weak-typing event while mapping IR to Rust response types (shared with adapters).
+pub type FallbackEvent = FidelityFallbackEvent;
 
 fn set_current_rpc_method(name: Option<&str>) {
     let slot = CURRENT_RPC_METHOD.get_or_init(|| Mutex::new(None));
@@ -98,6 +63,14 @@ pub fn record_external_symbol_usage(crate_name: &str, symbol: &str) {
 pub struct VersionSpecificResponseTypeGenerator {
     version: ProtocolVersion,
     implementation: String,
+}
+
+/// Parent/enclosing context for IR-to-Rust type mapping.
+struct IrTypeMappingContext<'a> {
+    field_name: &'a str,
+    enclosing_struct: Option<&'a str>,
+    in_union: bool,
+    parent_enum: Option<&'a str>,
 }
 
 impl VersionSpecificResponseTypeGenerator {
@@ -636,84 +609,15 @@ impl VersionSpecificResponseTypeGenerator {
     /// `parent_enum` is the `#[serde(untagged)]` enum being generated; when set, object (and
     /// array/map) branch structs are qualified with it so names do not collide across unions.
     fn map_union_variant_rust_type(&self, td: &ir::TypeDef, parent_enum: Option<&str>) -> String {
-        match td.kind {
-            ir::TypeKind::Primitive => self.map_ir_type_to_rust(td, "wire", None),
-            ir::TypeKind::Object => {
-                let label = td.rust_emit_name();
-                if !label.is_empty() && label != "object" && label != "array" {
-                    let base = sanitize_type_name_for_rust(label);
-                    parent_enum.map(|e| Self::qualify_union_branch_struct(e, &base)).unwrap_or(base)
-                } else {
-                    record_fallback_event(FallbackEvent {
-                        rpc_method: current_rpc_method_or_unknown(),
-                        schema_or_ir_path: format!("union_variant:{}", td.name),
-                        fallback_kind: "opaque_object_fallback".to_string(),
-                        chosen_rust_type: "serde_json::Map<String, serde_json::Value>".to_string(),
-                        reason: "unnamed_union_object_variant".to_string(),
-                        severity: "P1".to_string(),
-                    });
-                    "serde_json::Map<String, serde_json::Value>".to_string()
-                }
-            }
-            ir::TypeKind::Array => {
-                let elem = td
-                    .array_element_type()
-                    .expect("array union variant must carry array_element_type");
-                format!("Vec<{}>", self.map_union_variant_rust_type(elem, parent_enum))
-            }
-            ir::TypeKind::Map => {
-                let key_ty = match td.map_key_protocol_type.as_deref() {
-                    Some("hex") => "bitcoin::Txid",
-                    Some("string") | None => "String",
-                    Some(unk) => {
-                        record_fallback_event(FallbackEvent {
-                            rpc_method: current_rpc_method_or_unknown(),
-                            schema_or_ir_path: format!("union_variant_map_key:{}", td.name),
-                            fallback_kind: "map_string_key_fallback".to_string(),
-                            chosen_rust_type: "String".to_string(),
-                            reason: format!("unmapped_map_key_protocol_type:{unk}"),
-                            severity: "P1".to_string(),
-                        });
-                        "String"
-                    }
-                };
-                let val = td.map_value_type().expect("map union variant must have map_value");
-                let val_rust = match val.kind {
-                    // Align with `map_ir_type_to_rust` / nested struct emission (see union_embedded
-                    // handling for map branches — value objects are not merged as qualified helpers).
-                    ir::TypeKind::Object => self.map_ir_type_to_rust(val, "map_value", None),
-                    _ => self.map_union_variant_rust_type(val, parent_enum),
-                };
-                format!("BTreeMap<{}, {}>", key_ty, val_rust)
-            }
-            ir::TypeKind::Union => {
-                let label = td.rust_emit_name();
-                if !label.is_empty() && label != "object" && label != "array" {
-                    sanitize_type_name_for_rust(label)
-                } else {
-                    record_fallback_event(FallbackEvent {
-                        rpc_method: current_rpc_method_or_unknown(),
-                        schema_or_ir_path: format!("union_variant_union:{}", td.name),
-                        fallback_kind: "json_value_fallback".to_string(),
-                        chosen_rust_type: "serde_json::Value".to_string(),
-                        reason: "unnamed_nested_union_variant".to_string(),
-                        severity: "P1".to_string(),
-                    });
-                    "serde_json::Value".to_string()
-                }
-            }
-            _ => {
-                record_fallback_event(FallbackEvent {
-                    rpc_method: current_rpc_method_or_unknown(),
-                    schema_or_ir_path: format!("union_variant_other:{}", td.name),
-                    fallback_kind: "json_value_fallback".to_string(),
-                    chosen_rust_type: "serde_json::Value".to_string(),
-                    reason: "unhandled_union_variant_kind".to_string(),
-                    severity: "P1".to_string(),
-                });
-                "serde_json::Value".to_string()
-            }
-        }
+        self.map_ir_type_to_rust_inner(
+            td,
+            IrTypeMappingContext {
+                field_name: "wire",
+                enclosing_struct: None,
+                in_union: true,
+                parent_enum,
+            },
+        )
     }
 
     /// If this result represents a top-level JSON array in IR, return the element type.
@@ -1176,7 +1080,32 @@ impl VersionSpecificResponseTypeGenerator {
         field_name: &str,
         enclosing_struct: Option<&str>,
     ) -> String {
-        let mapped = match &type_def.kind {
+        let mapped = self.map_ir_type_to_rust_inner(
+            type_def,
+            IrTypeMappingContext {
+                field_name,
+                enclosing_struct,
+                in_union: false,
+                parent_enum: None,
+            },
+        );
+        // If the mapped type is from the bitcoin crate, record it for re-exports
+        if let Some(stripped) = mapped.strip_prefix("bitcoin::") {
+            let symbol = stripped.split("::").last().unwrap_or(stripped);
+            crate::generators::version_specific_response_type::record_external_symbol_usage(
+                "bitcoin", symbol,
+            );
+        }
+        mapped
+    }
+
+    /// Shared IR-to-Rust mapper for struct fields and union variants.
+    fn map_ir_type_to_rust_inner(
+        &self,
+        type_def: &ir::TypeDef,
+        ctx: IrTypeMappingContext<'_>,
+    ) -> String {
+        match &type_def.kind {
             ir::TypeKind::Primitive => {
                 // Use the adapter to map the type via BitcoinCoreTypeRegistry.
                 // Primitives must have protocol_type ("string", "number", "amount", "hex", etc.).
@@ -1186,7 +1115,7 @@ impl VersionSpecificResponseTypeGenerator {
                     type_: rpc_type,
                     optional: false,
                     description: type_def.description.clone(),
-                    key_name: field_name.to_string(),
+                    key_name: ctx.field_name.to_string(),
                     condition: String::new(),
                     inner: Vec::new(),
                 };
@@ -1198,10 +1127,24 @@ impl VersionSpecificResponseTypeGenerator {
                 rust_type.to_string()
             }
             ir::TypeKind::Array => {
+                if ctx.in_union {
+                    let elem = type_def
+                        .array_element_type()
+                        .expect("array union variant must carry array_element_type");
+                    return format!("Vec<{}>", self.map_ir_type_to_rust_inner(elem, ctx));
+                }
                 if let Some(elem) = type_def.homogeneous_array_element_type() {
                     return format!(
                         "Vec<{}>",
-                        self.map_ir_type_to_rust(elem, field_name, enclosing_struct)
+                        self.map_ir_type_to_rust_inner(
+                            elem,
+                            IrTypeMappingContext {
+                                field_name: ctx.field_name,
+                                enclosing_struct: ctx.enclosing_struct,
+                                in_union: false,
+                                parent_enum: None,
+                            },
+                        )
                     );
                 }
                 if type_def.prefix_items_tuple_fields().is_some() {
@@ -1212,7 +1155,7 @@ impl VersionSpecificResponseTypeGenerator {
                     type_: "array".to_string(),
                     optional: false,
                     description: type_def.description.clone(),
-                    key_name: field_name.to_string(),
+                    key_name: ctx.field_name.to_string(),
                     condition: String::new(),
                     inner: Vec::new(),
                 };
@@ -1223,7 +1166,7 @@ impl VersionSpecificResponseTypeGenerator {
                 if rust_type == "Vec<String>" {
                     record_fallback_event(FallbackEvent {
                         rpc_method: current_rpc_method_or_unknown(),
-                        schema_or_ir_path: format!("array_field:{}", field_name),
+                        schema_or_ir_path: format!("array_field:{}", ctx.field_name),
                         fallback_kind: "array_value_fallback".to_string(),
                         chosen_rust_type: rust_type.to_string(),
                         reason: "array_missing_element_metadata".to_string(),
@@ -1241,7 +1184,11 @@ impl VersionSpecificResponseTypeGenerator {
                     Some(unk) => {
                         record_fallback_event(FallbackEvent {
                             rpc_method: current_rpc_method_or_unknown(),
-                            schema_or_ir_path: format!("map_field:{}", field_name),
+                            schema_or_ir_path: if ctx.in_union {
+                                format!("union_variant_map_key:{}", type_def.name)
+                            } else {
+                                format!("map_field:{}", ctx.field_name)
+                            },
                             fallback_kind: "map_string_key_fallback".to_string(),
                             chosen_rust_type: "String".to_string(),
                             reason: format!("unmapped_map_key_protocol_type:{unk}"),
@@ -1252,17 +1199,33 @@ impl VersionSpecificResponseTypeGenerator {
                 };
                 let val =
                     type_def.map_value_type().expect("TypeKind::Map must set map_value in IR");
-                format!(
-                    "BTreeMap<{}, {}>",
-                    key_ty,
-                    self.map_ir_type_to_rust(val, field_name, enclosing_struct)
-                )
+                let val_rust = if ctx.in_union {
+                    match val.kind {
+                        // Align with nested struct emission (see union_embedded handling for map
+                        // branches — value objects are not merged as qualified helpers).
+                        ir::TypeKind::Object => self.map_ir_type_to_rust(val, "map_value", None),
+                        _ => self.map_ir_type_to_rust_inner(val, ctx),
+                    }
+                } else {
+                    self.map_ir_type_to_rust_inner(
+                        val,
+                        IrTypeMappingContext {
+                            field_name: ctx.field_name,
+                            enclosing_struct: ctx.enclosing_struct,
+                            in_union: false,
+                            parent_enum: None,
+                        },
+                    )
+                };
+                format!("BTreeMap<{}, {}>", key_ty, val_rust)
             }
             ir::TypeKind::Union => {
                 let label = type_def.rust_emit_name();
                 if !label.is_empty() && label != "object" && label != "array" {
                     let rust_name = sanitize_type_name_for_rust(label);
-                    if enclosing_struct.is_some_and(|s| s == rust_name.as_str()) {
+                    if ctx.in_union {
+                        rust_name
+                    } else if ctx.enclosing_struct.is_some_and(|s| s == rust_name.as_str()) {
                         format!("Box<{rust_name}>")
                     } else {
                         rust_name
@@ -1270,51 +1233,63 @@ impl VersionSpecificResponseTypeGenerator {
                 } else {
                     record_fallback_event(FallbackEvent {
                         rpc_method: current_rpc_method_or_unknown(),
-                        schema_or_ir_path: format!("union_field:{}", field_name),
+                        schema_or_ir_path: if ctx.in_union {
+                            format!("union_variant_union:{}", type_def.name)
+                        } else {
+                            format!("union_field:{}", ctx.field_name)
+                        },
                         fallback_kind: "json_value_fallback".to_string(),
                         chosen_rust_type: "serde_json::Value".to_string(),
-                        reason: "unnamed_union_field_type".to_string(),
+                        reason: if ctx.in_union {
+                            "unnamed_nested_union_variant".to_string()
+                        } else {
+                            "unnamed_union_field_type".to_string()
+                        },
                         severity: "P1".to_string(),
                     });
                     "serde_json::Value".to_string()
                 }
             }
             ir::TypeKind::Object => {
-                // Decoded tx fields: IR uses Object (with nested array shape) for vin/vout; map to typed vecs.
-                // For dynamic per-message byte stats (OBJ_DYN with numeric values), map to a typed map
-                // rather than a generic JSON value when the IR encodes an object with a single "msg"
-                // field of numeric primitive type.
-                if let Some(fields) = &type_def.fields {
-                    if fields.len() == 1 {
-                        let f = &fields[0];
-                        if f.key.as_ident() == "msg"
-                            && matches!(f.field_type.kind, ir::TypeKind::Primitive)
-                            && f.field_type.protocol_type.as_deref() == Some("number")
-                        {
-                            return "std::collections::HashMap<String, u64>".to_string();
-                        }
-                    }
-                }
-
-                // Arrays encoded as objects with `protocol_type: "array"` and a single
-                // nested element field (as used by decodepsbt-style responses).
-                if type_def.protocol_type.as_deref() == Some("array") {
+                if !ctx.in_union {
+                    // Decoded tx fields: IR uses Object (with nested array shape) for vin/vout; map to typed vecs.
+                    // For dynamic per-message byte stats (OBJ_DYN with numeric values), map to a typed map
+                    // rather than a generic JSON value when the IR encodes an object with a single "msg"
+                    // field of numeric primitive type.
                     if let Some(fields) = &type_def.fields {
                         if fields.len() == 1 {
-                            let outer = &fields[0].field_type;
-                            if let Some(outer_fields) = &outer.fields {
-                                if outer_fields.len() == 1 {
-                                    let elem = &outer_fields[0].field_type;
-                                    // When the innermost element has a concrete name
-                                    // (e.g. DecodepsbtInput / DecodepsbtOutput), map to
-                                    // a typed Vec rather than serde_json::Value.
-                                    let elabel = elem.rust_emit_name();
-                                    if !elabel.is_empty() && elabel != "object" && elabel != "array"
-                                    {
-                                        return format!(
-                                            "Vec<{}>",
-                                            sanitize_type_name_for_rust(elabel)
-                                        );
+                            let f = &fields[0];
+                            if f.key.as_ident() == "msg"
+                                && matches!(f.field_type.kind, ir::TypeKind::Primitive)
+                                && f.field_type.protocol_type.as_deref() == Some("number")
+                            {
+                                return "std::collections::HashMap<String, u64>".to_string();
+                            }
+                        }
+                    }
+
+                    // Arrays encoded as objects with `protocol_type: "array"` and a single
+                    // nested element field (as used by decodepsbt-style responses).
+                    if type_def.protocol_type.as_deref() == Some("array") {
+                        if let Some(fields) = &type_def.fields {
+                            if fields.len() == 1 {
+                                let outer = &fields[0].field_type;
+                                if let Some(outer_fields) = &outer.fields {
+                                    if outer_fields.len() == 1 {
+                                        let elem = &outer_fields[0].field_type;
+                                        // When the innermost element has a concrete name
+                                        // (e.g. DecodepsbtInput / DecodepsbtOutput), map to
+                                        // a typed Vec rather than serde_json::Value.
+                                        let elabel = elem.rust_emit_name();
+                                        if !elabel.is_empty()
+                                            && elabel != "object"
+                                            && elabel != "array"
+                                        {
+                                            return format!(
+                                                "Vec<{}>",
+                                                sanitize_type_name_for_rust(elabel)
+                                            );
+                                        }
                                     }
                                 }
                             }
@@ -1329,7 +1304,11 @@ impl VersionSpecificResponseTypeGenerator {
                 let olabel = type_def.rust_emit_name();
                 if !olabel.is_empty() && olabel != "object" && olabel != "array" {
                     let rust_name = sanitize_type_name_for_rust(olabel);
-                    return if enclosing_struct.is_some_and(|s| s == rust_name.as_str()) {
+                    return if ctx.in_union {
+                        ctx.parent_enum
+                            .map(|e| Self::qualify_union_branch_struct(e, &rust_name))
+                            .unwrap_or(rust_name)
+                    } else if ctx.enclosing_struct.is_some_and(|s| s == rust_name.as_str()) {
                         format!("Box<{rust_name}>")
                     } else {
                         rust_name
@@ -1338,10 +1317,18 @@ impl VersionSpecificResponseTypeGenerator {
 
                 record_fallback_event(FallbackEvent {
                     rpc_method: current_rpc_method_or_unknown(),
-                    schema_or_ir_path: format!("object_field:{}", field_name),
+                    schema_or_ir_path: if ctx.in_union {
+                        format!("union_variant:{}", type_def.name)
+                    } else {
+                        format!("object_field:{}", ctx.field_name)
+                    },
                     fallback_kind: "opaque_object_fallback".to_string(),
                     chosen_rust_type: "serde_json::Map<String, serde_json::Value>".to_string(),
-                    reason: "generic_object_without_named_shape".to_string(),
+                    reason: if ctx.in_union {
+                        "unnamed_union_object_variant".to_string()
+                    } else {
+                        "generic_object_without_named_shape".to_string()
+                    },
                     severity: "P1".to_string(),
                 });
                 "serde_json::Map<String, serde_json::Value>".to_string()
@@ -1349,23 +1336,23 @@ impl VersionSpecificResponseTypeGenerator {
             _ => {
                 record_fallback_event(FallbackEvent {
                     rpc_method: current_rpc_method_or_unknown(),
-                    schema_or_ir_path: format!("type_kind_other:{}", field_name),
+                    schema_or_ir_path: if ctx.in_union {
+                        format!("union_variant_other:{}", type_def.name)
+                    } else {
+                        format!("type_kind_other:{}", ctx.field_name)
+                    },
                     fallback_kind: "json_value_fallback".to_string(),
                     chosen_rust_type: "serde_json::Value".to_string(),
-                    reason: "unhandled_type_kind".to_string(),
+                    reason: if ctx.in_union {
+                        "unhandled_union_variant_kind".to_string()
+                    } else {
+                        "unhandled_type_kind".to_string()
+                    },
                     severity: "P1".to_string(),
                 });
                 "serde_json::Value".to_string()
             }
-        };
-        // If the mapped type is from the bitcoin crate, record it for re-exports
-        if let Some(stripped) = mapped.strip_prefix("bitcoin::") {
-            let symbol = stripped.split("::").last().unwrap_or(stripped);
-            crate::generators::version_specific_response_type::record_external_symbol_usage(
-                "bitcoin", symbol,
-            );
         }
-        mapped
     }
 
     // Removed generate_fallback_response - no more transparent wrappers
@@ -2258,1482 +2245,5 @@ impl VersionSpecificResponseTypeGenerator {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn scalar_type_aliases_use_bitcoin_types() {
-        let version = ProtocolVersion::from_str("30.0.0").unwrap();
-        let gen = VersionSpecificResponseTypeGenerator::new(version, "bitcoin_core".to_string());
-
-        let amount_alias = gen.generate_type_alias("amount").unwrap();
-        assert!(amount_alias.contains("pub type Amount = bitcoin::Amount;"));
-
-        let blockhash_alias = gen.generate_type_alias("BlockHash").unwrap();
-        assert!(blockhash_alias.contains("pub type BlockHash = bitcoin::BlockHash;"));
-
-        // Also accept lowercase input; left-side casing is derived from `sanitize_type_name_for_rust`.
-        let blockhash_alias_lower = gen.generate_type_alias("blockhash").unwrap();
-        assert!(blockhash_alias_lower.contains("pub type Blockhash = bitcoin::BlockHash;"));
-
-        // `Txid` must be mapped (it was previously missing and defaulted to `String`)
-        let txid_alias = gen.generate_type_alias("Txid").unwrap();
-        assert!(txid_alias.contains("pub type Txid = bitcoin::Txid;"));
-    }
-
-    #[test]
-    fn array_wrapper_uses_ir_element_type() {
-        let version = ProtocolVersion::from_str("30.0.0").unwrap();
-        let gen = VersionSpecificResponseTypeGenerator::new(version, "bitcoin_core".to_string());
-
-        // IR: top-level array of primitive strings.
-        let elem_ty = TypeDef {
-            name: "string".to_string(),
-            description: String::new(),
-            kind: TypeKind::Primitive,
-            fields: None,
-            variants: None,
-            union_variants: None,
-            base_type: None,
-            protocol_type: Some("string".to_string()),
-            canonical_name: None,
-            condition: None,
-            ..Default::default()
-        };
-
-        // Element encoded as anonymous positional field_0.
-        let result_ty = TypeDef {
-            name: "array".to_string(),
-            description: String::new(),
-            kind: TypeKind::Array,
-            fields: Some(vec![ir::FieldDef {
-                key: ir::FieldKey::Anonymous(0),
-                field_type: elem_ty,
-                required: true,
-                description: String::new(),
-                default_value: None,
-                version_added: None,
-                version_removed: None,
-                force_optional: None,
-            }]),
-            variants: None,
-            union_variants: None,
-            base_type: None,
-            protocol_type: Some("array".to_string()),
-            canonical_name: None,
-            condition: None,
-            ..Default::default()
-        };
-
-        let method = RpcDef {
-            name: "deriveaddresses".to_string(),
-            result: Some(result_ty),
-            ..Default::default()
-        };
-
-        let code = gen
-            .generate_method_response(&method)
-            .expect("generation must succeed")
-            .expect("response must be generated");
-
-        // We expect a transparent wrapper over Vec<String>.
-        assert!(
-            code.contains("pub value: Vec<String>"),
-            "expected Vec<String> field, got:\n{code}"
-        );
-    }
-
-    #[test]
-    fn array_wrapper_recognizes_named_field_0_element() {
-        let version = ProtocolVersion::from_str("30.0.0").unwrap();
-        let gen = VersionSpecificResponseTypeGenerator::new(version, "bitcoin_core".to_string());
-
-        // IR: top-level array of primitive strings with a synthetic Named(\"field_0\") key.
-        let elem_ty = TypeDef {
-            name: "string".to_string(),
-            description: String::new(),
-            kind: TypeKind::Primitive,
-            fields: None,
-            variants: None,
-            union_variants: None,
-            base_type: None,
-            protocol_type: Some("string".to_string()),
-            canonical_name: None,
-            condition: None,
-            ..Default::default()
-        };
-
-        let result_ty = TypeDef {
-            name: "array".to_string(),
-            description: String::new(),
-            kind: TypeKind::Array,
-            fields: Some(vec![ir::FieldDef {
-                key: ir::FieldKey::Named("field_0".to_string()),
-                field_type: elem_ty,
-                required: true,
-                description: String::new(),
-                default_value: None,
-                version_added: None,
-                version_removed: None,
-                force_optional: None,
-            }]),
-            variants: None,
-            union_variants: None,
-            base_type: None,
-            protocol_type: Some("array".to_string()),
-            canonical_name: None,
-            condition: None,
-            ..Default::default()
-        };
-
-        let method = RpcDef {
-            name: "deriveaddresses".to_string(),
-            result: Some(result_ty),
-            ..Default::default()
-        };
-
-        let code = gen
-            .generate_method_response(&method)
-            .expect("generation must succeed")
-            .expect("response must be generated");
-
-        // We still expect a transparent wrapper over Vec<String>.
-        assert!(
-            code.contains("pub value: Vec<String>"),
-            "expected Vec<String> field for Named(\"field_0\") element, got:\n{code}"
-        );
-    }
-
-    /// Asserts that decodepsbt-style response uses IR-driven nested types
-    /// (DecodePsbtTx, Vec<DecodePsbtInput>, Vec<DecodePsbtOutput>)
-    /// rather than serde_json::Value, so schema changes propagate.
-    #[test]
-    fn decodepsbt_response_uses_ir_nested_types() {
-        let version = ProtocolVersion::from_str("30.0.0").unwrap();
-        let gen = VersionSpecificResponseTypeGenerator::new(version, "bitcoin_core".to_string());
-
-        let tx_obj = TypeDef {
-            name: "DecodePsbtTx".to_string(),
-            description: String::new(),
-            kind: TypeKind::Object,
-            fields: Some(vec![ir::FieldDef {
-                key: ir::FieldKey::Named("txid".to_string()),
-                field_type: TypeDef {
-                    name: "hex".to_string(),
-                    description: String::new(),
-                    kind: TypeKind::Primitive,
-                    fields: None,
-                    variants: None,
-                    union_variants: None,
-                    base_type: None,
-                    protocol_type: Some("hex".to_string()),
-                    canonical_name: None,
-                    condition: None,
-                    ..Default::default()
-                },
-                required: true,
-                description: String::new(),
-                default_value: None,
-                version_added: None,
-                version_removed: None,
-                force_optional: None,
-            }]),
-            variants: None,
-            union_variants: None,
-            base_type: None,
-            protocol_type: Some("object".to_string()),
-            canonical_name: None,
-            condition: None,
-            ..Default::default()
-        };
-
-        let empty_object = |name: &str| TypeDef {
-            name: name.to_string(),
-            description: String::new(),
-            kind: TypeKind::Object,
-            fields: Some(vec![]),
-            variants: None,
-            union_variants: None,
-            base_type: None,
-            protocol_type: Some("object".to_string()),
-            canonical_name: None,
-            condition: None,
-            ..Default::default()
-        };
-        let input_elem = empty_object("DecodePsbtInput");
-        let output_elem = empty_object("DecodePsbtOutput");
-
-        let make_array_of_objects = |elem: TypeDef| TypeDef {
-            name: "array".to_string(),
-            description: String::new(),
-            kind: TypeKind::Object,
-            fields: Some(vec![ir::FieldDef {
-                key: ir::FieldKey::Named("field".to_string()),
-                field_type: TypeDef {
-                    name: "object".to_string(),
-                    description: String::new(),
-                    kind: TypeKind::Object,
-                    fields: Some(vec![ir::FieldDef {
-                        key: ir::FieldKey::Named("field_0".to_string()),
-                        field_type: elem,
-                        required: true,
-                        description: String::new(),
-                        default_value: None,
-                        version_added: None,
-                        version_removed: None,
-                        force_optional: None,
-                    }]),
-                    variants: None,
-                    union_variants: None,
-                    base_type: None,
-                    protocol_type: Some("object".to_string()),
-                    canonical_name: None,
-                    condition: None,
-                    ..Default::default()
-                },
-                required: true,
-                description: String::new(),
-                default_value: None,
-                version_added: None,
-                version_removed: None,
-                force_optional: None,
-            }]),
-            variants: None,
-            union_variants: None,
-            base_type: None,
-            protocol_type: Some("array".to_string()),
-            canonical_name: None,
-            condition: None,
-            ..Default::default()
-        };
-
-        let inputs_array = make_array_of_objects(input_elem);
-        let outputs_array = make_array_of_objects(output_elem);
-
-        let result_ty = TypeDef {
-            name: "object".to_string(),
-            description: String::new(),
-            kind: TypeKind::Object,
-            fields: Some(vec![
-                ir::FieldDef {
-                    key: ir::FieldKey::Named("tx".to_string()),
-                    field_type: tx_obj,
-                    required: true,
-                    description: String::new(),
-                    default_value: None,
-                    version_added: None,
-                    version_removed: None,
-                    force_optional: None,
-                },
-                ir::FieldDef {
-                    key: ir::FieldKey::Named("inputs".to_string()),
-                    field_type: inputs_array,
-                    required: true,
-                    description: String::new(),
-                    default_value: None,
-                    version_added: None,
-                    version_removed: None,
-                    force_optional: None,
-                },
-                ir::FieldDef {
-                    key: ir::FieldKey::Named("outputs".to_string()),
-                    field_type: outputs_array,
-                    required: true,
-                    description: String::new(),
-                    default_value: None,
-                    version_added: None,
-                    version_removed: None,
-                    force_optional: None,
-                },
-            ]),
-            variants: None,
-            union_variants: None,
-            base_type: None,
-            protocol_type: Some("object".to_string()),
-            canonical_name: None,
-            condition: None,
-            ..Default::default()
-        };
-
-        let method = RpcDef {
-            name: "decodepsbt".to_string(),
-            result: Some(result_ty),
-            ..Default::default()
-        };
-
-        let code = gen
-            .generate_method_response(&method)
-            .expect("generation must succeed")
-            .expect("response must be generated");
-
-        assert!(
-            code.contains("DecodePsbtTx"),
-            "decodepsbt response must use IR type DecodePsbtTx, got:\n{code}"
-        );
-        assert!(
-            code.contains("Vec<DecodePsbtInput>"),
-            "decodepsbt response must use Vec<DecodePsbtInput> from IR, got:\n{code}"
-        );
-        assert!(
-            code.contains("Vec<DecodePsbtOutput>"),
-            "decodepsbt response must use Vec<DecodePsbtOutput> from IR, got:\n{code}"
-        );
-    }
-
-    #[test]
-    fn type_identity_overrides_name_for_rust_emit() {
-        let version = ProtocolVersion::from_str("30.0.0").unwrap();
-        let gen = VersionSpecificResponseTypeGenerator::new(version, "bitcoin_core".to_string());
-
-        let input_elem = TypeDef {
-            name: "WrongNestedLabel".to_string(),
-            type_identity: Some("DecodePsbtInput".to_string()),
-            description: String::new(),
-            kind: TypeKind::Object,
-            fields: Some(vec![]),
-            variants: None,
-            union_variants: None,
-            base_type: None,
-            protocol_type: Some("object".to_string()),
-            canonical_name: None,
-            condition: None,
-            ..Default::default()
-        };
-
-        let make_array_of_objects = |elem: TypeDef| TypeDef {
-            name: "array".to_string(),
-            description: String::new(),
-            kind: TypeKind::Object,
-            fields: Some(vec![ir::FieldDef {
-                key: ir::FieldKey::Named("field".to_string()),
-                field_type: TypeDef {
-                    name: "object".to_string(),
-                    description: String::new(),
-                    kind: TypeKind::Object,
-                    fields: Some(vec![ir::FieldDef {
-                        key: ir::FieldKey::Named("field_0".to_string()),
-                        field_type: elem,
-                        required: true,
-                        description: String::new(),
-                        default_value: None,
-                        version_added: None,
-                        version_removed: None,
-                        force_optional: None,
-                    }]),
-                    variants: None,
-                    union_variants: None,
-                    base_type: None,
-                    protocol_type: Some("object".to_string()),
-                    canonical_name: None,
-                    condition: None,
-                    ..Default::default()
-                },
-                required: true,
-                description: String::new(),
-                default_value: None,
-                version_added: None,
-                version_removed: None,
-                force_optional: None,
-            }]),
-            variants: None,
-            union_variants: None,
-            base_type: None,
-            protocol_type: Some("array".to_string()),
-            canonical_name: None,
-            condition: None,
-            ..Default::default()
-        };
-
-        let inputs_array = make_array_of_objects(input_elem);
-        let result_ty = TypeDef {
-            name: "object".to_string(),
-            description: String::new(),
-            kind: TypeKind::Object,
-            fields: Some(vec![ir::FieldDef {
-                key: ir::FieldKey::Named("inputs".to_string()),
-                field_type: inputs_array,
-                required: true,
-                description: String::new(),
-                default_value: None,
-                version_added: None,
-                version_removed: None,
-                force_optional: None,
-            }]),
-            variants: None,
-            union_variants: None,
-            base_type: None,
-            protocol_type: Some("object".to_string()),
-            canonical_name: None,
-            condition: None,
-            ..Default::default()
-        };
-
-        let method = RpcDef {
-            name: "decodepsbt".to_string(),
-            result: Some(result_ty),
-            ..Default::default()
-        };
-
-        let code = gen
-            .generate(std::slice::from_ref(&method))
-            .expect("generation must succeed")
-            .into_iter()
-            .find(|(f, _)| f == "responses.rs")
-            .expect("responses.rs")
-            .1;
-
-        assert!(
-            code.contains("pub struct DecodePsbtInput"),
-            "expected struct from type_identity, not WrongNestedLabel; got:\n{code}"
-        );
-        assert!(
-            !code.contains("WrongNestedLabel"),
-            "name-only label must not appear when type_identity is set; got:\n{code}"
-        );
-    }
-
-    #[test]
-    fn array_wrapper_uses_value_vec_for_any() {
-        let version = ProtocolVersion::from_str("30.0.0").unwrap();
-        let gen = VersionSpecificResponseTypeGenerator::new(version, "bitcoin_core".to_string());
-
-        // IR: top-level array of primitive `any` (maps to serde_json::Value).
-        let elem_ty = TypeDef {
-            name: "any".to_string(),
-            description: String::new(),
-            kind: TypeKind::Primitive,
-            fields: None,
-            variants: None,
-            union_variants: None,
-            base_type: None,
-            protocol_type: Some("any".to_string()),
-            canonical_name: None,
-            condition: None,
-            ..Default::default()
-        };
-
-        let result_ty = TypeDef {
-            name: "array".to_string(),
-            description: String::new(),
-            kind: TypeKind::Array,
-            fields: Some(vec![ir::FieldDef {
-                key: ir::FieldKey::Anonymous(0),
-                field_type: elem_ty,
-                required: true,
-                description: String::new(),
-                default_value: None,
-                version_added: None,
-                version_removed: None,
-                force_optional: None,
-            }]),
-            variants: None,
-            union_variants: None,
-            base_type: None,
-            protocol_type: Some("array".to_string()),
-            canonical_name: None,
-            condition: None,
-            ..Default::default()
-        };
-
-        let method = RpcDef {
-            name: "getrawmempool".to_string(),
-            result: Some(result_ty),
-            ..Default::default()
-        };
-
-        let code = gen
-            .generate_method_response(&method)
-            .expect("generation must succeed")
-            .expect("response must be generated");
-
-        // We expect a transparent wrapper over Vec<serde_json::Value>.
-        assert!(
-            code.contains("pub value: Vec<serde_json::Value>"),
-            "expected Vec<serde_json::Value> field, got:\n{code}"
-        );
-    }
-
-    #[test]
-    fn getblocktemplate_placeholder_field_optional() {
-        let version = ProtocolVersion::from_str("30.0.0").unwrap();
-        let gen = VersionSpecificResponseTypeGenerator::new(version, "bitcoin_core".to_string());
-
-        // IR: object result whose first anonymous field encodes the proposal-accepted `none` result.
-        let none_ty = TypeDef {
-            name: "none".to_string(),
-            description: String::new(),
-            kind: TypeKind::Primitive,
-            fields: None,
-            variants: None,
-            union_variants: None,
-            base_type: None,
-            protocol_type: Some("none".to_string()),
-            canonical_name: None,
-            condition: Some("If the proposal was accepted with mode=='proposal'".to_string()),
-            ..Default::default()
-        };
-
-        let version_ty = TypeDef {
-            name: "number".to_string(),
-            description: String::new(),
-            kind: TypeKind::Primitive,
-            fields: None,
-            variants: None,
-            union_variants: None,
-            base_type: None,
-            protocol_type: Some("number".to_string()),
-            canonical_name: None,
-            condition: None,
-            ..Default::default()
-        };
-
-        let result_ty = TypeDef {
-            name: "object".to_string(),
-            description: String::new(),
-            kind: TypeKind::Object,
-            fields: Some(vec![
-                ir::FieldDef {
-                    key: ir::FieldKey::Anonymous(0),
-                    field_type: none_ty,
-                    required: true,
-                    description: String::new(),
-                    default_value: None,
-                    version_added: None,
-                    version_removed: None,
-                    force_optional: Some(true),
-                },
-                ir::FieldDef {
-                    key: ir::FieldKey::Named("version".to_string()),
-                    field_type: version_ty,
-                    required: true,
-                    description: String::new(),
-                    default_value: None,
-                    version_added: None,
-                    version_removed: None,
-                    force_optional: None,
-                },
-            ]),
-            variants: None,
-            union_variants: None,
-            base_type: None,
-            protocol_type: Some("object".to_string()),
-            canonical_name: None,
-            condition: None,
-            ..Default::default()
-        };
-
-        let method = RpcDef {
-            name: "getblocktemplate".to_string(),
-            result: Some(result_ty),
-            ..Default::default()
-        };
-
-        let code = gen
-            .generate_method_response(&method)
-            .expect("generation must succeed")
-            .expect("response must be generated");
-
-        // IR `force_optional` on the proposal placeholder mirrors canonical `getblocktemplate`.
-        assert!(
-            code.contains("#[serde(default)]"),
-            "expected serde default attr for placeholder field, got:\n{code}"
-        );
-        assert!(
-            code.contains("pub field_0: Option<()>"),
-            "expected optional unit placeholder field, got:\n{code}"
-        );
-    }
-
-    #[test]
-    fn getblock_skips_ir_union_suffix_duplicate_fields() {
-        let version = ProtocolVersion::from_str("30.0.0").unwrap();
-        let gen = VersionSpecificResponseTypeGenerator::new(version, "bitcoin_core".to_string());
-
-        let hex_ty = TypeDef {
-            name: "hex".to_string(),
-            description: String::new(),
-            kind: TypeKind::Primitive,
-            fields: None,
-            variants: None,
-            union_variants: None,
-            base_type: None,
-            protocol_type: Some("hex".to_string()),
-            canonical_name: None,
-            condition: None,
-            ..Default::default()
-        };
-
-        let result_ty = TypeDef {
-            name: "object".to_string(),
-            description: String::new(),
-            kind: TypeKind::Object,
-            fields: Some(vec![
-                ir::FieldDef {
-                    key: ir::FieldKey::Named("hash".to_string()),
-                    field_type: hex_ty.clone(),
-                    required: true,
-                    description: String::new(),
-                    default_value: None,
-                    version_added: None,
-                    version_removed: None,
-                    force_optional: None,
-                },
-                ir::FieldDef {
-                    key: ir::FieldKey::Named("hash_1".to_string()),
-                    field_type: hex_ty,
-                    required: true,
-                    description: String::new(),
-                    default_value: None,
-                    version_added: None,
-                    version_removed: None,
-                    force_optional: None,
-                },
-            ]),
-            variants: None,
-            union_variants: None,
-            base_type: None,
-            protocol_type: Some("object".to_string()),
-            canonical_name: None,
-            condition: None,
-            ..Default::default()
-        };
-
-        let method =
-            RpcDef { name: "getblock".to_string(), result: Some(result_ty), ..Default::default() };
-
-        let code = gen
-            .generate_method_response(&method)
-            .expect("generation must succeed")
-            .expect("response must be generated");
-
-        assert!(
-            code.contains("pub hash:"),
-            "expected single hash field for wire JSON key `hash`, got:\n{code}"
-        );
-        assert!(
-            code.contains("pub hash_1:"),
-            "IR disambiguation key hash_1 is emitted for distinct wire shapes, got:\n{code}"
-        );
-    }
-
-    /// Regression test for the BTreeMap/BTreeSet stabilization: when the set of nested types
-    /// changes (e.g. one method removed), HashSet iteration order can change, so the remaining
-    /// structs appear in a different order and the diff is noisy. With BTreeSet, order is
-    /// deterministic (sorted), so the relative order of remaining structs is stable.
-    ///
-    /// Type names Aa, Bb, Cc are chosen so that with HashSet the iteration order differs
-    /// when the set shrinks from 3 to 2 elements; this test then fails. With BTreeSet it passes.
-    #[test]
-    fn nested_type_emission_order_stable_when_set_shrinks() {
-        use std::str::FromStr;
-
-        let version = ProtocolVersion::from_str("30.0.0").unwrap();
-        let gen = VersionSpecificResponseTypeGenerator::new(version, "bitcoin_core".to_string());
-
-        fn object_type(name: &str) -> TypeDef {
-            let string_ty = TypeDef {
-                name: "string".to_string(),
-                description: String::new(),
-                kind: TypeKind::Primitive,
-                fields: None,
-                variants: None,
-                union_variants: None,
-                base_type: None,
-                protocol_type: Some("string".to_string()),
-                canonical_name: None,
-                condition: None,
-                ..Default::default()
-            };
-            TypeDef {
-                name: name.to_string(),
-                description: String::new(),
-                kind: TypeKind::Object,
-                fields: Some(vec![ir::FieldDef {
-                    key: ir::FieldKey::Named("x".to_string()),
-                    field_type: string_ty,
-                    required: true,
-                    description: String::new(),
-                    default_value: None,
-                    version_added: None,
-                    version_removed: None,
-                    force_optional: None,
-                }]),
-                variants: None,
-                union_variants: None,
-                base_type: None,
-                protocol_type: None,
-                canonical_name: None,
-                condition: None,
-                ..Default::default()
-            }
-        }
-
-        fn rpc_method(name: &str, result: TypeDef) -> RpcDef {
-            RpcDef { name: name.to_string(), result: Some(result), ..Default::default() }
-        }
-
-        // Use short names with spread hash values so HashSet iteration order is more likely
-        // to differ when set size changes (3 → 2), reproducing the bug with hash-based collections.
-        let type_a = object_type("Aa");
-        let type_b = object_type("Bb");
-        let type_c = object_type("Cc");
-
-        let method_a = rpc_method("method_a", type_a.clone());
-        let method_b = rpc_method("method_b", type_b.clone());
-        let method_c = rpc_method("method_c", type_c);
-
-        // Run 1: all three methods → nested set {Aa, Bb, Cc}
-        let out1 = gen
-            .generate(&[method_a.clone(), method_b.clone(), method_c.clone()])
-            .expect("generate must succeed");
-        let content1 = &out1[0].1;
-
-        // Run 2: remove method_c → nested set {Aa, Bb} (set shrank)
-        let out2 = gen.generate(&[method_a, method_b]).expect("generate must succeed");
-        let content2 = &out2[0].1;
-
-        fn order_of(content: &str, names: &[&str]) -> Vec<usize> {
-            names
-                .iter()
-                .map(|n| {
-                    content
-                        .find(&format!("pub struct {}", n))
-                        .unwrap_or_else(|| panic!("struct {} not found in output", n))
-                })
-                .collect()
-        }
-
-        let names = ["Aa", "Bb"];
-        let positions1 = order_of(content1, &names);
-        let positions2 = order_of(content2, &names);
-
-        // With BTreeSet: order is deterministic (sorted). So NestedTypeA < NestedTypeB in both runs.
-        // With HashSet: when set shrinks from 3 to 2, iteration order can change, so NestedTypeA and
-        // NestedTypeB might swap → relative order in run2 would differ from run1 → assertion fails.
-        let order_a_before_b_run1 = positions1[0] < positions1[1];
-        let order_a_before_b_run2 = positions2[0] < positions2[1];
-        assert!(
-            order_a_before_b_run1 == order_a_before_b_run2,
-            "nested type emission order must be stable when the set shrinks (use BTreeSet, not HashSet). \
-             Run1 order: {:?}, run2 order: {:?}",
-            positions1,
-            positions2
-        );
-    }
-
-    #[test]
-    fn union_rpc_response_emits_untagged_enum() {
-        let version = ProtocolVersion::from_str("30.0.0").unwrap();
-        let gen = VersionSpecificResponseTypeGenerator::new(version, "bitcoin_core".to_string());
-        let wire = TypeDef {
-            name: "string".to_string(),
-            kind: TypeKind::Primitive,
-            protocol_type: Some("string".to_string()),
-            ..Default::default()
-        };
-        let verbose_inner = TypeDef {
-            name: "DemoVerbose".to_string(),
-            kind: TypeKind::Object,
-            fields: Some(vec![ir::FieldDef {
-                key: ir::FieldKey::Named("hex".to_string()),
-                field_type: TypeDef {
-                    name: "hex".to_string(),
-                    kind: TypeKind::Primitive,
-                    protocol_type: Some("hex".to_string()),
-                    ..Default::default()
-                },
-                required: true,
-                description: String::new(),
-                default_value: None,
-                version_added: None,
-                version_removed: None,
-                force_optional: None,
-            }]),
-            protocol_type: Some("object".to_string()),
-            ..Default::default()
-        };
-        let union_td = TypeDef {
-            name: "DemoRpcResponse".to_string(),
-            kind: TypeKind::Union,
-            union_variants: Some(vec![
-                ir::UnionVariantDef {
-                    name: "DemoWire".to_string(),
-                    description: "wire".to_string(),
-                    condition: None,
-                    type_def: wire,
-                },
-                ir::UnionVariantDef {
-                    name: "DemoVerboseVariant".to_string(),
-                    description: "verbose".to_string(),
-                    condition: None,
-                    type_def: verbose_inner,
-                },
-            ]),
-            protocol_type: Some("union".to_string()),
-            ..Default::default()
-        };
-        let method =
-            RpcDef { name: "demo_rpc".to_string(), result: Some(union_td), ..Default::default() };
-        let code = gen
-            .generate_method_response(&method)
-            .expect("generation must succeed")
-            .expect("response must be generated");
-        assert!(code.contains("#[serde(untagged)]"), "got:\n{code}");
-        assert!(
-            code.contains("pub struct DemoRpcResponseDemoVerbose"),
-            "branch structs are qualified with parent enum name, got:\n{code}"
-        );
-        assert!(code.contains("pub enum DemoRpcResponse"), "got:\n{code}");
-    }
-
-    /// `getorphantxs`-style unions: two array variants reuse one IR element type name with different
-    /// fields; we must emit a single merged struct (extra fields optional).
-    #[test]
-    fn union_array_branches_merge_same_named_element_struct() {
-        let version = ProtocolVersion::from_str("30.0.0").unwrap();
-        let gen = VersionSpecificResponseTypeGenerator::new(version, "bitcoin_core".to_string());
-
-        let str_ty = || TypeDef {
-            name: "string".to_string(),
-            kind: TypeKind::Primitive,
-            protocol_type: Some("string".to_string()),
-            ..Default::default()
-        };
-        let hex_ty = TypeDef {
-            name: "hex".to_string(),
-            kind: TypeKind::Primitive,
-            protocol_type: Some("hex".to_string()),
-            ..Default::default()
-        };
-
-        let elem_v1 = TypeDef {
-            name: "MergedElem".to_string(),
-            kind: TypeKind::Object,
-            fields: Some(vec![ir::FieldDef {
-                key: ir::FieldKey::Named("txid".to_string()),
-                field_type: str_ty(),
-                required: true,
-                description: String::new(),
-                default_value: None,
-                version_added: None,
-                version_removed: None,
-                force_optional: None,
-            }]),
-            protocol_type: Some("object".to_string()),
-            ..Default::default()
-        };
-
-        let elem_v2 = TypeDef {
-            name: "MergedElem".to_string(),
-            kind: TypeKind::Object,
-            fields: Some(vec![
-                ir::FieldDef {
-                    key: ir::FieldKey::Named("txid".to_string()),
-                    field_type: str_ty(),
-                    required: true,
-                    description: String::new(),
-                    default_value: None,
-                    version_added: None,
-                    version_removed: None,
-                    force_optional: None,
-                },
-                ir::FieldDef {
-                    key: ir::FieldKey::Named("hex".to_string()),
-                    field_type: hex_ty,
-                    required: true,
-                    description: String::new(),
-                    default_value: None,
-                    version_added: None,
-                    version_removed: None,
-                    force_optional: None,
-                },
-            ]),
-            protocol_type: Some("object".to_string()),
-            ..Default::default()
-        };
-
-        let array_of = |elem: TypeDef| TypeDef {
-            name: "array".to_string(),
-            kind: TypeKind::Array,
-            fields: Some(vec![ir::FieldDef {
-                key: ir::FieldKey::Anonymous(0),
-                field_type: elem,
-                required: true,
-                description: String::new(),
-                default_value: None,
-                version_added: None,
-                version_removed: None,
-                force_optional: None,
-            }]),
-            protocol_type: Some("array".to_string()),
-            ..Default::default()
-        };
-
-        let union_td = TypeDef {
-            name: "DemoOrphanStyleResponse".to_string(),
-            kind: TypeKind::Union,
-            union_variants: Some(vec![
-                ir::UnionVariantDef {
-                    name: "Branch1".to_string(),
-                    description: String::new(),
-                    condition: None,
-                    type_def: array_of(elem_v1),
-                },
-                ir::UnionVariantDef {
-                    name: "Branch2".to_string(),
-                    description: String::new(),
-                    condition: None,
-                    type_def: array_of(elem_v2),
-                },
-            ]),
-            protocol_type: Some("union".to_string()),
-            ..Default::default()
-        };
-
-        let method = RpcDef {
-            name: "demo_orphan_style".to_string(),
-            result: Some(union_td),
-            ..Default::default()
-        };
-
-        let code = gen
-            .generate_method_response(&method)
-            .expect("generation must succeed")
-            .expect("response must be generated");
-
-        assert_eq!(
-            code.matches("pub struct DemoOrphanStyleResponseMergedElem").count(),
-            1,
-            "expected exactly one qualified merged element struct, got:\n{code}"
-        );
-        assert!(
-            code.contains("pub hex: Option<String>"),
-            "hex only in one branch must be optional, got:\n{code}"
-        );
-    }
-
-    /// Self-referential named objects are emitted from the type-registry pass (nested helpers), not
-    /// as the top-level `*Response` struct.
-    #[test]
-    fn self_referential_nested_type_uses_box() {
-        let version = ProtocolVersion::from_str("30.0.0").unwrap();
-        let gen = VersionSpecificResponseTypeGenerator::new(version, "bitcoin_core".to_string());
-
-        let recursive_row = TypeDef {
-            name: "RecursiveRow".to_string(),
-            kind: TypeKind::Object,
-            fields: Some(vec![ir::FieldDef {
-                key: ir::FieldKey::Named("child".to_string()),
-                field_type: TypeDef {
-                    name: "RecursiveRow".to_string(),
-                    kind: TypeKind::Object,
-                    fields: Some(vec![]),
-                    protocol_type: Some("object".to_string()),
-                    ..Default::default()
-                },
-                required: false,
-                description: String::new(),
-                default_value: None,
-                version_added: None,
-                version_removed: None,
-                force_optional: None,
-            }]),
-            protocol_type: Some("object".to_string()),
-            ..Default::default()
-        };
-
-        let wrapper = TypeDef {
-            name: "object".to_string(),
-            kind: TypeKind::Object,
-            fields: Some(vec![ir::FieldDef {
-                key: ir::FieldKey::Named("row".to_string()),
-                field_type: recursive_row,
-                required: true,
-                description: String::new(),
-                default_value: None,
-                version_added: None,
-                version_removed: None,
-                force_optional: None,
-            }]),
-            protocol_type: Some("object".to_string()),
-            ..Default::default()
-        };
-
-        let method = RpcDef {
-            name: "wrapper_demo".to_string(),
-            result: Some(wrapper),
-            ..Default::default()
-        };
-
-        let files = gen.generate(&[method]).expect("generate");
-        let code =
-            files.iter().find(|(name, _)| name == "responses.rs").expect("responses.rs").1.clone();
-
-        assert!(
-            code.contains("pub child: Option<Box<RecursiveRow>>"),
-            "nested recursive IR object needs Box, got:\n{code}"
-        );
-    }
-
-    #[test]
-    fn union_branch_merge_deep_merges_nested_prevout() {
-        let version = ProtocolVersion::from_str("30.0.0").unwrap();
-        let gen = VersionSpecificResponseTypeGenerator::new(version, "bitcoin_core".to_string());
-
-        let string_ty = TypeDef {
-            name: "string".to_string(),
-            kind: TypeKind::Primitive,
-            protocol_type: Some("string".to_string()),
-            ..Default::default()
-        };
-        let vin_v2 = TypeDef {
-            name: "GetBlockVin".to_string(),
-            type_identity: Some("GetBlockVin".to_string()),
-            kind: TypeKind::Object,
-            fields: Some(vec![ir::FieldDef {
-                key: ir::FieldKey::Named("txid".to_string()),
-                field_type: string_ty.clone(),
-                required: false,
-                description: String::new(),
-                default_value: None,
-                version_added: None,
-                version_removed: None,
-                force_optional: None,
-            }]),
-            protocol_type: Some("object".to_string()),
-            ..Default::default()
-        };
-        let prevout = TypeDef {
-            name: "GetBlockPrevout".to_string(),
-            type_identity: Some("GetBlockPrevout".to_string()),
-            kind: TypeKind::Object,
-            fields: Some(vec![ir::FieldDef {
-                key: ir::FieldKey::Named("height".to_string()),
-                field_type: TypeDef {
-                    name: "number".to_string(),
-                    kind: TypeKind::Primitive,
-                    protocol_type: Some("number".to_string()),
-                    ..Default::default()
-                },
-                required: true,
-                description: String::new(),
-                default_value: None,
-                version_added: None,
-                version_removed: None,
-                force_optional: None,
-            }]),
-            protocol_type: Some("object".to_string()),
-            ..Default::default()
-        };
-        let vin_v3 = TypeDef {
-            name: "GetBlockVin".to_string(),
-            type_identity: Some("GetBlockVin".to_string()),
-            kind: TypeKind::Object,
-            fields: Some(vec![
-                ir::FieldDef {
-                    key: ir::FieldKey::Named("txid".to_string()),
-                    field_type: string_ty.clone(),
-                    required: false,
-                    description: String::new(),
-                    default_value: None,
-                    version_added: None,
-                    version_removed: None,
-                    force_optional: None,
-                },
-                ir::FieldDef {
-                    key: ir::FieldKey::Named("prevout".to_string()),
-                    field_type: prevout,
-                    required: false,
-                    description: String::new(),
-                    default_value: None,
-                    version_added: None,
-                    version_removed: None,
-                    force_optional: None,
-                },
-            ]),
-            protocol_type: Some("object".to_string()),
-            ..Default::default()
-        };
-
-        let merged = gen.merge_object_type_defs_for_union_branches(&[vin_v2, vin_v3], "getblock");
-        let keys: Vec<_> =
-            merged.fields.as_ref().unwrap().iter().map(|f| f.key.as_ident()).collect();
-        assert!(
-            keys.iter().any(|k| k == "prevout"),
-            "deep-merge must keep verbosity-3 prevout, got {keys:?}"
-        );
-        let prevout_field =
-            merged.fields.as_ref().unwrap().iter().find(|f| f.key.as_ident() == "prevout").unwrap();
-        assert!(!prevout_field.required, "prevout only on one arm ⇒ optional after merge");
-    }
-
-    #[test]
-    fn nested_map_of_map_does_not_emit_recursive_type_alias() {
-        let version = ProtocolVersion::from_str("30.0.0").unwrap();
-        let gen = VersionSpecificResponseTypeGenerator::new(version, "bitcoin_core".to_string());
-
-        let leaf = TypeDef {
-            name: "GetRawAddrManMapValue".to_string(),
-            type_identity: Some("GetRawAddrManMapValue".to_string()),
-            kind: TypeKind::Object,
-            fields: Some(vec![ir::FieldDef {
-                key: ir::FieldKey::Named("address".to_string()),
-                field_type: TypeDef {
-                    name: "string".to_string(),
-                    kind: TypeKind::Primitive,
-                    protocol_type: Some("string".to_string()),
-                    ..Default::default()
-                },
-                required: true,
-                description: String::new(),
-                default_value: None,
-                version_added: None,
-                version_removed: None,
-                force_optional: None,
-            }]),
-            protocol_type: Some("object".to_string()),
-            ..Default::default()
-        };
-
-        let inner_map = TypeDef {
-            name: "GetRawAddrManMapValue".to_string(),
-            type_identity: Some("GetRawAddrManMapValue".to_string()),
-            kind: TypeKind::Map,
-            protocol_type: Some("object-dynamic".to_string()),
-            map_value: Some(Box::new(leaf)),
-            map_key_protocol_type: Some("string".to_string()),
-            ..Default::default()
-        };
-
-        let outer_map = TypeDef {
-            name: "GetRawAddrManResultMap".to_string(),
-            type_identity: Some("GetRawAddrManResultMap".to_string()),
-            kind: TypeKind::Map,
-            protocol_type: Some("object-dynamic".to_string()),
-            map_value: Some(Box::new(inner_map)),
-            map_key_protocol_type: Some("string".to_string()),
-            ..Default::default()
-        };
-
-        let method = RpcDef {
-            name: "getrawaddrman".to_string(),
-            result: Some(outer_map),
-            ..Default::default()
-        };
-
-        let files = gen.generate(&[method]).expect("generate");
-        let code =
-            files.iter().find(|(name, _)| name == "responses.rs").expect("responses.rs").1.clone();
-
-        assert!(
-            code.contains("pub struct GetRawAddrManMapValue"),
-            "leaf object must be a struct, got:\n{code}"
-        );
-        assert!(code.contains("pub address:"), "leaf object must keep address field, got:\n{code}");
-        assert!(
-            !code.contains(
-                "pub type GetRawAddrManMapValue = BTreeMap<String, GetRawAddrManMapValue>"
-            ),
-            "must not emit recursive map alias, got:\n{code}"
-        );
-        assert!(
-            code.contains(
-                "pub struct GetRawAddrManResponse(pub BTreeMap<String, BTreeMap<String, GetRawAddrManMapValue>>)"
-            ),
-            "response must be map of map of leaf object, got:\n{code}"
-        );
-    }
-
-    #[test]
-    fn union_response_emits_vec_and_btreemap_variants() {
-        let version = ProtocolVersion::from_str("30.0.0").unwrap();
-        let gen = VersionSpecificResponseTypeGenerator::new(version, "bitcoin_core".to_string());
-
-        let str_prim = TypeDef {
-            name: "string".to_string(),
-            description: String::new(),
-            kind: TypeKind::Primitive,
-            fields: None,
-            variants: None,
-            union_variants: None,
-            base_type: None,
-            protocol_type: Some("string".to_string()),
-            canonical_name: None,
-            condition: None,
-            ..Default::default()
-        };
-
-        let array_branch = TypeDef {
-            name: "array".to_string(),
-            description: String::new(),
-            kind: TypeKind::Array,
-            fields: Some(vec![ir::FieldDef {
-                key: ir::FieldKey::Anonymous(0),
-                field_type: str_prim,
-                required: true,
-                description: String::new(),
-                default_value: None,
-                version_added: None,
-                version_removed: None,
-                force_optional: None,
-            }]),
-            variants: None,
-            union_variants: None,
-            base_type: None,
-            protocol_type: Some("array".to_string()),
-            canonical_name: None,
-            condition: None,
-            ..Default::default()
-        };
-
-        let num_prim = TypeDef {
-            name: "number".to_string(),
-            description: String::new(),
-            kind: TypeKind::Primitive,
-            fields: None,
-            variants: None,
-            union_variants: None,
-            base_type: None,
-            protocol_type: Some("number".to_string()),
-            canonical_name: None,
-            condition: None,
-            ..Default::default()
-        };
-
-        let map_branch = TypeDef {
-            name: "map".to_string(),
-            description: String::new(),
-            kind: TypeKind::Map,
-            fields: None,
-            variants: None,
-            union_variants: None,
-            base_type: None,
-            protocol_type: None,
-            canonical_name: None,
-            condition: None,
-            map_value: Some(Box::new(num_prim)),
-            map_key_protocol_type: Some("hex".to_string()),
-            ..Default::default()
-        };
-
-        let result_ty = TypeDef {
-            name: "DemoExclusiveUnionResponse".to_string(),
-            description: String::new(),
-            kind: TypeKind::Union,
-            fields: None,
-            variants: None,
-            union_variants: Some(vec![
-                ir::UnionVariantDef {
-                    name: "TxidStrings".to_string(),
-                    description: String::new(),
-                    condition: None,
-                    type_def: array_branch,
-                },
-                ir::UnionVariantDef {
-                    name: "TxidToNumber".to_string(),
-                    description: String::new(),
-                    condition: None,
-                    type_def: map_branch,
-                },
-            ]),
-            base_type: None,
-            protocol_type: None,
-            canonical_name: None,
-            condition: None,
-            ..Default::default()
-        };
-
-        let method = RpcDef {
-            name: "demo_exclusive_union".to_string(),
-            result: Some(result_ty),
-            ..Default::default()
-        };
-
-        let code = gen
-            .generate_method_response(&method)
-            .expect("generation must succeed")
-            .expect("response must be generated");
-
-        assert!(
-            code.contains("#[serde(untagged)]"),
-            "union response should use untagged enum, got:\n{code}"
-        );
-        assert!(code.contains("Vec<String>"), "expected Vec<String> array variant, got:\n{code}");
-        assert!(
-            code.contains("BTreeMap<bitcoin::Txid, u64>"),
-            "expected BTreeMap txid map variant, got:\n{code}"
-        );
-    }
-
-    #[test]
-    fn top_level_map_result_generates_transparent_map_wrapper() {
-        let version = ProtocolVersion::from_str("30.0.0").expect("version");
-        let gen = VersionSpecificResponseTypeGenerator::new(version, "bitcoin_core".to_string());
-
-        let result_ty = TypeDef {
-            name: "LoggingResultMap".to_string(),
-            description: String::new(),
-            kind: TypeKind::Map,
-            fields: None,
-            variants: None,
-            union_variants: None,
-            base_type: None,
-            protocol_type: Some("object-dynamic".to_string()),
-            canonical_name: None,
-            condition: None,
-            map_value: Some(Box::new(TypeDef {
-                name: "boolean".to_string(),
-                description: String::new(),
-                kind: TypeKind::Primitive,
-                fields: None,
-                variants: None,
-                union_variants: None,
-                base_type: None,
-                protocol_type: Some("boolean".to_string()),
-                canonical_name: None,
-                condition: None,
-                ..Default::default()
-            })),
-            map_key_protocol_type: Some("string".to_string()),
-            ..Default::default()
-        };
-
-        let method =
-            RpcDef { name: "logging".to_string(), result: Some(result_ty), ..Default::default() };
-
-        let code = gen
-            .generate_method_response(&method)
-            .expect("generation must succeed")
-            .expect("response must be generated");
-
-        assert!(
-            code.contains("#[serde(transparent)]"),
-            "expected transparent wrapper, got:\n{code}"
-        );
-        assert!(
-            code.contains("pub struct LoggingResponse(pub BTreeMap<String, bool>);"),
-            "expected map wrapper shape, got:\n{code}"
-        );
-    }
-
-    #[test]
-    fn generated_output_does_not_emit_resultmap_string_aliases() {
-        let version = ProtocolVersion::from_str("30.0.0").expect("version");
-        let gen = VersionSpecificResponseTypeGenerator::new(version, "bitcoin_core".to_string());
-        let methods = vec![RpcDef {
-            name: "logging".to_string(),
-            description: String::new(),
-            params: vec![],
-            result: Some(TypeDef {
-                name: "LoggingResultMap".to_string(),
-                description: String::new(),
-                kind: TypeKind::Map,
-                fields: None,
-                variants: None,
-                union_variants: None,
-                base_type: None,
-                protocol_type: Some("object-dynamic".to_string()),
-                canonical_name: None,
-                condition: None,
-                map_value: Some(Box::new(TypeDef {
-                    name: "boolean".to_string(),
-                    description: String::new(),
-                    kind: TypeKind::Primitive,
-                    fields: None,
-                    variants: None,
-                    union_variants: None,
-                    base_type: None,
-                    protocol_type: Some("boolean".to_string()),
-                    canonical_name: None,
-                    condition: None,
-                    ..Default::default()
-                })),
-                map_key_protocol_type: Some("string".to_string()),
-                ..Default::default()
-            }),
-            ..Default::default()
-        }];
-        let files = gen.generate(&methods).expect("generate");
-        let responses = files
-            .iter()
-            .find(|(name, _)| name == "responses.rs")
-            .map(|(_, content)| content)
-            .expect("responses.rs");
-        assert!(
-            !responses.contains("pub type LoggingResultMap = String;"),
-            "map aliases must never degrade to String:\n{responses}"
-        );
-    }
-
-    #[test]
-    fn analyzepsbt_emits_deep_nested_object_structs() {
-        let workspace_root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../");
-        let ir_path = workspace_root.join("resources/ir/bitcoin.ir.json");
-        let ir = ir::ProtocolIR::from_file(&ir_path)
-            .unwrap_or_else(|e| panic!("load IR {}: {e}", ir_path.display()));
-        let methods: Vec<RpcDef> = ir.get_rpc_methods().into_iter().cloned().collect();
-        let version = ProtocolVersion::from_str("30.2.0").expect("protocol version");
-        let gen = VersionSpecificResponseTypeGenerator::new(version, "bitcoin_core".to_string());
-        let files = gen.generate(&methods).expect("generate responses");
-        let responses = files
-            .iter()
-            .find(|(name, _)| name == "responses.rs")
-            .map(|(_, content)| content)
-            .expect("responses.rs");
-        assert!(
-            responses.contains("pub struct AnalyzePsbtMissing "),
-            "expected AnalyzePsbtMissing definition; codegen may skip emitting nested types referenced by fields"
-        );
-    }
-
-    #[test]
-    fn fallback_inventory_regression_guard() {
-        let workspace_root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../");
-        let ir_path = workspace_root.join("resources/ir/bitcoin.ir.json");
-        let ir = ir::ProtocolIR::from_file(&ir_path)
-            .unwrap_or_else(|e| panic!("load IR {}: {e}", ir_path.display()));
-        let methods: Vec<RpcDef> = ir.get_rpc_methods().into_iter().cloned().collect();
-
-        clear_fallback_events();
-        let version = ProtocolVersion::from_str("30.0.0").expect("protocol version");
-        let gen = VersionSpecificResponseTypeGenerator::new(version, "bitcoin_core".to_string());
-        let _ = gen.generate(&methods).expect("generate responses");
-        let events = fallback_events_snapshot();
-
-        let allowed_reasons: std::collections::BTreeSet<&str> = std::collections::BTreeSet::from([
-            "generic_object_without_named_shape",
-            "unmapped_alias_default_string",
-        ]);
-        for event in &events {
-            assert!(
-                allowed_reasons.contains(event.reason.as_str()),
-                "unexpected fallback reason `{}` in event {:?}; review schema/codegen precision",
-                event.reason,
-                event
-            );
-        }
-        // Full `bitcoin.ir.json` legitimately triggers many `generic_object_without_named_shape`
-        // events until OpenRPC gives stable names to every nested object; cap avoids silent growth.
-        assert!(
-            events.len() <= 128,
-            "fallback event count increased unexpectedly ({} > 128); investigate codegen/IR regression",
-            events.len()
-        );
-    }
-
-    #[test]
-    fn no_rpc_name_specific_codegen_conditionals() {
-        let src = include_str!("version_specific_response_type.rs");
-        let forbidden = [
-            format!("if {} == ", "rpc_name"),
-            format!("if {} == ", "method.name"),
-            format!("{}::", "raw_response_policy"),
-        ];
-        for needle in forbidden {
-            assert!(
-                !src.contains(&needle),
-                "version-specific codegen must remain IR-driven; found forbidden pattern: {needle}"
-            );
-        }
-    }
-}
+#[path = "version_specific_response_type_tests.rs"]
+mod tests;
