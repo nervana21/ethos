@@ -8,9 +8,7 @@ use ir::ProtocolIR;
 use path::{canonical_bitcoin_ir_path, rpc_golden_path, workspace_root_from_manifest};
 use serde_json::{json, Value};
 
-fn repo_root() -> std::path::PathBuf {
-    workspace_root_from_manifest(env!("CARGO_MANIFEST_DIR"), 2)
-}
+fn repo_root() -> std::path::PathBuf { workspace_root_from_manifest(env!("CARGO_MANIFEST_DIR"), 2) }
 
 fn load_ir() -> ProtocolIR {
     let path = canonical_bitcoin_ir_path(&repo_root());

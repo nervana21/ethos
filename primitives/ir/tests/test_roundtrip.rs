@@ -145,11 +145,7 @@ fn homogeneous_array_element_type_supports_prefix_items_tuples() {
         name: "array".to_string(),
         description: String::new(),
         kind: TypeKind::Array,
-        fields: Some(
-            (0..5)
-                .map(|idx| field_anon(idx, number_elem.clone(), true))
-                .collect(),
-        ),
+        fields: Some((0..5).map(|idx| field_anon(idx, number_elem.clone(), true)).collect()),
         variants: None,
         union_variants: None,
         base_type: None,
@@ -181,10 +177,7 @@ fn homogeneous_array_element_type_supports_prefix_items_tuples() {
         name: "array".to_string(),
         description: String::new(),
         kind: TypeKind::Array,
-        fields: Some(vec![
-            field_anon(0, number_elem, true),
-            field_anon(1, string_elem, true),
-        ]),
+        fields: Some(vec![field_anon(0, number_elem, true), field_anon(1, string_elem, true)]),
         variants: None,
         union_variants: None,
         base_type: None,
