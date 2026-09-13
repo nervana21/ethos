@@ -102,8 +102,8 @@ impl VersionTransitionRegistry {
         // Check if field is deprecated in this version
         if let Some(deprecations) = self.deprecations.get(struct_name) {
             if let Some(deprecation) = deprecations.iter().find(|d| d.field_name == field_name) {
-                let version_num = parse_version_number(version.as_str()).unwrap_or(0);
-                let deprecation_num = parse_version_number(&deprecation.deprecated_in).unwrap_or(0);
+                let version_num = version.major() as i32;
+                let deprecation_num = deprecation_major(&deprecation.deprecated_in);
 
                 if version_num >= deprecation_num {
                     doc_parts.push(format!(
@@ -153,13 +153,10 @@ impl VersionTransitionRegistry {
 
         // Add deprecation warnings
         if let Some(deprecations) = self.deprecations.get(struct_name) {
-            let version_num = parse_version_number(version.as_str()).unwrap_or(0);
+            let version_num = version.major() as i32;
             let relevant_deprecations: Vec<_> = deprecations
                 .iter()
-                .filter(|d| {
-                    let dep_version_num = parse_version_number(&d.deprecated_in).unwrap_or(0);
-                    version_num >= dep_version_num
-                })
+                .filter(|d| version_num >= deprecation_major(&d.deprecated_in))
                 .collect();
 
             if !relevant_deprecations.is_empty() {
@@ -171,14 +168,7 @@ impl VersionTransitionRegistry {
     }
 }
 
-/// Parse a version string into a numeric value for comparison
-fn parse_version_number(version_str: &str) -> Option<i32> {
-    let clean_version = version_str.trim_start_matches('v');
-    let parts: Vec<&str> = clean_version.split('.').collect();
-
-    if parts.is_empty() {
-        return None;
-    }
-
-    parts[0].parse::<i32>().ok()
+/// Major-only comparison for deprecation metadata strings.
+fn deprecation_major(version_str: &str) -> i32 {
+    ProtocolVersion::from_string_for_ordering(version_str).major() as i32
 }
