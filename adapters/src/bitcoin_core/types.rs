@@ -974,6 +974,17 @@ const CATEGORY_RULES: &[CategoryRule] = &[
         field_name: Some("incrementalrelayfee"),
         category: BitcoinCoreRpcType::Float,
     },
+    // Token-bucket levels from getnetworkinfo inv_buckets (Core `double`).
+    CategoryRule {
+        rpc_type: RpcJsonType::Number,
+        field_name: Some("count_tok"),
+        category: BitcoinCoreRpcType::Float,
+    },
+    CategoryRule {
+        rpc_type: RpcJsonType::Number,
+        field_name: Some("size_tok"),
+        category: BitcoinCoreRpcType::Float,
+    },
     // Catchall for remaining number fields
     CategoryRule {
         rpc_type: RpcJsonType::Number,
@@ -1018,3 +1029,26 @@ const CATEGORY_RULES: &[CategoryRule] = &[
         category: BitcoinCoreRpcType::Dummy,
     },
 ];
+
+#[cfg(test)]
+mod tests {
+    use types::MethodResult;
+
+    use super::*;
+
+    #[test]
+    fn inv_bucket_token_fields_map_to_f64() {
+        for name in ["count_tok", "size_tok"] {
+            let result = MethodResult {
+                type_: "number".to_string(),
+                optional: false,
+                description: String::new(),
+                key_name: name.to_string(),
+                condition: String::new(),
+                inner: Vec::new(),
+            };
+            let (ty, _) = BitcoinCoreTypeRegistry::map_result_type(&result);
+            assert_eq!(ty, "f64", "{name} must be f64 (Core token-bucket doubles)");
+        }
+    }
+}

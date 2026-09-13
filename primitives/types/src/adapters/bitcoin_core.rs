@@ -41,6 +41,8 @@ impl TypeAdapter for BitcoinCoreAdapter {
             ("number", "networkhashps") => "f64".to_string(),
             ("number", "mempoolminfee") => "f64".to_string(),
             ("number", "minrelaytxfee") => "f64".to_string(),
+            ("number", "count_tok") => "f64".to_string(),
+            ("number", "size_tok") => "f64".to_string(),
             ("amount", "mempoolminfee") => "f64".to_string(),
             ("amount", "minrelaytxfee") => "f64".to_string(),
             ("amount", "total_fee") => "f64".to_string(),
