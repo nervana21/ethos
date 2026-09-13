@@ -2,7 +2,9 @@
 //!
 //! Available when the `test-utils` feature is enabled.
 
-use crate::protocol_ir::{ParamDef, ProtocolDef, ProtocolModule, RpcDef, TypeDef, TypeKind};
+use crate::protocol_ir::{
+    FieldDef, FieldKey, ParamDef, ProtocolDef, ProtocolModule, RpcDef, TypeDef, TypeKind,
+};
 
 /// Builds a type definition with the given name and kind; other fields are empty/default.
 pub fn type_def(name: &str, kind: TypeKind) -> TypeDef {
@@ -40,6 +42,16 @@ pub fn primitive_type(name: &str, protocol_type: Option<String>) -> TypeDef {
         map_value: None,
         map_key_protocol_type: None,
     }
+}
+
+/// Builds a named field definition.
+pub fn field(name: &str, field_type: TypeDef, required: bool) -> FieldDef {
+    FieldDef::named(name, field_type, required, "")
+}
+
+/// Builds an anonymous positional field definition.
+pub fn field_anon(index: usize, field_type: TypeDef, required: bool) -> FieldDef {
+    FieldDef::new(FieldKey::Anonymous(index), field_type, required, "")
 }
 
 /// Builds a parameter definition.

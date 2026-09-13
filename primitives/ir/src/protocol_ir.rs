@@ -480,6 +480,60 @@ impl<'de> Deserialize<'de> for FieldDef {
     }
 }
 
+impl FieldDef {
+    /// Field with no version metadata and no `force_optional`.
+    pub fn new(
+        key: FieldKey,
+        field_type: TypeDef,
+        required: bool,
+        description: impl Into<String>,
+    ) -> Self {
+        Self {
+            key,
+            field_type,
+            required,
+            description: description.into(),
+            default_value: None,
+            version_added: None,
+            version_removed: None,
+            force_optional: None,
+        }
+    }
+
+    /// Named field with no version metadata and no `force_optional`.
+    pub fn named(
+        name: impl Into<String>,
+        field_type: TypeDef,
+        required: bool,
+        description: impl Into<String>,
+    ) -> Self {
+        Self::new(FieldKey::Named(name.into()), field_type, required, description)
+    }
+
+    /// Set default value (builder style).
+    pub fn with_default_value(mut self, default_value: Option<String>) -> Self {
+        self.default_value = default_value;
+        self
+    }
+
+    /// Set `force_optional` (builder style).
+    pub fn with_force_optional(mut self, force_optional: Option<bool>) -> Self {
+        self.force_optional = force_optional;
+        self
+    }
+
+    /// Set version_added / version_removed (builder style).
+    pub fn with_versions(
+        mut self,
+        version_added: Option<String>,
+        version_removed: Option<String>,
+    ) -> Self {
+        self.version_added = version_added;
+        self.version_removed = version_removed;
+        self
+    }
+}
+
 /// Variant definition for enums
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VariantDef {

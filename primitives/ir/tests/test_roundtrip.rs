@@ -2,10 +2,24 @@
 
 //! IR roundtrip tests (serialize → deserialize).
 
-use ethos_ir::test_utils::{rpc, type_def};
-use ethos_ir::{FieldDef, FieldKey, ProtocolDef, ProtocolIR, ProtocolModule, TypeDef, TypeKind};
+use ethos_ir::test_utils::{field, field_anon, minimal_module, rpc, type_def};
+use ethos_ir::{ProtocolDef, ProtocolIR, ProtocolModule, TypeDef, TypeKind};
+use tempfile::TempDir;
 
 fn minimal_type_def() -> TypeDef { type_def("", TypeKind::Primitive) }
+
+fn create_sample_ir() -> ProtocolIR {
+    let mut result = type_def("BlockInfo", TypeKind::Object);
+    result.description = "Block information".to_string();
+    result.fields = Some(vec![]);
+    result.protocol_type = Some("object".to_string());
+
+    let mut rpc_def = rpc("getblock", vec![], Some(result), "node");
+    rpc_def.description = "Get block by hash".to_string();
+
+    let module = minimal_module("rpc", vec![ProtocolDef::RpcMethod(rpc_def)]);
+    ProtocolIR::new_with_version("0.1.0".to_string(), vec![module])
+}
 
 #[test]
 fn test_rust_emit_name_prefers_type_identity() {
@@ -27,26 +41,8 @@ fn test_field_key_roundtrip() {
         description: String::new(),
         kind: TypeKind::Object,
         fields: Some(vec![
-            FieldDef {
-                key: FieldKey::Named("txid".to_string()),
-                field_type: minimal_type_def(),
-                required: true,
-                description: String::new(),
-                default_value: None,
-                version_added: None,
-                version_removed: None,
-                force_optional: None,
-            },
-            FieldDef {
-                key: FieldKey::Anonymous(1),
-                field_type: minimal_type_def(),
-                required: true,
-                description: String::new(),
-                default_value: None,
-                version_added: None,
-                version_removed: None,
-                force_optional: None,
-            },
+            field("txid", minimal_type_def(), true),
+            field_anon(1, minimal_type_def(), true),
         ]),
         variants: None,
         union_variants: None,
@@ -73,16 +69,7 @@ fn array_element_type_helper_supports_anonymous_and_named_field_0() {
         name: "array".to_string(),
         description: String::new(),
         kind: TypeKind::Array,
-        fields: Some(vec![FieldDef {
-            key: FieldKey::Anonymous(0),
-            field_type: elem_ty.clone(),
-            required: true,
-            description: String::new(),
-            default_value: None,
-            version_added: None,
-            version_removed: None,
-            force_optional: None,
-        }]),
+        fields: Some(vec![field_anon(0, elem_ty.clone(), true)]),
         variants: None,
         union_variants: None,
         base_type: None,
@@ -101,16 +88,7 @@ fn array_element_type_helper_supports_anonymous_and_named_field_0() {
         name: "array".to_string(),
         description: String::new(),
         kind: TypeKind::Array,
-        fields: Some(vec![FieldDef {
-            key: FieldKey::Named("field_0".to_string()),
-            field_type: elem_ty.clone(),
-            required: true,
-            description: String::new(),
-            default_value: None,
-            version_added: None,
-            version_removed: None,
-            force_optional: None,
-        }]),
+        fields: Some(vec![field("field_0", elem_ty.clone(), true)]),
         variants: None,
         union_variants: None,
         base_type: None,
@@ -134,26 +112,8 @@ fn array_element_type_helper_supports_anonymous_and_named_field_0() {
         description: String::new(),
         kind: TypeKind::Array,
         fields: Some(vec![
-            FieldDef {
-                key: FieldKey::Anonymous(0),
-                field_type: minimal_type_def(),
-                required: true,
-                description: String::new(),
-                default_value: None,
-                version_added: None,
-                version_removed: None,
-                force_optional: None,
-            },
-            FieldDef {
-                key: FieldKey::Anonymous(1),
-                field_type: minimal_type_def(),
-                required: true,
-                description: String::new(),
-                default_value: None,
-                version_added: None,
-                version_removed: None,
-                force_optional: None,
-            },
+            field_anon(0, minimal_type_def(), true),
+            field_anon(1, minimal_type_def(), true),
         ]),
         variants: None,
         union_variants: None,
@@ -187,16 +147,7 @@ fn homogeneous_array_element_type_supports_prefix_items_tuples() {
         kind: TypeKind::Array,
         fields: Some(
             (0..5)
-                .map(|idx| FieldDef {
-                    key: FieldKey::Anonymous(idx),
-                    field_type: number_elem.clone(),
-                    required: true,
-                    description: String::new(),
-                    default_value: None,
-                    version_added: None,
-                    version_removed: None,
-                    force_optional: None,
-                })
+                .map(|idx| field_anon(idx, number_elem.clone(), true))
                 .collect(),
         ),
         variants: None,
@@ -231,26 +182,8 @@ fn homogeneous_array_element_type_supports_prefix_items_tuples() {
         description: String::new(),
         kind: TypeKind::Array,
         fields: Some(vec![
-            FieldDef {
-                key: FieldKey::Anonymous(0),
-                field_type: number_elem,
-                required: true,
-                description: String::new(),
-                default_value: None,
-                version_added: None,
-                version_removed: None,
-                force_optional: None,
-            },
-            FieldDef {
-                key: FieldKey::Anonymous(1),
-                field_type: string_elem,
-                required: true,
-                description: String::new(),
-                default_value: None,
-                version_added: None,
-                version_removed: None,
-                force_optional: None,
-            },
+            field_anon(0, number_elem, true),
+            field_anon(1, string_elem, true),
         ]),
         variants: None,
         union_variants: None,
@@ -341,6 +274,74 @@ fn test_ir_roundtrip_deterministic() {
 
     assert_eq!(loaded1.definition_count(), loaded2.definition_count());
     assert_eq!(loaded1.get_rpc_methods().len(), loaded2.get_rpc_methods().len());
+}
+
+#[test]
+fn test_roundtrip_serialization() {
+    let original_ir = create_sample_ir();
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let file_path = temp_dir.path().join("test.ir.json");
+
+    original_ir.to_file(&file_path).expect("Failed to save IR to file");
+
+    let loaded_ir = ProtocolIR::from_file(&file_path).expect("Failed to load IR from file");
+
+    assert_eq!(original_ir.version(), loaded_ir.version());
+    assert_eq!(original_ir.modules().len(), loaded_ir.modules().len());
+    assert_eq!(original_ir.modules()[0].name(), loaded_ir.modules()[0].name());
+    assert_eq!(
+        original_ir.modules()[0].definitions().len(),
+        loaded_ir.modules()[0].definitions().len()
+    );
+}
+
+#[test]
+fn test_deterministic_serialization() {
+    let ir = create_sample_ir();
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let file_path1 = temp_dir.path().join("test1.ir.json");
+    let file_path2 = temp_dir.path().join("test2.ir.json");
+
+    ir.to_file(&file_path1).expect("Failed to save IR to file 1");
+    ir.to_file(&file_path2).expect("Failed to save IR to file 2");
+
+    let content1 = std::fs::read_to_string(&file_path1).expect("Failed to read file 1");
+    let content2 = std::fs::read_to_string(&file_path2).expect("Failed to read file 2");
+
+    assert_eq!(content1, content2, "Serialization should be deterministic");
+}
+
+#[test]
+fn test_error_handling_malformed_file() {
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let file_path = temp_dir.path().join("malformed.ir.json");
+
+    std::fs::write(&file_path, r#"{"version": "0.1.0", "modules": [{"invalid": "json"}]"#)
+        .expect("Failed to write malformed JSON");
+
+    let result = ProtocolIR::from_file(&file_path);
+    assert!(result.is_err(), "Should fail to parse malformed JSON");
+}
+
+#[test]
+fn test_error_handling_nonexistent_file() {
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let file_path = temp_dir.path().join("nonexistent.ir.json");
+
+    let result = ProtocolIR::from_file(&file_path);
+    assert!(result.is_err(), "Should fail to read nonexistent file");
+}
+
+#[test]
+fn test_directory_creation() {
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let nested_path = temp_dir.path().join("nested").join("deep").join("test.ir.json");
+
+    let ir = create_sample_ir();
+
+    ir.to_file(&nested_path).expect("Failed to create nested directories");
+
+    assert!(nested_path.exists(), "File should be created in nested directory");
 }
 
 #[test]
