@@ -75,6 +75,29 @@ pub fn canonical_bitcoin_ir_path(project_root: &Path) -> PathBuf {
     project_root.join("resources/ir/bitcoin.ir.json")
 }
 
+/// Walk `levels_up` from a crate `CARGO_MANIFEST_DIR` to the workspace root.
+///
+/// Examples: adapters → 1, `compiler/codegen` → 2, `compiler/analysis` → 2.
+pub fn workspace_root_from_manifest(manifest_dir: impl AsRef<Path>, levels_up: u32) -> PathBuf {
+    let mut root = manifest_dir.as_ref().to_path_buf();
+    for _ in 0..levels_up {
+        if !root.pop() {
+            break;
+        }
+    }
+    root
+}
+
+/// Directory of RPC golden JSON fixtures.
+pub fn rpc_golden_dir(project_root: &Path) -> PathBuf {
+    project_root.join("resources/testdata/rpc_golden")
+}
+
+/// Path to one RPC golden fixture file under `resources/testdata/rpc_golden/`.
+pub fn rpc_golden_path(project_root: &Path, filename: &str) -> PathBuf {
+    rpc_golden_dir(project_root).join(filename)
+}
+
 /// Resolves IR output path for writing (relative paths are resolved against
 /// project root).
 ///
@@ -150,18 +173,6 @@ pub fn load_registry() -> Result<serde_json::Value, Box<dyn std::error::Error>> 
         .map_err(|e| format!("Failed to parse registry.json: {}", e).into())
 }
 
-/// Parse a version string into (major, minor, patch) components
-///
-/// Handles versions with or without 'v' prefix, and 2-part or 3-part versions
-pub fn parse_version_components(version: &str) -> (u32, u32, u32) {
-    let version_clean = version.trim_start_matches('v');
-    let parts: Vec<&str> = version_clean.split('.').collect();
-    let major: u32 = parts.get(0).and_then(|s| s.parse().ok()).unwrap_or(0);
-    let minor: u32 = parts.get(1).and_then(|s| s.parse().ok()).unwrap_or(0);
-    let patch: u32 = parts.get(2).and_then(|s| s.parse().ok()).unwrap_or(0);
-    (major, minor, patch)
-}
-
 /// Format version string for filename (e.g., "30.2" -> "30_2_0", "30.2.1" -> "30_2_1")
 ///
 /// Replaces dots with underscores to create filesystem-safe version strings.
@@ -182,9 +193,8 @@ pub fn format_version_for_filename(version: &str) -> String {
             }
         })
         .unwrap_or_else(|_| {
-            // Fallback: if parsing fails, use parsed components
-            let (major, minor, patch) = parse_version_components(version);
-            format!("{}_{}_{}", major, minor, patch)
+            let v = ProtocolVersion::from_string_for_ordering(version);
+            format!("{}_{}_{}", v.major, v.minor, v.patch)
         })
 }
 
