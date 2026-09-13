@@ -30,40 +30,12 @@ impl TypeAdapter for BitcoinCoreAdapter {
     }
 
     fn map_type_to_rust(&self, result: &crate::MethodResult) -> String {
-        // Bitcoin Core-specific type mappings
-        match (&result.type_[..], result.key_name.as_str()) {
-            // Bitcoin Core-specific floating point fields
-            ("number", "difficulty") => "f64".to_string(),
-            ("number", "verificationprogress") => "f64".to_string(),
-            ("number", "relayfee") => "f64".to_string(),
-            ("number", "incrementalfee") => "f64".to_string(),
-            ("number", "incrementalrelayfee") => "f64".to_string(),
-            ("number", "networkhashps") => "f64".to_string(),
-            ("number", "mempoolminfee") => "f64".to_string(),
-            ("number", "minrelaytxfee") => "f64".to_string(),
-            ("number", "count_tok") => "f64".to_string(),
-            ("number", "size_tok") => "f64".to_string(),
-            ("amount", "mempoolminfee") => "f64".to_string(),
-            ("amount", "minrelaytxfee") => "f64".to_string(),
-            ("amount", "total_fee") => "f64".to_string(),
-            ("amount", "blockmintxfee") => "f64".to_string(),
-            ("boolean", "permitbaremultisig") => "Option<bool>".to_string(),
-
-            // Bitcoin Core-specific hex fields (transaction IDs, block hashes, etc.)
-            ("hex", _) => "String".to_string(),
-
-            // Handle methods that return difficulty values directly (like getdifficulty)
-            ("number", "") if result.description.contains("difficulty") => "f64".to_string(),
-
-            // Standard type mappings
-            ("string", _) => "String".to_string(),
-            ("number" | "int" | "integer", _) => "i64".to_string(),
-            ("boolean" | "bool", _) => "bool".to_string(),
-            ("array", _) => "Vec<serde_json::Value>".to_string(),
-            ("object", _) => "serde_json::Value".to_string(),
-            ("none", _) => "()".to_string(),
-            _ => "serde_json::Value".to_string(),
-        }
+        bitcoin_core_utils::map_result_type_to_rust(
+            &result.type_,
+            &result.key_name,
+            &result.description,
+        )
+        .to_string()
     }
 
     fn map_parameter_type_to_rust(&self, param_type: &str, param_name: &str) -> String {

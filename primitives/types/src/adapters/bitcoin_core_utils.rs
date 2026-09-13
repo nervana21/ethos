@@ -107,6 +107,246 @@ pub fn map_parameter_type_to_rust(param_type: &str, param_name: &str) -> String 
     .to_owned()
 }
 
+/// Map a Bitcoin Core MethodResult-like triple to a Rust type string.
+///
+/// Shared by `TypeAdapter` and `BitcoinCoreTypeRegistry`.
+pub fn map_result_type_to_rust(type_: &str, key_name: &str, description: &str) -> &'static str {
+    if type_ == "number" && key_name.is_empty() && description.contains("difficulty") {
+        return "f64";
+    }
+
+    let category = categorize_result_field(type_, key_name);
+    result_category_to_rust_type(category)
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+enum ResultRpcJsonType {
+    String,
+    Number,
+    Boolean,
+    Null,
+    Wildcard,
+    Amount,
+    Hex,
+    Array,
+    Object,
+    Timestamp,
+    NoneType,
+    Any,
+    Elision,
+    Range,
+}
+
+impl ResultRpcJsonType {
+    fn from_str(s: &str) -> Self {
+        match s {
+            "string" => Self::String,
+            "number" => Self::Number,
+            "boolean" => Self::Boolean,
+            "null" => Self::Null,
+            "amount" => Self::Amount,
+            "hex" => Self::Hex,
+            "array" | "array-fixed" => Self::Array,
+            "object" | "object-dynamic" | "object-one-of" => Self::Object,
+            "string-or-string-array" => Self::String,
+            "bool-or-object" => Self::Boolean,
+            "timestamp" => Self::Timestamp,
+            "none" => Self::NoneType,
+            "any" => Self::Any,
+            "elision" => Self::Elision,
+            "range" => Self::Range,
+            _ => Self::Any,
+        }
+    }
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+enum ResultCategory {
+    String,
+    Boolean,
+    Null,
+    BitcoinBlockHash,
+    BitcoinTxid,
+    BitcoinAmount,
+    BitcoinScript,
+    BitcoinScriptPubKey,
+    HashOrHeight,
+    BitcoinObject,
+    TxidArray,
+    StringArray,
+    Port,
+    SmallInteger,
+    LargeInteger,
+    SignedInteger,
+    Float,
+    Timestamp,
+    None,
+    Any,
+    Range,
+    Elision,
+    Dummy,
+}
+
+fn result_category_to_rust_type(category: ResultCategory) -> &'static str {
+    match category {
+        ResultCategory::String => "String",
+        ResultCategory::Boolean => "bool",
+        ResultCategory::Null => "()",
+        ResultCategory::BitcoinBlockHash => "bitcoin::BlockHash",
+        ResultCategory::BitcoinTxid => "bitcoin::Txid",
+        ResultCategory::BitcoinAmount => "bitcoin::Amount",
+        ResultCategory::BitcoinScript | ResultCategory::BitcoinScriptPubKey => "bitcoin::ScriptBuf",
+        ResultCategory::HashOrHeight => "HashOrHeight",
+        ResultCategory::BitcoinObject => "serde_json::Map<String, serde_json::Value>",
+        ResultCategory::TxidArray => "Vec<bitcoin::Txid>",
+        ResultCategory::StringArray => "Vec<String>",
+        ResultCategory::Port => "u16",
+        ResultCategory::SmallInteger => "u32",
+        ResultCategory::LargeInteger => "u64",
+        ResultCategory::SignedInteger => "i64",
+        ResultCategory::Float => "f64",
+        ResultCategory::Timestamp => "u64",
+        ResultCategory::None => "()",
+        ResultCategory::Any | ResultCategory::Elision | ResultCategory::Range => {
+            "serde_json::Value"
+        }
+        ResultCategory::Dummy => "String",
+    }
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+struct ResultCategoryRule {
+    rpc_type: ResultRpcJsonType,
+    field_name: Option<&'static str>,
+    category: ResultCategory,
+}
+
+#[rustfmt::skip]
+const RESULT_CATEGORY_RULES: &[ResultCategoryRule] = &[
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::String, field_name: None, category: ResultCategory::String },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Boolean, field_name: None, category: ResultCategory::Boolean },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Null, field_name: None, category: ResultCategory::Null },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::String, field_name: Some("txid"), category: ResultCategory::BitcoinTxid },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Hex, field_name: Some("transactionid"), category: ResultCategory::BitcoinTxid },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::String, field_name: Some("blockhash"), category: ResultCategory::BitcoinBlockHash },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::String, field_name: Some("script_pubkey"), category: ResultCategory::BitcoinScriptPubKey },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Hex, field_name: Some("script_pubkey"), category: ResultCategory::BitcoinScriptPubKey },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::String, field_name: Some("script"), category: ResultCategory::BitcoinScript },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Hex, field_name: Some("script"), category: ResultCategory::BitcoinScript },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::String, field_name: Some("redeemscript"), category: ResultCategory::BitcoinScript },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Hex, field_name: Some("redeemscript"), category: ResultCategory::BitcoinScript },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::String, field_name: Some("witnessscript"), category: ResultCategory::BitcoinScript },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Hex, field_name: Some("witnessscript"), category: ResultCategory::BitcoinScript },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::String, field_name: Some("hash_or_height"), category: ResultCategory::HashOrHeight },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("hash_or_height"), category: ResultCategory::HashOrHeight },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Wildcard, field_name: Some("hash_or_height"), category: ResultCategory::HashOrHeight },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("amount"), category: ResultCategory::BitcoinAmount },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("balance"), category: ResultCategory::BitcoinAmount },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Amount, field_name: Some("balance"), category: ResultCategory::Float },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Amount, field_name: Some("fee_rate"), category: ResultCategory::Float },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Amount, field_name: Some("estimated_feerate"), category: ResultCategory::Float },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Amount, field_name: Some("maxfeerate"), category: ResultCategory::Float },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Amount, field_name: Some("maxburnamount"), category: ResultCategory::Float },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Amount, field_name: Some("relayfee"), category: ResultCategory::Float },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Amount, field_name: Some("incrementalfee"), category: ResultCategory::Float },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Amount, field_name: Some("incrementalrelayfee"), category: ResultCategory::Float },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Amount, field_name: Some("mempoolminfee"), category: ResultCategory::Float },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Amount, field_name: Some("minrelaytxfee"), category: ResultCategory::Float },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Amount, field_name: Some("total_fee"), category: ResultCategory::Float },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Amount, field_name: Some("blockmintxfee"), category: ResultCategory::Float },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Amount, field_name: None, category: ResultCategory::BitcoinAmount },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("fee"), category: ResultCategory::Float },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("rate"), category: ResultCategory::Float },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("feerate"), category: ResultCategory::Float },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("maxfeerate"), category: ResultCategory::Float },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("maxburnamount"), category: ResultCategory::Float },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("relayfee"), category: ResultCategory::Float },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("incrementalfee"), category: ResultCategory::Float },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("incrementalrelayfee"), category: ResultCategory::Float },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("mempoolminfee"), category: ResultCategory::Float },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("minrelaytxfee"), category: ResultCategory::Float },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("difficulty"), category: ResultCategory::Float },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("probability"), category: ResultCategory::Float },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("percentage"), category: ResultCategory::Float },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("fee_rate"), category: ResultCategory::Float },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("port"), category: ResultCategory::Port },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("nrequired"), category: ResultCategory::SmallInteger },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("minconf"), category: ResultCategory::SmallInteger },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("maxconf"), category: ResultCategory::SmallInteger },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("locktime"), category: ResultCategory::SmallInteger },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("version"), category: ResultCategory::SmallInteger },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("verbosity"), category: ResultCategory::SmallInteger },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("checklevel"), category: ResultCategory::SmallInteger },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("n"), category: ResultCategory::SmallInteger },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("blocks"), category: ResultCategory::LargeInteger },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("maxtries"), category: ResultCategory::LargeInteger },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("height"), category: ResultCategory::LargeInteger },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("count"), category: ResultCategory::LargeInteger },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("index"), category: ResultCategory::LargeInteger },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("size"), category: ResultCategory::LargeInteger },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("time"), category: ResultCategory::LargeInteger },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("conf_target"), category: ResultCategory::LargeInteger },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("skip"), category: ResultCategory::LargeInteger },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("nodeid"), category: ResultCategory::LargeInteger },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("peer_id"), category: ResultCategory::LargeInteger },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("wait"), category: ResultCategory::LargeInteger },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("changepos"), category: ResultCategory::SignedInteger },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("confirmations"), category: ResultCategory::SignedInteger },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("nblocks"), category: ResultCategory::SignedInteger },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Hex, field_name: Some("txid"), category: ResultCategory::BitcoinTxid },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Hex, field_name: Some("blockhash"), category: ResultCategory::BitcoinBlockHash },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Hex, field_name: None, category: ResultCategory::String },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Array, field_name: Some("addresses"), category: ResultCategory::StringArray },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Array, field_name: Some("keys"), category: ResultCategory::StringArray },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Array, field_name: Some("stats"), category: ResultCategory::StringArray },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Array, field_name: Some("tx"), category: ResultCategory::TxidArray },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Array, field_name: Some("txids"), category: ResultCategory::TxidArray },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Array, field_name: Some("wallets"), category: ResultCategory::StringArray },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Array, field_name: None, category: ResultCategory::StringArray },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Object, field_name: Some("options"), category: ResultCategory::BitcoinObject },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Object, field_name: Some("query_options"), category: ResultCategory::BitcoinObject },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Object, field_name: None, category: ResultCategory::BitcoinObject },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("verificationprogress"), category: ResultCategory::Float },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("difficulty"), category: ResultCategory::Float },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("networkhashps"), category: ResultCategory::Float },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("incrementalrelayfee"), category: ResultCategory::Float },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("count_tok"), category: ResultCategory::Float },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("size_tok"), category: ResultCategory::Float },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: None, category: ResultCategory::LargeInteger },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Timestamp, field_name: None, category: ResultCategory::Timestamp },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::NoneType, field_name: None, category: ResultCategory::None },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Any, field_name: None, category: ResultCategory::Any },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Elision, field_name: None, category: ResultCategory::Elision },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Range, field_name: None, category: ResultCategory::Range },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::String, field_name: Some("dummy"), category: ResultCategory::Dummy },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("dummy"), category: ResultCategory::Dummy },
+];
+
+fn categorize_result_field(rpc_type: &str, field: &str) -> ResultCategory {
+    let field_norm = normalize_field_name(field);
+    let rpc_json_type = ResultRpcJsonType::from_str(rpc_type);
+
+    let mut catchall: Option<ResultCategory> = None;
+
+    for rule in RESULT_CATEGORY_RULES {
+        if rule.rpc_type == rpc_json_type {
+            match rule.field_name {
+                Some(rule_field) if field_norm == normalize_field_name(rule_field) => {
+                    return rule.category;
+                }
+                None => catchall = Some(rule.category),
+                _ => {}
+            }
+        }
+    }
+
+    catchall.unwrap_or_else(|| {
+        panic!(
+            "No RESULT_CATEGORY_RULES match for rpc_type='{rpc_type}' field='{field}'. Add an explicit rule."
+        )
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -180,5 +420,18 @@ mod tests {
 
         let unknown = map_parameter_type_to_rust("unknown", "any");
         assert_eq!(unknown, "serde_json::Value");
+    }
+
+    #[test]
+    fn test_map_result_type_to_rust() {
+        assert_eq!(map_result_type_to_rust("hex", "txid", ""), "bitcoin::Txid");
+        assert_eq!(map_result_type_to_rust("hex", "data", ""), "String");
+        assert_eq!(map_result_type_to_rust("number", "height", ""), "u64");
+        assert_eq!(
+            map_result_type_to_rust("number", "", "Current difficulty value"),
+            "f64"
+        );
+        assert_eq!(map_result_type_to_rust("boolean", "permitbaremultisig", ""), "bool");
+        assert_eq!(map_result_type_to_rust("unknown_type", "field", ""), "serde_json::Value");
     }
 }

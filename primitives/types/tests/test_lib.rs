@@ -176,6 +176,6 @@ fn test_type_registry_map_result_type() {
         inner: Vec::new(),
     };
     let (type_name, is_optional) = TypeRegistry::map_result_type(&required_result, &adapter);
-    assert_eq!(type_name, "i64");
+    assert_eq!(type_name, "u64");
     assert!(!is_optional);
 }

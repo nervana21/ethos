@@ -175,8 +175,11 @@ fn test_map_type_to_rust() {
         assert_eq!(adapter.map_type_to_rust(&result), "f64");
     }
 
-    let hex_result = create_method_result("hex", "txid", "A hex value", false);
-    assert_eq!(adapter.map_type_to_rust(&hex_result), "String");
+    let hex_txid_result = create_method_result("hex", "txid", "A hex value", false);
+    assert_eq!(adapter.map_type_to_rust(&hex_txid_result), "bitcoin::Txid");
+
+    let hex_generic_result = create_method_result("hex", "data", "Generic hex", false);
+    assert_eq!(adapter.map_type_to_rust(&hex_generic_result), "String");
 
     // Test number with "difficulty" in description and empty key_name → f64
     let difficulty_result = create_method_result("number", "", "Current difficulty value", false);
@@ -184,13 +187,13 @@ fn test_map_type_to_rust() {
 
     let standard_mappings = vec![
         ("string", "String"),
-        ("number", "i64"),
-        ("int", "i64"),
-        ("integer", "i64"),
+        ("number", "u64"),
+        ("int", "serde_json::Value"),
+        ("integer", "serde_json::Value"),
         ("boolean", "bool"),
-        ("bool", "bool"),
-        ("array", "Vec<serde_json::Value>"),
-        ("object", "serde_json::Value"),
+        ("bool", "serde_json::Value"),
+        ("array", "Vec<String>"),
+        ("object", "serde_json::Map<String, serde_json::Value>"),
         ("none", "()"),
     ];
     for (input_type, expected_rust_type) in standard_mappings {
