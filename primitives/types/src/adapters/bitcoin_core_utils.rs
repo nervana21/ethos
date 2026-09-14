@@ -321,6 +321,26 @@ const RESULT_CATEGORY_RULES: &[ResultCategoryRule] = &[
     ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("dummy"), category: ResultCategory::Dummy },
 ];
 
+/// Consumer-facing summary of how OpenRPC JSON `number` fields become Rust ints/floats.
+///
+/// Core dumps `RPCArg::Type::NUM` as JSON Schema `type: number` (no name-heuristic `integer`).
+/// Ethos maps via field-name rules in `RESULT_CATEGORY_RULES`; this text is emitted into
+/// generated crate docs so consumers stop guessing.
+pub fn integer_mapping_policy_doc() -> &'static str {
+    "\
+JSON `number` (Core NUM) mapping in this crate (field-name rules, not OpenRPC `integer`):\n\
+\n\
+- Default / catchall: `u64` (height, size, time, count, blocks, …)\n\
+- Signed domains (`confirmations`, `changepos`, `nblocks`, …): `i64`\n\
+- Small unsigned (`version`, `verbosity`, `locktime`, `n`, min/max conf, …): `u32`\n\
+- Port: `u16`\n\
+- Fee / difficulty / probability / percentage / rate fields: `f64`\n\
+- Amounts (`amount`, `balance`, …): `bitcoin::Amount` (BTC float on the wire)\n\
+\n\
+When Core OpenRPC gains explicit integer stamps, IR/codegen will prefer those over names.\n\
+Do not treat field-name heuristics as a Core dump contract."
+}
+
 fn categorize_result_field(rpc_type: &str, field: &str) -> ResultCategory {
     let field_norm = normalize_field_name(field);
     let rpc_json_type = ResultRpcJsonType::from_str(rpc_type);
