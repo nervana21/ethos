@@ -11,7 +11,9 @@ use types::{Implementation, ProtocolVersion, TypeRegistry};
 
 use super::doc_comment::format_doc_comment;
 use super::fee_rate_utils::{methods_use_amounts_map, methods_use_get_block_template_request};
-use crate::generators::version_specific_response_type::record_external_symbol_usage;
+use crate::generators::version_specific_response_type::{
+    record_external_symbol_usage, VersionSpecificResponseTypeGenerator,
+};
 use crate::utils::{
     canonical_from_adapter_method, protocol_rpc_method_to_rust_name, sanitize_external_identifier,
     sanitize_type_name_for_rust, snake_to_pascal_case,
@@ -526,18 +528,32 @@ impl VersionSpecificClientTraitGenerator {
     /// Get response type for a method
     fn get_response_type(&self, rpc: &RpcDef) -> String {
         if rpc.result.is_none() {
-            "()".to_string()
+            return "()".to_string();
+        }
+        let base = match canonical_from_adapter_method(self.protocol.as_str(), &rpc.name, None) {
+            Ok(canonical) => format!("{}Response", canonical),
+            Err(_) => format!(
+                "{}Response",
+                snake_to_pascal_case(
+                    &protocol_rpc_method_to_rust_name(self.protocol.as_str(), &rpc.name)
+                        .unwrap_or_else(|e| panic!("{}", e)),
+                )
+            ),
+        };
+        if rpc.result.as_ref().is_some_and(|r| {
+            let filtered = if self.protocol.as_str() == "bitcoin_core" {
+                adapters::bitcoin_core::openrpc::filter_type_def_for_version(
+                    r,
+                    self.version.as_str(),
+                )
+            } else {
+                r.clone()
+            };
+            VersionSpecificResponseTypeGenerator::is_lookup_or_null_result(&filtered)
+        }) {
+            format!("Option<{base}>")
         } else {
-            match canonical_from_adapter_method(self.protocol.as_str(), &rpc.name, None) {
-                Ok(canonical) => format!("{}Response", canonical),
-                Err(_) => format!(
-                    "{}Response",
-                    snake_to_pascal_case(
-                        &protocol_rpc_method_to_rust_name(self.protocol.as_str(), &rpc.name)
-                            .unwrap_or_else(|e| panic!("{}", e)),
-                    )
-                ),
-            }
+            base
         }
     }
 }

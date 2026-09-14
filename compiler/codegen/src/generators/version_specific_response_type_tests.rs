@@ -903,6 +903,78 @@ fn union_array_branches_merge_same_named_element_struct() {
 /// Self-referential named objects are emitted from the type-registry pass (nested helpers), not
 /// as the top-level `*Response` struct.
 #[test]
+fn lookup_or_null_emits_option_shaped_object_response() {
+    let version = ProtocolVersion::from_str("30.0.0").unwrap();
+    let gen = VersionSpecificResponseTypeGenerator::new(version, "bitcoin_core".to_string());
+
+    let object = TypeDef {
+        name: "GetTxOutObject".to_string(),
+        kind: TypeKind::Object,
+        fields: Some(vec![ir::FieldDef {
+            key: ir::FieldKey::Named("bestblock".to_string()),
+            field_type: TypeDef {
+                name: "string".to_string(),
+                kind: TypeKind::Primitive,
+                protocol_type: Some("string".to_string()),
+                ..Default::default()
+            },
+            required: true,
+            description: String::new(),
+            default_value: None,
+            version_added: None,
+            version_removed: None,
+            force_optional: None,
+        }]),
+        protocol_type: Some("object".to_string()),
+        ..Default::default()
+    };
+    let union_td = TypeDef {
+        name: "GetTxOutResult".to_string(),
+        kind: TypeKind::Union,
+        union_variants: Some(vec![
+            ir::UnionVariantDef {
+                name: "Null".to_string(),
+                description: "not found".to_string(),
+                condition: None,
+                type_def: TypeDef {
+                    name: "none".to_string(),
+                    kind: TypeKind::Primitive,
+                    protocol_type: Some("none".to_string()),
+                    ..Default::default()
+                },
+            },
+            ir::UnionVariantDef {
+                name: "Object".to_string(),
+                description: "found".to_string(),
+                condition: None,
+                type_def: object,
+            },
+        ]),
+        protocol_type: Some("union".to_string()),
+        ..Default::default()
+    };
+    let method =
+        RpcDef { name: "gettxout".to_string(), result: Some(union_td), ..Default::default() };
+
+    assert!(VersionSpecificResponseTypeGenerator::is_lookup_or_null_result(
+        method.result.as_ref().unwrap()
+    ));
+    let code = gen
+        .generate_method_response(&method)
+        .expect("generation must succeed")
+        .expect("response must be generated");
+    assert!(
+        code.contains("pub struct GetTxOutResponse"),
+        "expected object struct as GetTxOutResponse, got:\n{code}"
+    );
+    assert!(
+        !code.contains("pub enum GetTxOutResponse"),
+        "lookup-or-null must not emit untagged enum, got:\n{code}"
+    );
+    assert!(code.contains("Wire method: `gettxout`"), "expected method→type rustdoc, got:\n{code}");
+}
+
+#[test]
 fn self_referential_nested_type_uses_box() {
     let version = ProtocolVersion::from_str("30.0.0").unwrap();
     let gen = VersionSpecificResponseTypeGenerator::new(version, "bitcoin_core".to_string());

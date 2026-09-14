@@ -126,6 +126,12 @@ impl VersionSpecificResponseTypeGenerator {
         ));
         out.push_str("//\n");
         out.push_str("// These types are version-specific and may not match other versions.\n");
+        out.push_str("//\n");
+        for line in types::adapters::bitcoin_core_utils::integer_mapping_policy_doc().lines() {
+            out.push_str("// ");
+            out.push_str(line);
+            out.push('\n');
+        }
 
         // First, collect all nested types that need to be generated
         // BTreeSet for deterministic iteration order so generated output is stable.
@@ -342,6 +348,8 @@ impl VersionSpecificResponseTypeGenerator {
             }
             set_current_rpc_method(None);
         }
+
+        out.push_str(&self.emit_rpc_prelude(methods)?);
 
         // Add amount deserializer helper functions if needed
         if needs_amount_deserializer {
@@ -764,7 +772,169 @@ impl VersionSpecificResponseTypeGenerator {
         type_defs[0].clone()
     }
 
-    /// JSON-RPC result is a top-level alternation (e.g. hex string vs object): `#[serde(untagged)]` enum.
+    /// True when IR result is a two-arm null-or-object union (`gettxout` / lookup-or-null).
+    pub fn is_lookup_or_null_result(result: &TypeDef) -> bool {
+        Self::lookup_or_null_object_arm(result).is_some()
+    }
+
+    /// Object arm of a null-or-object union, if the result matches that shape.
+    fn lookup_or_null_object_arm(result: &TypeDef) -> Option<&TypeDef> {
+        let uvs = result.union_variants.as_ref()?;
+        if uvs.len() != 2 {
+            return None;
+        }
+        let mut saw_null = false;
+        let mut object: Option<&TypeDef> = None;
+        for uv in uvs {
+            match uv.type_def.kind {
+                TypeKind::Primitive
+                    if uv.type_def.protocol_type.as_deref() == Some("none")
+                        || uv.name.eq_ignore_ascii_case("Null") =>
+                {
+                    saw_null = true;
+                }
+                TypeKind::Object => {
+                    if object.is_some() {
+                        return None;
+                    }
+                    object = Some(&uv.type_def);
+                }
+                _ => return None,
+            }
+        }
+        if saw_null {
+            object
+        } else {
+            None
+        }
+    }
+
+    /// Emit `GetTxOutResponse` as the found-object struct; client returns `Option<…>`.
+    fn generate_lookup_or_null_option_response(
+        &self,
+        method: &RpcDef,
+        object_td: &TypeDef,
+    ) -> Result<String> {
+        let struct_name = self.response_struct_name(method);
+        let mut buf = String::new();
+        let canonical_name =
+            crate::utils::canonical_from_adapter_method(&self.implementation, &method.name, None)
+                .unwrap_or_else(|_| struct_name.replace("Response", ""));
+        write_doc_line(&mut buf, &format!("Response for the `{}` RPC method", canonical_name), "")?;
+        writeln!(&mut buf, "///")?;
+        write_doc_line(&mut buf, &format!("Wire method: `{}`", method.name), "")?;
+        write_doc_line(
+            &mut buf,
+            "Result shape: lookup-or-null. JSON `null` is `None` on the client return type `Option<Self>`.",
+            "",
+        )?;
+        writeln!(&mut buf, "///")?;
+        write_doc_line(&mut buf, "| Arm | Rust |", "")?;
+        write_doc_line(&mut buf, "| --- | --- |", "")?;
+        write_doc_line(&mut buf, "| Null | `None` |", "")?;
+        write_doc_line(&mut buf, &format!("| Object | [`{}`] |", struct_name), "")?;
+        if !object_td.description.is_empty() {
+            writeln!(&mut buf, "///")?;
+            write_doc_comment(&mut buf, &object_td.description, "")?;
+        }
+        writeln!(&mut buf, "#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]")?;
+        writeln!(
+            &mut buf,
+            "#[cfg_attr(feature = \"serde-deny-unknown-fields\", serde(deny_unknown_fields))]"
+        )?;
+        writeln!(&mut buf, "pub struct {} {{", struct_name)?;
+        if let Some(fields) = &object_td.fields {
+            for field in fields.iter().filter(|f| !Self::should_skip_field_in_struct(f)) {
+                self.generate_ir_field(&mut buf, field, &struct_name, method.name.as_str(), false)?;
+            }
+        }
+        writeln!(&mut buf, "}}")?;
+        writeln!(&mut buf)?;
+        Ok(buf)
+    }
+
+    /// Short `pub type` aliases + `rpc_prelude` for Floresta-style consumer re-exports.
+    fn emit_rpc_prelude(&self, methods: &[RpcDef]) -> Result<String> {
+        /// Methods whose result surface is re-exported for light-client consumers.
+        const PRELUDE_METHODS: &[&str] = &[
+            "getblockchaininfo",
+            "getblock",
+            "getblockheader",
+            "gettxout",
+            "getrawtransaction",
+            "getnetworkinfo",
+            "getaddrmaninfo",
+            "getdeploymentinfo",
+        ];
+
+        let mut aliases: BTreeMap<String, String> = BTreeMap::new();
+        for method in methods {
+            if !PRELUDE_METHODS.contains(&method.name.as_str()) {
+                continue;
+            }
+            let response = self.response_struct_name(method);
+            let method_short = response.strip_suffix("Response").unwrap_or(response.as_str());
+            if method_short != response {
+                aliases.insert(method_short.to_string(), response.clone());
+            }
+
+            let Some(result) = method.result.as_ref() else {
+                continue;
+            };
+            let result = self.filter_type_def_for_version(result);
+            if Self::lookup_or_null_object_arm(&result).is_some() {
+                continue;
+            }
+            if let Some(uvs) = result.union_variants.as_ref() {
+                for uv in uvs {
+                    if !matches!(uv.type_def.kind, TypeKind::Object) {
+                        continue;
+                    }
+                    let filtered = self.filter_type_def_for_version(&uv.type_def);
+                    let inner = Self::ir_rust_type_label(&filtered);
+                    let qualified = Self::qualify_union_branch_struct(&response, &inner);
+                    let arm = sanitize_type_name_for_rust(&uv.name);
+                    let short = format!("{method_short}{arm}");
+                    aliases.insert(short, qualified);
+                }
+            }
+        }
+
+        if aliases.is_empty() {
+            let mut buf = String::new();
+            writeln!(
+                buf,
+                "/// Short aliases for common RPC result shapes (generated; do not hand-edit)."
+            )?;
+            writeln!(buf, "pub mod rpc_prelude {{}}")?;
+            writeln!(buf)?;
+            return Ok(buf);
+        }
+
+        let mut buf = String::new();
+        writeln!(
+            buf,
+            "/// Short aliases for common RPC result shapes (generated; do not hand-edit)."
+        )?;
+        writeln!(buf, "///")?;
+        writeln!(
+            buf,
+            "/// Prefer `use ethos_bitcoind::rpc_prelude::*` (or `types::rpc_prelude`) instead of"
+        )?;
+        writeln!(buf, "/// copying consumer shim modules.")?;
+        writeln!(buf, "pub mod rpc_prelude {{")?;
+        for (short, long) in &aliases {
+            if short == long {
+                continue;
+            }
+            writeln!(buf, "    /// Alias for [`super::{long}`].")?;
+            writeln!(buf, "    pub type {short} = super::{long};")?;
+        }
+        writeln!(buf, "}}")?;
+        writeln!(buf)?;
+        Ok(buf)
+    }
+
     fn generate_union_rpc_response(
         &self,
         method: &RpcDef,
@@ -776,6 +946,28 @@ impl VersionSpecificResponseTypeGenerator {
             crate::utils::canonical_from_adapter_method(&self.implementation, &method.name, None)
                 .unwrap_or_else(|_| enum_name.replace("Response", ""));
         write_doc_line(&mut buf, &format!("Response for the `{}` RPC method", canonical_name), "")?;
+        writeln!(&mut buf, "///")?;
+        write_doc_line(&mut buf, &format!("Wire method: `{}`", method.name), "")?;
+        if let Some(disc) = method.result_discriminator.as_ref() {
+            write_doc_line(
+                &mut buf,
+                &format!(
+                    "Discriminator parameter: `{}` (params index {})",
+                    disc.parameter, disc.parameter_index
+                ),
+                "",
+            )?;
+        }
+        if let Some(uvs) = union_td.union_variants.as_ref() {
+            writeln!(&mut buf, "///")?;
+            write_doc_line(&mut buf, "| Arm | Rust payload |", "")?;
+            write_doc_line(&mut buf, "| --- | --- |", "")?;
+            for uv in uvs {
+                let variant = sanitize_type_name_for_rust(&uv.name);
+                let rust_ty = self.map_union_variant_rust_type(&uv.type_def, Some(enum_name));
+                write_doc_line(&mut buf, &format!("| `{variant}` | `{rust_ty}` |"), "")?;
+            }
+        }
         buf.push_str(&self.emit_union_definition(union_td, enum_name, method.name.as_str())?);
         Ok(buf)
     }
@@ -865,6 +1057,11 @@ impl VersionSpecificResponseTypeGenerator {
                 return Ok(Some(self.generate_map_wrapper(method, &struct_name, &r)?));
             }
             if r.kind == TypeKind::Union {
+                if let Some(object_td) = Self::lookup_or_null_object_arm(&r) {
+                    return Ok(Some(
+                        self.generate_lookup_or_null_option_response(method, object_td)?,
+                    ));
+                }
                 if let Some(ref uvs) = r.union_variants {
                     if !uvs.is_empty() {
                         let struct_name = self.response_struct_name(method);
@@ -948,6 +1145,8 @@ impl VersionSpecificResponseTypeGenerator {
             crate::utils::canonical_from_adapter_method(&self.implementation, &method.name, None)
                 .unwrap_or_else(|_| struct_name.replace("Response", ""));
         write_doc_line(&mut buf, &format!("Response for the `{}` RPC method", canonical_name), "")?;
+        writeln!(&mut buf, "///")?;
+        write_doc_line(&mut buf, &format!("Wire method: `{}`", method.name), "")?;
         if !result.description.is_empty() {
             // Add a separating blank doc line only when we have extra description,
             // so we don't emit a standalone hanging `///`.
@@ -1013,6 +1212,15 @@ impl VersionSpecificResponseTypeGenerator {
         if !field.description.is_empty() {
             write_doc_comment(buf, &field.description, "    ")?;
         }
+        let rust_ident = self.sanitize_identifier(&field.key.as_ident());
+        let wire_key = field.key.as_ident();
+        if rust_ident != wire_key {
+            write_doc_line(
+                buf,
+                &format!("Wire JSON key: `{wire_key}` (Rust field `{rust_ident}`)."),
+                "    ",
+            )?;
+        }
 
         // Generate field definition from IR.
         let mut base_field_type =
@@ -1026,7 +1234,7 @@ impl VersionSpecificResponseTypeGenerator {
             let symbol = base_field_type.split("::").last().unwrap_or(&base_field_type);
             record_external_symbol("bitcoin", symbol);
         }
-        let field_name = self.sanitize_identifier(&field.key.as_ident());
+        let field_name = rust_ident;
         let mut field_type = if field.required && !force_optional_conditional {
             base_field_type.clone()
         } else {

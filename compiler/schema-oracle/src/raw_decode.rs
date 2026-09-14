@@ -43,7 +43,7 @@ pub fn try_raw_decode(method: &str, value: &Value) -> Option<Result<(), String>>
         "getpeerinfo" => try_from_value::<GetPeerInfoResponse>(value),
         "getrawmempool" => try_from_value::<GetRawMempoolResponse>(value),
         "getrpcinfo" => try_from_value::<GetRpcInfoResponse>(value),
-        "gettxout" => try_from_value::<GetTxOutResponse>(value),
+        "gettxout" => try_from_value::<Option<GetTxOutResponse>>(value),
         "help" => try_from_value::<HelpResponse>(value),
         "listbanned" => try_from_value::<ListBannedResponse>(value),
         "uptime" => try_from_value::<UptimeResponse>(value),
