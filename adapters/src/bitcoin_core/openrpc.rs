@@ -1196,6 +1196,32 @@ fn resolve_result_discriminator(
     parse_result_discriminator(schema)
 }
 
+/// Role label for a oneOf/anyOf arm when `x-bitcoin-discriminated-result` is absent.
+/// Prefers JSON Schema `type` (`Null` / `Object` / `String` / …) over `BranchN`.
+/// `x-bitcoin-result-kind: lookup-or-null` forces Null vs Object when `type` is missing.
+fn union_variant_name_from_schema_branch(
+    branch: &serde_json::Value,
+    result_kind: Option<&str>,
+    idx: usize,
+) -> String {
+    match primary_json_schema_type(branch) {
+        Some("null") => return "Null".to_string(),
+        Some("object") => return "Object".to_string(),
+        Some("string") => return "String".to_string(),
+        Some("array") => return "Array".to_string(),
+        Some("boolean") => return "Boolean".to_string(),
+        Some("number") | Some("integer") => return "Number".to_string(),
+        _ => {}
+    }
+    if result_kind == Some("lookup-or-null") {
+        if schema_allows_null(branch) {
+            return "Null".to_string();
+        }
+        return "Object".to_string();
+    }
+    format!("Branch{}", idx + 1)
+}
+
 /// Enum variant / branch type label from a discriminator value (e.g. `verbosity` + `0` → `Verbosity0`).
 fn union_variant_name_from_disc(parameter: &str, value: &serde_json::Value, idx: usize) -> String {
     let param_stem = parameter.split('|').next().unwrap_or(parameter);
@@ -1399,6 +1425,7 @@ fn union_from_schema_branches(
     method_name: Option<&str>,
     field_name: Option<&str>,
     discriminator: Option<&RpcResultDiscriminator>,
+    result_kind: Option<&str>,
 ) -> TypeDef {
     let method_pascal = canonical_method_pascal(method_name.unwrap_or("rpc"));
     let disc_aligned = discriminator.filter(|d| d.values.len() == branches.len());
@@ -1418,7 +1445,10 @@ fn union_from_schema_branches(
                     &mut used_names,
                 )
             } else {
-                unique_union_variant_name(format!("Branch{}", idx + 1), &mut used_names)
+                unique_union_variant_name(
+                    union_variant_name_from_schema_branch(branch, result_kind, idx),
+                    &mut used_names,
+                )
             };
             let branch_fallback = format!("{fallback_name}{variant_name}");
             let mut branch_type = type_def_from_json_schema_ctx(
@@ -1495,6 +1525,7 @@ fn type_def_from_json_schema_ctx(
     {
         if branches.len() >= 2 {
             let disc = resolve_result_discriminator(schema, None);
+            let result_kind = schema.get("x-bitcoin-result-kind").and_then(|v| v.as_str());
             return union_from_schema_branches(
                 branches,
                 fallback_name,
@@ -1502,6 +1533,7 @@ fn type_def_from_json_schema_ctx(
                 method_name,
                 field_name,
                 disc.as_ref(),
+                result_kind,
             );
         }
         if branches.len() == 1 {
@@ -2410,6 +2442,7 @@ fn build_union_from_raw_results(
 
     let disc = schema.and_then(|s| resolve_result_discriminator(s, None));
     let disc_aligned = disc.as_ref().filter(|d| d.values.len() == results.len());
+    let result_kind = schema.and_then(|s| s.get("x-bitcoin-result-kind").and_then(|v| v.as_str()));
     let mut used_names = std::collections::HashSet::new();
 
     let union_variants = results
@@ -2422,7 +2455,18 @@ fn build_union_from_raw_results(
                     &mut used_names,
                 )
             } else {
-                unique_union_variant_name(format!("Branch{}", idx + 1), &mut used_names)
+                let role = match raw.r#type.as_str() {
+                    "none" | "null" => "Null".to_string(),
+                    "object" | "object-dynamic" => "Object".to_string(),
+                    "string" | "hex" => "String".to_string(),
+                    "array" => "Array".to_string(),
+                    "boolean" | "bool" => "Boolean".to_string(),
+                    "number" | "numeric" | "amount" => "Number".to_string(),
+                    _ if result_kind == Some("lookup-or-null") && idx == 0 => "Null".to_string(),
+                    _ if result_kind == Some("lookup-or-null") => "Object".to_string(),
+                    _ => format!("Branch{}", idx + 1),
+                };
+                unique_union_variant_name(role, &mut used_names)
             };
             let mut branch_type = convert_result(raw, None, Some(method_name), None);
             // Preserve oneOf branches while giving every anonymous object/array in the branch
@@ -2732,6 +2776,59 @@ mod tests {
         assert_eq!(disc.parameter, "verbosity");
         assert_eq!(disc.parameter_index, 1);
         assert_eq!(disc.values, vec![serde_json::json!(0), serde_json::json!(1)]);
+    }
+
+    #[test]
+    fn lookup_or_null_one_of_uses_null_object_arm_names() {
+        let schema = serde_json::json!({
+            "oneOf": [
+                {"type": "null", "description": "UTXO not found"},
+                {
+                    "type": "object",
+                    "properties": {
+                        "bestblock": {"type": "string"},
+                        "confirmations": {"type": "number"},
+                    },
+                    "required": ["bestblock", "confirmations"],
+                },
+            ],
+            "x-bitcoin-result-kind": "lookup-or-null",
+        });
+        let td = convert_result_from_schema(&schema, "gettxout");
+        assert_eq!(td.kind, TypeKind::Union);
+        let names: Vec<&str> = td
+            .union_variants
+            .as_ref()
+            .expect("union variants")
+            .iter()
+            .map(|v| v.name.as_str())
+            .collect();
+        assert_eq!(names, vec!["Null", "Object"], "got {names:?}");
+        assert_eq!(
+            td.union_variants.as_ref().unwrap()[0].type_def.protocol_type.as_deref(),
+            Some("none")
+        );
+        assert_eq!(td.union_variants.as_ref().unwrap()[1].type_def.kind, TypeKind::Object);
+    }
+
+    #[test]
+    fn schema_type_role_labels_without_result_kind() {
+        let schema = serde_json::json!({
+            "oneOf": [
+                {"type": "string"},
+                {"type": "array", "items": {"type": "string"}},
+            ],
+        });
+        let td = type_def_from_json_schema_ctx(
+            &schema,
+            "DemoResult",
+            "",
+            Some("demorpc"),
+            Some("result"),
+        );
+        let names: Vec<&str> =
+            td.union_variants.as_ref().expect("union").iter().map(|v| v.name.as_str()).collect();
+        assert_eq!(names, vec!["String", "Array"], "got {names:?}");
     }
 
     #[test]
