@@ -1527,9 +1527,6 @@ fn rpc_prelude_exports_floresta_consumer_aliases() {
     ];
     for (short, long) in expected {
         let line = format!("pub use super::{long} as {short};");
-        assert!(
-            responses.contains(&line),
-            "missing consumer alias `{line}` in rpc_prelude"
-        );
+        assert!(responses.contains(&line), "missing consumer alias `{line}` in rpc_prelude");
     }
 }
