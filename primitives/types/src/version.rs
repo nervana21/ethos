@@ -63,12 +63,29 @@ impl ProtocolVersion {
         // Expected formats (v prefix is optional):
         // 30.99.0 or v30.99.0
         // 0.1.0 or v0.1.0
+        // Also accept Core OpenRPC stamps like v32.0.0rc1 / v32.0.0-rc1 by stripping
+        // the prerelease/build suffix first.
         let re = Regex::new(r"^(?:v)?(\d+)\.(\d+)(?:\.(\d+))?$")
             .map_err(|e: regex::Error| VersionError::Parse(e.to_string()))?;
-        let caps = re.captures(s).ok_or_else(|| VersionError::InvalidFormat(s.to_string()))?;
 
-        // Store original version string without normalization
-        let version_string = s.to_string();
+        let version_string = if re.is_match(s) {
+            s.to_string()
+        } else {
+            let stripped = Self::strip_build_suffix(s);
+            let candidate = if s.trim_start().starts_with(['v', 'V']) {
+                format!("v{stripped}")
+            } else {
+                stripped
+            };
+            if !re.is_match(&candidate) {
+                return Err(VersionError::InvalidFormat(s.to_string()));
+            }
+            candidate
+        };
+
+        let caps = re
+            .captures(&version_string)
+            .ok_or_else(|| VersionError::InvalidFormat(s.to_string()))?;
 
         Ok(Self {
             version_string,
@@ -147,16 +164,26 @@ impl ProtocolVersion {
     }
 
     /// Strips build/metadata suffix from a version string (e.g. `30.99.0-705399b1d57a` -> `30.99.0`).
+    ///
+    /// Also handles Core OpenRPC glued prerelease stamps (`32.0.0rc1` -> `32.0.0`).
     pub fn strip_build_suffix(version: &str) -> String {
-        let trimmed = version.trim_start_matches('v').trim();
+        let trimmed = version.trim_start_matches(['v', 'V']).trim();
+        // Numeric MAJOR.MINOR[.PATCH] prefix covers hyphen suffixes and glued `rcN`.
+        if let Ok(re) = Regex::new(r"^(\d+\.\d+(?:\.\d+)?)") {
+            if let Some(caps) = re.captures(trimmed) {
+                return caps[1].to_string();
+            }
+        }
         let end = trimmed.find(|c: char| c == '-' || c == '+').unwrap_or(trimmed.len());
         trimmed[..end].to_string()
     }
 
     /// Returns true if the version string contains a build/metadata suffix (e.g. `-dirty`, `-rc1`, `+meta`).
+    ///
+    /// Also true for glued Core stamps like `32.0.0rc1`.
     pub fn has_build_suffix(version: &str) -> bool {
-        let trimmed = version.trim_start_matches('v').trim();
-        trimmed.chars().any(|c| c == '-' || c == '+')
+        let trimmed = version.trim_start_matches(['v', 'V']).trim();
+        trimmed != Self::strip_build_suffix(version)
     }
 
     /// Parse a version for ordering, stripping build suffix first. Unparseable values become `0.0.0`.
