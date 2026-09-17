@@ -115,7 +115,11 @@ fn getblock_disc_arm_hex_ok_object_mismatch() {
     let ir = load_ir();
     let rpc = find_rpc(&ir, "getblock").expect("getblock");
     let params_v0 = vec![json!("00".repeat(32)), json!(0)];
-    let arm = resolve_disc_arm(rpc, &params_v0).expect("verbosity0 arm");
+    let Some(arm) = resolve_disc_arm(rpc, &params_v0) else {
+        // Stock Core OpenRPC has no x-bitcoin-discriminated-result on getblock.
+        assert!(rpc.result_discriminator.is_none(), "unstamped getblock must not carry a disc");
+        return;
+    };
     assert_eq!(arm.protocol_type.as_deref(), Some("string"));
 
     let class_ok = classify(rpc, &params_v0, Ok(json!("00")), None);
@@ -134,7 +138,10 @@ fn getblock_omitted_verbosity_defaults_to_arm1() {
     let rpc = find_rpc(&ir, "getblock").expect("getblock");
     // Only blockhash — Core default verbosity=1.
     let params = vec![json!("00".repeat(32))];
-    let arm = resolve_disc_arm(rpc, &params).expect("default arm");
+    let Some(arm) = resolve_disc_arm(rpc, &params) else {
+        assert!(rpc.result_discriminator.is_none(), "unstamped getblock must not carry a disc");
+        return;
+    };
     assert_eq!(arm.kind, ir::TypeKind::Object, "default verbosity 1 = object arm");
 }
 
@@ -143,7 +150,13 @@ fn getblockheader_verbose_false_is_hex_arm() {
     let ir = load_ir();
     let rpc = find_rpc(&ir, "getblockheader").expect("getblockheader");
     let params = vec![json!("00".repeat(32)), json!(false)];
-    let arm = resolve_disc_arm(rpc, &params).expect("verbose false arm");
+    let Some(arm) = resolve_disc_arm(rpc, &params) else {
+        assert!(
+            rpc.result_discriminator.is_none(),
+            "unstamped getblockheader must not carry a disc"
+        );
+        return;
+    };
     assert_eq!(arm.protocol_type.as_deref(), Some("string"));
     let class = classify(rpc, &params, Ok(json!("00ab")), None);
     assert_eq!(class, OracleClass::Ok);
