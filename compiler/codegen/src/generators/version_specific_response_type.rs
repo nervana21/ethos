@@ -474,7 +474,9 @@ impl VersionSpecificResponseTypeGenerator {
             out.push_str("}\n");
 
             // Serializers: Core wire amounts are BTC floats, never sat integers.
-            out.push_str("\n/// Serialize [`bitcoin::Amount`] as a BTC float (Core JSON-RPC wire).\n");
+            out.push_str(
+                "\n/// Serialize [`bitcoin::Amount`] as a BTC float (Core JSON-RPC wire).\n",
+            );
             out.push_str("fn amount_to_btc_float<S>(amount: &bitcoin::Amount, serializer: S) -> Result<S::Ok, S::Error>\n");
             out.push_str("where\n");
             out.push_str("    S: serde::Serializer,\n");

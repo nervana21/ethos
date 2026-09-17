@@ -1520,10 +1520,7 @@ fn amount_fields_emit_btc_float_serde_pair() {
         }),
         ..Default::default()
     };
-    let code = gen
-        .generate_method_response(&method)
-        .expect("generate")
-        .expect("response");
+    let code = gen.generate_method_response(&method).expect("generate").expect("response");
     assert!(
         code.contains("serialize_with = \"amount_to_btc_float\""),
         "expected BTC float serializer on required Amount:\n{code}"
