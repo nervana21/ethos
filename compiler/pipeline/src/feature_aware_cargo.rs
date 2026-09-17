@@ -46,9 +46,12 @@ pub fn generate_cargo_toml(
     let mut default_categories: Vec<MethodCategory> =
         groups.keys().filter(|&c| c.is_default()).cloned().collect();
     default_categories.sort_by_key(|c| c.display_name());
-    let default_features: Vec<&str> = default_categories.iter().map(|c| c.feature_name()).collect();
+    let mut default_features: Vec<&str> =
+        default_categories.iter().map(|c| c.feature_name()).collect();
+    // Client stack (transport / node manager) on by default; types-only = default-features=false.
+    default_features.insert(0, "client");
 
-    if default_features.is_empty() {
+    if default_features.len() <= 1 {
         if groups.is_empty() {
             return Err(PipelineError::Message(
 				"No RPC methods found for the specified protocol version. This indicates a problem with the input data or version configuration.".to_string()
@@ -64,6 +67,12 @@ pub fn generate_cargo_toml(
 
     cargo_content.push_str(&format!("default = [\"{}\"]\n", default_features.join("\", \"")));
 
+    // Types-only is always available (empty feature). Client pulls optional runtime deps.
+    cargo_content.push_str("types = []\n");
+    cargo_content.push_str(
+        "client = [\"dep:async-trait\", \"dep:base64\", \"dep:bitreq\", \"dep:bytes\", \"dep:tempfile\", \"dep:thiserror\", \"dep:tokio\", \"dep:tracing\"]\n",
+    );
+
     // Emit feature flags
     let mut categories: Vec<MethodCategory> = groups.keys().cloned().collect();
     categories.sort_by_key(|c| c.display_name());
@@ -75,6 +84,8 @@ pub fn generate_cargo_toml(
     cargo_content.push_str("\n# Enable all features\n");
     let mut all_features: Vec<String> =
         groups.keys().map(|c| c.feature_name().to_string()).collect();
+    all_features.push("client".to_string());
+    all_features.push("types".to_string());
     all_features.sort();
     cargo_content.push_str(&format!("full = [\"{}\"]\n", all_features.join("\", \"")));
 
