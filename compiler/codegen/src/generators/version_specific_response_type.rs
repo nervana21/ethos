@@ -472,6 +472,29 @@ impl VersionSpecificResponseTypeGenerator {
             out.push_str("\n");
             out.push_str("    deserializer.deserialize_any(OptionAmountVisitor)\n");
             out.push_str("}\n");
+
+            // Serializers: Core wire amounts are BTC floats, never sat integers.
+            out.push_str("\n/// Serialize [`bitcoin::Amount`] as a BTC float (Core JSON-RPC wire).\n");
+            out.push_str("fn amount_to_btc_float<S>(amount: &bitcoin::Amount, serializer: S) -> Result<S::Ok, S::Error>\n");
+            out.push_str("where\n");
+            out.push_str("    S: serde::Serializer,\n");
+            out.push_str("{\n");
+            out.push_str("    serializer.serialize_f64(amount.to_btc())\n");
+            out.push_str("}\n");
+
+            out.push_str("\n/// Serialize `Option<bitcoin::Amount>` as a BTC float when `Some`.\n");
+            out.push_str("fn option_amount_to_btc_float<S>(\n");
+            out.push_str("    amount: &Option<bitcoin::Amount>,\n");
+            out.push_str("    serializer: S,\n");
+            out.push_str(") -> Result<S::Ok, S::Error>\n");
+            out.push_str("where\n");
+            out.push_str("    S: serde::Serializer,\n");
+            out.push_str("{\n");
+            out.push_str("    match amount {\n");
+            out.push_str("        Some(a) => amount_to_btc_float(a, serializer),\n");
+            out.push_str("        None => serializer.serialize_none(),\n");
+            out.push_str("    }\n");
+            out.push_str("}\n");
         }
 
         let filename = "responses.rs".to_string();
@@ -1283,25 +1306,31 @@ impl VersionSpecificResponseTypeGenerator {
             writeln!(buf, "    #[serde(rename = \"{}\")]", field.key.as_ident())?;
         }
 
-        let amount_option =
-            base_field_type == "bitcoin::Amount" && field_type.starts_with("Option<");
+        let is_option = field_type.starts_with("Option<");
+        let amount_option = base_field_type == "bitcoin::Amount" && is_option;
         // `force_opt` uses `#[serde(default)]`; Option + Amount merges `default` into the Amount attribute below.
         if force_opt && !amount_option {
             writeln!(buf, "    #[serde(default)]")?;
         }
 
-        // Add deserializer attribute for bitcoin::Amount fields
-        // Check if the base type (before Option wrapper) is bitcoin::Amount
+        // Core omits absent optionals; never emit JSON `null` for `None`.
+        if is_option && !amount_option {
+            writeln!(buf, "    #[serde(skip_serializing_if = \"Option::is_none\")]")?;
+        }
+
+        // Amount: decode BTC float or sat integer; encode BTC float (Core wire).
         if base_field_type == "bitcoin::Amount" {
-            // Use different deserializer for Option<Amount> vs Amount.
             // `default` is required for Option + `deserialize_with` so a missing JSON field deserializes as None.
-            if field_type.starts_with("Option<") {
+            if is_option {
                 writeln!(
                     buf,
-                    "    #[serde(default, deserialize_with = \"option_amount_from_btc_float\")]"
+                    "    #[serde(default, skip_serializing_if = \"Option::is_none\", serialize_with = \"option_amount_to_btc_float\", deserialize_with = \"option_amount_from_btc_float\")]"
                 )?;
             } else {
-                writeln!(buf, "    #[serde(deserialize_with = \"amount_from_btc_float\")]")?;
+                writeln!(
+                    buf,
+                    "    #[serde(serialize_with = \"amount_to_btc_float\", deserialize_with = \"amount_from_btc_float\")]"
+                )?;
             }
         }
 
