@@ -1,0 +1,12 @@
+{
+  "bestblock": "0f9188f13cb7b2c71f2a335e3a4fc328bf5beb436012afca590b1a11466e2206",
+  "confirmations": 1,
+  "value": 50.0,
+  "scriptPubKey": {
+    "asm": "OP_DUP OP_HASH160 0 OP_EQUALVERIFY OP_CHECKSIG",
+    "desc": "addr(bcrt1q…)",
+    "hex": "76a91400",
+    "type": "pubkeyhash"
+  },
+  "coinbase": true
+}
