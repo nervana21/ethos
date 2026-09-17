@@ -1,0 +1,17 @@
+{
+  "blocks": 0,
+  "bits": "207fffff",
+  "difficulty": 4.656542373906925e-10,
+  "networkhashps": 0.0,
+  "pooledtx": 0,
+  "chain": "regtest",
+  "target": "00000000ffff0000000000000000000000000000000000000000000000000000",
+  "blockmintxfee": 0.00001,
+  "warnings": [],
+  "next": {
+    "height": 1,
+    "bits": "207fffff",
+    "difficulty": 4.656542373906925e-10,
+    "target": "00000000ffff0000000000000000000000000000000000000000000000000000"
+  }
+}

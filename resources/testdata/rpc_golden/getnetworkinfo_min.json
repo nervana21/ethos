@@ -1,0 +1,28 @@
+{
+  "version": 320000,
+  "subversion": "/Satoshi:32.0.0/",
+  "protocolversion": 70016,
+  "localservices": "0000000000000409",
+  "localservicesnames": ["NETWORK", "WITNESS", "NETWORK_LIMITED"],
+  "localrelay": true,
+  "timeoffset": 0,
+  "networkactive": true,
+  "connections": 0,
+  "connections_in": 0,
+  "connections_out": 0,
+  "networks": [
+    {
+      "name": "ipv4",
+      "limited": false,
+      "reachable": true,
+      "proxy": "",
+      "proxy_randomize_credentials": false
+    }
+  ],
+  "relayfee": 0.00001,
+  "incrementalfee": 0.00001,
+  "localaddresses": [],
+  "warnings": [],
+  "inv_buckets": {},
+  "tx_send_rate": 0
+}
