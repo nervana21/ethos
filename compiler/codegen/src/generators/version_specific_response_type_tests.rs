@@ -1557,10 +1557,11 @@ fn rpc_prelude_exports_floresta_consumer_aliases() {
     );
 
     // Exact Floresta shim surface (consumer short-name table), minus identity re-exports.
+    // Long names match stock Core oneOf arm labels (Object…), not orpc VerbosityN stamps.
     let expected = [
-        ("GetBlockVerboseOne", "GetBlockResponseGetBlockVerbosity1"),
-        ("GetBlockHeaderVerbose", "GetBlockHeaderResponseGetBlockHeaderVerboseTrue"),
-        ("GetRawTransactionVerbose", "GetRawTransactionResponseGetRawTransactionVerbosity1"),
+        ("GetBlockVerboseOne", "GetBlockResponseGetBlockObject"),
+        ("GetBlockHeaderVerbose", "GetBlockHeaderResponseGetBlockHeaderObject"),
+        ("GetRawTransactionVerbose", "GetRawTransactionResponseGetRawTransactionObject"),
         ("GetTxOut", "GetTxOutResponse"),
         ("ScriptPubKey", "GetTxOutScriptPubKey"),
         ("GetBlockchainInfo", "GetBlockchainInfoResponse"),
@@ -1570,10 +1571,10 @@ fn rpc_prelude_exports_floresta_consumer_aliases() {
         ("AddrManInfoNetwork", "GetAddrManInfoMapValue"),
         ("GetDeploymentInfo", "GetDeploymentInfoResponse"),
         ("DeploymentInfo", "GetDeploymentInfoMapValue"),
-        ("RawTransactionScriptPubKey", "GetRawTransactionVerbosity1ScriptPubKey"),
-        ("ScriptSig", "GetRawTransactionVerbosity1ScriptSig"),
-        ("RawTransactionInput", "GetRawTransactionVerbosity1Vin"),
-        ("RawTransactionOutput", "GetRawTransactionVerbosity1Vout"),
+        ("RawTransactionScriptPubKey", "GetRawTransactionScriptPubKey"),
+        ("ScriptSig", "GetRawTransactionScriptSig"),
+        ("RawTransactionInput", "GetRawTransactionVin"),
+        ("RawTransactionOutput", "GetRawTransactionVout"),
     ];
     for (short, long) in expected {
         let line = format!("pub use super::{long} as {short};");
