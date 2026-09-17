@@ -91,7 +91,8 @@ pub use client_trait::{};
 pub use test_config::TestConfig;
 pub use {}::{};
 pub use types::*;
-pub use types::rpc_prelude;
+pub use types::rpc_prelude::*;
+pub use types::{{aliases, rpc_prelude}};
 pub use transport::{{
     DefaultTransport,
     TransportError,

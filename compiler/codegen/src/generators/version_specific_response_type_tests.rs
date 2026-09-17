@@ -1484,3 +1484,52 @@ fn no_rpc_name_specific_codegen_conditionals() {
         );
     }
 }
+
+#[test]
+fn rpc_prelude_exports_floresta_consumer_aliases() {
+    let workspace_root = path::workspace_root_from_manifest(env!("CARGO_MANIFEST_DIR"), 2);
+    let ir_path = path::canonical_bitcoin_ir_path(&workspace_root);
+    let ir = ir::ProtocolIR::from_file(&ir_path)
+        .unwrap_or_else(|e| panic!("load IR {}: {e}", ir_path.display()));
+    let methods: Vec<RpcDef> = ir.get_rpc_methods().into_iter().cloned().collect();
+    let version = ProtocolVersion::from_str("32.0.0").expect("protocol version");
+    let gen = VersionSpecificResponseTypeGenerator::new(version, "bitcoin_core".to_string());
+    let files = gen.generate(&methods).expect("generate responses");
+    let responses = files
+        .iter()
+        .find(|(name, _)| name == "responses.rs")
+        .map(|(_, content)| content)
+        .expect("responses.rs");
+
+    assert!(
+        responses.contains("pub use rpc_prelude as aliases;"),
+        "expected aliases module alias:\n{responses}"
+    );
+
+    // Exact Floresta shim surface (consumer short-name table), minus identity re-exports.
+    let expected = [
+        ("GetBlockVerboseOne", "GetBlockResponseGetBlockVerbosity1"),
+        ("GetBlockHeaderVerbose", "GetBlockHeaderResponseGetBlockHeaderVerboseTrue"),
+        ("GetRawTransactionVerbose", "GetRawTransactionResponseGetRawTransactionVerbosity1"),
+        ("GetTxOut", "GetTxOutResponse"),
+        ("ScriptPubKey", "GetTxOutScriptPubKey"),
+        ("GetBlockchainInfo", "GetBlockchainInfoResponse"),
+        ("GetNetworkInfo", "GetNetworkInfoResponse"),
+        ("GetNetworkInfoNetwork", "GetNetworkInfoNetworks"),
+        ("GetAddrManInfo", "GetAddrManInfoResponse"),
+        ("AddrManInfoNetwork", "GetAddrManInfoMapValue"),
+        ("GetDeploymentInfo", "GetDeploymentInfoResponse"),
+        ("DeploymentInfo", "GetDeploymentInfoMapValue"),
+        ("RawTransactionScriptPubKey", "GetRawTransactionVerbosity1ScriptPubKey"),
+        ("ScriptSig", "GetRawTransactionVerbosity1ScriptSig"),
+        ("RawTransactionInput", "GetRawTransactionVerbosity1Vin"),
+        ("RawTransactionOutput", "GetRawTransactionVerbosity1Vout"),
+    ];
+    for (short, long) in expected {
+        let line = format!("pub use super::{long} as {short};");
+        assert!(
+            responses.contains(&line),
+            "missing consumer alias `{line}` in rpc_prelude"
+        );
+    }
+}

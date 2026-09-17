@@ -853,9 +853,33 @@ impl VersionSpecificResponseTypeGenerator {
         Ok(buf)
     }
 
-    /// Short `pub type` aliases + `rpc_prelude` for Floresta-style consumer re-exports.
+    /// Short `pub type` aliases + `rpc_prelude` / `aliases` for Floresta-style consumer re-exports.
+    ///
+    /// [`CONSUMER_TYPE_ALIASES`] is the Floresta shim surface (harden §3.1). Mechanical Response /
+    /// union-arm shorts are added only when they do not collide with those names.
     fn emit_rpc_prelude(&self, methods: &[RpcDef]) -> Result<String> {
-        /// Methods whose result surface is re-exported for light-client consumers.
+        /// Floresta (and similar) consumer short names → generated long names.
+        /// Keep in sync with `docs/harden-consumer-ready.md` §3.1.
+        const CONSUMER_TYPE_ALIASES: &[(&str, &str)] = &[
+            ("AddrManInfoNetwork", "GetAddrManInfoMapValue"),
+            ("DeploymentInfo", "GetDeploymentInfoMapValue"),
+            ("GetAddrManInfo", "GetAddrManInfoResponse"),
+            ("GetBlockHeaderVerbose", "GetBlockHeaderResponseGetBlockHeaderVerboseTrue"),
+            ("GetBlockVerboseOne", "GetBlockResponseGetBlockVerbosity1"),
+            ("GetBlockchainInfo", "GetBlockchainInfoResponse"),
+            ("GetDeploymentInfo", "GetDeploymentInfoResponse"),
+            ("GetNetworkInfo", "GetNetworkInfoResponse"),
+            ("GetNetworkInfoNetwork", "GetNetworkInfoNetworks"),
+            ("GetRawTransactionVerbose", "GetRawTransactionResponseGetRawTransactionVerbosity1"),
+            ("GetTxOut", "GetTxOutResponse"),
+            ("RawTransactionInput", "GetRawTransactionVerbosity1Vin"),
+            ("RawTransactionOutput", "GetRawTransactionVerbosity1Vout"),
+            ("RawTransactionScriptPubKey", "GetRawTransactionVerbosity1ScriptPubKey"),
+            ("ScriptPubKey", "GetTxOutScriptPubKey"),
+            ("ScriptSig", "GetRawTransactionVerbosity1ScriptSig"),
+        ];
+
+        /// Methods whose result surface also gets mechanical Response / union-arm shorts.
         const PRELUDE_METHODS: &[&str] = &[
             "getblockchaininfo",
             "getblock",
@@ -868,13 +892,20 @@ impl VersionSpecificResponseTypeGenerator {
         ];
 
         let mut aliases: BTreeMap<String, String> = BTreeMap::new();
+        for &(short, long) in CONSUMER_TYPE_ALIASES {
+            aliases.insert(short.to_string(), long.to_string());
+        }
+
+        let reserved: BTreeSet<&str> =
+            CONSUMER_TYPE_ALIASES.iter().map(|(short, _)| *short).collect();
+
         for method in methods {
             if !PRELUDE_METHODS.contains(&method.name.as_str()) {
                 continue;
             }
             let response = self.response_struct_name(method);
             let method_short = response.strip_suffix("Response").unwrap_or(response.as_str());
-            if method_short != response {
+            if method_short != response && !reserved.contains(method_short) {
                 aliases.insert(method_short.to_string(), response.clone());
             }
 
@@ -895,20 +926,12 @@ impl VersionSpecificResponseTypeGenerator {
                     let qualified = Self::qualify_union_branch_struct(&response, &inner);
                     let arm = sanitize_type_name_for_rust(&uv.name);
                     let short = format!("{method_short}{arm}");
+                    if reserved.contains(short.as_str()) {
+                        continue;
+                    }
                     aliases.insert(short, qualified);
                 }
             }
-        }
-
-        if aliases.is_empty() {
-            let mut buf = String::new();
-            writeln!(
-                buf,
-                "/// Short aliases for common RPC result shapes (generated; do not hand-edit)."
-            )?;
-            writeln!(buf, "pub mod rpc_prelude {{}}")?;
-            writeln!(buf)?;
-            return Ok(buf);
         }
 
         let mut buf = String::new();
@@ -919,18 +942,26 @@ impl VersionSpecificResponseTypeGenerator {
         writeln!(buf, "///")?;
         writeln!(
             buf,
-            "/// Prefer `use ethos_bitcoind::rpc_prelude::*` (or `types::rpc_prelude`) instead of"
+            "/// Prefer `use ethos_bitcoind::{{GetBlockVerboseOne, GetTxOut, …}}` or"
         )?;
-        writeln!(buf, "/// copying consumer shim modules.")?;
+        writeln!(
+            buf,
+            "/// `use ethos_bitcoind::aliases::*` / `rpc_prelude::*` instead of consumer shim modules."
+        )?;
         writeln!(buf, "pub mod rpc_prelude {{")?;
         for (short, long) in &aliases {
             if short == long {
                 continue;
             }
-            writeln!(buf, "    /// Alias for [`super::{long}`].")?;
-            writeln!(buf, "    pub type {short} = super::{long};")?;
+            writeln!(buf, "    /// Re-export of [`super::{long}`].")?;
+            // `pub use` (not `pub type`) so tuple-struct / newtype constructors stay usable
+            // under the short name (e.g. `GetAddrManInfo(map)`).
+            writeln!(buf, "    pub use super::{long} as {short};")?;
         }
         writeln!(buf, "}}")?;
+        writeln!(buf)?;
+        writeln!(buf, "/// Alias of [`rpc_prelude`] (Floresta-oriented name).")?;
+        writeln!(buf, "pub use rpc_prelude as aliases;")?;
         writeln!(buf)?;
         Ok(buf)
     }
