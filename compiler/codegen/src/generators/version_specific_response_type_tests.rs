@@ -1486,6 +1486,59 @@ fn no_rpc_name_specific_codegen_conditionals() {
 }
 
 #[test]
+fn amount_fields_emit_btc_float_serde_pair() {
+    let version = ProtocolVersion::from_str("32.0.0").expect("protocol version");
+    let gen = VersionSpecificResponseTypeGenerator::new(version, "bitcoin_core".to_string());
+    let method = RpcDef {
+        name: "gettxout".to_string(),
+        result: Some(TypeDef {
+            name: "GetTxOutResult".to_string(),
+            kind: TypeKind::Object,
+            fields: Some(vec![
+                field(
+                    "value",
+                    TypeDef {
+                        name: "amount".to_string(),
+                        kind: TypeKind::Primitive,
+                        protocol_type: Some("amount".to_string()),
+                        ..Default::default()
+                    },
+                    true,
+                ),
+                field(
+                    "coinbase",
+                    TypeDef {
+                        name: "boolean".to_string(),
+                        kind: TypeKind::Primitive,
+                        protocol_type: Some("boolean".to_string()),
+                        ..Default::default()
+                    },
+                    false,
+                ),
+            ]),
+            ..Default::default()
+        }),
+        ..Default::default()
+    };
+    let code = gen
+        .generate_method_response(&method)
+        .expect("generate")
+        .expect("response");
+    assert!(
+        code.contains("serialize_with = \"amount_to_btc_float\""),
+        "expected BTC float serializer on required Amount:\n{code}"
+    );
+    assert!(
+        code.contains("deserialize_with = \"amount_from_btc_float\""),
+        "expected Amount deserializer:\n{code}"
+    );
+    assert!(
+        code.contains("skip_serializing_if = \"Option::is_none\""),
+        "expected Option omit:\n{code}"
+    );
+}
+
+#[test]
 fn rpc_prelude_exports_floresta_consumer_aliases() {
     let workspace_root = path::workspace_root_from_manifest(env!("CARGO_MANIFEST_DIR"), 2);
     let ir_path = path::canonical_bitcoin_ir_path(&workspace_root);
