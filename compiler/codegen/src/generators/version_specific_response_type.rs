@@ -940,10 +940,7 @@ impl VersionSpecificResponseTypeGenerator {
             "/// Short aliases for common RPC result shapes (generated; do not hand-edit)."
         )?;
         writeln!(buf, "///")?;
-        writeln!(
-            buf,
-            "/// Prefer `use ethos_bitcoind::{{GetBlockVerboseOne, GetTxOut, …}}` or"
-        )?;
+        writeln!(buf, "/// Prefer `use ethos_bitcoind::{{GetBlockVerboseOne, GetTxOut, …}}` or")?;
         writeln!(
             buf,
             "/// `use ethos_bitcoind::aliases::*` / `rpc_prelude::*` instead of consumer shim modules."
