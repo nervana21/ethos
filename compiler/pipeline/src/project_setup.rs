@@ -180,7 +180,7 @@ use {crate_module_name}::{{GetBlockVerboseOne, GetTxOut, ScriptPubKey, GetBlockc
 // or: use {crate_module_name}::aliases::*;
 ```
 
-Use `default-features = false` and enable only the RPC categories you need (`blockchain`, `network`, `rawtransaction`, …).
+Use `default-features = false` for **types-only** (no tokio / transport / node manager). Enable RPC category features you need (`blockchain`, `network`, `rawtransaction`, …). Add `client` when you want the async transport stack.
 
 ## Migrating from corepc-types
 

@@ -73,26 +73,41 @@ impl ModuleGenerator for LibRsModuleGenerator {
 //!
 //! This library provides a strongly-typed interface to the {} RPC API.
 //! It is generated from the {} RPC API documentation.
+//!
+//! Enable feature `client` (default) for transport / node manager. Types-only:
+//! `default-features = false` plus the RPC category features you need.
 
 // Core modules
+#[cfg(feature = "client")]
 pub mod config;
+#[cfg(feature = "client")]
 pub mod client_trait;
+#[cfg(feature = "client")]
 pub mod node;
+#[cfg(feature = "client")]
 pub mod test_config;
+#[cfg(feature = "client")]
 pub mod {};
+#[cfg(feature = "client")]
 pub mod transport;
 pub mod types;
 
 // Re-exports for ergonomic access
+#[cfg(feature = "client")]
 pub use config::Config;
+#[cfg(feature = "client")]
 pub use client_trait::{};
+#[cfg(feature = "client")]
 {}
 {}
+#[cfg(feature = "client")]
 pub use test_config::TestConfig;
+#[cfg(feature = "client")]
 pub use {}::{};
 pub use types::*;
 pub use types::rpc_prelude::*;
 pub use types::{{aliases, rpc_prelude}};
+#[cfg(feature = "client")]
 pub use transport::{{
     DefaultTransport,
     TransportError,
