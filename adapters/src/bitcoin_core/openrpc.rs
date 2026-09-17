@@ -2636,16 +2636,17 @@ mod tests {
         assert!(!rpc.params.is_empty(), "schema-first params must be non-empty");
         let result = rpc.result.expect("getrawtransaction result");
         assert_eq!(result.kind, TypeKind::Union, "schema-first oneOf must lower to Union");
+        // Stock Core dump has no x-bitcoin-discriminated-result; arms use type-role labels.
         assert!(
-            rpc.result_discriminator.is_some(),
-            "getrawtransaction disc requires x-bitcoin-discriminated-result stamp"
+            rpc.result_discriminator.is_none(),
+            "stock getrawtransaction must not invent a disc"
         );
         let variants = result.union_variants.as_ref().expect("union variants");
         let names: Vec<&str> = variants.iter().map(|uv| uv.name.as_str()).collect();
         assert_eq!(
             names,
-            ["Verbosity0", "Verbosity1", "Verbosity2"],
-            "disc values must name union variants, got {names:?}"
+            ["String", "Object", "Object2"],
+            "type-role labels must name union variants, got {names:?}"
         );
         for bad in ["in_active_chain_1", "blockhash_1", "vin_1", "vout_1"] {
             for uv in variants {
@@ -2676,20 +2677,17 @@ mod tests {
         );
         let result = rpc.result.expect("getblock result");
         assert_eq!(result.kind, TypeKind::Union);
-        assert!(
-            rpc.result_discriminator.is_some(),
-            "getblock disc requires x-bitcoin-discriminated-result stamp"
-        );
+        assert!(rpc.result_discriminator.is_none(), "stock getblock must not invent a disc");
         let variants = result.union_variants.as_ref().expect("union variants");
         let names: Vec<&str> = variants.iter().map(|uv| uv.name.as_str()).collect();
         assert_eq!(
             names,
-            ["Verbosity0", "Verbosity1", "Verbosity2", "Verbosity3"],
-            "disc values must name union variants, got {names:?}"
+            ["String", "Object", "Object2", "Object3"],
+            "type-role labels must name union variants, got {names:?}"
         );
         assert_eq!(
-            variants[1].type_def.name, "GetBlockVerbosity1",
-            "object branch type should follow disc label, got {}",
+            variants[1].type_def.name, "GetBlockObject",
+            "object branch type should follow type-role label, got {}",
             variants[1].type_def.name
         );
         assert!(
@@ -2700,50 +2698,6 @@ mod tests {
                     .is_some_and(|fields| fields.iter().any(|f| f.key.as_ident() == "tx_1"))
             }),
             "merged scaffold key tx_1 must not appear"
-        );
-
-        // Verbosity2 vin must not carry prevout; Verbosity3 vin must. Nested identities must
-        // differ so codegen cannot smash both onto one GetBlockVin struct.
-        fn find_named_field<'a>(td: &'a TypeDef, key: &str) -> Option<&'a FieldDef> {
-            td.fields.as_ref()?.iter().find(|f| f.key.as_ident() == key)
-        }
-        fn array_elem(td: &TypeDef) -> &TypeDef {
-            td.fields
-                .as_ref()
-                .and_then(|f| f.first())
-                .map(|f| &f.field_type)
-                .expect("array element")
-        }
-        let v2_tx = find_named_field(&variants[2].type_def, "tx").expect("v2 tx");
-        let v3_tx = find_named_field(&variants[3].type_def, "tx").expect("v3 tx");
-        let v2_tx_elem = array_elem(&v2_tx.field_type);
-        let v3_tx_elem = array_elem(&v3_tx.field_type);
-        let v2_vin = find_named_field(v2_tx_elem, "vin").expect("v2 vin");
-        let v3_vin = find_named_field(v3_tx_elem, "vin").expect("v3 vin");
-        let v2_vin_elem = array_elem(&v2_vin.field_type);
-        let v3_vin_elem = array_elem(&v3_vin.field_type);
-        assert!(
-            find_named_field(v2_vin_elem, "prevout").is_none(),
-            "verbosity 2 vin must not include prevout"
-        );
-        assert!(
-            find_named_field(v3_vin_elem, "prevout").is_some(),
-            "verbosity 3 vin must include prevout"
-        );
-        assert_ne!(
-            v2_vin_elem.rust_emit_name(),
-            v3_vin_elem.rust_emit_name(),
-            "v2/v3 vin emit names must differ when shapes differ"
-        );
-        assert!(
-            v2_vin_elem.rust_emit_name().contains("Verbosity2"),
-            "v2 vin emit name should be arm-scoped, got {}",
-            v2_vin_elem.rust_emit_name()
-        );
-        assert!(
-            v3_vin_elem.rust_emit_name().contains("Verbosity3"),
-            "v3 vin emit name should be arm-scoped, got {}",
-            v3_vin_elem.rust_emit_name()
         );
     }
 
