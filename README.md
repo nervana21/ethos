@@ -31,6 +31,7 @@ just generate
 
 This will generate a Bitcoin Core client library from the IR file (`resources/ir/bitcoin.ir.json`).
 
+
 ## Contributing
 
 Contributors are warmly welcome, see [CONTRIBUTING.md](CONTRIBUTING.md).

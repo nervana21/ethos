@@ -75,24 +75,21 @@ _stage-downstream output_path:
 
 # Process OpenRPC → IR → generate client into repo.
 # Uses the default OpenRPC file; extra flags (e.g. --exclude-hidden-rpcs) are forwarded only to the pipeline (not to OpenRPC processing).
-# Set STAGE_DOWNSTREAM=1 to run `_stage-downstream` afterward (same as `process-openrpc-and-generate-stage`).
+# Set STAGE_DOWNSTREAM=1 to run `_stage-downstream` afterward.
 process-openrpc-and-generate output_path version="" *pipeline_flags:
     just process-openrpc resources/ir/openrpc.json resources/ir/bitcoin.ir.json && just generate-from-ir resources/ir/bitcoin.ir.json {{output_path}} {{version}} {{pipeline_flags}}
     @if [ "${STAGE_DOWNSTREAM:-0}" = 1 ]; then just _stage-downstream "{{output_path}}"; fi
 
-# Same as process-openrpc-and-generate + `_stage-downstream`. Review with `git diff --cached` in the downstream repo, then commit.
-process-openrpc-and-generate-stage output_path version="" *pipeline_flags:
-    just process-openrpc-and-generate {{output_path}} {{version}} {{pipeline_flags}}
-    just _stage-downstream "{{output_path}}"
+# Build corpus bitcoind at checked-out commit → dump getopenrpcinfo → resources/ir/openrpc.json + bitcoin.ir.json (+ fidelity gate). No codegen / client.
+# Extra flags forwarded to loop_openrpc.sh (e.g. --skip-build --no-hidden).
+refresh-openrpc *flags:
+    bash {{justfile_directory()}}/scripts/loop_openrpc.sh --skip-codegen --skip-client {{flags}}
 
-# Edit Core → incremental bitcoind build → dump getopenrpcinfo → IR → ../ethos-bitcoind → ../ethos-test-client core-test.
+# Full loop: Core build → dump → IR → ../ethos-bitcoind → ../ethos-test-client core-test.
 # Flags: --skip-build --skip-dump --skip-codegen --skip-client --dance --stage --no-hidden
+# Adapter/codegen only: just loop-openrpc --skip-build --skip-dump
 loop-openrpc *flags:
     bash {{justfile_directory()}}/scripts/loop_openrpc.sh {{flags}}
-
-# Adapter/codegen only: reuse pinned openrpc.json (no Core rebuild or dump).
-loop-openrpc-ethos *flags:
-    bash {{justfile_directory()}}/scripts/loop_openrpc.sh --skip-build --skip-dump {{flags}}
 
 
 # Code quality
@@ -210,8 +207,8 @@ examples:
     @echo "  just process-openrpc resources/ir/openrpc.json resources/ir/bitcoin.ir.json"
     @echo "  just openrpc-type-fidelity-gate   # Enforce schema fidelity checks and emit JSON report"
     @echo "  just process-openrpc-and-generate ../ethos-bitcoind   # OpenRPC → IR → generate into repo"
-    @echo "  just process-openrpc-and-generate-stage ../ethos-bitcoind {{LATEST_VERSION}}   # …then stage + ethos HEAD subject as suggested commit"
-    @echo "  just loop-openrpc            # Core build → dump → IR → ../ethos-bitcoind → ethos-test-client"
-    @echo "  just loop-openrpc-ethos      # skip Core build/dump; codegen + core-test"
-    @echo "  STAGE_DOWNSTREAM=1 just process-openrpc-and-generate ../ethos-bitcoind {{LATEST_VERSION}}   # same as -stage"
+    @echo "  STAGE_DOWNSTREAM=1 just process-openrpc-and-generate ../ethos-bitcoind {{LATEST_VERSION}}   # …then stage + ethos HEAD subject as suggested commit"
+    @echo "  just refresh-openrpc     # Core build → dump → openrpc.json + bitcoin.ir.json (no codegen)"
+    @echo "  just loop-openrpc        # Core build → dump → IR → ../ethos-bitcoind → ethos-test-client"
+    @echo "  just loop-openrpc --skip-build --skip-dump   # reuse pinned openrpc.json; codegen + core-test"
     @echo "  just corpus-pull         # Pull all corpus repositories"
