@@ -250,7 +250,6 @@ mod tests {
                 default_value: None,
                 version_added: None,
                 version_removed: None,
-                emit_in_struct: None,
                 force_optional: None,
             }],
         );
@@ -312,7 +311,6 @@ mod tests {
                                     default_value: None,
                                     version_added: None,
                                     version_removed: None,
-                                    emit_in_struct: None,
                                     force_optional: None,
                                 },
                                 FieldDef {
@@ -328,7 +326,6 @@ mod tests {
                                     default_value: None,
                                     version_added: None,
                                     version_removed: None,
-                                    emit_in_struct: None,
                                     force_optional: None,
                                 },
                                 FieldDef {
@@ -344,7 +341,6 @@ mod tests {
                                     default_value: None,
                                     version_added: None,
                                     version_removed: None,
-                                    emit_in_struct: None,
                                     force_optional: None,
                                 },
                             ],
@@ -354,7 +350,6 @@ mod tests {
                         default_value: None,
                         version_added: None,
                         version_removed: None,
-                        emit_in_struct: None,
                         force_optional: None,
                     }]),
                     protocol_type: Some("array".to_string()),
@@ -365,7 +360,6 @@ mod tests {
                 default_value: None,
                 version_added: None,
                 version_removed: None,
-                emit_in_struct: None,
                 force_optional: None,
             }],
         );
@@ -397,7 +391,6 @@ mod tests {
                     default_value: None,
                     version_added: None,
                     version_removed: None,
-                    emit_in_struct: None,
                     force_optional: None,
                 },
                 FieldDef {
@@ -408,7 +401,6 @@ mod tests {
                     default_value: None,
                     version_added: None,
                     version_removed: None,
-                    emit_in_struct: None,
                     force_optional: None,
                 },
             ],
