@@ -961,7 +961,7 @@
                         "variants": null,
                         "union_variants": [
                           {
-                            "name": "Branch1",
+                            "name": "Number",
                             "description": "\nSpecify a fee rate in sat/vB instead of relying on the built-in fee estimator.\nMust be at least 0.100 sat/vB higher than the current transaction fee rate.\nWARNING: before version 0.21, fee_rate was in BTC/kvB. As of 0.21, fee_rate is in sat/vB.\n",
                             "type_def": {
                               "name": "number",
@@ -974,7 +974,7 @@
                             }
                           },
                           {
-                            "name": "Branch2",
+                            "name": "String",
                             "description": "\nSpecify a fee rate in sat/vB instead of relying on the built-in fee estimator.\nMust be at least 0.100 sat/vB higher than the current transaction fee rate.\nWARNING: before version 0.21, fee_rate was in BTC/kvB. As of 0.21, fee_rate is in sat/vB.\n",
                             "type_def": {
                               "name": "string",
@@ -1023,10 +1023,10 @@
                         "variants": null,
                         "union_variants": [
                           {
-                            "name": "Branch1",
+                            "name": "Array",
                             "description": "The outputs specified as key-value pairs.\nEach key may only appear once, i.e. there can only be one 'data' output, and no address may be duplicated.\nAt least one output of either type must be specified.\nCannot be provided if 'original_change_index' is specified.",
                             "type_def": {
-                              "name": "RpcBranch1Array1",
+                              "name": "RpcArrayArray1",
                               "description": "The outputs specified as key-value pairs.\nEach key may only appear once, i.e. there can only be one 'data' output, and no address may be duplicated.\nAt least one output of either type must be specified.\nCannot be provided if 'original_change_index' is specified.",
                               "kind": "Array",
                               "fields": [
@@ -1035,18 +1035,18 @@
                                     "Anonymous": 0
                                   },
                                   "field_type": {
-                                    "name": "optionsOutputsBranch1Item",
+                                    "name": "optionsOutputsArrayItem",
                                     "description": "Union result preserved from OpenRPC oneOf/anyOf branches",
                                     "kind": "Union",
                                     "fields": null,
                                     "variants": null,
                                     "union_variants": [
                                       {
-                                        "name": "Branch1",
+                                        "name": "Object",
                                         "description": "A key-value pair. The key (string) is the bitcoin address,\nthe value (float or string) is the amount in BTC",
                                         "condition": "A key-value pair. The key (string) is the bitcoin address,\nthe value (float or string) is the amount in BTC",
                                         "type_def": {
-                                          "name": "optionsOutputsBranch1ItemBranch1Map",
+                                          "name": "optionsOutputsArrayItemObjectMap",
                                           "description": "A key-value pair. The key (string) is the bitcoin address,\nthe value (float or string) is the amount in BTC",
                                           "kind": "Map",
                                           "fields": null,
@@ -1054,14 +1054,14 @@
                                           "base_type": null,
                                           "protocol_type": "object-dynamic",
                                           "map_value": {
-                                            "name": "optionsOutputsBranch1ItemBranch1Value",
+                                            "name": "optionsOutputsArrayItemObjectValue",
                                             "description": "Union result preserved from OpenRPC oneOf/anyOf branches",
                                             "kind": "Union",
                                             "fields": null,
                                             "variants": null,
                                             "union_variants": [
                                               {
-                                                "name": "Branch1",
+                                                "name": "Number",
                                                 "description": "A key-value pair. The key (string) is the bitcoin address,\nthe value (float or string) is the amount in BTC",
                                                 "type_def": {
                                                   "name": "number",
@@ -1074,7 +1074,7 @@
                                                 }
                                               },
                                               {
-                                                "name": "Branch2",
+                                                "name": "String",
                                                 "description": "A key-value pair. The key (string) is the bitcoin address,\nthe value (float or string) is the amount in BTC",
                                                 "type_def": {
                                                   "name": "string",
@@ -1094,10 +1094,10 @@
                                         }
                                       },
                                       {
-                                        "name": "Branch2",
+                                        "name": "Object2",
                                         "description": "The outputs specified as key-value pairs.\nEach key may only appear once, i.e. there can only be one 'data' output, and no address may be duplicated.\nAt least one output of either type must be specified.\nCannot be provided if 'original_change_index' is specified.",
                                         "type_def": {
-                                          "name": "optionsOutputsBranch1ItemBranch2",
+                                          "name": "optionsOutputsArrayItemObject2",
                                           "description": "The outputs specified as key-value pairs.\nEach key may only appear once, i.e. there can only be one 'data' output, and no address may be duplicated.\nAt least one output of either type must be specified.\nCannot be provided if 'original_change_index' is specified.",
                                           "kind": "Object",
                                           "fields": [
@@ -1136,14 +1136,14 @@
                               "variants": null,
                               "base_type": null,
                               "protocol_type": "array",
-                              "type_identity": "RpcBranch1Array1"
+                              "type_identity": "RpcArrayArray1"
                             }
                           },
                           {
-                            "name": "Branch2",
+                            "name": "Object",
                             "description": "The outputs specified as key-value pairs.\nEach key may only appear once, i.e. there can only be one 'data' output, and no address may be duplicated.\nAt least one output of either type must be specified.\nCannot be provided if 'original_change_index' is specified.",
                             "type_def": {
-                              "name": "optionsOutputsBranch2",
+                              "name": "optionsOutputsObject",
                               "description": "The outputs specified as key-value pairs.\nEach key may only appear once, i.e. there can only be one 'data' output, and no address may be duplicated.\nAt least one output of either type must be specified.\nCannot be provided if 'original_change_index' is specified.",
                               "kind": "Object",
                               "fields": [],
@@ -1773,10 +1773,10 @@
                   "variants": null,
                   "union_variants": [
                     {
-                      "name": "Branch1",
+                      "name": "Array",
                       "description": "The outputs specified as key-value pairs.\nEach key may only appear once, i.e. there can only be one 'data' output, and no address may be duplicated.\nAt least one output of either type must be specified.\nFor compatibility reasons, a dictionary, which holds the key-value pairs directly, is also\n                             accepted as second parameter.",
                       "type_def": {
-                        "name": "RpcBranch1Array1",
+                        "name": "RpcArrayArray1",
                         "description": "The outputs specified as key-value pairs.\nEach key may only appear once, i.e. there can only be one 'data' output, and no address may be duplicated.\nAt least one output of either type must be specified.\nFor compatibility reasons, a dictionary, which holds the key-value pairs directly, is also\n                             accepted as second parameter.",
                         "kind": "Array",
                         "fields": [
@@ -1785,18 +1785,18 @@
                               "Anonymous": 0
                             },
                             "field_type": {
-                              "name": "outputsBranch1Item",
+                              "name": "outputsArrayItem",
                               "description": "Union result preserved from OpenRPC oneOf/anyOf branches",
                               "kind": "Union",
                               "fields": null,
                               "variants": null,
                               "union_variants": [
                                 {
-                                  "name": "Branch1",
+                                  "name": "Object",
                                   "description": "A key-value pair. The key (string) is the bitcoin address, the value (float or string) is the amount in BTC",
                                   "condition": "A key-value pair. The key (string) is the bitcoin address, the value (float or string) is the amount in BTC",
                                   "type_def": {
-                                    "name": "outputsBranch1ItemBranch1Map",
+                                    "name": "outputsArrayItemObjectMap",
                                     "description": "A key-value pair. The key (string) is the bitcoin address, the value (float or string) is the amount in BTC",
                                     "kind": "Map",
                                     "fields": null,
@@ -1804,14 +1804,14 @@
                                     "base_type": null,
                                     "protocol_type": "object-dynamic",
                                     "map_value": {
-                                      "name": "outputsBranch1ItemBranch1Value",
+                                      "name": "outputsArrayItemObjectValue",
                                       "description": "Union result preserved from OpenRPC oneOf/anyOf branches",
                                       "kind": "Union",
                                       "fields": null,
                                       "variants": null,
                                       "union_variants": [
                                         {
-                                          "name": "Branch1",
+                                          "name": "Number",
                                           "description": "A key-value pair. The key (string) is the bitcoin address, the value (float or string) is the amount in BTC",
                                           "type_def": {
                                             "name": "number",
@@ -1824,7 +1824,7 @@
                                           }
                                         },
                                         {
-                                          "name": "Branch2",
+                                          "name": "String",
                                           "description": "A key-value pair. The key (string) is the bitcoin address, the value (float or string) is the amount in BTC",
                                           "type_def": {
                                             "name": "string",
@@ -1844,10 +1844,10 @@
                                   }
                                 },
                                 {
-                                  "name": "Branch2",
+                                  "name": "Object2",
                                   "description": "The outputs specified as key-value pairs.\nEach key may only appear once, i.e. there can only be one 'data' output, and no address may be duplicated.\nAt least one output of either type must be specified.\nFor compatibility reasons, a dictionary, which holds the key-value pairs directly, is also\n                             accepted as second parameter.",
                                   "type_def": {
-                                    "name": "outputsBranch1ItemBranch2",
+                                    "name": "outputsArrayItemObject2",
                                     "description": "The outputs specified as key-value pairs.\nEach key may only appear once, i.e. there can only be one 'data' output, and no address may be duplicated.\nAt least one output of either type must be specified.\nFor compatibility reasons, a dictionary, which holds the key-value pairs directly, is also\n                             accepted as second parameter.",
                                     "kind": "Object",
                                     "fields": [
@@ -1886,14 +1886,14 @@
                         "variants": null,
                         "base_type": null,
                         "protocol_type": "array",
-                        "type_identity": "RpcBranch1Array1"
+                        "type_identity": "RpcArrayArray1"
                       }
                     },
                     {
-                      "name": "Branch2",
+                      "name": "Object",
                       "description": "The outputs specified as key-value pairs.\nEach key may only appear once, i.e. there can only be one 'data' output, and no address may be duplicated.\nAt least one output of either type must be specified.\nFor compatibility reasons, a dictionary, which holds the key-value pairs directly, is also\n                             accepted as second parameter.",
                       "type_def": {
-                        "name": "outputsBranch2",
+                        "name": "outputsObject",
                         "description": "The outputs specified as key-value pairs.\nEach key may only appear once, i.e. there can only be one 'data' output, and no address may be duplicated.\nAt least one output of either type must be specified.\nFor compatibility reasons, a dictionary, which holds the key-value pairs directly, is also\n                             accepted as second parameter.",
                         "kind": "Object",
                         "fields": [],
@@ -2086,10 +2086,10 @@
                   "variants": null,
                   "union_variants": [
                     {
-                      "name": "Branch1",
+                      "name": "Array",
                       "description": "The outputs specified as key-value pairs.\nEach key may only appear once, i.e. there can only be one 'data' output, and no address may be duplicated.\nAt least one output of either type must be specified.\nFor compatibility reasons, a dictionary, which holds the key-value pairs directly, is also\n                             accepted as second parameter.",
                       "type_def": {
-                        "name": "RpcBranch1Array1",
+                        "name": "RpcArrayArray1",
                         "description": "The outputs specified as key-value pairs.\nEach key may only appear once, i.e. there can only be one 'data' output, and no address may be duplicated.\nAt least one output of either type must be specified.\nFor compatibility reasons, a dictionary, which holds the key-value pairs directly, is also\n                             accepted as second parameter.",
                         "kind": "Array",
                         "fields": [
@@ -2098,18 +2098,18 @@
                               "Anonymous": 0
                             },
                             "field_type": {
-                              "name": "outputsBranch1Item",
+                              "name": "outputsArrayItem",
                               "description": "Union result preserved from OpenRPC oneOf/anyOf branches",
                               "kind": "Union",
                               "fields": null,
                               "variants": null,
                               "union_variants": [
                                 {
-                                  "name": "Branch1",
+                                  "name": "Object",
                                   "description": "A key-value pair. The key (string) is the bitcoin address, the value (float or string) is the amount in BTC",
                                   "condition": "A key-value pair. The key (string) is the bitcoin address, the value (float or string) is the amount in BTC",
                                   "type_def": {
-                                    "name": "outputsBranch1ItemBranch1Map",
+                                    "name": "outputsArrayItemObjectMap",
                                     "description": "A key-value pair. The key (string) is the bitcoin address, the value (float or string) is the amount in BTC",
                                     "kind": "Map",
                                     "fields": null,
@@ -2117,14 +2117,14 @@
                                     "base_type": null,
                                     "protocol_type": "object-dynamic",
                                     "map_value": {
-                                      "name": "outputsBranch1ItemBranch1Value",
+                                      "name": "outputsArrayItemObjectValue",
                                       "description": "Union result preserved from OpenRPC oneOf/anyOf branches",
                                       "kind": "Union",
                                       "fields": null,
                                       "variants": null,
                                       "union_variants": [
                                         {
-                                          "name": "Branch1",
+                                          "name": "Number",
                                           "description": "A key-value pair. The key (string) is the bitcoin address, the value (float or string) is the amount in BTC",
                                           "type_def": {
                                             "name": "number",
@@ -2137,7 +2137,7 @@
                                           }
                                         },
                                         {
-                                          "name": "Branch2",
+                                          "name": "String",
                                           "description": "A key-value pair. The key (string) is the bitcoin address, the value (float or string) is the amount in BTC",
                                           "type_def": {
                                             "name": "string",
@@ -2157,10 +2157,10 @@
                                   }
                                 },
                                 {
-                                  "name": "Branch2",
+                                  "name": "Object2",
                                   "description": "The outputs specified as key-value pairs.\nEach key may only appear once, i.e. there can only be one 'data' output, and no address may be duplicated.\nAt least one output of either type must be specified.\nFor compatibility reasons, a dictionary, which holds the key-value pairs directly, is also\n                             accepted as second parameter.",
                                   "type_def": {
-                                    "name": "outputsBranch1ItemBranch2",
+                                    "name": "outputsArrayItemObject2",
                                     "description": "The outputs specified as key-value pairs.\nEach key may only appear once, i.e. there can only be one 'data' output, and no address may be duplicated.\nAt least one output of either type must be specified.\nFor compatibility reasons, a dictionary, which holds the key-value pairs directly, is also\n                             accepted as second parameter.",
                                     "kind": "Object",
                                     "fields": [
@@ -2199,14 +2199,14 @@
                         "variants": null,
                         "base_type": null,
                         "protocol_type": "array",
-                        "type_identity": "RpcBranch1Array1"
+                        "type_identity": "RpcArrayArray1"
                       }
                     },
                     {
-                      "name": "Branch2",
+                      "name": "Object",
                       "description": "The outputs specified as key-value pairs.\nEach key may only appear once, i.e. there can only be one 'data' output, and no address may be duplicated.\nAt least one output of either type must be specified.\nFor compatibility reasons, a dictionary, which holds the key-value pairs directly, is also\n                             accepted as second parameter.",
                       "type_def": {
-                        "name": "outputsBranch2",
+                        "name": "outputsObject",
                         "description": "The outputs specified as key-value pairs.\nEach key may only appear once, i.e. there can only be one 'data' output, and no address may be duplicated.\nAt least one output of either type must be specified.\nFor compatibility reasons, a dictionary, which holds the key-value pairs directly, is also\n                             accepted as second parameter.",
                         "kind": "Object",
                         "fields": [],
@@ -7245,7 +7245,7 @@
                   "variants": null,
                   "union_variants": [
                     {
-                      "name": "Branch1",
+                      "name": "Number",
                       "description": "If a ranged descriptor is used, this specifies the end or the range (in [begin,end] notation) to derive.",
                       "type_def": {
                         "name": "number",
@@ -7258,10 +7258,10 @@
                       }
                     },
                     {
-                      "name": "Branch2",
+                      "name": "Array",
                       "description": "If a ranged descriptor is used, this specifies the end or the range (in [begin,end] notation) to derive.",
                       "type_def": {
-                        "name": "RpcBranch2Array1",
+                        "name": "RpcArrayArray1",
                         "description": "If a ranged descriptor is used, this specifies the end or the range (in [begin,end] notation) to derive.",
                         "kind": "Array",
                         "fields": [
@@ -7303,7 +7303,7 @@
                         "variants": null,
                         "base_type": null,
                         "protocol_type": "array",
-                        "type_identity": "RpcBranch2Array1"
+                        "type_identity": "RpcArrayArray1"
                       }
                     }
                   ],
@@ -7323,11 +7323,11 @@
               "variants": null,
               "union_variants": [
                 {
-                  "name": "Branch1",
+                  "name": "Array",
                   "description": "for single derivation descriptors",
                   "condition": "for single derivation descriptors",
                   "type_def": {
-                    "name": "DeriveAddressesBranch1Array1",
+                    "name": "DeriveAddressesArrayArray1",
                     "description": "for single derivation descriptors",
                     "kind": "Array",
                     "fields": [
@@ -7352,15 +7352,15 @@
                     "variants": null,
                     "base_type": null,
                     "protocol_type": "array",
-                    "type_identity": "DeriveAddressesBranch1Array1"
+                    "type_identity": "DeriveAddressesArrayArray1"
                   }
                 },
                 {
-                  "name": "Branch2",
+                  "name": "Array2",
                   "description": "for multipath descriptors",
                   "condition": "for multipath descriptors",
                   "type_def": {
-                    "name": "DeriveAddressesBranch2Array1",
+                    "name": "DeriveAddressesArray2Array1",
                     "description": "for multipath descriptors",
                     "kind": "Array",
                     "fields": [
@@ -7369,7 +7369,7 @@
                           "Anonymous": 0
                         },
                         "field_type": {
-                          "name": "DeriveAddressesBranch2Array2",
+                          "name": "DeriveAddressesArray2Array2",
                           "description": "for multipath descriptors",
                           "kind": "Array",
                           "fields": [
@@ -7394,7 +7394,7 @@
                           "variants": null,
                           "base_type": null,
                           "protocol_type": "array",
-                          "type_identity": "DeriveAddressesBranch2Array2"
+                          "type_identity": "DeriveAddressesArray2Array2"
                         },
                         "required": true,
                         "description": "",
@@ -7404,7 +7404,7 @@
                     "variants": null,
                     "base_type": null,
                     "protocol_type": "array",
-                    "type_identity": "DeriveAddressesBranch2Array1"
+                    "type_identity": "DeriveAddressesArray2Array1"
                   }
                 }
               ],
@@ -7596,7 +7596,7 @@
                         "variants": null,
                         "union_variants": [
                           {
-                            "name": "Branch1",
+                            "name": "String",
                             "description": "An array of either strings or objects",
                             "type_def": {
                               "name": "string",
@@ -7609,10 +7609,10 @@
                             }
                           },
                           {
-                            "name": "Branch2",
+                            "name": "Object",
                             "description": "An array of either strings or objects",
                             "type_def": {
-                              "name": "descriptorsItemBranch2",
+                              "name": "descriptorsItemObject",
                               "description": "An array of either strings or objects",
                               "kind": "Object",
                               "fields": [
@@ -7638,14 +7638,14 @@
                                     "Named": "range"
                                   },
                                   "field_type": {
-                                    "name": "descriptorsItemBranch2Range",
+                                    "name": "descriptorsItemObjectRange",
                                     "description": "Union result preserved from OpenRPC oneOf/anyOf branches",
                                     "kind": "Union",
                                     "fields": null,
                                     "variants": null,
                                     "union_variants": [
                                       {
-                                        "name": "Branch1",
+                                        "name": "Number",
                                         "description": "Up to what index HD chains should be explored (either end or [begin,end])",
                                         "type_def": {
                                           "name": "number",
@@ -7658,10 +7658,10 @@
                                         }
                                       },
                                       {
-                                        "name": "Branch2",
+                                        "name": "Array",
                                         "description": "Up to what index HD chains should be explored (either end or [begin,end])",
                                         "type_def": {
-                                          "name": "RpcBranch2Array1",
+                                          "name": "RpcArrayArray1",
                                           "description": "Up to what index HD chains should be explored (either end or [begin,end])",
                                           "kind": "Array",
                                           "fields": [
@@ -7703,7 +7703,7 @@
                                           "variants": null,
                                           "base_type": null,
                                           "protocol_type": "array",
-                                          "type_identity": "RpcBranch2Array1"
+                                          "type_identity": "RpcArrayArray1"
                                         }
                                       }
                                     ],
@@ -7973,7 +7973,7 @@
                         "variants": null,
                         "union_variants": [
                           {
-                            "name": "Branch1",
+                            "name": "Number",
                             "description": "Height or hash of the block to roll back to before creating the snapshot. Note: The further this number is from the tip, the longer this process will take. Consider setting a higher -rpcclienttimeout value in this case.",
                             "type_def": {
                               "name": "number",
@@ -7986,7 +7986,7 @@
                             }
                           },
                           {
-                            "name": "Branch2",
+                            "name": "String",
                             "description": "Height or hash of the block to roll back to before creating the snapshot. Note: The further this number is from the tip, the longer this process will take. Consider setting a higher -rpcclienttimeout value in this case.",
                             "type_def": {
                               "name": "string",
@@ -10412,7 +10412,7 @@
                         "variants": null,
                         "union_variants": [
                           {
-                            "name": "Branch1",
+                            "name": "Number",
                             "description": "Specify a fee rate in BTC/kvB.",
                             "type_def": {
                               "name": "number",
@@ -10425,7 +10425,7 @@
                             }
                           },
                           {
-                            "name": "Branch2",
+                            "name": "String",
                             "description": "Specify a fee rate in BTC/kvB.",
                             "type_def": {
                               "name": "string",
@@ -10457,7 +10457,7 @@
                         "variants": null,
                         "union_variants": [
                           {
-                            "name": "Branch1",
+                            "name": "Number",
                             "description": "Specify a fee rate in sat/vB.",
                             "type_def": {
                               "name": "number",
@@ -10470,7 +10470,7 @@
                             }
                           },
                           {
-                            "name": "Branch2",
+                            "name": "String",
                             "description": "Specify a fee rate in sat/vB.",
                             "type_def": {
                               "name": "string",
@@ -12849,7 +12849,7 @@
               "variants": null,
               "union_variants": [
                 {
-                  "name": "Branch1",
+                  "name": "String",
                   "description": "for verbosity = 0",
                   "condition": "for verbosity = 0",
                   "type_def": {
@@ -12863,11 +12863,11 @@
                   }
                 },
                 {
-                  "name": "Branch2",
+                  "name": "Object",
                   "description": "for verbosity = 1",
                   "condition": "for verbosity = 1",
                   "type_def": {
-                    "name": "GetBlockBranch2",
+                    "name": "GetBlockObject",
                     "description": "for verbosity = 1",
                     "kind": "Object",
                     "fields": [
@@ -13252,7 +13252,7 @@
                           "Named": "tx"
                         },
                         "field_type": {
-                          "name": "GetBlockBranch2Array1",
+                          "name": "GetBlockObjectArray1",
                           "description": "The transaction ids",
                           "kind": "Array",
                           "fields": [
@@ -13277,7 +13277,7 @@
                           "variants": null,
                           "base_type": null,
                           "protocol_type": "array",
-                          "type_identity": "GetBlockBranch2Array1"
+                          "type_identity": "GetBlockObjectArray1"
                         },
                         "required": true,
                         "description": "The transaction ids",
@@ -13338,15 +13338,15 @@
                     "variants": null,
                     "base_type": null,
                     "protocol_type": "object",
-                    "type_identity": "GetBlockBranch2"
+                    "type_identity": "GetBlockObject"
                   }
                 },
                 {
-                  "name": "Branch3",
+                  "name": "Object2",
                   "description": "for verbosity = 2",
                   "condition": "for verbosity = 2",
                   "type_def": {
-                    "name": "GetBlockBranch3",
+                    "name": "GetBlockObject2",
                     "description": "for verbosity = 2",
                     "kind": "Object",
                     "fields": [
@@ -13731,7 +13731,7 @@
                           "Named": "tx"
                         },
                         "field_type": {
-                          "name": "GetBlockBranch3Array1",
+                          "name": "GetBlockObject2Array1",
                           "description": "",
                           "kind": "Array",
                           "fields": [
@@ -13868,7 +13868,7 @@
                                       "Named": "vin"
                                     },
                                     "field_type": {
-                                      "name": "GetBlockBranch3Array2",
+                                      "name": "GetBlockObject2Array2",
                                       "description": "",
                                       "kind": "Array",
                                       "fields": [
@@ -13990,7 +13990,7 @@
                                                   "Named": "txinwitness"
                                                 },
                                                 "field_type": {
-                                                  "name": "GetBlockBranch3Array3",
+                                                  "name": "GetBlockObject2Array3",
                                                   "description": "",
                                                   "kind": "Array",
                                                   "fields": [
@@ -14015,7 +14015,7 @@
                                                   "variants": null,
                                                   "base_type": null,
                                                   "protocol_type": "array",
-                                                  "type_identity": "GetBlockBranch3Array3"
+                                                  "type_identity": "GetBlockObject2Array3"
                                                 },
                                                 "required": false,
                                                 "description": "",
@@ -14052,7 +14052,7 @@
                                       "variants": null,
                                       "base_type": null,
                                       "protocol_type": "array",
-                                      "type_identity": "GetBlockBranch3Array2"
+                                      "type_identity": "GetBlockObject2Array2"
                                     },
                                     "required": true,
                                     "description": "",
@@ -14063,7 +14063,7 @@
                                       "Named": "vout"
                                     },
                                     "field_type": {
-                                      "name": "GetBlockBranch3Array4",
+                                      "name": "GetBlockObject2Array4",
                                       "description": "",
                                       "kind": "Array",
                                       "fields": [
@@ -14228,7 +14228,7 @@
                                       "variants": null,
                                       "base_type": null,
                                       "protocol_type": "array",
-                                      "type_identity": "GetBlockBranch3Array4"
+                                      "type_identity": "GetBlockObject2Array4"
                                     },
                                     "required": true,
                                     "description": "",
@@ -14282,7 +14282,7 @@
                           "variants": null,
                           "base_type": null,
                           "protocol_type": "array",
-                          "type_identity": "GetBlockBranch3Array1"
+                          "type_identity": "GetBlockObject2Array1"
                         },
                         "required": true,
                         "description": "",
@@ -14343,15 +14343,15 @@
                     "variants": null,
                     "base_type": null,
                     "protocol_type": "object",
-                    "type_identity": "GetBlockBranch3"
+                    "type_identity": "GetBlockObject2"
                   }
                 },
                 {
-                  "name": "Branch4",
+                  "name": "Object3",
                   "description": "for verbosity = 3",
                   "condition": "for verbosity = 3",
                   "type_def": {
-                    "name": "GetBlockBranch4",
+                    "name": "GetBlockObject3",
                     "description": "for verbosity = 3",
                     "kind": "Object",
                     "fields": [
@@ -14736,7 +14736,7 @@
                           "Named": "tx"
                         },
                         "field_type": {
-                          "name": "GetBlockBranch4Array1",
+                          "name": "GetBlockObject3Array1",
                           "description": "",
                           "kind": "Array",
                           "fields": [
@@ -14873,7 +14873,7 @@
                                       "Named": "vin"
                                     },
                                     "field_type": {
-                                      "name": "GetBlockBranch4Array2",
+                                      "name": "GetBlockObject3Array2",
                                       "description": "",
                                       "kind": "Array",
                                       "fields": [
@@ -15169,7 +15169,7 @@
                                                   "Named": "txinwitness"
                                                 },
                                                 "field_type": {
-                                                  "name": "GetBlockBranch4Array3",
+                                                  "name": "GetBlockObject3Array3",
                                                   "description": "",
                                                   "kind": "Array",
                                                   "fields": [
@@ -15194,7 +15194,7 @@
                                                   "variants": null,
                                                   "base_type": null,
                                                   "protocol_type": "array",
-                                                  "type_identity": "GetBlockBranch4Array3"
+                                                  "type_identity": "GetBlockObject3Array3"
                                                 },
                                                 "required": false,
                                                 "description": "",
@@ -15231,7 +15231,7 @@
                                       "variants": null,
                                       "base_type": null,
                                       "protocol_type": "array",
-                                      "type_identity": "GetBlockBranch4Array2"
+                                      "type_identity": "GetBlockObject3Array2"
                                     },
                                     "required": true,
                                     "description": "",
@@ -15242,7 +15242,7 @@
                                       "Named": "vout"
                                     },
                                     "field_type": {
-                                      "name": "GetBlockBranch4Array4",
+                                      "name": "GetBlockObject3Array4",
                                       "description": "",
                                       "kind": "Array",
                                       "fields": [
@@ -15407,7 +15407,7 @@
                                       "variants": null,
                                       "base_type": null,
                                       "protocol_type": "array",
-                                      "type_identity": "GetBlockBranch4Array4"
+                                      "type_identity": "GetBlockObject3Array4"
                                     },
                                     "required": true,
                                     "description": "",
@@ -15461,7 +15461,7 @@
                           "variants": null,
                           "base_type": null,
                           "protocol_type": "array",
-                          "type_identity": "GetBlockBranch4Array1"
+                          "type_identity": "GetBlockObject3Array1"
                         },
                         "required": true,
                         "description": "",
@@ -15522,7 +15522,7 @@
                     "variants": null,
                     "base_type": null,
                     "protocol_type": "object",
-                    "type_identity": "GetBlockBranch4"
+                    "type_identity": "GetBlockObject3"
                   }
                 }
               ],
@@ -16260,11 +16260,11 @@
               "variants": null,
               "union_variants": [
                 {
-                  "name": "Branch1",
+                  "name": "Object",
                   "description": "for verbose = true",
                   "condition": "for verbose = true",
                   "type_def": {
-                    "name": "GetBlockHeaderBranch1",
+                    "name": "GetBlockHeaderObject",
                     "description": "for verbose = true",
                     "kind": "Object",
                     "fields": [
@@ -16544,11 +16544,11 @@
                     "variants": null,
                     "base_type": null,
                     "protocol_type": "object",
-                    "type_identity": "GetBlockHeaderBranch1"
+                    "type_identity": "GetBlockHeaderObject"
                   }
                 },
                 {
-                  "name": "Branch2",
+                  "name": "String",
                   "description": "for verbose=false",
                   "condition": "for verbose=false",
                   "type_def": {
@@ -16587,7 +16587,7 @@
                   "variants": null,
                   "union_variants": [
                     {
-                      "name": "Branch1",
+                      "name": "Number",
                       "description": "The block hash or height of the target block",
                       "type_def": {
                         "name": "number",
@@ -16600,7 +16600,7 @@
                       }
                     },
                     {
-                      "name": "Branch2",
+                      "name": "String",
                       "description": "The block hash or height of the target block",
                       "type_def": {
                         "name": "string",
@@ -17436,7 +17436,7 @@
               "variants": null,
               "union_variants": [
                 {
-                  "name": "Branch1",
+                  "name": "Null",
                   "description": "If the proposal was accepted with mode=='proposal'",
                   "condition": "If the proposal was accepted with mode=='proposal'",
                   "type_def": {
@@ -17450,7 +17450,7 @@
                   }
                 },
                 {
-                  "name": "Branch2",
+                  "name": "String",
                   "description": "If the proposal was not accepted with mode=='proposal'",
                   "condition": "If the proposal was not accepted with mode=='proposal'",
                   "type_def": {
@@ -17464,11 +17464,11 @@
                   }
                 },
                 {
-                  "name": "Branch3",
+                  "name": "Object",
                   "description": "Otherwise",
                   "condition": "Otherwise",
                   "type_def": {
-                    "name": "GetBlockTemplateBranch3",
+                    "name": "GetBlockTemplateObject",
                     "description": "Otherwise",
                     "kind": "Object",
                     "fields": [
@@ -17494,7 +17494,7 @@
                           "Named": "capabilities"
                         },
                         "field_type": {
-                          "name": "GetBlockTemplateBranch3Array1",
+                          "name": "GetBlockTemplateObjectArray1",
                           "description": "",
                           "kind": "Array",
                           "fields": [
@@ -17519,7 +17519,7 @@
                           "variants": null,
                           "base_type": null,
                           "protocol_type": "array",
-                          "type_identity": "GetBlockTemplateBranch3Array1"
+                          "type_identity": "GetBlockTemplateObjectArray1"
                         },
                         "required": true,
                         "description": "",
@@ -17660,7 +17660,7 @@
                           "Named": "mutable"
                         },
                         "field_type": {
-                          "name": "GetBlockTemplateBranch3Array2",
+                          "name": "GetBlockTemplateObjectArray2",
                           "description": "list of ways the block template may be changed",
                           "kind": "Array",
                           "fields": [
@@ -17685,7 +17685,7 @@
                           "variants": null,
                           "base_type": null,
                           "protocol_type": "array",
-                          "type_identity": "GetBlockTemplateBranch3Array2"
+                          "type_identity": "GetBlockTemplateObjectArray2"
                         },
                         "required": true,
                         "description": "list of ways the block template may be changed",
@@ -17730,7 +17730,7 @@
                           "Named": "rules"
                         },
                         "field_type": {
-                          "name": "GetBlockTemplateBranch3Array3",
+                          "name": "GetBlockTemplateObjectArray3",
                           "description": "specific block rules that are to be enforced",
                           "kind": "Array",
                           "fields": [
@@ -17755,7 +17755,7 @@
                           "variants": null,
                           "base_type": null,
                           "protocol_type": "array",
-                          "type_identity": "GetBlockTemplateBranch3Array3"
+                          "type_identity": "GetBlockTemplateObjectArray3"
                         },
                         "required": true,
                         "description": "specific block rules that are to be enforced",
@@ -17834,7 +17834,7 @@
                           "Named": "transactions"
                         },
                         "field_type": {
-                          "name": "GetBlockTemplateBranch3Array4",
+                          "name": "GetBlockTemplateObjectArray4",
                           "description": "contents of non-coinbase transactions that should be included in the next block",
                           "kind": "Array",
                           "fields": [
@@ -17869,7 +17869,7 @@
                                       "Named": "depends"
                                     },
                                     "field_type": {
-                                      "name": "GetBlockTemplateBranch3Array5",
+                                      "name": "GetBlockTemplateObjectArray5",
                                       "description": "array of numbers",
                                       "kind": "Array",
                                       "fields": [
@@ -17894,7 +17894,7 @@
                                       "variants": null,
                                       "base_type": null,
                                       "protocol_type": "array",
-                                      "type_identity": "GetBlockTemplateBranch3Array5"
+                                      "type_identity": "GetBlockTemplateObjectArray5"
                                     },
                                     "required": true,
                                     "description": "array of numbers",
@@ -17999,7 +17999,7 @@
                           "variants": null,
                           "base_type": null,
                           "protocol_type": "array",
-                          "type_identity": "GetBlockTemplateBranch3Array4"
+                          "type_identity": "GetBlockTemplateObjectArray4"
                         },
                         "required": true,
                         "description": "contents of non-coinbase transactions that should be included in the next block",
@@ -18088,7 +18088,7 @@
                     "variants": null,
                     "base_type": null,
                     "protocol_type": "object",
-                    "type_identity": "GetBlockTemplateBranch3"
+                    "type_identity": "GetBlockTemplateObject"
                   }
                 }
               ],
@@ -19172,7 +19172,7 @@
                         "variants": null,
                         "union_variants": [
                           {
-                            "name": "Branch1",
+                            "name": "String",
                             "description": "The list of descriptors (scan objects) to examine for activity. Every scan object is either a string descriptor or an object:",
                             "type_def": {
                               "name": "string",
@@ -19185,10 +19185,10 @@
                             }
                           },
                           {
-                            "name": "Branch2",
+                            "name": "Object",
                             "description": "The list of descriptors (scan objects) to examine for activity. Every scan object is either a string descriptor or an object:",
                             "type_def": {
-                              "name": "scanobjectsItemBranch2",
+                              "name": "scanobjectsItemObject",
                               "description": "The list of descriptors (scan objects) to examine for activity. Every scan object is either a string descriptor or an object:",
                               "kind": "Object",
                               "fields": [
@@ -19214,14 +19214,14 @@
                                     "Named": "range"
                                   },
                                   "field_type": {
-                                    "name": "scanobjectsItemBranch2Range",
+                                    "name": "scanobjectsItemObjectRange",
                                     "description": "Union result preserved from OpenRPC oneOf/anyOf branches",
                                     "kind": "Union",
                                     "fields": null,
                                     "variants": null,
                                     "union_variants": [
                                       {
-                                        "name": "Branch1",
+                                        "name": "Number",
                                         "description": "The range of HD chain indexes to explore (either end or [begin,end])",
                                         "type_def": {
                                           "name": "number",
@@ -19234,10 +19234,10 @@
                                         }
                                       },
                                       {
-                                        "name": "Branch2",
+                                        "name": "Array",
                                         "description": "The range of HD chain indexes to explore (either end or [begin,end])",
                                         "type_def": {
-                                          "name": "RpcBranch2Array1",
+                                          "name": "RpcArrayArray1",
                                           "description": "The range of HD chain indexes to explore (either end or [begin,end])",
                                           "kind": "Array",
                                           "fields": [
@@ -19279,7 +19279,7 @@
                                           "variants": null,
                                           "base_type": null,
                                           "protocol_type": "array",
-                                          "type_identity": "RpcBranch2Array1"
+                                          "type_identity": "RpcArrayArray1"
                                         }
                                       }
                                     ],
@@ -19355,10 +19355,10 @@
                           "variants": null,
                           "union_variants": [
                             {
-                              "name": "Branch1",
+                              "name": "Object",
                               "description": "events",
                               "type_def": {
-                                "name": "GetDescriptorActivityBranch1",
+                                "name": "GetDescriptorActivityObject",
                                 "description": "events",
                                 "kind": "Object",
                                 "fields": [
@@ -19606,14 +19606,14 @@
                                 "variants": null,
                                 "base_type": null,
                                 "protocol_type": "object",
-                                "type_identity": "GetDescriptorActivityBranch1"
+                                "type_identity": "GetDescriptorActivityObject"
                               }
                             },
                             {
-                              "name": "Branch2",
+                              "name": "Object2",
                               "description": "events",
                               "type_def": {
-                                "name": "GetDescriptorActivityBranch2",
+                                "name": "GetDescriptorActivityObject2",
                                 "description": "events",
                                 "kind": "Object",
                                 "fields": [
@@ -19827,7 +19827,7 @@
                                 "variants": null,
                                 "base_type": null,
                                 "protocol_type": "object",
-                                "type_identity": "GetDescriptorActivityBranch2"
+                                "type_identity": "GetDescriptorActivityObject2"
                               }
                             }
                           ],
@@ -20367,11 +20367,11 @@
               "variants": null,
               "union_variants": [
                 {
-                  "name": "Branch1",
+                  "name": "Object",
                   "description": "mode \"stats\"",
                   "condition": "mode \"stats\"",
                   "type_def": {
-                    "name": "GetMemoryInfoBranch1",
+                    "name": "GetMemoryInfoObject",
                     "description": "mode \"stats\"",
                     "kind": "Object",
                     "fields": [
@@ -20500,11 +20500,11 @@
                     "variants": null,
                     "base_type": null,
                     "protocol_type": "object",
-                    "type_identity": "GetMemoryInfoBranch1"
+                    "type_identity": "GetMemoryInfoObject"
                   }
                 },
                 {
-                  "name": "Branch2",
+                  "name": "String",
                   "description": "mode \"mallocinfo\"",
                   "condition": "mode \"mallocinfo\"",
                   "type_def": {
@@ -20572,11 +20572,11 @@
               "variants": null,
               "union_variants": [
                 {
-                  "name": "Branch1",
+                  "name": "Array",
                   "description": "for verbose = false",
                   "condition": "for verbose = false",
                   "type_def": {
-                    "name": "GetMempoolAncestorsBranch1Array1",
+                    "name": "GetMempoolAncestorsArrayArray1",
                     "description": "for verbose = false",
                     "kind": "Array",
                     "fields": [
@@ -20601,22 +20601,22 @@
                     "variants": null,
                     "base_type": null,
                     "protocol_type": "array",
-                    "type_identity": "GetMempoolAncestorsBranch1Array1"
+                    "type_identity": "GetMempoolAncestorsArrayArray1"
                   }
                 },
                 {
-                  "name": "Branch2",
+                  "name": "Object",
                   "description": "for verbose = true",
                   "condition": "for verbose = true",
                   "type_def": {
-                    "name": "GetMempoolAncestorsBranch2",
+                    "name": "GetMempoolAncestorsObject",
                     "description": "for verbose = true",
                     "kind": "Map",
                     "fields": null,
                     "variants": null,
                     "base_type": null,
                     "protocol_type": "object-dynamic",
-                    "type_identity": "GetMempoolAncestorsBranch2",
+                    "type_identity": "GetMempoolAncestorsObject",
                     "map_value": {
                       "name": "GetMempoolAncestorsMapValue",
                       "description": "for verbose = true",
@@ -20678,7 +20678,7 @@
                             "Named": "depends"
                           },
                           "field_type": {
-                            "name": "GetMempoolAncestorsBranch2Array1",
+                            "name": "GetMempoolAncestorsObjectArray1",
                             "description": "unconfirmed transactions used as inputs for this transaction",
                             "kind": "Array",
                             "fields": [
@@ -20703,7 +20703,7 @@
                             "variants": null,
                             "base_type": null,
                             "protocol_type": "array",
-                            "type_identity": "GetMempoolAncestorsBranch2Array1"
+                            "type_identity": "GetMempoolAncestorsObjectArray1"
                           },
                           "required": true,
                           "description": "unconfirmed transactions used as inputs for this transaction",
@@ -20869,7 +20869,7 @@
                             "Named": "spentby"
                           },
                           "field_type": {
-                            "name": "GetMempoolAncestorsBranch2Array2",
+                            "name": "GetMempoolAncestorsObjectArray2",
                             "description": "unconfirmed transactions spending outputs from this transaction",
                             "kind": "Array",
                             "fields": [
@@ -20894,7 +20894,7 @@
                             "variants": null,
                             "base_type": null,
                             "protocol_type": "array",
-                            "type_identity": "GetMempoolAncestorsBranch2Array2"
+                            "type_identity": "GetMempoolAncestorsObjectArray2"
                           },
                           "required": true,
                           "description": "unconfirmed transactions spending outputs from this transaction",
@@ -21263,11 +21263,11 @@
               "variants": null,
               "union_variants": [
                 {
-                  "name": "Branch1",
+                  "name": "Array",
                   "description": "for verbose = false",
                   "condition": "for verbose = false",
                   "type_def": {
-                    "name": "GetMempoolDescendantsBranch1Array1",
+                    "name": "GetMempoolDescendantsArrayArray1",
                     "description": "for verbose = false",
                     "kind": "Array",
                     "fields": [
@@ -21292,22 +21292,22 @@
                     "variants": null,
                     "base_type": null,
                     "protocol_type": "array",
-                    "type_identity": "GetMempoolDescendantsBranch1Array1"
+                    "type_identity": "GetMempoolDescendantsArrayArray1"
                   }
                 },
                 {
-                  "name": "Branch2",
+                  "name": "Object",
                   "description": "for verbose = true",
                   "condition": "for verbose = true",
                   "type_def": {
-                    "name": "GetMempoolDescendantsBranch2",
+                    "name": "GetMempoolDescendantsObject",
                     "description": "for verbose = true",
                     "kind": "Map",
                     "fields": null,
                     "variants": null,
                     "base_type": null,
                     "protocol_type": "object-dynamic",
-                    "type_identity": "GetMempoolDescendantsBranch2",
+                    "type_identity": "GetMempoolDescendantsObject",
                     "map_value": {
                       "name": "GetMempoolDescendantsMapValue",
                       "description": "for verbose = true",
@@ -21369,7 +21369,7 @@
                             "Named": "depends"
                           },
                           "field_type": {
-                            "name": "GetMempoolDescendantsBranch2Array1",
+                            "name": "GetMempoolDescendantsObjectArray1",
                             "description": "unconfirmed transactions used as inputs for this transaction",
                             "kind": "Array",
                             "fields": [
@@ -21394,7 +21394,7 @@
                             "variants": null,
                             "base_type": null,
                             "protocol_type": "array",
-                            "type_identity": "GetMempoolDescendantsBranch2Array1"
+                            "type_identity": "GetMempoolDescendantsObjectArray1"
                           },
                           "required": true,
                           "description": "unconfirmed transactions used as inputs for this transaction",
@@ -21560,7 +21560,7 @@
                             "Named": "spentby"
                           },
                           "field_type": {
-                            "name": "GetMempoolDescendantsBranch2Array2",
+                            "name": "GetMempoolDescendantsObjectArray2",
                             "description": "unconfirmed transactions spending outputs from this transaction",
                             "kind": "Array",
                             "fields": [
@@ -21585,7 +21585,7 @@
                             "variants": null,
                             "base_type": null,
                             "protocol_type": "array",
-                            "type_identity": "GetMempoolDescendantsBranch2Array2"
+                            "type_identity": "GetMempoolDescendantsObjectArray2"
                           },
                           "required": true,
                           "description": "unconfirmed transactions spending outputs from this transaction",
@@ -24383,11 +24383,11 @@
               "variants": null,
               "union_variants": [
                 {
-                  "name": "Branch1",
+                  "name": "Array",
                   "description": "for verbose = 0",
                   "condition": "for verbose = 0",
                   "type_def": {
-                    "name": "GetOrphanTxsBranch1Array1",
+                    "name": "GetOrphanTxsArrayArray1",
                     "description": "for verbose = 0",
                     "kind": "Array",
                     "fields": [
@@ -24412,15 +24412,15 @@
                     "variants": null,
                     "base_type": null,
                     "protocol_type": "array",
-                    "type_identity": "GetOrphanTxsBranch1Array1"
+                    "type_identity": "GetOrphanTxsArrayArray1"
                   }
                 },
                 {
-                  "name": "Branch2",
+                  "name": "Array2",
                   "description": "for verbose = 1",
                   "condition": "for verbose = 1",
                   "type_def": {
-                    "name": "GetOrphanTxsBranch2Array1",
+                    "name": "GetOrphanTxsArray2Array1",
                     "description": "for verbose = 1",
                     "kind": "Array",
                     "fields": [
@@ -24429,7 +24429,7 @@
                           "Anonymous": 0
                         },
                         "field_type": {
-                          "name": "GetOrphanTxsBranch2",
+                          "name": "GetOrphanTxsArray2",
                           "description": "for verbose = 1",
                           "kind": "Object",
                           "fields": [
@@ -24455,7 +24455,7 @@
                                 "Named": "from"
                               },
                               "field_type": {
-                                "name": "GetOrphanTxsBranch2Array2",
+                                "name": "GetOrphanTxsArray2Array2",
                                 "description": "",
                                 "kind": "Array",
                                 "fields": [
@@ -24480,7 +24480,7 @@
                                 "variants": null,
                                 "base_type": null,
                                 "protocol_type": "array",
-                                "type_identity": "GetOrphanTxsBranch2Array2"
+                                "type_identity": "GetOrphanTxsArray2Array2"
                               },
                               "required": true,
                               "description": "",
@@ -24575,7 +24575,7 @@
                           "variants": null,
                           "base_type": null,
                           "protocol_type": "object",
-                          "type_identity": "GetOrphanTxsBranch2"
+                          "type_identity": "GetOrphanTxsArray2"
                         },
                         "required": true,
                         "description": "",
@@ -24585,15 +24585,15 @@
                     "variants": null,
                     "base_type": null,
                     "protocol_type": "array",
-                    "type_identity": "GetOrphanTxsBranch2Array1"
+                    "type_identity": "GetOrphanTxsArray2Array1"
                   }
                 },
                 {
-                  "name": "Branch3",
+                  "name": "Array3",
                   "description": "for verbose = 2",
                   "condition": "for verbose = 2",
                   "type_def": {
-                    "name": "GetOrphanTxsBranch3Array1",
+                    "name": "GetOrphanTxsArray3Array1",
                     "description": "for verbose = 2",
                     "kind": "Array",
                     "fields": [
@@ -24602,7 +24602,7 @@
                           "Anonymous": 0
                         },
                         "field_type": {
-                          "name": "GetOrphanTxsBranch3",
+                          "name": "GetOrphanTxsArray3",
                           "description": "for verbose = 2",
                           "kind": "Object",
                           "fields": [
@@ -24628,7 +24628,7 @@
                                 "Named": "from"
                               },
                               "field_type": {
-                                "name": "GetOrphanTxsBranch3Array2",
+                                "name": "GetOrphanTxsArray3Array2",
                                 "description": "",
                                 "kind": "Array",
                                 "fields": [
@@ -24653,7 +24653,7 @@
                                 "variants": null,
                                 "base_type": null,
                                 "protocol_type": "array",
-                                "type_identity": "GetOrphanTxsBranch3Array2"
+                                "type_identity": "GetOrphanTxsArray3Array2"
                               },
                               "required": true,
                               "description": "",
@@ -24765,7 +24765,7 @@
                           "variants": null,
                           "base_type": null,
                           "protocol_type": "object",
-                          "type_identity": "GetOrphanTxsBranch3"
+                          "type_identity": "GetOrphanTxsArray3"
                         },
                         "required": true,
                         "description": "",
@@ -24775,7 +24775,7 @@
                     "variants": null,
                     "base_type": null,
                     "protocol_type": "array",
-                    "type_identity": "GetOrphanTxsBranch3Array1"
+                    "type_identity": "GetOrphanTxsArray3Array1"
                   }
                 }
               ],
@@ -26203,11 +26203,11 @@
               "variants": null,
               "union_variants": [
                 {
-                  "name": "Branch1",
+                  "name": "Array",
                   "description": "for verbose = false",
                   "condition": "for verbose = false",
                   "type_def": {
-                    "name": "GetRawMempoolBranch1Array1",
+                    "name": "GetRawMempoolArrayArray1",
                     "description": "for verbose = false",
                     "kind": "Array",
                     "fields": [
@@ -26232,22 +26232,22 @@
                     "variants": null,
                     "base_type": null,
                     "protocol_type": "array",
-                    "type_identity": "GetRawMempoolBranch1Array1"
+                    "type_identity": "GetRawMempoolArrayArray1"
                   }
                 },
                 {
-                  "name": "Branch2",
+                  "name": "Object",
                   "description": "for verbose = true",
                   "condition": "for verbose = true",
                   "type_def": {
-                    "name": "GetRawMempoolBranch2",
+                    "name": "GetRawMempoolObject",
                     "description": "for verbose = true",
                     "kind": "Map",
                     "fields": null,
                     "variants": null,
                     "base_type": null,
                     "protocol_type": "object-dynamic",
-                    "type_identity": "GetRawMempoolBranch2",
+                    "type_identity": "GetRawMempoolObject",
                     "map_value": {
                       "name": "GetRawMempoolMapValue",
                       "description": "for verbose = true",
@@ -26309,7 +26309,7 @@
                             "Named": "depends"
                           },
                           "field_type": {
-                            "name": "GetRawMempoolBranch2Array1",
+                            "name": "GetRawMempoolObjectArray1",
                             "description": "unconfirmed transactions used as inputs for this transaction",
                             "kind": "Array",
                             "fields": [
@@ -26334,7 +26334,7 @@
                             "variants": null,
                             "base_type": null,
                             "protocol_type": "array",
-                            "type_identity": "GetRawMempoolBranch2Array1"
+                            "type_identity": "GetRawMempoolObjectArray1"
                           },
                           "required": true,
                           "description": "unconfirmed transactions used as inputs for this transaction",
@@ -26500,7 +26500,7 @@
                             "Named": "spentby"
                           },
                           "field_type": {
-                            "name": "GetRawMempoolBranch2Array2",
+                            "name": "GetRawMempoolObjectArray2",
                             "description": "unconfirmed transactions spending outputs from this transaction",
                             "kind": "Array",
                             "fields": [
@@ -26525,7 +26525,7 @@
                             "variants": null,
                             "base_type": null,
                             "protocol_type": "array",
-                            "type_identity": "GetRawMempoolBranch2Array2"
+                            "type_identity": "GetRawMempoolObjectArray2"
                           },
                           "required": true,
                           "description": "unconfirmed transactions spending outputs from this transaction",
@@ -26660,11 +26660,11 @@
                   }
                 },
                 {
-                  "name": "Branch3",
+                  "name": "Object2",
                   "description": "for verbose = false and mempool_sequence = true",
                   "condition": "for verbose = false and mempool_sequence = true",
                   "type_def": {
-                    "name": "GetRawMempoolBranch3",
+                    "name": "GetRawMempoolObject2",
                     "description": "for verbose = false and mempool_sequence = true",
                     "kind": "Object",
                     "fields": [
@@ -26690,7 +26690,7 @@
                           "Named": "txids"
                         },
                         "field_type": {
-                          "name": "GetRawMempoolBranch3Array1",
+                          "name": "GetRawMempoolObject2Array1",
                           "description": "",
                           "kind": "Array",
                           "fields": [
@@ -26715,7 +26715,7 @@
                           "variants": null,
                           "base_type": null,
                           "protocol_type": "array",
-                          "type_identity": "GetRawMempoolBranch3Array1"
+                          "type_identity": "GetRawMempoolObject2Array1"
                         },
                         "required": true,
                         "description": "",
@@ -26725,7 +26725,7 @@
                     "variants": null,
                     "base_type": null,
                     "protocol_type": "object",
-                    "type_identity": "GetRawMempoolBranch3"
+                    "type_identity": "GetRawMempoolObject2"
                   }
                 }
               ],
@@ -26798,7 +26798,7 @@
               "variants": null,
               "union_variants": [
                 {
-                  "name": "Branch1",
+                  "name": "String",
                   "description": "if verbosity is not set or set to 0",
                   "condition": "if verbosity is not set or set to 0",
                   "type_def": {
@@ -26812,11 +26812,11 @@
                   }
                 },
                 {
-                  "name": "Branch2",
+                  "name": "Object",
                   "description": "if verbosity is set to 1",
                   "condition": "if verbosity is set to 1",
                   "type_def": {
-                    "name": "GetRawTransactionBranch2",
+                    "name": "GetRawTransactionObject",
                     "description": "if verbosity is set to 1",
                     "kind": "Object",
                     "fields": [
@@ -27012,7 +27012,7 @@
                           "Named": "vin"
                         },
                         "field_type": {
-                          "name": "GetRawTransactionBranch2Array1",
+                          "name": "GetRawTransactionObjectArray1",
                           "description": "",
                           "kind": "Array",
                           "fields": [
@@ -27134,7 +27134,7 @@
                                       "Named": "txinwitness"
                                     },
                                     "field_type": {
-                                      "name": "GetRawTransactionBranch2Array2",
+                                      "name": "GetRawTransactionObjectArray2",
                                       "description": "",
                                       "kind": "Array",
                                       "fields": [
@@ -27159,7 +27159,7 @@
                                       "variants": null,
                                       "base_type": null,
                                       "protocol_type": "array",
-                                      "type_identity": "GetRawTransactionBranch2Array2"
+                                      "type_identity": "GetRawTransactionObjectArray2"
                                     },
                                     "required": false,
                                     "description": "",
@@ -27196,7 +27196,7 @@
                           "variants": null,
                           "base_type": null,
                           "protocol_type": "array",
-                          "type_identity": "GetRawTransactionBranch2Array1"
+                          "type_identity": "GetRawTransactionObjectArray1"
                         },
                         "required": true,
                         "description": "",
@@ -27207,7 +27207,7 @@
                           "Named": "vout"
                         },
                         "field_type": {
-                          "name": "GetRawTransactionBranch2Array3",
+                          "name": "GetRawTransactionObjectArray3",
                           "description": "",
                           "kind": "Array",
                           "fields": [
@@ -27372,7 +27372,7 @@
                           "variants": null,
                           "base_type": null,
                           "protocol_type": "array",
-                          "type_identity": "GetRawTransactionBranch2Array3"
+                          "type_identity": "GetRawTransactionObjectArray3"
                         },
                         "required": true,
                         "description": "",
@@ -27433,15 +27433,15 @@
                     "variants": null,
                     "base_type": null,
                     "protocol_type": "object",
-                    "type_identity": "GetRawTransactionBranch2"
+                    "type_identity": "GetRawTransactionObject"
                   }
                 },
                 {
-                  "name": "Branch3",
+                  "name": "Object2",
                   "description": "for verbosity = 2",
                   "condition": "for verbosity = 2",
                   "type_def": {
-                    "name": "GetRawTransactionBranch3",
+                    "name": "GetRawTransactionObject2",
                     "description": "for verbosity = 2",
                     "kind": "Object",
                     "fields": [
@@ -27654,7 +27654,7 @@
                           "Named": "vin"
                         },
                         "field_type": {
-                          "name": "GetRawTransactionBranch3Array1",
+                          "name": "GetRawTransactionObject2Array1",
                           "description": "",
                           "kind": "Array",
                           "fields": [
@@ -27950,7 +27950,7 @@
                                       "Named": "txinwitness"
                                     },
                                     "field_type": {
-                                      "name": "GetRawTransactionBranch3Array2",
+                                      "name": "GetRawTransactionObject2Array2",
                                       "description": "",
                                       "kind": "Array",
                                       "fields": [
@@ -27975,7 +27975,7 @@
                                       "variants": null,
                                       "base_type": null,
                                       "protocol_type": "array",
-                                      "type_identity": "GetRawTransactionBranch3Array2"
+                                      "type_identity": "GetRawTransactionObject2Array2"
                                     },
                                     "required": false,
                                     "description": "",
@@ -28012,7 +28012,7 @@
                           "variants": null,
                           "base_type": null,
                           "protocol_type": "array",
-                          "type_identity": "GetRawTransactionBranch3Array1"
+                          "type_identity": "GetRawTransactionObject2Array1"
                         },
                         "required": true,
                         "description": "",
@@ -28023,7 +28023,7 @@
                           "Named": "vout"
                         },
                         "field_type": {
-                          "name": "GetRawTransactionBranch3Array3",
+                          "name": "GetRawTransactionObject2Array3",
                           "description": "",
                           "kind": "Array",
                           "fields": [
@@ -28188,7 +28188,7 @@
                           "variants": null,
                           "base_type": null,
                           "protocol_type": "array",
-                          "type_identity": "GetRawTransactionBranch3Array3"
+                          "type_identity": "GetRawTransactionObject2Array3"
                         },
                         "required": true,
                         "description": "",
@@ -28249,7 +28249,7 @@
                     "variants": null,
                     "base_type": null,
                     "protocol_type": "object",
-                    "type_identity": "GetRawTransactionBranch3"
+                    "type_identity": "GetRawTransactionObject2"
                   }
                 }
               ],
@@ -29872,7 +29872,7 @@
               "variants": null,
               "union_variants": [
                 {
-                  "name": "Branch1",
+                  "name": "Null",
                   "description": "If the UTXO was not found",
                   "condition": "If the UTXO was not found",
                   "type_def": {
@@ -29886,11 +29886,11 @@
                   }
                 },
                 {
-                  "name": "Branch2",
+                  "name": "Object",
                   "description": "Otherwise",
                   "condition": "Otherwise",
                   "type_def": {
-                    "name": "GetTxOutBranch2",
+                    "name": "GetTxOutObject",
                     "description": "Otherwise",
                     "kind": "Object",
                     "fields": [
@@ -30070,7 +30070,7 @@
                     "variants": null,
                     "base_type": null,
                     "protocol_type": "object",
-                    "type_identity": "GetTxOutBranch2"
+                    "type_identity": "GetTxOutObject"
                   }
                 }
               ],
@@ -30183,7 +30183,7 @@
                   "variants": null,
                   "union_variants": [
                     {
-                      "name": "Branch1",
+                      "name": "Number",
                       "description": "The block hash or height of the target height (only available with coinstatsindex).",
                       "type_def": {
                         "name": "number",
@@ -30196,7 +30196,7 @@
                       }
                     },
                     {
-                      "name": "Branch2",
+                      "name": "String",
                       "description": "The block hash or height of the target height (only available with coinstatsindex).",
                       "type_def": {
                         "name": "string",
@@ -31102,10 +31102,10 @@
                     "variants": null,
                     "union_variants": [
                       {
-                        "name": "Branch1",
+                        "name": "Object",
                         "description": "current scanning details, or false if no scan is in progress",
                         "type_def": {
-                          "name": "GetWalletInfoBranch1",
+                          "name": "GetWalletInfoObject",
                           "description": "current scanning details, or false if no scan is in progress",
                           "kind": "Object",
                           "fields": [
@@ -31147,7 +31147,7 @@
                           "variants": null,
                           "base_type": null,
                           "protocol_type": "object",
-                          "type_identity": "GetWalletInfoBranch1"
+                          "type_identity": "GetWalletInfoObject"
                         }
                       },
                       {
@@ -31406,7 +31406,7 @@
                               "variants": null,
                               "union_variants": [
                                 {
-                                  "name": "Branch1",
+                                  "name": "Number",
                                   "description": "If a ranged descriptor is used, this specifies the end or the range (in the form [begin,end]) to import",
                                   "type_def": {
                                     "name": "number",
@@ -31419,10 +31419,10 @@
                                   }
                                 },
                                 {
-                                  "name": "Branch2",
+                                  "name": "Array",
                                   "description": "If a ranged descriptor is used, this specifies the end or the range (in the form [begin,end]) to import",
                                   "type_def": {
-                                    "name": "RpcBranch2Array1",
+                                    "name": "RpcArrayArray1",
                                     "description": "If a ranged descriptor is used, this specifies the end or the range (in the form [begin,end]) to import",
                                     "kind": "Array",
                                     "fields": [
@@ -31464,7 +31464,7 @@
                                     "variants": null,
                                     "base_type": null,
                                     "protocol_type": "array",
-                                    "type_identity": "RpcBranch2Array1"
+                                    "type_identity": "RpcArrayArray1"
                                   }
                                 }
                               ],
@@ -31487,7 +31487,7 @@
                               "variants": null,
                               "union_variants": [
                                 {
-                                  "name": "Branch1",
+                                  "name": "Number",
                                   "description": "Time from which to start rescanning the blockchain for this descriptor, in UNIX epoch time\nUse the string \"now\" to substitute the current synced blockchain time.\n\"now\" can be specified to bypass scanning, for outputs which are known to never have been used, and\n0 can be specified to scan the entire blockchain. Blocks up to 2 hours before the earliest timestamp\nof all descriptors being imported will be scanned as well as the mempool.",
                                   "type_def": {
                                     "name": "number",
@@ -31500,7 +31500,7 @@
                                   }
                                 },
                                 {
-                                  "name": "Branch2",
+                                  "name": "String",
                                   "description": "Time from which to start rescanning the blockchain for this descriptor, in UNIX epoch time\nUse the string \"now\" to substitute the current synced blockchain time.\n\"now\" can be specified to bypass scanning, for outputs which are known to never have been used, and\n0 can be specified to scan the entire blockchain. Blocks up to 2 hours before the earliest timestamp\nof all descriptors being imported will be scanned as well as the mempool.",
                                   "type_def": {
                                     "name": "string",
@@ -34984,7 +34984,7 @@
                         "variants": null,
                         "union_variants": [
                           {
-                            "name": "Branch1",
+                            "name": "Number",
                             "description": "Maximum value of each UTXO in BTC",
                             "type_def": {
                               "name": "number",
@@ -34997,7 +34997,7 @@
                             }
                           },
                           {
-                            "name": "Branch2",
+                            "name": "String",
                             "description": "Maximum value of each UTXO in BTC",
                             "type_def": {
                               "name": "string",
@@ -35046,7 +35046,7 @@
                         "variants": null,
                         "union_variants": [
                           {
-                            "name": "Branch1",
+                            "name": "Number",
                             "description": "Minimum value of each UTXO in BTC",
                             "type_def": {
                               "name": "number",
@@ -35059,7 +35059,7 @@
                             }
                           },
                           {
-                            "name": "Branch2",
+                            "name": "String",
                             "description": "Minimum value of each UTXO in BTC",
                             "type_def": {
                               "name": "string",
@@ -35091,7 +35091,7 @@
                         "variants": null,
                         "union_variants": [
                           {
-                            "name": "Branch1",
+                            "name": "Number",
                             "description": "Minimum sum value of all UTXOs in BTC",
                             "type_def": {
                               "name": "number",
@@ -35104,7 +35104,7 @@
                             }
                           },
                           {
-                            "name": "Branch2",
+                            "name": "String",
                             "description": "Minimum sum value of all UTXOs in BTC",
                             "type_def": {
                               "name": "string",
@@ -36480,7 +36480,7 @@
                         "variants": null,
                         "union_variants": [
                           {
-                            "name": "Branch1",
+                            "name": "Number",
                             "description": "\nSpecify a fee rate in sat/vB instead of relying on the built-in fee estimator.\nMust be at least 0.100 sat/vB higher than the current transaction fee rate.\nWARNING: before version 0.21, fee_rate was in BTC/kvB. As of 0.21, fee_rate is in sat/vB.\n",
                             "type_def": {
                               "name": "number",
@@ -36493,7 +36493,7 @@
                             }
                           },
                           {
-                            "name": "Branch2",
+                            "name": "String",
                             "description": "\nSpecify a fee rate in sat/vB instead of relying on the built-in fee estimator.\nMust be at least 0.100 sat/vB higher than the current transaction fee rate.\nWARNING: before version 0.21, fee_rate was in BTC/kvB. As of 0.21, fee_rate is in sat/vB.\n",
                             "type_def": {
                               "name": "string",
@@ -36542,10 +36542,10 @@
                         "variants": null,
                         "union_variants": [
                           {
-                            "name": "Branch1",
+                            "name": "Array",
                             "description": "The outputs specified as key-value pairs.\nEach key may only appear once, i.e. there can only be one 'data' output, and no address may be duplicated.\nAt least one output of either type must be specified.\nCannot be provided if 'original_change_index' is specified.",
                             "type_def": {
-                              "name": "RpcBranch1Array1",
+                              "name": "RpcArrayArray1",
                               "description": "The outputs specified as key-value pairs.\nEach key may only appear once, i.e. there can only be one 'data' output, and no address may be duplicated.\nAt least one output of either type must be specified.\nCannot be provided if 'original_change_index' is specified.",
                               "kind": "Array",
                               "fields": [
@@ -36554,18 +36554,18 @@
                                     "Anonymous": 0
                                   },
                                   "field_type": {
-                                    "name": "optionsOutputsBranch1Item",
+                                    "name": "optionsOutputsArrayItem",
                                     "description": "Union result preserved from OpenRPC oneOf/anyOf branches",
                                     "kind": "Union",
                                     "fields": null,
                                     "variants": null,
                                     "union_variants": [
                                       {
-                                        "name": "Branch1",
+                                        "name": "Object",
                                         "description": "A key-value pair. The key (string) is the bitcoin address,\nthe value (float or string) is the amount in BTC",
                                         "condition": "A key-value pair. The key (string) is the bitcoin address,\nthe value (float or string) is the amount in BTC",
                                         "type_def": {
-                                          "name": "optionsOutputsBranch1ItemBranch1Map",
+                                          "name": "optionsOutputsArrayItemObjectMap",
                                           "description": "A key-value pair. The key (string) is the bitcoin address,\nthe value (float or string) is the amount in BTC",
                                           "kind": "Map",
                                           "fields": null,
@@ -36573,14 +36573,14 @@
                                           "base_type": null,
                                           "protocol_type": "object-dynamic",
                                           "map_value": {
-                                            "name": "optionsOutputsBranch1ItemBranch1Value",
+                                            "name": "optionsOutputsArrayItemObjectValue",
                                             "description": "Union result preserved from OpenRPC oneOf/anyOf branches",
                                             "kind": "Union",
                                             "fields": null,
                                             "variants": null,
                                             "union_variants": [
                                               {
-                                                "name": "Branch1",
+                                                "name": "Number",
                                                 "description": "A key-value pair. The key (string) is the bitcoin address,\nthe value (float or string) is the amount in BTC",
                                                 "type_def": {
                                                   "name": "number",
@@ -36593,7 +36593,7 @@
                                                 }
                                               },
                                               {
-                                                "name": "Branch2",
+                                                "name": "String",
                                                 "description": "A key-value pair. The key (string) is the bitcoin address,\nthe value (float or string) is the amount in BTC",
                                                 "type_def": {
                                                   "name": "string",
@@ -36613,10 +36613,10 @@
                                         }
                                       },
                                       {
-                                        "name": "Branch2",
+                                        "name": "Object2",
                                         "description": "The outputs specified as key-value pairs.\nEach key may only appear once, i.e. there can only be one 'data' output, and no address may be duplicated.\nAt least one output of either type must be specified.\nCannot be provided if 'original_change_index' is specified.",
                                         "type_def": {
-                                          "name": "optionsOutputsBranch1ItemBranch2",
+                                          "name": "optionsOutputsArrayItemObject2",
                                           "description": "The outputs specified as key-value pairs.\nEach key may only appear once, i.e. there can only be one 'data' output, and no address may be duplicated.\nAt least one output of either type must be specified.\nCannot be provided if 'original_change_index' is specified.",
                                           "kind": "Object",
                                           "fields": [
@@ -36655,14 +36655,14 @@
                               "variants": null,
                               "base_type": null,
                               "protocol_type": "array",
-                              "type_identity": "RpcBranch1Array1"
+                              "type_identity": "RpcArrayArray1"
                             }
                           },
                           {
-                            "name": "Branch2",
+                            "name": "Object",
                             "description": "The outputs specified as key-value pairs.\nEach key may only appear once, i.e. there can only be one 'data' output, and no address may be duplicated.\nAt least one output of either type must be specified.\nCannot be provided if 'original_change_index' is specified.",
                             "type_def": {
-                              "name": "optionsOutputsBranch2",
+                              "name": "optionsOutputsObject",
                               "description": "The outputs specified as key-value pairs.\nEach key may only appear once, i.e. there can only be one 'data' output, and no address may be duplicated.\nAt least one output of either type must be specified.\nCannot be provided if 'original_change_index' is specified.",
                               "kind": "Object",
                               "fields": [],
@@ -37613,7 +37613,7 @@
                         "variants": null,
                         "union_variants": [
                           {
-                            "name": "Branch1",
+                            "name": "String",
                             "description": "Array of scan objects. Required for \"start\" action\nEvery scan object is either a string descriptor or an object:",
                             "type_def": {
                               "name": "string",
@@ -37626,10 +37626,10 @@
                             }
                           },
                           {
-                            "name": "Branch2",
+                            "name": "Object",
                             "description": "Array of scan objects. Required for \"start\" action\nEvery scan object is either a string descriptor or an object:",
                             "type_def": {
-                              "name": "scanobjectsItemBranch2",
+                              "name": "scanobjectsItemObject",
                               "description": "Array of scan objects. Required for \"start\" action\nEvery scan object is either a string descriptor or an object:",
                               "kind": "Object",
                               "fields": [
@@ -37655,14 +37655,14 @@
                                     "Named": "range"
                                   },
                                   "field_type": {
-                                    "name": "scanobjectsItemBranch2Range",
+                                    "name": "scanobjectsItemObjectRange",
                                     "description": "Union result preserved from OpenRPC oneOf/anyOf branches",
                                     "kind": "Union",
                                     "fields": null,
                                     "variants": null,
                                     "union_variants": [
                                       {
-                                        "name": "Branch1",
+                                        "name": "Number",
                                         "description": "The range of HD chain indexes to explore (either end or [begin,end])",
                                         "type_def": {
                                           "name": "number",
@@ -37675,10 +37675,10 @@
                                         }
                                       },
                                       {
-                                        "name": "Branch2",
+                                        "name": "Array",
                                         "description": "The range of HD chain indexes to explore (either end or [begin,end])",
                                         "type_def": {
-                                          "name": "RpcBranch2Array1",
+                                          "name": "RpcArrayArray1",
                                           "description": "The range of HD chain indexes to explore (either end or [begin,end])",
                                           "kind": "Array",
                                           "fields": [
@@ -37720,7 +37720,7 @@
                                           "variants": null,
                                           "base_type": null,
                                           "protocol_type": "array",
-                                          "type_identity": "RpcBranch2Array1"
+                                          "type_identity": "RpcArrayArray1"
                                         }
                                       }
                                     ],
@@ -37841,7 +37841,7 @@
               "variants": null,
               "union_variants": [
                 {
-                  "name": "Branch1",
+                  "name": "Null",
                   "description": "when action=='status' and no scan is in progress - possibly already completed",
                   "condition": "when action=='status' and no scan is in progress - possibly already completed",
                   "type_def": {
@@ -37855,11 +37855,11 @@
                   }
                 },
                 {
-                  "name": "Branch2",
+                  "name": "Object",
                   "description": "When action=='start'; only returns after scan completes",
                   "condition": "When action=='start'; only returns after scan completes",
                   "type_def": {
-                    "name": "ScanBlocksBranch2",
+                    "name": "ScanBlocksObject",
                     "description": "When action=='start'; only returns after scan completes",
                     "kind": "Object",
                     "fields": [
@@ -37902,7 +37902,7 @@
                           "Named": "relevant_blocks"
                         },
                         "field_type": {
-                          "name": "ScanBlocksBranch2Array1",
+                          "name": "ScanBlocksObjectArray1",
                           "description": "Blocks that may have matched a scanobject.",
                           "kind": "Array",
                           "fields": [
@@ -37927,7 +37927,7 @@
                           "variants": null,
                           "base_type": null,
                           "protocol_type": "array",
-                          "type_identity": "ScanBlocksBranch2Array1"
+                          "type_identity": "ScanBlocksObjectArray1"
                         },
                         "required": true,
                         "description": "Blocks that may have matched a scanobject.",
@@ -37954,15 +37954,15 @@
                     "variants": null,
                     "base_type": null,
                     "protocol_type": "object",
-                    "type_identity": "ScanBlocksBranch2"
+                    "type_identity": "ScanBlocksObject"
                   }
                 },
                 {
-                  "name": "Branch3",
+                  "name": "Object2",
                   "description": "when action=='status' and a scan is currently in progress",
                   "condition": "when action=='status' and a scan is currently in progress",
                   "type_def": {
-                    "name": "ScanBlocksBranch3",
+                    "name": "ScanBlocksObject2",
                     "description": "when action=='status' and a scan is currently in progress",
                     "kind": "Object",
                     "fields": [
@@ -38004,11 +38004,11 @@
                     "variants": null,
                     "base_type": null,
                     "protocol_type": "object",
-                    "type_identity": "ScanBlocksBranch3"
+                    "type_identity": "ScanBlocksObject2"
                   }
                 },
                 {
-                  "name": "Branch4",
+                  "name": "Boolean",
                   "description": "when action=='abort'",
                   "condition": "when action=='abort'",
                   "type_def": {
@@ -38071,7 +38071,7 @@
                         "variants": null,
                         "union_variants": [
                           {
-                            "name": "Branch1",
+                            "name": "String",
                             "description": "Array of scan objects. Required for \"start\" action\nEvery scan object is either a string descriptor or an object:",
                             "type_def": {
                               "name": "string",
@@ -38084,10 +38084,10 @@
                             }
                           },
                           {
-                            "name": "Branch2",
+                            "name": "Object",
                             "description": "Array of scan objects. Required for \"start\" action\nEvery scan object is either a string descriptor or an object:",
                             "type_def": {
-                              "name": "scanobjectsItemBranch2",
+                              "name": "scanobjectsItemObject",
                               "description": "Array of scan objects. Required for \"start\" action\nEvery scan object is either a string descriptor or an object:",
                               "kind": "Object",
                               "fields": [
@@ -38113,14 +38113,14 @@
                                     "Named": "range"
                                   },
                                   "field_type": {
-                                    "name": "scanobjectsItemBranch2Range",
+                                    "name": "scanobjectsItemObjectRange",
                                     "description": "Union result preserved from OpenRPC oneOf/anyOf branches",
                                     "kind": "Union",
                                     "fields": null,
                                     "variants": null,
                                     "union_variants": [
                                       {
-                                        "name": "Branch1",
+                                        "name": "Number",
                                         "description": "The range of HD chain indexes to explore (either end or [begin,end])",
                                         "type_def": {
                                           "name": "number",
@@ -38133,10 +38133,10 @@
                                         }
                                       },
                                       {
-                                        "name": "Branch2",
+                                        "name": "Array",
                                         "description": "The range of HD chain indexes to explore (either end or [begin,end])",
                                         "type_def": {
-                                          "name": "RpcBranch2Array1",
+                                          "name": "RpcArrayArray1",
                                           "description": "The range of HD chain indexes to explore (either end or [begin,end])",
                                           "kind": "Array",
                                           "fields": [
@@ -38178,7 +38178,7 @@
                                           "variants": null,
                                           "base_type": null,
                                           "protocol_type": "array",
-                                          "type_identity": "RpcBranch2Array1"
+                                          "type_identity": "RpcArrayArray1"
                                         }
                                       }
                                     ],
@@ -38221,11 +38221,11 @@
               "variants": null,
               "union_variants": [
                 {
-                  "name": "Branch1",
+                  "name": "Object",
                   "description": "when action=='start'; only returns after scan completes",
                   "condition": "when action=='start'; only returns after scan completes",
                   "type_def": {
-                    "name": "ScanTxOutSetBranch1",
+                    "name": "ScanTxOutSetObject",
                     "description": "when action=='start'; only returns after scan completes",
                     "kind": "Object",
                     "fields": [
@@ -38319,7 +38319,7 @@
                           "Named": "unspents"
                         },
                         "field_type": {
-                          "name": "ScanTxOutSetBranch1Array1",
+                          "name": "ScanTxOutSetObjectArray1",
                           "description": "",
                           "kind": "Array",
                           "fields": [
@@ -38499,7 +38499,7 @@
                           "variants": null,
                           "base_type": null,
                           "protocol_type": "array",
-                          "type_identity": "ScanTxOutSetBranch1Array1"
+                          "type_identity": "ScanTxOutSetObjectArray1"
                         },
                         "required": true,
                         "description": "",
@@ -38509,11 +38509,11 @@
                     "variants": null,
                     "base_type": null,
                     "protocol_type": "object",
-                    "type_identity": "ScanTxOutSetBranch1"
+                    "type_identity": "ScanTxOutSetObject"
                   }
                 },
                 {
-                  "name": "Branch2",
+                  "name": "Boolean",
                   "description": "when action=='abort'",
                   "condition": "when action=='abort'",
                   "type_def": {
@@ -38527,11 +38527,11 @@
                   }
                 },
                 {
-                  "name": "Branch3",
+                  "name": "Object2",
                   "description": "when action=='status' and a scan is currently in progress",
                   "condition": "when action=='status' and a scan is currently in progress",
                   "type_def": {
-                    "name": "ScanTxOutSetBranch3",
+                    "name": "ScanTxOutSetObject2",
                     "description": "when action=='status' and a scan is currently in progress",
                     "kind": "Object",
                     "fields": [
@@ -38556,11 +38556,11 @@
                     "variants": null,
                     "base_type": null,
                     "protocol_type": "object",
-                    "type_identity": "ScanTxOutSetBranch3"
+                    "type_identity": "ScanTxOutSetObject2"
                   }
                 },
                 {
-                  "name": "Branch4",
+                  "name": "Null",
                   "description": "when action=='status' and no scan is in progress - possibly already completed",
                   "condition": "when action=='status' and no scan is in progress - possibly already completed",
                   "type_def": {
@@ -38599,10 +38599,10 @@
                   "variants": null,
                   "union_variants": [
                     {
-                      "name": "Branch1",
+                      "name": "Array",
                       "description": "The outputs specified as key-value pairs.\nEach key may only appear once, i.e. there can only be one 'data' output, and no address may be duplicated.\nAt least one output of either type must be specified.\nFor convenience, a dictionary, which holds the key-value pairs directly, is also accepted.",
                       "type_def": {
-                        "name": "RpcBranch1Array1",
+                        "name": "RpcArrayArray1",
                         "description": "The outputs specified as key-value pairs.\nEach key may only appear once, i.e. there can only be one 'data' output, and no address may be duplicated.\nAt least one output of either type must be specified.\nFor convenience, a dictionary, which holds the key-value pairs directly, is also accepted.",
                         "kind": "Array",
                         "fields": [
@@ -38611,18 +38611,18 @@
                               "Anonymous": 0
                             },
                             "field_type": {
-                              "name": "outputsBranch1Item",
+                              "name": "outputsArrayItem",
                               "description": "Union result preserved from OpenRPC oneOf/anyOf branches",
                               "kind": "Union",
                               "fields": null,
                               "variants": null,
                               "union_variants": [
                                 {
-                                  "name": "Branch1",
+                                  "name": "Object",
                                   "description": "A key-value pair. The key (string) is the bitcoin address,\nthe value (float or string) is the amount in BTC",
                                   "condition": "A key-value pair. The key (string) is the bitcoin address,\nthe value (float or string) is the amount in BTC",
                                   "type_def": {
-                                    "name": "outputsBranch1ItemBranch1Map",
+                                    "name": "outputsArrayItemObjectMap",
                                     "description": "A key-value pair. The key (string) is the bitcoin address,\nthe value (float or string) is the amount in BTC",
                                     "kind": "Map",
                                     "fields": null,
@@ -38630,14 +38630,14 @@
                                     "base_type": null,
                                     "protocol_type": "object-dynamic",
                                     "map_value": {
-                                      "name": "outputsBranch1ItemBranch1Value",
+                                      "name": "outputsArrayItemObjectValue",
                                       "description": "Union result preserved from OpenRPC oneOf/anyOf branches",
                                       "kind": "Union",
                                       "fields": null,
                                       "variants": null,
                                       "union_variants": [
                                         {
-                                          "name": "Branch1",
+                                          "name": "Number",
                                           "description": "A key-value pair. The key (string) is the bitcoin address,\nthe value (float or string) is the amount in BTC",
                                           "type_def": {
                                             "name": "number",
@@ -38650,7 +38650,7 @@
                                           }
                                         },
                                         {
-                                          "name": "Branch2",
+                                          "name": "String",
                                           "description": "A key-value pair. The key (string) is the bitcoin address,\nthe value (float or string) is the amount in BTC",
                                           "type_def": {
                                             "name": "string",
@@ -38670,10 +38670,10 @@
                                   }
                                 },
                                 {
-                                  "name": "Branch2",
+                                  "name": "Object2",
                                   "description": "The outputs specified as key-value pairs.\nEach key may only appear once, i.e. there can only be one 'data' output, and no address may be duplicated.\nAt least one output of either type must be specified.\nFor convenience, a dictionary, which holds the key-value pairs directly, is also accepted.",
                                   "type_def": {
-                                    "name": "outputsBranch1ItemBranch2",
+                                    "name": "outputsArrayItemObject2",
                                     "description": "The outputs specified as key-value pairs.\nEach key may only appear once, i.e. there can only be one 'data' output, and no address may be duplicated.\nAt least one output of either type must be specified.\nFor convenience, a dictionary, which holds the key-value pairs directly, is also accepted.",
                                     "kind": "Object",
                                     "fields": [
@@ -38712,14 +38712,14 @@
                         "variants": null,
                         "base_type": null,
                         "protocol_type": "array",
-                        "type_identity": "RpcBranch1Array1"
+                        "type_identity": "RpcArrayArray1"
                       }
                     },
                     {
-                      "name": "Branch2",
+                      "name": "Object",
                       "description": "The outputs specified as key-value pairs.\nEach key may only appear once, i.e. there can only be one 'data' output, and no address may be duplicated.\nAt least one output of either type must be specified.\nFor convenience, a dictionary, which holds the key-value pairs directly, is also accepted.",
                       "type_def": {
-                        "name": "outputsBranch2",
+                        "name": "outputsObject",
                         "description": "The outputs specified as key-value pairs.\nEach key may only appear once, i.e. there can only be one 'data' output, and no address may be duplicated.\nAt least one output of either type must be specified.\nFor convenience, a dictionary, which holds the key-value pairs directly, is also accepted.",
                         "kind": "Object",
                         "fields": [],
@@ -38776,7 +38776,7 @@
                   "variants": null,
                   "union_variants": [
                     {
-                      "name": "Branch1",
+                      "name": "Number",
                       "description": "Specify a fee rate in sat/vB.",
                       "type_def": {
                         "name": "number",
@@ -38789,7 +38789,7 @@
                       }
                     },
                     {
-                      "name": "Branch2",
+                      "name": "String",
                       "description": "Specify a fee rate in sat/vB.",
                       "type_def": {
                         "name": "string",
@@ -38947,7 +38947,7 @@
                         "variants": null,
                         "union_variants": [
                           {
-                            "name": "Branch1",
+                            "name": "Number",
                             "description": "Specify a fee rate in sat/vB.",
                             "type_def": {
                               "name": "number",
@@ -38960,7 +38960,7 @@
                             }
                           },
                           {
-                            "name": "Branch2",
+                            "name": "String",
                             "description": "Specify a fee rate in sat/vB.",
                             "type_def": {
                               "name": "string",
@@ -39529,7 +39529,7 @@
                         "variants": null,
                         "union_variants": [
                           {
-                            "name": "Branch1",
+                            "name": "String",
                             "description": "The sendall destinations. Each address may only appear once.\nOptionally some recipients can be specified with an amount to perform payments, but at least one address must appear without a specified amount.\n",
                             "type_def": {
                               "name": "string",
@@ -39542,11 +39542,11 @@
                             }
                           },
                           {
-                            "name": "Branch2",
+                            "name": "Object",
                             "description": "A key-value pair. The key (string) is the bitcoin address, the value (float or string) is the amount in BTC",
                             "condition": "A key-value pair. The key (string) is the bitcoin address, the value (float or string) is the amount in BTC",
                             "type_def": {
-                              "name": "recipientsItemBranch2Map",
+                              "name": "recipientsItemObjectMap",
                               "description": "A key-value pair. The key (string) is the bitcoin address, the value (float or string) is the amount in BTC",
                               "kind": "Map",
                               "fields": null,
@@ -39554,14 +39554,14 @@
                               "base_type": null,
                               "protocol_type": "object-dynamic",
                               "map_value": {
-                                "name": "recipientsItemBranch2Value",
+                                "name": "recipientsItemObjectValue",
                                 "description": "Union result preserved from OpenRPC oneOf/anyOf branches",
                                 "kind": "Union",
                                 "fields": null,
                                 "variants": null,
                                 "union_variants": [
                                   {
-                                    "name": "Branch1",
+                                    "name": "Number",
                                     "description": "A key-value pair. The key (string) is the bitcoin address, the value (float or string) is the amount in BTC",
                                     "type_def": {
                                       "name": "number",
@@ -39574,7 +39574,7 @@
                                     }
                                   },
                                   {
-                                    "name": "Branch2",
+                                    "name": "String",
                                     "description": "A key-value pair. The key (string) is the bitcoin address, the value (float or string) is the amount in BTC",
                                     "type_def": {
                                       "name": "string",
@@ -39650,7 +39650,7 @@
                   "variants": null,
                   "union_variants": [
                     {
-                      "name": "Branch1",
+                      "name": "Number",
                       "description": "Specify a fee rate in sat/vB.",
                       "type_def": {
                         "name": "number",
@@ -39663,7 +39663,7 @@
                       }
                     },
                     {
-                      "name": "Branch2",
+                      "name": "String",
                       "description": "Specify a fee rate in sat/vB.",
                       "type_def": {
                         "name": "string",
@@ -39753,7 +39753,7 @@
                         "variants": null,
                         "union_variants": [
                           {
-                            "name": "Branch1",
+                            "name": "Number",
                             "description": "Specify a fee rate in sat/vB.",
                             "type_def": {
                               "name": "number",
@@ -39766,7 +39766,7 @@
                             }
                           },
                           {
-                            "name": "Branch2",
+                            "name": "String",
                             "description": "Specify a fee rate in sat/vB.",
                             "type_def": {
                               "name": "string",
@@ -40282,7 +40282,7 @@
                     "variants": null,
                     "union_variants": [
                       {
-                        "name": "Branch1",
+                        "name": "Number",
                         "description": "The bitcoin address is the key, the numeric amount (can be string) in BTC is the value",
                         "type_def": {
                           "name": "number",
@@ -40295,7 +40295,7 @@
                         }
                       },
                       {
-                        "name": "Branch2",
+                        "name": "String",
                         "description": "The bitcoin address is the key, the numeric amount (can be string) in BTC is the value",
                         "type_def": {
                           "name": "string",
@@ -40435,7 +40435,7 @@
                   "variants": null,
                   "union_variants": [
                     {
-                      "name": "Branch1",
+                      "name": "Number",
                       "description": "Specify a fee rate in sat/vB.",
                       "type_def": {
                         "name": "number",
@@ -40448,7 +40448,7 @@
                       }
                     },
                     {
-                      "name": "Branch2",
+                      "name": "String",
                       "description": "Specify a fee rate in sat/vB.",
                       "type_def": {
                         "name": "string",
@@ -40492,7 +40492,7 @@
               "variants": null,
               "union_variants": [
                 {
-                  "name": "Branch1",
+                  "name": "String",
                   "description": "if verbose is not set or set to false",
                   "condition": "if verbose is not set or set to false",
                   "type_def": {
@@ -40506,11 +40506,11 @@
                   }
                 },
                 {
-                  "name": "Branch2",
+                  "name": "Object",
                   "description": "if verbose is set to true",
                   "condition": "if verbose is set to true",
                   "type_def": {
-                    "name": "SendManyBranch2",
+                    "name": "SendManyObject",
                     "description": "if verbose is set to true",
                     "kind": "Object",
                     "fields": [
@@ -40552,7 +40552,7 @@
                     "variants": null,
                     "base_type": null,
                     "protocol_type": "object",
-                    "type_identity": "SendManyBranch2"
+                    "type_identity": "SendManyObject"
                   }
                 }
               ],
@@ -40664,7 +40664,7 @@
                   "variants": null,
                   "union_variants": [
                     {
-                      "name": "Branch1",
+                      "name": "Number",
                       "description": "Reject transactions whose fee rate is higher than the specified value, expressed in BTC/kvB.\nFee rates larger than 1BTC/kvB are rejected.\nSet to 0 to accept any fee rate.",
                       "type_def": {
                         "name": "number",
@@ -40677,7 +40677,7 @@
                       }
                     },
                     {
-                      "name": "Branch2",
+                      "name": "String",
                       "description": "Reject transactions whose fee rate is higher than the specified value, expressed in BTC/kvB.\nFee rates larger than 1BTC/kvB are rejected.\nSet to 0 to accept any fee rate.",
                       "type_def": {
                         "name": "string",
@@ -40707,7 +40707,7 @@
                   "variants": null,
                   "union_variants": [
                     {
-                      "name": "Branch1",
+                      "name": "Number",
                       "description": "Reject transactions with provably unspendable outputs (e.g. 'datacarrier' outputs that use the OP_RETURN opcode) greater than the specified value, expressed in BTC.\nIf burning funds through unspendable outputs is desired, increase this value.\nThis check is based on heuristics and does not guarantee spendability of outputs.\n",
                       "type_def": {
                         "name": "number",
@@ -40720,7 +40720,7 @@
                       }
                     },
                     {
-                      "name": "Branch2",
+                      "name": "String",
                       "description": "Reject transactions with provably unspendable outputs (e.g. 'datacarrier' outputs that use the OP_RETURN opcode) greater than the specified value, expressed in BTC.\nIf burning funds through unspendable outputs is desired, increase this value.\nThis check is based on heuristics and does not guarantee spendability of outputs.\n",
                       "type_def": {
                         "name": "string",
@@ -40786,7 +40786,7 @@
                   "variants": null,
                   "union_variants": [
                     {
-                      "name": "Branch1",
+                      "name": "Number",
                       "description": "The amount in BTC to send. eg 0.1",
                       "type_def": {
                         "name": "number",
@@ -40799,7 +40799,7 @@
                       }
                     },
                     {
-                      "name": "Branch2",
+                      "name": "String",
                       "description": "The amount in BTC to send. eg 0.1",
                       "type_def": {
                         "name": "string",
@@ -40934,7 +40934,7 @@
                   "variants": null,
                   "union_variants": [
                     {
-                      "name": "Branch1",
+                      "name": "Number",
                       "description": "Specify a fee rate in sat/vB.",
                       "type_def": {
                         "name": "number",
@@ -40947,7 +40947,7 @@
                       }
                     },
                     {
-                      "name": "Branch2",
+                      "name": "String",
                       "description": "Specify a fee rate in sat/vB.",
                       "type_def": {
                         "name": "string",
@@ -40991,7 +40991,7 @@
               "variants": null,
               "union_variants": [
                 {
-                  "name": "Branch1",
+                  "name": "String",
                   "description": "if verbose is not set or set to false",
                   "condition": "if verbose is not set or set to false",
                   "type_def": {
@@ -41005,11 +41005,11 @@
                   }
                 },
                 {
-                  "name": "Branch2",
+                  "name": "Object",
                   "description": "if verbose is set to true",
                   "condition": "if verbose is set to true",
                   "type_def": {
-                    "name": "SendToAddressBranch2",
+                    "name": "SendToAddressObject",
                     "description": "if verbose is set to true",
                     "kind": "Object",
                     "fields": [
@@ -41051,7 +41051,7 @@
                     "variants": null,
                     "base_type": null,
                     "protocol_type": "object",
-                    "type_identity": "SendToAddressBranch2"
+                    "type_identity": "SendToAddressObject"
                   }
                 }
               ],
@@ -41557,7 +41557,7 @@
                               "variants": null,
                               "union_variants": [
                                 {
-                                  "name": "Branch1",
+                                  "name": "Number",
                                   "description": "(required for Segwit inputs) the amount spent",
                                   "type_def": {
                                     "name": "number",
@@ -41570,7 +41570,7 @@
                                   }
                                 },
                                 {
-                                  "name": "Branch2",
+                                  "name": "String",
                                   "description": "(required for Segwit inputs) the amount spent",
                                   "type_def": {
                                     "name": "string",
@@ -41967,7 +41967,7 @@
                               "variants": null,
                               "union_variants": [
                                 {
-                                  "name": "Branch1",
+                                  "name": "Number",
                                   "description": "(required for Segwit inputs) the amount spent",
                                   "type_def": {
                                     "name": "number",
@@ -41980,7 +41980,7 @@
                                   }
                                 },
                                 {
-                                  "name": "Branch2",
+                                  "name": "String",
                                   "description": "(required for Segwit inputs) the amount spent",
                                   "type_def": {
                                     "name": "string",
@@ -42515,7 +42515,7 @@
               "variants": null,
               "union_variants": [
                 {
-                  "name": "Branch1",
+                  "name": "Null",
                   "description": "If the block was accepted",
                   "condition": "If the block was accepted",
                   "type_def": {
@@ -42529,7 +42529,7 @@
                   }
                 },
                 {
-                  "name": "Branch2",
+                  "name": "String",
                   "description": "Otherwise",
                   "condition": "Otherwise",
                   "type_def": {
@@ -42637,7 +42637,7 @@
                   "variants": null,
                   "union_variants": [
                     {
-                      "name": "Branch1",
+                      "name": "Number",
                       "description": "Reject transactions whose fee rate is higher than the specified value, expressed in BTC/kvB.\nFee rates larger than 1BTC/kvB are rejected.\nSet to 0 to accept any fee rate.",
                       "type_def": {
                         "name": "number",
@@ -42650,7 +42650,7 @@
                       }
                     },
                     {
-                      "name": "Branch2",
+                      "name": "String",
                       "description": "Reject transactions whose fee rate is higher than the specified value, expressed in BTC/kvB.\nFee rates larger than 1BTC/kvB are rejected.\nSet to 0 to accept any fee rate.",
                       "type_def": {
                         "name": "string",
@@ -42680,7 +42680,7 @@
                   "variants": null,
                   "union_variants": [
                     {
-                      "name": "Branch1",
+                      "name": "Number",
                       "description": "Reject transactions with provably unspendable outputs (e.g. 'datacarrier' outputs that use the OP_RETURN opcode) greater than the specified value, expressed in BTC.\nIf burning funds through unspendable outputs is desired, increase this value.\nThis check is based on heuristics and does not guarantee spendability of outputs.\n",
                       "type_def": {
                         "name": "number",
@@ -42693,7 +42693,7 @@
                       }
                     },
                     {
-                      "name": "Branch2",
+                      "name": "String",
                       "description": "Reject transactions with provably unspendable outputs (e.g. 'datacarrier' outputs that use the OP_RETURN opcode) greater than the specified value, expressed in BTC.\nIf burning funds through unspendable outputs is desired, increase this value.\nThis check is based on heuristics and does not guarantee spendability of outputs.\n",
                       "type_def": {
                         "name": "string",
@@ -43074,7 +43074,7 @@
                   "variants": null,
                   "union_variants": [
                     {
-                      "name": "Branch1",
+                      "name": "Number",
                       "description": "Reject transactions whose fee rate is higher than the specified value, expressed in BTC/kvB.\nFee rates larger than 1BTC/kvB are rejected.\nSet to 0 to accept any fee rate.",
                       "type_def": {
                         "name": "number",
@@ -43087,7 +43087,7 @@
                       }
                     },
                     {
-                      "name": "Branch2",
+                      "name": "String",
                       "description": "Reject transactions whose fee rate is higher than the specified value, expressed in BTC/kvB.\nFee rates larger than 1BTC/kvB are rejected.\nSet to 0 to accept any fee rate.",
                       "type_def": {
                         "name": "string",
@@ -43534,7 +43534,7 @@
                         "variants": null,
                         "union_variants": [
                           {
-                            "name": "Branch1",
+                            "name": "String",
                             "description": "An array of either strings or objects",
                             "type_def": {
                               "name": "string",
@@ -43547,10 +43547,10 @@
                             }
                           },
                           {
-                            "name": "Branch2",
+                            "name": "Object",
                             "description": "An array of either strings or objects",
                             "type_def": {
-                              "name": "descriptorsItemBranch2",
+                              "name": "descriptorsItemObject",
                               "description": "An array of either strings or objects",
                               "kind": "Object",
                               "fields": [
@@ -43576,14 +43576,14 @@
                                     "Named": "range"
                                   },
                                   "field_type": {
-                                    "name": "descriptorsItemBranch2Range",
+                                    "name": "descriptorsItemObjectRange",
                                     "description": "Union result preserved from OpenRPC oneOf/anyOf branches",
                                     "kind": "Union",
                                     "fields": null,
                                     "variants": null,
                                     "union_variants": [
                                       {
-                                        "name": "Branch1",
+                                        "name": "Number",
                                         "description": "Up to what index HD chains should be explored (either end or [begin,end])",
                                         "type_def": {
                                           "name": "number",
@@ -43596,10 +43596,10 @@
                                         }
                                       },
                                       {
-                                        "name": "Branch2",
+                                        "name": "Array",
                                         "description": "Up to what index HD chains should be explored (either end or [begin,end])",
                                         "type_def": {
-                                          "name": "RpcBranch2Array1",
+                                          "name": "RpcArrayArray1",
                                           "description": "Up to what index HD chains should be explored (either end or [begin,end])",
                                           "kind": "Array",
                                           "fields": [
@@ -43641,7 +43641,7 @@
                                           "variants": null,
                                           "base_type": null,
                                           "protocol_type": "array",
-                                          "type_identity": "RpcBranch2Array1"
+                                          "type_identity": "RpcArrayArray1"
                                         }
                                       }
                                     ],
@@ -44451,10 +44451,10 @@
                   "variants": null,
                   "union_variants": [
                     {
-                      "name": "Branch1",
+                      "name": "Array",
                       "description": "The outputs specified as key-value pairs.\nEach key may only appear once, i.e. there can only be one 'data' output, and no address may be duplicated.\nAt least one output of either type must be specified.\nFor compatibility reasons, a dictionary, which holds the key-value pairs directly, is also\naccepted as second parameter.",
                       "type_def": {
-                        "name": "RpcBranch1Array1",
+                        "name": "RpcArrayArray1",
                         "description": "The outputs specified as key-value pairs.\nEach key may only appear once, i.e. there can only be one 'data' output, and no address may be duplicated.\nAt least one output of either type must be specified.\nFor compatibility reasons, a dictionary, which holds the key-value pairs directly, is also\naccepted as second parameter.",
                         "kind": "Array",
                         "fields": [
@@ -44463,18 +44463,18 @@
                               "Anonymous": 0
                             },
                             "field_type": {
-                              "name": "outputsBranch1Item",
+                              "name": "outputsArrayItem",
                               "description": "Union result preserved from OpenRPC oneOf/anyOf branches",
                               "kind": "Union",
                               "fields": null,
                               "variants": null,
                               "union_variants": [
                                 {
-                                  "name": "Branch1",
+                                  "name": "Object",
                                   "description": "A key-value pair. The key (string) is the bitcoin address,\nthe value (float or string) is the amount in BTC",
                                   "condition": "A key-value pair. The key (string) is the bitcoin address,\nthe value (float or string) is the amount in BTC",
                                   "type_def": {
-                                    "name": "outputsBranch1ItemBranch1Map",
+                                    "name": "outputsArrayItemObjectMap",
                                     "description": "A key-value pair. The key (string) is the bitcoin address,\nthe value (float or string) is the amount in BTC",
                                     "kind": "Map",
                                     "fields": null,
@@ -44482,14 +44482,14 @@
                                     "base_type": null,
                                     "protocol_type": "object-dynamic",
                                     "map_value": {
-                                      "name": "outputsBranch1ItemBranch1Value",
+                                      "name": "outputsArrayItemObjectValue",
                                       "description": "Union result preserved from OpenRPC oneOf/anyOf branches",
                                       "kind": "Union",
                                       "fields": null,
                                       "variants": null,
                                       "union_variants": [
                                         {
-                                          "name": "Branch1",
+                                          "name": "Number",
                                           "description": "A key-value pair. The key (string) is the bitcoin address,\nthe value (float or string) is the amount in BTC",
                                           "type_def": {
                                             "name": "number",
@@ -44502,7 +44502,7 @@
                                           }
                                         },
                                         {
-                                          "name": "Branch2",
+                                          "name": "String",
                                           "description": "A key-value pair. The key (string) is the bitcoin address,\nthe value (float or string) is the amount in BTC",
                                           "type_def": {
                                             "name": "string",
@@ -44522,10 +44522,10 @@
                                   }
                                 },
                                 {
-                                  "name": "Branch2",
+                                  "name": "Object2",
                                   "description": "The outputs specified as key-value pairs.\nEach key may only appear once, i.e. there can only be one 'data' output, and no address may be duplicated.\nAt least one output of either type must be specified.\nFor compatibility reasons, a dictionary, which holds the key-value pairs directly, is also\naccepted as second parameter.",
                                   "type_def": {
-                                    "name": "outputsBranch1ItemBranch2",
+                                    "name": "outputsArrayItemObject2",
                                     "description": "The outputs specified as key-value pairs.\nEach key may only appear once, i.e. there can only be one 'data' output, and no address may be duplicated.\nAt least one output of either type must be specified.\nFor compatibility reasons, a dictionary, which holds the key-value pairs directly, is also\naccepted as second parameter.",
                                     "kind": "Object",
                                     "fields": [
@@ -44564,14 +44564,14 @@
                         "variants": null,
                         "base_type": null,
                         "protocol_type": "array",
-                        "type_identity": "RpcBranch1Array1"
+                        "type_identity": "RpcArrayArray1"
                       }
                     },
                     {
-                      "name": "Branch2",
+                      "name": "Object",
                       "description": "The outputs specified as key-value pairs.\nEach key may only appear once, i.e. there can only be one 'data' output, and no address may be duplicated.\nAt least one output of either type must be specified.\nFor compatibility reasons, a dictionary, which holds the key-value pairs directly, is also\naccepted as second parameter.",
                       "type_def": {
-                        "name": "outputsBranch2",
+                        "name": "outputsObject",
                         "description": "The outputs specified as key-value pairs.\nEach key may only appear once, i.e. there can only be one 'data' output, and no address may be duplicated.\nAt least one output of either type must be specified.\nFor compatibility reasons, a dictionary, which holds the key-value pairs directly, is also\naccepted as second parameter.",
                         "kind": "Object",
                         "fields": [],
@@ -44724,7 +44724,7 @@
                         "variants": null,
                         "union_variants": [
                           {
-                            "name": "Branch1",
+                            "name": "Number",
                             "description": "Specify a fee rate in BTC/kvB.",
                             "type_def": {
                               "name": "number",
@@ -44737,7 +44737,7 @@
                             }
                           },
                           {
-                            "name": "Branch2",
+                            "name": "String",
                             "description": "Specify a fee rate in BTC/kvB.",
                             "type_def": {
                               "name": "string",
@@ -44769,7 +44769,7 @@
                         "variants": null,
                         "union_variants": [
                           {
-                            "name": "Branch1",
+                            "name": "Number",
                             "description": "Specify a fee rate in sat/vB.",
                             "type_def": {
                               "name": "number",
@@ -44782,7 +44782,7 @@
                             }
                           },
                           {
-                            "name": "Branch2",
+                            "name": "String",
                             "description": "Specify a fee rate in sat/vB.",
                             "type_def": {
                               "name": "string",
