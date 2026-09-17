@@ -884,24 +884,28 @@ impl VersionSpecificResponseTypeGenerator {
     /// union-arm shorts are added only when they do not collide with those names.
     fn emit_rpc_prelude(&self, methods: &[RpcDef]) -> Result<String> {
         /// Floresta (and similar) consumer short names → generated long names.
-        /// Keep in sync with `docs/harden-consumer-ready.md` §3.1.
+        /// Floresta-style short names for common response shapes.
+        ///
+        /// Long names follow stock Core OpenRPC oneOf arm labels (`Object` / `Object2`, …).
+        /// When Core stamps `x-bitcoin-discriminated-result`, arms become `VerbosityN` instead;
+        /// refresh this table (or resolve from IR) if regenerating against that tip.
         const CONSUMER_TYPE_ALIASES: &[(&str, &str)] = &[
             ("AddrManInfoNetwork", "GetAddrManInfoMapValue"),
             ("DeploymentInfo", "GetDeploymentInfoMapValue"),
             ("GetAddrManInfo", "GetAddrManInfoResponse"),
-            ("GetBlockHeaderVerbose", "GetBlockHeaderResponseGetBlockHeaderVerboseTrue"),
-            ("GetBlockVerboseOne", "GetBlockResponseGetBlockVerbosity1"),
+            ("GetBlockHeaderVerbose", "GetBlockHeaderResponseGetBlockHeaderObject"),
+            ("GetBlockVerboseOne", "GetBlockResponseGetBlockObject"),
             ("GetBlockchainInfo", "GetBlockchainInfoResponse"),
             ("GetDeploymentInfo", "GetDeploymentInfoResponse"),
             ("GetNetworkInfo", "GetNetworkInfoResponse"),
             ("GetNetworkInfoNetwork", "GetNetworkInfoNetworks"),
-            ("GetRawTransactionVerbose", "GetRawTransactionResponseGetRawTransactionVerbosity1"),
+            ("GetRawTransactionVerbose", "GetRawTransactionResponseGetRawTransactionObject"),
             ("GetTxOut", "GetTxOutResponse"),
-            ("RawTransactionInput", "GetRawTransactionVerbosity1Vin"),
-            ("RawTransactionOutput", "GetRawTransactionVerbosity1Vout"),
-            ("RawTransactionScriptPubKey", "GetRawTransactionVerbosity1ScriptPubKey"),
+            ("RawTransactionInput", "GetRawTransactionVin"),
+            ("RawTransactionOutput", "GetRawTransactionVout"),
+            ("RawTransactionScriptPubKey", "GetRawTransactionScriptPubKey"),
             ("ScriptPubKey", "GetTxOutScriptPubKey"),
-            ("ScriptSig", "GetRawTransactionVerbosity1ScriptSig"),
+            ("ScriptSig", "GetRawTransactionScriptSig"),
         ];
 
         /// Methods whose result surface also gets mechanical Response / union-arm shorts.
