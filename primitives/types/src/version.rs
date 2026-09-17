@@ -86,18 +86,15 @@ impl ProtocolVersion {
         let caps = re
             .captures(&version_string)
             .ok_or_else(|| VersionError::InvalidFormat(s.to_string()))?;
+        let major = caps[1]
+            .parse()
+            .map_err(|e: std::num::ParseIntError| VersionError::Parse(e.to_string()))?;
+        let minor = caps[2]
+            .parse()
+            .map_err(|e: std::num::ParseIntError| VersionError::Parse(e.to_string()))?;
+        let patch = caps.get(3).map(|m| m.as_str().parse().unwrap_or(0)).unwrap_or(0);
 
-        Ok(Self {
-            version_string,
-            major: caps[1]
-                .parse()
-                .map_err(|e: std::num::ParseIntError| VersionError::Parse(e.to_string()))?,
-            minor: caps[2]
-                .parse()
-                .map_err(|e: std::num::ParseIntError| VersionError::Parse(e.to_string()))?,
-            patch: caps.get(3).map(|m| m.as_str().parse().unwrap_or(0)).unwrap_or(0),
-            protocol,
-        })
+        Ok(Self { version_string, major, minor, patch, protocol })
     }
 
     /// Return the original version string.
@@ -309,6 +306,12 @@ mod tests {
         assert_eq!(version.minor, 2);
         assert_eq!(version.patch, 3);
         assert_eq!(version.protocol, None);
+
+        let rc = ProtocolVersion::from_string("v32.0.0rc1").unwrap();
+        assert_eq!(rc.major, 32);
+        assert_eq!(rc.minor, 0);
+        assert_eq!(rc.patch, 0);
+        assert_eq!(rc.crate_version(), "32.0.0");
     }
 
     #[test]
