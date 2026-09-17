@@ -19910,7 +19910,7 @@
                   },
                   "field_type": {
                     "name": "string",
-                    "description": "The descriptor in canonical form, without private keys. For a multipath descriptor, only the first will be returned.",
+                    "description": "The descriptor, without private keys. For a multipath descriptor, only the first will be returned.",
                     "kind": "Primitive",
                     "fields": null,
                     "variants": null,
@@ -19918,7 +19918,7 @@
                     "protocol_type": "string"
                   },
                   "required": true,
-                  "description": "The descriptor in canonical form, without private keys. For a multipath descriptor, only the first will be returned.",
+                  "description": "The descriptor, without private keys. For a multipath descriptor, only the first will be returned.",
                   "default_value": null
                 },
                 {
@@ -21088,13 +21088,13 @@
                                 "Named": "chunkfee"
                               },
                               "field_type": {
-                                "name": "number",
+                                "name": "amount",
                                 "description": "fees of the transactions in this chunk",
                                 "kind": "Primitive",
                                 "fields": null,
                                 "variants": null,
                                 "base_type": null,
-                                "protocol_type": "number"
+                                "protocol_type": "amount"
                               },
                               "required": true,
                               "description": "fees of the transactions in this chunk",
@@ -22189,13 +22189,13 @@
                           "Named": "fee"
                         },
                         "field_type": {
-                          "name": "number",
+                          "name": "amount",
                           "description": "cumulative fee",
                           "kind": "Primitive",
                           "fields": null,
                           "variants": null,
                           "base_type": null,
-                          "protocol_type": "number"
+                          "protocol_type": "amount"
                         },
                         "required": true,
                         "description": "cumulative fee",
@@ -22273,13 +22273,13 @@
                     "Named": "incrementalrelayfee"
                   },
                   "field_type": {
-                    "name": "number",
+                    "name": "amount",
                     "description": "minimum fee rate increment for mempool limiting or replacement in BTC/kvB",
                     "kind": "Primitive",
                     "fields": null,
                     "variants": null,
                     "base_type": null,
-                    "protocol_type": "number"
+                    "protocol_type": "amount"
                   },
                   "required": true,
                   "description": "minimum fee rate increment for mempool limiting or replacement in BTC/kvB",
@@ -23161,13 +23161,13 @@
                     "Named": "incrementalfee"
                   },
                   "field_type": {
-                    "name": "number",
+                    "name": "amount",
                     "description": "minimum fee rate increment for mempool limiting or replacement in BTC/kvB",
                     "kind": "Primitive",
                     "fields": null,
                     "variants": null,
                     "base_type": null,
-                    "protocol_type": "number"
+                    "protocol_type": "amount"
                   },
                   "required": true,
                   "description": "minimum fee rate increment for mempool limiting or replacement in BTC/kvB",
@@ -23575,13 +23575,13 @@
                     "Named": "relayfee"
                   },
                   "field_type": {
-                    "name": "number",
+                    "name": "amount",
                     "description": "minimum relay fee rate for transactions in BTC/kvB",
                     "kind": "Primitive",
                     "fields": null,
                     "variants": null,
                     "base_type": null,
-                    "protocol_type": "number"
+                    "protocol_type": "amount"
                   },
                   "required": true,
                   "description": "minimum relay fee rate for transactions in BTC/kvB",
@@ -25263,13 +25263,13 @@
                           "Named": "minfeefilter"
                         },
                         "field_type": {
-                          "name": "number",
+                          "name": "amount",
                           "description": "The minimum fee rate for transactions this peer accepts",
                           "kind": "Primitive",
                           "fields": null,
                           "variants": null,
                           "base_type": null,
-                          "protocol_type": "number"
+                          "protocol_type": "amount"
                         },
                         "required": true,
                         "description": "The minimum fee rate for transactions this peer accepts",
@@ -29386,7 +29386,7 @@
                               },
                               "field_type": {
                                 "name": "array",
-                                "description": "Only if 'category' is 'received'. List of parent descriptors for the output script of this coin.",
+                                "description": "Only if 'category' is 'receive'. List of parent descriptors for the output script of this coin.",
                                 "kind": "Array",
                                 "fields": [
                                   {
@@ -29395,7 +29395,7 @@
                                     },
                                     "field_type": {
                                       "name": "string",
-                                      "description": "Only if 'category' is 'received'. List of parent descriptors for the output script of this coin.",
+                                      "description": "Only if 'category' is 'receive'. List of parent descriptors for the output script of this coin.",
                                       "kind": "Primitive",
                                       "fields": null,
                                       "variants": null,
@@ -29413,7 +29413,7 @@
                                 "type_identity": "gettransaction__array__parent_descs__always"
                               },
                               "required": false,
-                              "description": "Only if 'category' is 'received'. List of parent descriptors for the output script of this coin.",
+                              "description": "Only if 'category' is 'receive'. List of parent descriptors for the output script of this coin.",
                               "default_value": null
                             },
                             {
@@ -29599,7 +29599,7 @@
                   },
                   "field_type": {
                     "name": "array",
-                    "description": "Only if 'category' is 'received'. List of parent descriptors for the output script of this coin.",
+                    "description": "Only if 'category' is 'receive'. List of parent descriptors for the output script of this coin.",
                     "kind": "Array",
                     "fields": [
                       {
@@ -29608,7 +29608,7 @@
                         },
                         "field_type": {
                           "name": "string",
-                          "description": "Only if 'category' is 'received'. List of parent descriptors for the output script of this coin.",
+                          "description": "Only if 'category' is 'receive'. List of parent descriptors for the output script of this coin.",
                           "kind": "Primitive",
                           "fields": null,
                           "variants": null,
@@ -29626,7 +29626,7 @@
                     "type_identity": "gettransaction__array__parent_descs__always"
                   },
                   "required": false,
-                  "description": "Only if 'category' is 'received'. List of parent descriptors for the output script of this coin.",
+                  "description": "Only if 'category' is 'receive'. List of parent descriptors for the output script of this coin.",
                   "default_value": null
                 },
                 {
@@ -29821,13 +29821,13 @@
               {
                 "name": "txid",
                 "param_type": {
-                  "name": "string",
+                  "name": "hex",
                   "description": "The transaction id",
                   "kind": "Primitive",
                   "fields": null,
                   "variants": null,
                   "base_type": null,
-                  "protocol_type": "string"
+                  "protocol_type": "hex"
                 },
                 "required": true,
                 "description": "The transaction id",
@@ -31009,15 +31009,15 @@
                   },
                   "field_type": {
                     "name": "number",
-                    "description": "how many new keys are pre-generated for internal use (used for change outputs, only appears if the wallet is using this feature, otherwise external keys are used)",
+                    "description": "how many new keys are pre-generated for internal use (used for change outputs; 0 if external keys are used for change)",
                     "kind": "Primitive",
                     "fields": null,
                     "variants": null,
                     "base_type": null,
                     "protocol_type": "number"
                   },
-                  "required": false,
-                  "description": "how many new keys are pre-generated for internal use (used for change outputs, only appears if the wallet is using this feature, otherwise external keys are used)",
+                  "required": true,
+                  "description": "how many new keys are pre-generated for internal use (used for change outputs; 0 if external keys are used for change)",
                   "default_value": null
                 },
                 {
@@ -33404,7 +33404,7 @@
                               },
                               "field_type": {
                                 "name": "array",
-                                "description": "Only if 'category' is 'received'. List of parent descriptors for the output script of this coin.",
+                                "description": "Only if 'category' is 'receive'. List of parent descriptors for the output script of this coin.",
                                 "kind": "Array",
                                 "fields": [
                                   {
@@ -33413,7 +33413,7 @@
                                     },
                                     "field_type": {
                                       "name": "string",
-                                      "description": "Only if 'category' is 'received'. List of parent descriptors for the output script of this coin.",
+                                      "description": "Only if 'category' is 'receive'. List of parent descriptors for the output script of this coin.",
                                       "kind": "Primitive",
                                       "fields": null,
                                       "variants": null,
@@ -33431,7 +33431,7 @@
                                 "type_identity": "listsinceblock__array__parent_descs__always"
                               },
                               "required": false,
-                              "description": "Only if 'category' is 'received'. List of parent descriptors for the output script of this coin.",
+                              "description": "Only if 'category' is 'receive'. List of parent descriptors for the output script of this coin.",
                               "default_value": null
                             },
                             {
@@ -33977,7 +33977,7 @@
                               },
                               "field_type": {
                                 "name": "array",
-                                "description": "Only if 'category' is 'received'. List of parent descriptors for the output script of this coin.",
+                                "description": "Only if 'category' is 'receive'. List of parent descriptors for the output script of this coin.",
                                 "kind": "Array",
                                 "fields": [
                                   {
@@ -33986,7 +33986,7 @@
                                     },
                                     "field_type": {
                                       "name": "string",
-                                      "description": "Only if 'category' is 'received'. List of parent descriptors for the output script of this coin.",
+                                      "description": "Only if 'category' is 'receive'. List of parent descriptors for the output script of this coin.",
                                       "kind": "Primitive",
                                       "fields": null,
                                       "variants": null,
@@ -34004,7 +34004,7 @@
                                 "type_identity": "listsinceblock__array__parent_descs__always"
                               },
                               "required": false,
-                              "description": "Only if 'category' is 'received'. List of parent descriptors for the output script of this coin.",
+                              "description": "Only if 'category' is 'receive'. List of parent descriptors for the output script of this coin.",
                               "default_value": null
                             },
                             {
@@ -34624,7 +34624,7 @@
                         },
                         "field_type": {
                           "name": "array",
-                          "description": "Only if 'category' is 'received'. List of parent descriptors for the output script of this coin.",
+                          "description": "Only if 'category' is 'receive'. List of parent descriptors for the output script of this coin.",
                           "kind": "Array",
                           "fields": [
                             {
@@ -34633,7 +34633,7 @@
                               },
                               "field_type": {
                                 "name": "string",
-                                "description": "Only if 'category' is 'received'. List of parent descriptors for the output script of this coin.",
+                                "description": "Only if 'category' is 'receive'. List of parent descriptors for the output script of this coin.",
                                 "kind": "Primitive",
                                 "fields": null,
                                 "variants": null,
@@ -34651,7 +34651,7 @@
                           "type_identity": "listtransactions__array__parent_descs__always"
                         },
                         "required": false,
-                        "description": "Only if 'category' is 'received'. List of parent descriptors for the output script of this coin.",
+                        "description": "Only if 'category' is 'receive'. List of parent descriptors for the output script of this coin.",
                         "default_value": null
                       },
                       {
@@ -35546,7 +35546,7 @@
                               },
                               "field_type": {
                                 "name": "array",
-                                "description": "Warning messages, if any, related to loading the wallet.",
+                                "description": "Warning messages related to loading the wallet (may be empty).",
                                 "kind": "Array",
                                 "fields": [
                                   {
@@ -35555,7 +35555,7 @@
                                     },
                                     "field_type": {
                                       "name": "string",
-                                      "description": "Warning messages, if any, related to loading the wallet.",
+                                      "description": "Warning messages related to loading the wallet (may be empty).",
                                       "kind": "Primitive",
                                       "fields": null,
                                       "variants": null,
@@ -35572,8 +35572,8 @@
                                 "protocol_type": "array",
                                 "type_identity": "listwalletdir__array__warnings__always"
                               },
-                              "required": false,
-                              "description": "Warning messages, if any, related to loading the wallet.",
+                              "required": true,
+                              "description": "Warning messages related to loading the wallet (may be empty).",
                               "default_value": null
                             }
                           ],
@@ -42363,7 +42363,7 @@
                   "base_type": null,
                   "protocol_type": "array"
                 },
-                "required": false,
+                "required": true,
                 "description": "An array of hex strings of raw transactions.\n",
                 "default_value": null
               },
