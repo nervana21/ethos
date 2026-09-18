@@ -212,7 +212,7 @@
                 "name": "connection_type",
                 "param_type": {
                   "name": "string",
-                  "description": "Type of connection to open (\"outbound-full-relay\", \"block-relay-only\", \"addr-fetch\" or \"feeler\").",
+                  "description": "Type of connection to open (\"outbound-full-relay\", \"block-relay-only\", \"addr-fetch\", \"feeler\" or \"manual\").",
                   "kind": "Primitive",
                   "fields": null,
                   "variants": null,
@@ -220,7 +220,7 @@
                   "protocol_type": "string"
                 },
                 "required": true,
-                "description": "Type of connection to open (\"outbound-full-relay\", \"block-relay-only\", \"addr-fetch\" or \"feeler\").",
+                "description": "Type of connection to open (\"outbound-full-relay\", \"block-relay-only\", \"addr-fetch\", \"feeler\" or \"manual\").",
                 "default_value": null
               },
               {
@@ -349,7 +349,7 @@
         {
           "RpcMethod": {
             "name": "addnode",
-            "description": "Attempts to add or remove a node from the addnode list.\nOr try a connection to a node once.\nNodes added using addnode (or -connect) are protected from DoS disconnection and are not required to be\nfull nodes/support SegWit as other outbound peers are (though such peers will not be synced from).\nAddnode connections are limited to 8 at a time and are counted separately from the -maxconnections limit.",
+            "description": "Attempts to add or remove a node from the addnode list.\nOr try a connection to a node once.\nNodes added using addnode (or -connect) are protected from DoS disconnection and IBD block stalling\ndisconnection, and are not required to be full nodes or support SegWit as other outbound peers are (though\nsuch peers will not be synced from).\nAddnode connections are limited to 8 at a time and are counted separately from the -maxconnections limit.",
             "params": [
               {
                 "name": "node",
@@ -22530,6 +22530,23 @@
               "fields": [
                 {
                   "key": {
+                    "Named": "bestblockhash"
+                  },
+                  "field_type": {
+                    "name": "hex",
+                    "description": "The hash of the current best block",
+                    "kind": "Primitive",
+                    "fields": null,
+                    "variants": null,
+                    "base_type": null,
+                    "protocol_type": "hex"
+                  },
+                  "required": true,
+                  "description": "The hash of the current best block",
+                  "default_value": null
+                },
+                {
+                  "key": {
                     "Named": "bits"
                   },
                   "field_type": {
@@ -23105,6 +23122,23 @@
               "description": "",
               "kind": "Object",
               "fields": [
+                {
+                  "key": {
+                    "Named": "asmap_version"
+                  },
+                  "field_type": {
+                    "name": "string",
+                    "description": "the SHA256 hash of the asmap data used for IP bucketing (only displayed if the -asmap config option is set)",
+                    "kind": "Primitive",
+                    "fields": null,
+                    "variants": null,
+                    "base_type": null,
+                    "protocol_type": "string"
+                  },
+                  "required": false,
+                  "description": "the SHA256 hash of the asmap data used for IP bucketing (only displayed if the -asmap config option is set)",
+                  "default_value": null
+                },
                 {
                   "key": {
                     "Named": "connections"
