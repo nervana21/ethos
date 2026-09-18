@@ -23107,6 +23107,23 @@
               "fields": [
                 {
                   "key": {
+                    "Named": "asmap_version"
+                  },
+                  "field_type": {
+                    "name": "string",
+                    "description": "the SHA256 hash of the asmap data used for IP bucketing (only displayed if the -asmap config option is set)",
+                    "kind": "Primitive",
+                    "fields": null,
+                    "variants": null,
+                    "base_type": null,
+                    "protocol_type": "string"
+                  },
+                  "required": false,
+                  "description": "the SHA256 hash of the asmap data used for IP bucketing (only displayed if the -asmap config option is set)",
+                  "default_value": null
+                },
+                {
+                  "key": {
                     "Named": "connections"
                   },
                   "field_type": {
