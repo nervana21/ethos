@@ -31254,6 +31254,98 @@
         },
         {
           "RpcMethod": {
+            "name": "getzmqnotifications",
+            "description": "Returns information about the active ZeroMQ notifications.",
+            "params": [],
+            "result": {
+              "name": "array",
+              "description": "",
+              "kind": "Array",
+              "fields": [
+                {
+                  "key": {
+                    "Anonymous": 0
+                  },
+                  "field_type": {
+                    "name": "GetZmqNotificationsResultItem",
+                    "description": "",
+                    "kind": "Object",
+                    "fields": [
+                      {
+                        "key": {
+                          "Named": "address"
+                        },
+                        "field_type": {
+                          "name": "string",
+                          "description": "Address of the publisher",
+                          "kind": "Primitive",
+                          "fields": null,
+                          "variants": null,
+                          "base_type": null,
+                          "protocol_type": "string"
+                        },
+                        "required": true,
+                        "description": "Address of the publisher",
+                        "default_value": null
+                      },
+                      {
+                        "key": {
+                          "Named": "hwm"
+                        },
+                        "field_type": {
+                          "name": "number",
+                          "description": "Outbound message high water mark",
+                          "kind": "Primitive",
+                          "fields": null,
+                          "variants": null,
+                          "base_type": null,
+                          "protocol_type": "number"
+                        },
+                        "required": true,
+                        "description": "Outbound message high water mark",
+                        "default_value": null
+                      },
+                      {
+                        "key": {
+                          "Named": "type"
+                        },
+                        "field_type": {
+                          "name": "string",
+                          "description": "Type of notification",
+                          "kind": "Primitive",
+                          "fields": null,
+                          "variants": null,
+                          "base_type": null,
+                          "protocol_type": "string"
+                        },
+                        "required": true,
+                        "description": "Type of notification",
+                        "default_value": null
+                      }
+                    ],
+                    "variants": null,
+                    "base_type": null,
+                    "protocol_type": "object",
+                    "type_identity": "GetZmqNotificationsResultItem"
+                  },
+                  "required": true,
+                  "description": "",
+                  "default_value": null
+                }
+              ],
+              "variants": null,
+              "base_type": null,
+              "protocol_type": "array",
+              "type_identity": "getzmqnotifications__array__result__always"
+            },
+            "category": "zmq",
+            "access_level": "Public",
+            "requires_private_keys": false,
+            "version_added": "33"
+          }
+        },
+        {
+          "RpcMethod": {
             "name": "help",
             "description": "List all commands, or get help for a specified command.",
             "params": [

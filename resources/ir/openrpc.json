@@ -10982,6 +10982,41 @@
       "x-bitcoin-category": "wallet"
     },
     {
+      "name": "getzmqnotifications",
+      "description": "Returns information about the active ZeroMQ notifications.",
+      "params": [],
+      "result": {
+        "name": "result",
+        "schema": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "description": "Type of notification"
+              },
+              "address": {
+                "type": "string",
+                "description": "Address of the publisher"
+              },
+              "hwm": {
+                "type": "number",
+                "description": "Outbound message high water mark"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "type",
+              "address",
+              "hwm"
+            ]
+          }
+        }
+      },
+      "x-bitcoin-category": "zmq"
+    },
+    {
       "name": "help",
       "description": "List all commands, or get help for a specified command.",
       "params": [
