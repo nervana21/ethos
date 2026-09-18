@@ -162,7 +162,7 @@ corpus-pull:
 schema-oracle-test:
   cargo test -p ethos-analysis --lib schema_oracle
   cargo test -p ethos-analysis --test test_schema_oracle
-  cargo test -p ethos-schema-oracle --lib
+  cargo test --manifest-path compiler/schema-oracle/Cargo.toml --lib
   cargo test --manifest-path compiler/fuzz/Cargo.toml --lib schema_oracle_cov
 
 # Live regtest smoke: host corpus bitcoind (IR-matched) + Docker schema-oracle

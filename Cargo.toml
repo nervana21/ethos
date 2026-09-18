@@ -22,13 +22,14 @@ members = [
     "compiler/config",
     "compiler/fuzzctl",
     "compiler/pipeline",
-    "compiler/schema-oracle",
     "compiler/semantics",
     "primitives/*",
 ]
 exclude = [
     "corpus/",
     "compiler/fuzz",
+    # Sibling path dep on ../ethos-bitcoind (absent in CI checkout).
+    "compiler/schema-oracle",
 ]
 resolver = "2"
 
