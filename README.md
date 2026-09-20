@@ -1,40 +1,21 @@
 [![License: CC0-1.0](https://img.shields.io/badge/license-CC0--1.0-blue)](LICENSE)
+[![crates.io](https://img.shields.io/crates/v/ethos-bitcoind)](https://crates.io/crates/ethos-bitcoind)
+[![Docs.rs](https://img.shields.io/docsrs/ethos-bitcoind)](https://docs.rs/ethos-bitcoind)
 
-# Ethos
 
-A formal RPC description for type-safe Rust clients
+## What's Ethos?
 
-## Why Ethos?
+Bitcoin Core ships a machine-readable [OpenRPC](resources/ir/openrpc.json) dump of its JSON-RPC surface and Ethos converts that dump into a strongly-typed Rust client, [`ethos-bitcoind`](https://crates.io/crates/ethos-bitcoind).
 
-Recent [discussion](https://delvingbitcoin.org/t/the-future-of-the-bitcoin-core-gui/2253/17) has suggested a renewed interest in a formal description of the [RPC API](https://github.com/bitcoin/bitcoin/issues/29912) surface. The Bitcoin Core RPC surface is the predominant means through which external clients query the blockchain. As tooling continues to depend on RPC behavior, the need for and benefits from a behavioral specification are likely to increase.
+## Example
 
-Ethos and its generated [outputs](https://crates.io/crates/ethos-bitcoind) are a proof of concept for the capabilities of any such [specification](https://github.com/willcl-ark/bitcoin-rpc-web/blob/master/assets/openrpc.json).
-
-## Architecture
-
-[OpenRPC](resources/ir/openrpc.json) → [IR](resources/ir/bitcoin.ir.json) → [codegen](https://crates.io/crates/ethos-bitcoind)
-
-## Getting Started
-
-### Prerequisites
-
-1. **Rust** (edition 2021, rust-version 1.70+)
-2. **just** command runner (install with `cargo install just`)
-3. Protocol executable (for integration tests): `bitcoind` (Bitcoin Core)
-
-### Quick Start
-
-Run the complete code generation workflow:
-```bash
-just generate
-```
-
-This will generate a Bitcoin Core client library from the IR file (`resources/ir/bitcoin.ir.json`).
-
+[Here's](https://github.com/nervana21/Floresta/tree/ethos) a concrete example, using Floresta, for instance.
 
 ## Contributing
 
 Contributors are warmly welcome, see [CONTRIBUTING.md](CONTRIBUTING.md).
+
+The highest leverage help is usually reviewing open Bitcoin Core PRs [here](https://github.com/bitcoin/bitcoin/pulls?q=is%3Apr+state%3Aopen+label%3ARPC%2FREST%2FZMQ). Consider opening OpenRPC fidelity patches against Bitcoin Core if the dump can be improved.
 
 ## License
 
