@@ -2762,7 +2762,7 @@
           "required": false,
           "schema": {
             "type": "string",
-            "default": "DEFAULT for Taproot, ALL otherwise"
+            "x-bitcoin-default-hint": "DEFAULT for Taproot, ALL otherwise"
           },
           "description": "The signature hash type to sign with if not specified by the PSBT. Must be one of\n       \"DEFAULT\"\n       \"ALL\"\n       \"NONE\"\n       \"SINGLE\"\n       \"ALL|ANYONECANPAY\"\n       \"NONE|ANYONECANPAY\"\n       \"SINGLE|ANYONECANPAY\""
         },
@@ -6600,7 +6600,7 @@
           "schema": {
             "type": "string",
             "pattern": "^[0-9a-fA-F]+$",
-            "default": "hash of current chain tip"
+            "x-bitcoin-default-hint": "hash of current chain tip"
           },
           "description": "The block hash at which to query deployment state"
         }
@@ -13888,7 +13888,7 @@
               },
               "include_watching": {
                 "type": "boolean",
-                "default": "false",
+                "default": false,
                 "description": "(DEPRECATED) No longer used"
               },
               "inputs": {
@@ -14993,7 +14993,7 @@
           "required": false,
           "schema": {
             "type": "string",
-            "default": "DEFAULT for Taproot, ALL otherwise"
+            "x-bitcoin-default-hint": "DEFAULT for Taproot, ALL otherwise"
           },
           "description": "The signature hash type. Must be one of:\n       \"DEFAULT\"\n       \"ALL\"\n       \"NONE\"\n       \"SINGLE\"\n       \"ALL|ANYONECANPAY\"\n       \"NONE|ANYONECANPAY\"\n       \"SINGLE|ANYONECANPAY\"\n"
         }
@@ -15140,7 +15140,7 @@
           "required": false,
           "schema": {
             "type": "string",
-            "default": "DEFAULT for Taproot, ALL otherwise"
+            "x-bitcoin-default-hint": "DEFAULT for Taproot, ALL otherwise"
           },
           "description": "The signature hash type. Must be one of\n       \"DEFAULT\"\n       \"ALL\"\n       \"NONE\"\n       \"SINGLE\"\n       \"ALL|ANYONECANPAY\"\n       \"NONE|ANYONECANPAY\"\n       \"SINGLE|ANYONECANPAY\""
         }
@@ -16473,7 +16473,7 @@
           "required": false,
           "schema": {
             "type": "string",
-            "default": "DEFAULT for Taproot, ALL otherwise"
+            "x-bitcoin-default-hint": "DEFAULT for Taproot, ALL otherwise"
           },
           "description": "The signature hash type to sign with if not specified by the PSBT. Must be one of\n       \"DEFAULT\"\n       \"ALL\"\n       \"NONE\"\n       \"SINGLE\"\n       \"ALL|ANYONECANPAY\"\n       \"NONE|ANYONECANPAY\"\n       \"SINGLE|ANYONECANPAY\""
         },
