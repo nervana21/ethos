@@ -32,6 +32,15 @@ patch-openrpc-fidelity input="resources/ir/openrpc.json":
 openrpc-type-fidelity-gate input="resources/ir/openrpc.json" report="resources/reports/openrpc_type_fidelity_report.json":
     cargo run {{RELEASE}} -p ethos-adapters --bin openrpc_type_fidelity_audit -- {{input}} --json-report {{report}}
 
+# Strict Draft 7 schema keyword allowlist audit (unknown keyword / invalid schema = hard fail).
+# Soft: `default` that fails its own schema prints as Warning.
+openrpc-schema-keyword-audit input="resources/ir/openrpc.json" report="":
+    @if [ -z "{{report}}" ]; then \
+        cargo run {{RELEASE}} -p ethos-adapters --bin openrpc_schema_keyword_audit -- {{input}}; \
+    else \
+        cargo run {{RELEASE}} -p ethos-adapters --bin openrpc_schema_keyword_audit -- {{input}} --json-report {{report}}; \
+    fi
+
 # Generate client from IR. Set output_path to write into a repo (e.g. ../ethos-bitcoind); use version for a pinned release.
 # Extra arguments (e.g. --exclude-hidden-rpcs) are forwarded to the pipeline and applied before codegen.
 # Examples:
@@ -152,6 +161,7 @@ corpus-pull:
 [group('ci')]
 @sane: lint
   just openrpc-type-fidelity-gate
+  just openrpc-schema-keyword-audit
   # Match CI: --workspace required (default member is root ethos only).
   cargo test --workspace --quiet --all-targets --no-default-features
   cargo test --workspace --quiet --all-targets --all-features
@@ -206,6 +216,7 @@ examples:
     @echo "  just patch-openrpc-fidelity        # No-op after Core fidelity dump refresh (recipe compatibility)"
     @echo "  just process-openrpc resources/ir/openrpc.json resources/ir/bitcoin.ir.json"
     @echo "  just openrpc-type-fidelity-gate   # Enforce schema fidelity checks and emit JSON report"
+    @echo "  just openrpc-schema-keyword-audit # Draft 7 keyword allowlist + default warnings"
     @echo "  just process-openrpc-and-generate ../ethos-bitcoind   # OpenRPC → IR → generate into repo"
     @echo "  STAGE_DOWNSTREAM=1 just process-openrpc-and-generate ../ethos-bitcoind {{LATEST_VERSION}}   # …then stage + ethos HEAD subject as suggested commit"
     @echo "  just refresh-openrpc     # Core build → dump → openrpc.json + bitcoin.ir.json (no codegen)"

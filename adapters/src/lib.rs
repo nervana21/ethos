@@ -14,6 +14,8 @@
 pub mod bitcoin_core {
     /// Bitcoin Core OpenRPC converter and version filtering (openrpc.json / getopenrpcinfo -> IR)
     pub mod openrpc;
+    /// Strict Draft 7 schema keyword allowlist audit (`openrpc_schema_keyword_audit` bin).
+    pub mod openrpc_schema_audit;
     mod openrpc_type_disambiguation;
     /// Bitcoin Core type definitions and utilities
     pub mod types;

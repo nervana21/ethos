@@ -14,6 +14,7 @@ normalization = { package = "ethos-normalization", version = "0.1.0", path = "..
 path = { package = "ethos-path", version = "0.1.0", path = "../primitives/path" }
 semantics = { package = "ethos-semantics", version = "0.1.0", path = "../compiler/semantics" }
 plugins = { package = "ethos-plugins", version = "0.1.0", path = "../primitives/plugins" }
+jsonschema = { version = "0.56", default-features = false }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0.145"
 thiserror = "2.0.17"
@@ -26,6 +27,10 @@ path = "src/bin/process_bitcoin_openrpc.rs"
 [[bin]]
 name = "openrpc_type_fidelity_audit"
 path = "src/bin/openrpc_type_fidelity_audit.rs"
+
+[[bin]]
+name = "openrpc_schema_keyword_audit"
+path = "src/bin/openrpc_schema_keyword_audit.rs"
 
 [features]
 default = ["bitcoin-core", "runtime-backend"]
