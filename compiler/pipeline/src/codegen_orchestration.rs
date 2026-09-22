@@ -151,7 +151,11 @@ fn apply_suggested_mappings(
 ///
 /// * `out_dir` - The output directory to write generated code to
 /// * `compiler_ctx` - The compiler context containing the blueprint with semantic analysis results
-pub fn generate_into(out_dir: &Path, compiler_ctx: &CompilerContext) -> Result<(), PipelineError> {
+pub fn generate_into(
+    out_dir: &Path,
+    compiler_ctx: &CompilerContext,
+    openrpc_document: Option<Value>,
+) -> Result<(), PipelineError> {
     // Set up directory structure
     fs::create_dir_all(out_dir)?;
 
@@ -201,6 +205,7 @@ pub fn generate_into(out_dir: &Path, compiler_ctx: &CompilerContext) -> Result<(
         .used_external_symbols(Arc::new(UsedExternalSymbols::new()))
         .diagnostics(compiler_ctx.diagnostics.clone())
         .output_dir(out_dir.to_path_buf())
+        .openrpc_document(openrpc_document)
         .build()?;
 
     // Initialize the global recorder hook with the context's collector

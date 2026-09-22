@@ -54,4 +54,6 @@ tempfile = { version = "3.23.0", optional = true }
 thiserror = { version = "2.0.17", optional = true }
 tokio = { version = "1.49", features = ["io-util", "macros", "net", "process", "rt", "rt-multi-thread", "sync", "time"], optional = true }
 tracing = { version = "0.1.41", optional = true }
+# Optional OpenRPC Draft 7 wire validation (feature = "schema-validate")
+jsonschema = { version = "0.56", default-features = false, optional = true }
 "#;

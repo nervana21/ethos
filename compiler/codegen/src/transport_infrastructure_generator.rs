@@ -91,6 +91,8 @@ fn emit_error_enum(code: &mut String) {
              #[error(\"Error parsing rpc response: {{0}}\")] Parse(String),\n\
              /// Maximum retries exceeded\n\
              #[error(\"Max retries {{0}} exceeded\")] MaxRetriesExceeded(u8),\n\
+             /// OpenRPC JSON Schema validation failure (feature `schema-validate`)\n\
+             #[error(\"Schema validation: {{0}}\")] Schema(String),\n\
          }}\n"
     )
     .expect("Failed to write error enum");
@@ -188,7 +190,13 @@ fn emit_transport_ext_impl(code: &mut String) {
         "impl<T: TransportTrait> TransportExt for T {{\n\
              fn call<'a, T2: serde::de::DeserializeOwned>(&'a self, method: &'a str, params: &'a [Value]) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<T2, TransportError>> + Send + 'a>> {{\n\
                  Box::pin(async move {{\n\
+                     #[cfg(feature = \"schema-validate\")]\n\
+                     crate::transport::wire_schema::validate_params(method, params)\n\
+                         .map_err(TransportError::Schema)?;\n\
                      let result = self.send_request(method, params).await?;\n\
+                     #[cfg(feature = \"schema-validate\")]\n\
+                     crate::transport::wire_schema::validate_result(method, &result)\n\
+                         .map_err(TransportError::Schema)?;\n\
                      Ok(serde_json::from_value(result)?)\n\
                  }})\n\
              }}\n\
@@ -479,6 +487,8 @@ fn emit_unix_socket_error_enum(code: &mut String) {
              #[error(\"RPC error: {{0}}\")] Rpc(String),\n\
              /// Network connection error\n\
              #[error(\"Connection error: {{0}}\")] ConnectionError(String),\n\
+             /// OpenRPC JSON Schema validation failure (feature `schema-validate`)\n\
+             #[error(\"Schema validation: {{0}}\")] Schema(String),\n\
          }}\n"
     )
     .expect("Failed to write unix socket error enum");

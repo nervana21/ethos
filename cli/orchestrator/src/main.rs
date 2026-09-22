@@ -32,6 +32,7 @@ async fn main() {
         println!("    --version <version>           Override version (e.g., v30.2.11)");
         println!("    --output <path>               Write generated crate to <path> (e.g. a separate git repo). Preserves .git for easier diff review.");
         println!("    --exclude-hidden-rpcs         Do not generate code for hidden/testing-only RPCs (default: include them).");
+        println!("    --openrpc <path>              OpenRPC dump for schema-validate wire schemas (default: resources/ir/openrpc.json).");
         println!();
         println!("EXAMPLES:");
         println!("    ethos-cli pipeline --input resources/ir/bitcoin.ir.json --implementation bitcoin_core");
@@ -176,8 +177,20 @@ async fn main() {
             std::process::exit(1);
         }
 
+        let openrpc_path = args
+            .iter()
+            .position(|a| a == "--openrpc")
+            .and_then(|i| args.get(i + 1))
+            .map(PathBuf::from);
+
         // Run compilation with the loaded IR
-        if let Err(e) = compile_with_ir(ir, implementation, &protocol_version, &crate_dir) {
+        if let Err(e) = compile_with_ir(
+            ir,
+            implementation,
+            &protocol_version,
+            &crate_dir,
+            openrpc_path.as_deref(),
+        ) {
             eprintln!("IR compilation failed: {}", e);
             std::process::exit(1);
         }
@@ -214,9 +227,11 @@ fn compile_with_ir(
     implementation: Implementation,
     version: &ProtocolVersion,
     output_dir: &std::path::Path,
+    openrpc_path: Option<&std::path::Path>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     use path::find_project_root;
     use pipeline::codegen_orchestration::{analyze_implementation, generate_into};
+    use pipeline::orchestration::load_openrpc_document;
     use pipeline::project_setup::setup_project_files;
     use pipeline::protocol_compiler::EthosCompiler;
     use pipeline::template_management::create_source_directory_with_templates;
@@ -252,8 +267,9 @@ fn compile_with_ir(
     let project_root = find_project_root()?;
     let compiler_ctx = analyze_implementation(implementation, ir, version, project_root)?;
 
-    // Generate code
-    generate_into(&src_dir, &compiler_ctx)?;
+    // Generate code (embed OpenRPC wire schemas when available)
+    let openrpc_document = load_openrpc_document(openrpc_path)?;
+    generate_into(&src_dir, &compiler_ctx, openrpc_document)?;
 
     println!("Compilation completed successfully.");
     Ok(())

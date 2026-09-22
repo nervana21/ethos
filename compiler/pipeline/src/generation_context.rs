@@ -10,6 +10,7 @@ use std::sync::{Arc, Mutex};
 use analysis::CompilerDiagnostics;
 use codegen::generators::versioned_registry::VersionedGeneratorRegistry;
 use ir::{ProtocolIR, RpcDef};
+use serde_json::Value;
 use types::Implementation;
 
 use crate::PipelineError;
@@ -30,6 +31,8 @@ pub struct GenerationContext {
     pub versioned_registry: VersionedGeneratorRegistry,
     /// The base output directory for generated files
     pub base_output_dir: PathBuf,
+    /// Optional OpenRPC document used to emit `schema-validate` wire schemas.
+    pub openrpc_document: Option<Value>,
 }
 
 impl GenerationContext {
@@ -73,6 +76,8 @@ pub struct GenerationContextBuilder {
     versioned_registry: Option<VersionedGeneratorRegistry>,
     /// The base output directory for generated files
     base_output_dir: Option<PathBuf>,
+    /// Optional OpenRPC document for wire schema emission
+    openrpc_document: Option<Value>,
 }
 
 impl GenerationContextBuilder {
@@ -118,6 +123,12 @@ impl GenerationContextBuilder {
         self
     }
 
+    /// Set the OpenRPC document used for wire schema registry emission.
+    pub fn openrpc_document(mut self, document: Option<Value>) -> Self {
+        self.openrpc_document = document;
+        self
+    }
+
     /// Build the GenerationContext
     pub fn build(self) -> Result<GenerationContext, PipelineError> {
         Ok(GenerationContext {
@@ -142,6 +153,7 @@ impl GenerationContextBuilder {
             base_output_dir: self
                 .base_output_dir
                 .ok_or_else(|| PipelineError::Message("base_output_dir is required".to_string()))?,
+            openrpc_document: self.openrpc_document,
         })
     }
 }

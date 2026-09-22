@@ -5,6 +5,7 @@
 use std::fmt::Write as _;
 use std::path::PathBuf;
 
+use adapters::bitcoin_core::openrpc_schema_validate::WireSchemaRegistry;
 use codegen::{
     write_generated, CodeGenerator, MethodWrapperGenerator, TransportInfrastructureGenerator,
 };
@@ -34,10 +35,21 @@ impl ModuleGenerator for TransportModuleGenerator {
         // Generate RPC client from template
         let rpc_client = self.generate_rpc_client(&ctx.transport_protocol())?;
 
+        // Wire schema registry for optional `schema-validate` feature.
+        let wire_schema = match &ctx.openrpc_document {
+            Some(doc) => {
+                let registry = WireSchemaRegistry::from_openrpc_document(doc)
+                    .map_err(PipelineError::Message)?;
+                registry.emit_generated_module_source()
+            }
+            None => STUB_WIRE_SCHEMA.to_owned(),
+        };
+
         // Combine all transport files
         let mut all_files = tx_files;
         all_files.extend(core_files);
         all_files.push(("rpc_client.rs".to_string(), rpc_client));
+        all_files.push(("wire_schema.rs".to_string(), wire_schema));
 
         Ok(all_files)
     }
@@ -52,8 +64,10 @@ impl ModuleGenerator for TransportModuleGenerator {
         let (method_files, infrastructure_files): (Vec<_>, Vec<_>) =
             files.iter().partition(|(name, _)| {
                 // Method files are categorized files (blockchain.rs, wallet.rs, etc.)
-                // Infrastructure files are core.rs, rpc_client.rs, etc.
-                !name.contains("core") && !name.contains("rpc_client")
+                // Infrastructure files are core.rs, rpc_client.rs, wire_schema.rs, etc.
+                !name.contains("core")
+                    && !name.contains("rpc_client")
+                    && !name.contains("wire_schema")
             });
 
         // Convert references to owned values
@@ -75,6 +89,8 @@ impl ModuleGenerator for TransportModuleGenerator {
         writeln!(content, "pub use core::{{TransportTrait, DefaultTransport, TransportError}};")?;
         writeln!(content, "pub mod rpc_client;")?;
         writeln!(content, "pub use rpc_client::RpcClient;")?;
+        writeln!(content, "#[cfg(feature = \"schema-validate\")]")?;
+        writeln!(content, "pub mod wire_schema;")?;
         writeln!(content, "pub mod methods;")?;
         std::fs::write(&mod_rs, content)?;
 
@@ -114,3 +130,23 @@ impl TransportModuleGenerator {
         Ok(template.replace("{{TRANSPORT_CONSTRUCTOR}}", transport_constructor))
     }
 }
+
+const STUB_WIRE_SCHEMA: &str = r#"//! Stub OpenRPC wire schema registry (no OpenRPC dump supplied at codegen).
+//!
+//! Enabled with feature `schema-validate`. Validation is a no-op until codegen is re-run
+//! with an OpenRPC document (`--openrpc` / default `resources/ir/openrpc.json`).
+
+#![cfg(feature = "schema-validate")]
+
+use serde_json::Value;
+
+/// No-op: OpenRPC schemas were not embedded at codegen time.
+pub fn validate_params(_method: &str, _params: &[Value]) -> Result<(), String> {
+    Ok(())
+}
+
+/// No-op: OpenRPC schemas were not embedded at codegen time.
+pub fn validate_result(_method: &str, _result: &Value) -> Result<(), String> {
+    Ok(())
+}
+"#;
