@@ -38,7 +38,7 @@ documentation = "https://docs.rs/{}"
 /// The `[dependencies]` section for generated client crates.
 ///
 /// Types-only consumers enable no `client` feature and skip tokio/tempfile/transport deps.
-/// Keep in sync with any RUSTSEC pins (e.g. bytes >=1.11.1 for RUSTSEC-2026-0007).
+/// Keep in sync with any RUSTSEC pins (e.g. bytes >=1.11.1, rustls >=0.23.45).
 pub const GENERATED_CRATE_DEPENDENCIES: &str = r#"[dependencies]
 bitcoin = { version = "0.32.8", default-features = false, features = ["std", "serde"] }
 bitcoin-units = { version = "0.3.0", features = ["serde"] }
@@ -50,6 +50,7 @@ async-trait = { version = "0.1.89", optional = true }
 base64 = { version = "0.22", optional = true }
 bitreq = { version = "0.3.7", default-features = false, features = ["async-https"], optional = true }
 bytes = { version = ">=1.11.1", optional = true }  # RUSTSEC-2026-0007: Integer overflow in BytesMut::reserve (tokio transitive)
+rustls = { version = ">=0.23.45", optional = true }  # RUSTSEC-2026-0285: TLS 1.3 handshake across encryption levels (bitreq transitive)
 tempfile = { version = "3.23.0", optional = true }
 thiserror = { version = "2.0.17", optional = true }
 tokio = { version = "1.49", features = ["io-util", "macros", "net", "process", "rt", "rt-multi-thread", "sync", "time"], optional = true }
