@@ -70,7 +70,7 @@ pub fn generate_cargo_toml(
     // Types-only is always available (empty feature). Client pulls optional runtime deps.
     cargo_content.push_str("types = []\n");
     cargo_content.push_str(
-        "client = [\"dep:async-trait\", \"dep:base64\", \"dep:bitreq\", \"dep:bytes\", \"dep:tempfile\", \"dep:thiserror\", \"dep:tokio\", \"dep:tracing\"]\n",
+        "client = [\"dep:async-trait\", \"dep:base64\", \"dep:bitreq\", \"dep:bytes\", \"dep:rustls\", \"dep:tempfile\", \"dep:thiserror\", \"dep:tokio\", \"dep:tracing\"]\n",
     );
 
     // Emit feature flags
