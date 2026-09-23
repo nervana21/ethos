@@ -16,6 +16,8 @@ pub mod bitcoin_core {
     pub mod openrpc;
     /// Strict Draft 7 schema keyword allowlist audit (`openrpc_schema_keyword_audit` bin).
     pub mod openrpc_schema_audit;
+    /// Runtime Draft 7 wire schema validation against OpenRPC dumps.
+    pub mod openrpc_schema_validate;
     mod openrpc_type_disambiguation;
     /// Bitcoin Core type definitions and utilities
     pub mod types;
