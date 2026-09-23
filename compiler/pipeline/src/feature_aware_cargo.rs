@@ -91,6 +91,8 @@ pub fn generate_cargo_toml(
 
     // Add serde-deny-unknown-fields feature
     cargo_content.push_str("serde-deny-unknown-fields = []\n");
+    // Runtime Draft 7 schema checks on TransportExt::call (params + result).
+    cargo_content.push_str("schema-validate = [\"client\", \"dep:jsonschema\"]\n");
 
     let cargo_path = output_dir
         .parent()

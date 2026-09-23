@@ -69,7 +69,31 @@ use tracing::warn;\n"
     .expect("Failed to write imports");
 }
 
+fn emit_schema_error_type(code: &mut String) {
+    code.push_str(
+        r#"/// OpenRPC JSON Schema validation failure (feature `schema-validate`).
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub struct SchemaError {
+    /// RPC method name.
+    pub method: String,
+    /// JSON Schema instance path (`root` when empty).
+    pub path: String,
+    /// Human-readable reason, including params vs result.
+    pub message: String,
+}
+
+impl std::fmt::Display for SchemaError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}: {} at {}", self.method, self.message, self.path)
+    }
+}
+
+"#,
+    );
+}
+
 fn emit_error_enum(code: &mut String) {
+    emit_schema_error_type(code);
     writeln!(
         code,
         "/// Errors that can occur during RPC transport operations\n\
@@ -91,6 +115,8 @@ fn emit_error_enum(code: &mut String) {
              #[error(\"Error parsing rpc response: {{0}}\")] Parse(String),\n\
              /// Maximum retries exceeded\n\
              #[error(\"Max retries {{0}} exceeded\")] MaxRetriesExceeded(u8),\n\
+             /// OpenRPC JSON Schema validation failure (feature `schema-validate`)\n\
+             #[error(\"Schema validation: {{0}}\")] Schema(SchemaError),\n\
          }}\n"
     )
     .expect("Failed to write error enum");
@@ -188,7 +214,13 @@ fn emit_transport_ext_impl(code: &mut String) {
         "impl<T: TransportTrait> TransportExt for T {{\n\
              fn call<'a, T2: serde::de::DeserializeOwned>(&'a self, method: &'a str, params: &'a [Value]) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<T2, TransportError>> + Send + 'a>> {{\n\
                  Box::pin(async move {{\n\
+                     #[cfg(feature = \"schema-validate\")]\n\
+                     crate::transport::wire_schema::validate_params(method, params)\n\
+                         .map_err(TransportError::Schema)?;\n\
                      let result = self.send_request(method, params).await?;\n\
+                     #[cfg(feature = \"schema-validate\")]\n\
+                     crate::transport::wire_schema::validate_result(method, &result)\n\
+                         .map_err(TransportError::Schema)?;\n\
                      Ok(serde_json::from_value(result)?)\n\
                  }})\n\
              }}\n\
@@ -425,6 +457,9 @@ impl TransportTrait for DefaultTransport {{
         let authorization = self.authorization.clone();
         let timeout_secs = self.timeout_secs;
         Box::pin(async move {{
+            #[cfg(feature = \"schema-validate\")]
+            crate::transport::wire_schema::validate_batch_requests(bodies)
+                .map_err(TransportError::Schema)?;
             let bodies_vec: Vec<Value> = bodies.to_vec();
             let body = serde_json::to_vec(&bodies_vec).map_err(|e| TransportError::Json(e.to_string()))?;
             let mut req = post(&url)
@@ -439,6 +474,9 @@ impl TransportTrait for DefaultTransport {{
             }}
             let raw = response.as_str().map_err(|e: BitreqError| TransportError::Parse(e.to_string()))?;
             let v: Vec<Value> = serde_json::from_str(raw).map_err(|e| TransportError::Parse(e.to_string()))?;
+            #[cfg(feature = \"schema-validate\")]
+            crate::transport::wire_schema::validate_batch_responses(bodies, &v)
+                .map_err(TransportError::Schema)?;
             Ok(v)
         }})
     }}
@@ -466,6 +504,7 @@ use tokio::net::UnixStream;\n"
 }
 
 fn emit_unix_socket_error_enum(code: &mut String) {
+    emit_schema_error_type(code);
     writeln!(
         code,
         "/// Errors that can occur during Unix socket RPC transport operations\n\
@@ -479,6 +518,8 @@ fn emit_unix_socket_error_enum(code: &mut String) {
              #[error(\"RPC error: {{0}}\")] Rpc(String),\n\
              /// Network connection error\n\
              #[error(\"Connection error: {{0}}\")] ConnectionError(String),\n\
+             /// OpenRPC JSON Schema validation failure (feature `schema-validate`)\n\
+             #[error(\"Schema validation: {{0}}\")] Schema(SchemaError),\n\
          }}\n"
     )
     .expect("Failed to write unix socket error enum");
@@ -590,6 +631,9 @@ fn emit_unix_socket_transport_trait_impl(code: &mut String) {
     ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<Vec<Value>, TransportError>> + Send + 'a>> {{
         let socket_path = self.socket_path.clone();
         Box::pin(async move {{
+            #[cfg(feature = \"schema-validate\")]
+            crate::transport::wire_schema::validate_batch_requests(bodies)
+                .map_err(TransportError::Schema)?;
             let mut stream = UnixStream::connect(&socket_path).await
                 .map_err(|e| TransportError::ConnectionError(format!(\"Failed to connect to socket {{:?}}: {{}}\", socket_path, e)))?;
 
@@ -629,6 +673,9 @@ fn emit_unix_socket_transport_trait_impl(code: &mut String) {
             let response = String::from_utf8_lossy(&response).to_string();
             let v: Vec<Value> = serde_json::from_str(&response)
                 .map_err(|e| TransportError::Json(e.to_string()))?;
+            #[cfg(feature = \"schema-validate\")]
+            crate::transport::wire_schema::validate_batch_responses(bodies, &v)
+                .map_err(TransportError::Schema)?;
             Ok(v)
         }})
     }}

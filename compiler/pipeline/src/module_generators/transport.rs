@@ -5,6 +5,7 @@
 use std::fmt::Write as _;
 use std::path::PathBuf;
 
+use adapters::bitcoin_core::openrpc_schema_validate::WireSchemaRegistry;
 use codegen::{
     write_generated, CodeGenerator, MethodWrapperGenerator, TransportInfrastructureGenerator,
 };
@@ -34,10 +35,27 @@ impl ModuleGenerator for TransportModuleGenerator {
         // Generate RPC client from template
         let rpc_client = self.generate_rpc_client(&ctx.transport_protocol())?;
 
+        // Wire schema registry for optional `schema-validate` feature.
+        // Dump is required: a silent no-op stub would make the feature a false gate.
+        let wire_schema = match &ctx.openrpc_document {
+            Some(doc) => {
+                let registry = WireSchemaRegistry::from_openrpc_document(doc)
+                    .map_err(PipelineError::Message)?;
+                registry.emit_generated_module_source()
+            }
+            None => {
+                return Err(PipelineError::Message(format!(
+                    "{} wire schema emit needs an OpenRPC dump (`--openrpc`, ETHOS_OPENRPC, or resources/ir/openrpc.json)",
+                    ctx.implementation.as_str()
+                )));
+            }
+        };
+
         // Combine all transport files
         let mut all_files = tx_files;
         all_files.extend(core_files);
         all_files.push(("rpc_client.rs".to_string(), rpc_client));
+        all_files.push(("wire_schema.rs".to_string(), wire_schema));
 
         Ok(all_files)
     }
@@ -52,8 +70,10 @@ impl ModuleGenerator for TransportModuleGenerator {
         let (method_files, infrastructure_files): (Vec<_>, Vec<_>) =
             files.iter().partition(|(name, _)| {
                 // Method files are categorized files (blockchain.rs, wallet.rs, etc.)
-                // Infrastructure files are core.rs, rpc_client.rs, etc.
-                !name.contains("core") && !name.contains("rpc_client")
+                // Infrastructure files are core.rs, rpc_client.rs, wire_schema.rs, etc.
+                !name.contains("core")
+                    && !name.contains("rpc_client")
+                    && !name.contains("wire_schema")
             });
 
         // Convert references to owned values
@@ -72,9 +92,14 @@ impl ModuleGenerator for TransportModuleGenerator {
         let mod_rs = output_dir.join("mod.rs");
         let mut content = String::new();
         writeln!(content, "pub mod core;")?;
-        writeln!(content, "pub use core::{{TransportTrait, DefaultTransport, TransportError}};")?;
+        writeln!(
+            content,
+            "pub use core::{{TransportTrait, DefaultTransport, TransportError, SchemaError}};"
+        )?;
         writeln!(content, "pub mod rpc_client;")?;
         writeln!(content, "pub use rpc_client::RpcClient;")?;
+        writeln!(content, "#[cfg(feature = \"schema-validate\")]")?;
+        writeln!(content, "pub mod wire_schema;")?;
         writeln!(content, "pub mod methods;")?;
         std::fs::write(&mod_rs, content)?;
 
