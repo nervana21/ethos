@@ -165,10 +165,45 @@ pub fn compile_from_ir(
     let compiler_ctx = analyze_implementation(implementation, protocol_ir, version, ir_path)?;
 
     // Generate code
-    generate_into(&src_dir, &compiler_ctx)?;
+    generate_into(&src_dir, &compiler_ctx, load_openrpc_document(None)?)?;
 
     // Match `cargo rbmt fmt`: nightly + crate `.rustfmt.toml` (written in setup).
     codegen::format_crate(&crate_root);
 
     Ok(())
+}
+
+/// Load an OpenRPC dump for wire-schema emission.
+///
+/// Path precedence: explicit `path`, else `ETHOS_OPENRPC`, else
+/// `{project_root}/resources/ir/openrpc.json` when present.
+pub fn load_openrpc_document(
+    path: Option<&std::path::Path>,
+) -> Result<Option<serde_json::Value>, PipelineError> {
+    let (resolved, required) = if let Some(path) = path {
+        (Some(path.to_path_buf()), true)
+    } else if let Ok(env_path) = std::env::var("ETHOS_OPENRPC") {
+        (Some(std::path::PathBuf::from(env_path)), true)
+    } else {
+        (find_project_root().ok().map(|root| root.join("resources/ir/openrpc.json")), false)
+    };
+    let Some(path) = resolved else {
+        return Ok(None);
+    };
+    if !path.exists() {
+        if required {
+            return Err(PipelineError::Message(format!(
+                "OpenRPC dump not found: {}",
+                path.display()
+            )));
+        }
+        return Ok(None);
+    }
+    let raw = fs::read_to_string(&path).map_err(|e| {
+        PipelineError::Message(format!("failed to read OpenRPC {}: {e}", path.display()))
+    })?;
+    let doc = serde_json::from_str(&raw).map_err(|e| {
+        PipelineError::Message(format!("failed to parse OpenRPC {}: {e}", path.display()))
+    })?;
+    Ok(Some(doc))
 }
