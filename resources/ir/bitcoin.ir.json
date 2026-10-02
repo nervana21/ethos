@@ -212,7 +212,7 @@
                 "name": "connection_type",
                 "param_type": {
                   "name": "string",
-                  "description": "Type of connection to open (\"outbound-full-relay\", \"block-relay-only\", \"addr-fetch\", \"feeler\" or \"manual\").",
+                  "description": "Type of connection to open (\"outbound-full-relay\", \"block-relay-only\", \"addr-fetch\" or \"feeler\").",
                   "kind": "Primitive",
                   "fields": null,
                   "variants": null,
@@ -220,7 +220,7 @@
                   "protocol_type": "string"
                 },
                 "required": true,
-                "description": "Type of connection to open (\"outbound-full-relay\", \"block-relay-only\", \"addr-fetch\", \"feeler\" or \"manual\").",
+                "description": "Type of connection to open (\"outbound-full-relay\", \"block-relay-only\", \"addr-fetch\" or \"feeler\").",
                 "default_value": null
               },
               {
@@ -349,7 +349,7 @@
         {
           "RpcMethod": {
             "name": "addnode",
-            "description": "Attempts to add or remove a node from the addnode list.\nOr try a connection to a node once.\nNodes added using addnode (or -connect) are protected from DoS disconnection and IBD block stalling\ndisconnection, and are not required to be full nodes or support SegWit as other outbound peers are (though\nsuch peers will not be synced from).\nAddnode connections are limited to 8 at a time and are counted separately from the -maxconnections limit.",
+            "description": "Attempts to add or remove a node from the addnode list.\nOr try a connection to a node once.\nNodes added using addnode (or -connect) are protected from DoS disconnection and are not required to be\nfull nodes/support SegWit as other outbound peers are (though such peers will not be synced from).\nAddnode connections are limited to 8 at a time and are counted separately from the -maxconnections limit.",
             "params": [
               {
                 "name": "node",
@@ -9792,7 +9792,7 @@
                       },
                       "field_type": {
                         "name": "string",
-                        "description": "Selects which fee rate estimator to use.\n\"none\" returns the lower of the block policy and mempool estimates. If the mempool\nestimate is unavailable, it returns that error instead of falling back to the block\npolicy estimate; use \"block_policy\" in that case to get the block policy estimate.\n\"block_policy\" uses only the block policy fee rate estimator.\n\"mempool_policy\" uses only the mempool fee rate estimator.\nUnknown values are treated as \"none\".",
+                        "description": "Selects which fee rate estimator to use.\n\"auto\" (the default) combines both estimators, returning the lower of the block policy and\nmempool fee rate estimates. If the mempool fee rate estimator cannot produce an estimate, the\nblock policy fee rate estimate is returned instead. An error is returned only if the block\npolicy fee rate estimate is unavailable.\n\"block_policy\" uses only the block policy fee rate estimator.\n\"mempool_policy\" uses only the mempool fee rate estimator.",
                         "kind": "Primitive",
                         "fields": null,
                         "variants": null,
@@ -9800,7 +9800,7 @@
                         "protocol_type": "string"
                       },
                       "required": false,
-                      "description": "Selects which fee rate estimator to use.\n\"none\" returns the lower of the block policy and mempool estimates. If the mempool\nestimate is unavailable, it returns that error instead of falling back to the block\npolicy estimate; use \"block_policy\" in that case to get the block policy estimate.\n\"block_policy\" uses only the block policy fee rate estimator.\n\"mempool_policy\" uses only the mempool fee rate estimator.\nUnknown values are treated as \"none\".",
+                      "description": "Selects which fee rate estimator to use.\n\"auto\" (the default) combines both estimators, returning the lower of the block policy and\nmempool fee rate estimates. If the mempool fee rate estimator cannot produce an estimate, the\nblock policy fee rate estimate is returned instead. An error is returned only if the block\npolicy fee rate estimate is unavailable.\n\"block_policy\" uses only the block policy fee rate estimator.\n\"mempool_policy\" uses only the mempool fee rate estimator.",
                       "default_value": null
                     },
                     {
@@ -9894,7 +9894,7 @@
                   },
                   "field_type": {
                     "name": "string",
-                    "description": "the fee estimator used to produce the result (only present for successful estimates when fee_rate_estimator is \"none\")",
+                    "description": "the fee estimator used to produce the result (only present for successful estimates when fee_rate_estimator is \"auto\")",
                     "kind": "Primitive",
                     "fields": null,
                     "variants": null,
@@ -9902,7 +9902,7 @@
                     "protocol_type": "string"
                   },
                   "required": false,
-                  "description": "the fee estimator used to produce the result (only present for successful estimates when fee_rate_estimator is \"none\")",
+                  "description": "the fee estimator used to produce the result (only present for successful estimates when fee_rate_estimator is \"auto\")",
                   "default_value": null
                 },
                 {
@@ -22528,23 +22528,6 @@
               "description": "",
               "kind": "Object",
               "fields": [
-                {
-                  "key": {
-                    "Named": "bestblockhash"
-                  },
-                  "field_type": {
-                    "name": "hex",
-                    "description": "The hash of the current best block",
-                    "kind": "Primitive",
-                    "fields": null,
-                    "variants": null,
-                    "base_type": null,
-                    "protocol_type": "hex"
-                  },
-                  "required": true,
-                  "description": "The hash of the current best block",
-                  "default_value": null
-                },
                 {
                   "key": {
                     "Named": "bits"
@@ -36107,7 +36090,7 @@
         {
           "RpcMethod": {
             "name": "logging",
-            "description": "Gets and sets the logging configuration.\nWhen called without an argument, returns the list of categories with status that are currently being debug logged or not.\nWhen called with arguments, adds or removes categories from debug logging and return the lists above.\nThe arguments are evaluated in order \"include\", \"exclude\".\nIf an item is both included and excluded, it will thus end up being excluded.\nThe valid logging categories are: addrman, bench, blockstorage, cmpctblock, coindb, estimatefee, http, i2p, ipc, kernel, leveldb, mempool, mempoolrej, net, privatebroadcast, proxy, prune, qt, rand, reindex, rpc, scan, selectcoins, tor, txpackages, txreconciliation, validation, walletdb, zmq\nIn addition, the following are available as category names with special meanings:\n  - \"all\",  \"1\" : represent all logging categories.",
+            "description": "Gets and sets the logging configuration.\nWhen called without an argument, returns the list of categories with status that are currently being debug logged or not.\nWhen called with arguments, adds or removes categories from debug logging and return the lists above.\nThe arguments are evaluated in order \"include\", \"exclude\".\nIf an item is both included and excluded, it will thus end up being excluded.\nThe valid logging categories are: addrman, bench, blockstorage, cmpctblock, coindb, estimatefee, http, i2p, ipc, kernel, leveldb, mempool, mempoolrej, mining, net, privatebroadcast, proxy, prune, qt, rand, reindex, rpc, scan, selectcoins, tor, txpackages, txreconciliation, validation, walletdb, zmq\nIn addition, the following are available as category names with special meanings:\n  - \"all\",  \"1\" : represent all logging categories.",
             "params": [
               {
                 "name": "include",
@@ -40763,7 +40746,7 @@
         {
           "RpcMethod": {
             "name": "sendrawtransaction",
-            "description": "Submit a raw transaction (serialized, hex-encoded) to the network.\n\nIf -privatebroadcast is disabled, then the transaction will be put into the\nlocal mempool of the node and will be sent unconditionally to all currently\nconnected peers, so using sendrawtransaction for manual rebroadcast will degrade\nprivacy by leaking the transaction's origin, as nodes will normally not\nrebroadcast non-wallet transactions already in their mempool.\n\nIf -privatebroadcast is enabled, then the transaction will be sent only via\ndedicated, short-lived connections to Tor or I2P peers or IPv4/IPv6 peers\nvia the Tor network. This conceals the transaction's origin. The transaction\nwill only enter the local mempool when it is received back from the network.\nThe private broadcast queue is bounded: when it is full, this RPC fails and\nthe transaction is not scheduled, until an existing one completes or is\naborted. Use getprivatebroadcastinfo to inspect the queue and abortprivatebroadcast to abort.\n\nA specific exception, RPC_TRANSACTION_ALREADY_IN_UTXO_SET, may throw if the transaction cannot be added to the mempool.\n\nRelated RPCs: createrawtransaction, signrawtransactionwithkey",
+            "description": "Submit a raw transaction (serialized, hex-encoded) to the network.\n\nIf -privatebroadcast is disabled, then the transaction will be put into the\nlocal mempool of the node and will be sent unconditionally to all currently\nconnected peers, so using sendrawtransaction for manual rebroadcast will degrade\nprivacy by leaking the transaction's origin, as nodes will normally not\nrebroadcast non-wallet transactions already in their mempool.\n\nIf -privatebroadcast is enabled, then the transaction will be sent via\ndedicated, short-lived connections to Tor or I2P peers, or to IPv4/IPv6 peers\nvia the Tor network. This provides best-effort concealment of the transaction's origin.\nPrivate broadcast is experimental and may change in future releases.\nSubmission does not itself add the transaction to the local mempool; normal\nmempool acceptance and relay apply when it is received back from the network.\nThe private broadcast queue is bounded: when it is full, this RPC fails and\nthe transaction is not scheduled until an existing one completes or is\naborted. Use getprivatebroadcastinfo to inspect the queue and abortprivatebroadcast to abort.\n\nA specific exception, RPC_TRANSACTION_ALREADY_IN_UTXO_SET, may throw if the transaction cannot be added to the mempool.\n\nRelated RPCs: createrawtransaction, signrawtransactionwithkey",
             "params": [
               {
                 "name": "hexstring",
