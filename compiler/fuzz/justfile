@@ -47,7 +47,7 @@ docker-fuzz target duration="1h":
     @just fuzz-duration {{target}} {{duration}}
 
 examples:
-    @echo "Examples:"
+    @echo "Examples (run from compiler/fuzz; not root just):"
     @echo "  just box"
     @echo "  just schema-oracle-cov"
     @echo "  just schema-oracle-cov -- -max_total_time=60"

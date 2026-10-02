@@ -45,6 +45,6 @@ if oracle:
         print("  detail:", detail)
 else:
     print("--- no SchemaMismatch / DecodeFail yet ---")
-    print("next: just schema-oracle-fuzz-box && just schema-oracle-cov")
-    print("      just schema-oracle-fuzz -- --duration-secs 120")
+    print("next: (from compiler/fuzz) just box && just schema-oracle-cov")
+    print("      bash compiler/fuzz/scripts/run-schema-oracle-live.sh continuous --duration-secs 120")
 PY
