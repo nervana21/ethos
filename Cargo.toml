@@ -42,8 +42,8 @@ version = "0.1.0"
 [workspace.dependencies]
 bitcoin = { version = "0.32.8", features = ["serde"] }
 
-# Fast dev profile: incremental + opt-level 1 for quicker iteration on process-openrpc-and-generate.
-# Use with FAST=1: just process-openrpc-and-generate ...
+# Fast dev profile: incremental + opt-level 1 for quicker sync/client iteration.
+# Use with FAST=1 (default in justfile): just sync / just client / just check
 [profile.dev-fast]
 inherits = "dev"
 opt-level = 1

@@ -1,53 +1,64 @@
 # Ethos workspace justfile
+#
+# Public surface (three recipes):
+#   just sync     Core build, dump, IR, dump audits
+#   just client   pinned dump, codegen, schema-validate, core-test
+#   just check    lint, dump audits, workspace tests
 
 set positional-arguments
 
 NIGHTLY_VERSION := trim(read(justfile_directory() / "nightly-version"))
-
-_default:
-    @just --list
-
-# Use dev-fast by default (incremental + opt-level 1) for fast iteration; full release is slower to compile.
-# Set FAST=0 for full release builds (e.g. CI or when compiler runtime matters).
 RELEASE := if env_var_or_default('FAST', '1') == '1' { "--profile dev-fast" } else { "--release" }
 LATEST_VERSION := "v30.2.11"
 
-# Process OpenRPC document (or version) into canonical IR. Input = path to OpenRPC JSON or version (e.g. {{LATEST_VERSION}}) to extract from canonical IR.
-# Example: just process-openrpc resources/ir/openrpc.json  |  just process-openrpc {{LATEST_VERSION}} out.ir.json
-process-openrpc input output="":
+_default:
+    @echo "just sync | client | check"
+    @echo ""
+    @echo "  sync *flags     corpus bitcoind, openrpc.json, IR, dump audits"
+    @echo "  client *flags   pinned dump, ethos-bitcoind, core-test"
+    @echo "  check           lint, dump audits, workspace tests"
+    @echo ""
+    @echo "Flags for sync/client: --skip-build --skip-dump --skip-client --dance --stage --no-hidden"
+    @echo "Also: fmt lint docsrs corpus-pull"
+
+# --- public ---
+
+# Build corpus bitcoind, dump getopenrpcinfo, write IR, run dump audits. No codegen.
+sync *flags:
+    bash {{justfile_directory()}}/scripts/loop_openrpc.sh --skip-codegen --skip-client {{flags}}
+
+# From pinned dump: IR + audits + codegen + schema-validate + ethos-test-client core-test.
+# Typical after sync: just client --skip-build --skip-dump
+client *flags:
+    bash {{justfile_directory()}}/scripts/loop_openrpc.sh --skip-build --skip-dump {{flags}}
+
+# Ethos repo hygiene on the pinned dump. Not a Core PR surface check.
+check: lint
+    just _audit-fidelity
+    just _audit-keywords
+    cargo test --workspace --quiet --all-targets --no-default-features
+    cargo test --workspace --quiet --all-targets --all-features
+
+# --- private helpers (loop_openrpc.sh) ---
+
+_ir input output="":
     @if [ -z "{{output}}" ]; then \
         cargo run {{RELEASE}} -p ethos-adapters --bin process_bitcoin_openrpc -- {{input}}; \
     else \
         cargo run {{RELEASE}} -p ethos-adapters --bin process_bitcoin_openrpc -- {{input}} {{output}}; \
     fi
 
-# Historical fidelity overlays. Now a no-op: Core OpenRPC emits the former patches
-# (`x-bitcoin-*`). Kept so refresh recipes that still call this step stay green.
-patch-openrpc-fidelity input="resources/ir/openrpc.json":
-    python3 {{justfile_directory()}}/scripts/patch_openrpc_fidelity.py {{input}}
-
-# OpenRPC type-fidelity audit gate. Fails on P0 only (missing oneOf / discover RPCs).
-# P1/P2 (missing call-site enums, missing discriminator metadata, missing if/then) are advisory for upstream.
-# NUM as JSON Schema number is accepted; do not reintroduce integer_domain_modeled_as_number.
-openrpc-type-fidelity-gate input="resources/ir/openrpc.json" report="resources/reports/openrpc_type_fidelity_report.json":
+_audit-fidelity input="resources/ir/openrpc.json" report="resources/reports/openrpc_type_fidelity_report.json":
     cargo run {{RELEASE}} -p ethos-adapters --bin openrpc_type_fidelity_audit -- {{input}} --json-report {{report}}
 
-# Strict Draft 7 schema keyword allowlist audit (unknown keyword / invalid schema = hard fail).
-# Soft: `default` that fails its own schema prints as Warning.
-openrpc-schema-keyword-audit input="resources/ir/openrpc.json" report="":
+_audit-keywords input="resources/ir/openrpc.json" report="":
     @if [ -z "{{report}}" ]; then \
         cargo run {{RELEASE}} -p ethos-adapters --bin openrpc_schema_keyword_audit -- {{input}}; \
     else \
         cargo run {{RELEASE}} -p ethos-adapters --bin openrpc_schema_keyword_audit -- {{input}} --json-report {{report}}; \
     fi
 
-# Generate client from IR. Set output_path to write into a repo (e.g. ../ethos-bitcoind); use version for a pinned release.
-# Extra arguments (e.g. --exclude-hidden-rpcs) are forwarded to the pipeline and applied before codegen.
-# Examples:
-#   just generate-from-ir
-#   just generate-from-ir ../ethos-bitcoind {{LATEST_VERSION}}
-#   just generate-from-ir ../ethos-bitcoind {{LATEST_VERSION}} --exclude-hidden-rpcs
-generate-from-ir input_file="" output_path="" version="" *pipeline_flags:
+_codegen input_file="" output_path="" version="" *pipeline_flags:
     @set --; \
     [ -n "{{output_path}}" ] && set -- "$@" --output "{{output_path}}"; \
     [ -n "{{version}}" ] && set -- "$@" --version "{{version}}"; \
@@ -55,7 +66,6 @@ generate-from-ir input_file="" output_path="" version="" *pipeline_flags:
     set -- "$@" {{pipeline_flags}}; \
     cargo run {{RELEASE}} --package ethos-cli --bin ethos-compiler -- pipeline --implementation bitcoin_core "$@"
 
-# After codegen: stage everything in the downstream repo, write ethos HEAD's subject to `.git/SUGGESTED_COMMIT_MSG`, and copy that subject to the clipboard (macOS `pbcopy` only).
 _stage-downstream output_path:
     @bash -c 'set -euo pipefail; \
       ethos_root="{{justfile_directory()}}"; out="{{output_path}}"; \
@@ -82,51 +92,21 @@ _stage-downstream output_path:
       echo "Commit after review: git -C \"$out\" commit -e -F \"$msg_file\""; \
     '
 
-# Process OpenRPC → IR → generate client into repo.
-# Uses the default OpenRPC file; extra flags (e.g. --exclude-hidden-rpcs) are forwarded only to the pipeline (not to OpenRPC processing).
-# Set STAGE_DOWNSTREAM=1 to run `_stage-downstream` afterward.
-process-openrpc-and-generate output_path version="" *pipeline_flags:
-    just process-openrpc resources/ir/openrpc.json resources/ir/bitcoin.ir.json && just generate-from-ir resources/ir/bitcoin.ir.json {{output_path}} {{version}} {{pipeline_flags}}
-    @if [ "${STAGE_DOWNSTREAM:-0}" = 1 ]; then just _stage-downstream "{{output_path}}"; fi
+# --- misc ---
 
-# Build corpus bitcoind at checked-out commit → dump getopenrpcinfo → resources/ir/openrpc.json + bitcoin.ir.json (+ fidelity gate). No codegen / client.
-# Extra flags forwarded to loop_openrpc.sh (e.g. --skip-build --no-hidden).
-refresh-openrpc *flags:
-    bash {{justfile_directory()}}/scripts/loop_openrpc.sh --skip-codegen --skip-client {{flags}}
-
-# Full loop: Core build → dump → IR → ../ethos-bitcoind → ../ethos-test-client core-test.
-# Flags: --skip-build --skip-dump --skip-codegen --skip-client --dance --stage --no-hidden
-# Adapter/codegen only: just loop-openrpc --skip-build --skip-dump
-loop-openrpc *flags:
-    bash {{justfile_directory()}}/scripts/loop_openrpc.sh {{flags}}
-
-
-# Code quality
-# Format workspace.
 fmt:
-  cargo +{{NIGHTLY_VERSION}} fmt --all
+    cargo +{{NIGHTLY_VERSION}} fmt --all
 
-# Run all linting checks (clippy, whitespace, links).
 lint:
-  cargo +{{NIGHTLY_VERSION}} clippy --quiet --all-targets --all-features -- --deny warnings
-  @bash -c 'if command -v lychee >/dev/null 2>&1; then lychee .; else echo "Warning: lychee not found. Skipping link check."; echo "Install with: cargo install lychee"; fi'
+    cargo +{{NIGHTLY_VERSION}} clippy --quiet --all-targets --all-features -- --deny warnings
+    @bash -c 'if command -v lychee >/dev/null 2>&1; then lychee .; else echo "Warning: lychee not found. Skipping link check."; echo "Install with: cargo install lychee"; fi'
 
-# Run prek hooks on staged files (same scope as a normal commit)
 prek:
     prek run
 
-# Documentation
-# Generate documentation (accepts cargo doc args, e.g. --open).
 @docsrs *flags:
-  RUSTDOCFLAGS="--cfg docsrs -D warnings -D rustdoc::broken-intra-doc-links" cargo +{{NIGHTLY_VERSION}} doc --all-features --no-deps {{flags}}
+    RUSTDOCFLAGS="--cfg docsrs -D warnings -D rustdoc::broken-intra-doc-links" cargo +{{NIGHTLY_VERSION}} doc --all-features --no-deps {{flags}}
 
-# Advanced/utility commands
-# Run all fuzz targets
-fuzz-all:
-    just -f compiler/fuzz/justfile fuzz-all
-
-# Pull all corpus repositories from manifest.toml
-# Preserves local changes by stashing before pull
 corpus-pull:
     @bash -c 'cd corpus && \
     for repo in $(grep -E "^\s*[a-z_-]+ = \{" ../manifest.toml | cut -d" " -f1 | tr -d " "); do \
@@ -148,78 +128,8 @@ corpus-pull:
     done'
     @echo "Done pulling corpus repositories."
 
-# Check for unused dependencies.
 @udeps:
-  cargo +{{NIGHTLY_VERSION}} udeps --workspace --all-targets
+    cargo +{{NIGHTLY_VERSION}} udeps --workspace --all-targets
 
-# Run security audit.
 @audit:
-  cargo audit
-
-# CI
-# Full sanity check.
-[group('ci')]
-@sane: lint
-  just openrpc-type-fidelity-gate
-  just openrpc-schema-keyword-audit
-  # Match CI: --workspace required (default member is root ethos only).
-  cargo test --workspace --quiet --all-targets --no-default-features
-  cargo test --workspace --quiet --all-targets --all-features
-
-# Schema-oracle RPC fuzz (Δ as response oracle)
-# Fuzz / live hunt = Docker only (compiler/fuzz/FUZZING-DOCKER.md). Never host cargo fuzz.
-[group('test')]
-schema-oracle-test:
-  cargo test -p ethos-analysis --lib schema_oracle
-  cargo test -p ethos-analysis --test test_schema_oracle
-  cargo test --manifest-path compiler/schema-oracle/Cargo.toml --lib
-  cargo test --manifest-path compiler/fuzz/Cargo.toml --lib schema_oracle_cov
-
-# Live regtest smoke: host corpus bitcoind (IR-matched) + Docker schema-oracle
-[group('test')]
-schema-oracle-smoke *args:
-  bash compiler/fuzz/scripts/run-schema-oracle-live.sh smoke {{args}}
-
-# Continuous Δ hunt: host corpus bitcoind (IR-matched) + Docker schema-oracle
-[group('test')]
-schema-oracle-fuzz *args:
-  bash compiler/fuzz/scripts/run-schema-oracle-live.sh continuous {{args}}
-
-# Coverage-guided offline oracle — Docker libFuzzer only (persistent ethos-fuzz box)
-[group('test')]
-schema-oracle-cov *args:
-  bash compiler/fuzz/scripts/run-schema-oracle-cov.sh {{args}}
-
-# Ensure / start persistent ethos-fuzz container (build image if needed)
-[group('test')]
-schema-oracle-fuzz-box:
-  bash compiler/fuzz/scripts/ensure-ethos-fuzz.sh
-
-# Summarize corpus: oracle hits vs expected_reject noise
-[group('test')]
-schema-oracle-triage:
-  bash compiler/fuzz/scripts/triage-schema-oracle-corpus.sh
-
-# Examples
-examples:
-    @echo "Examples:"
-    @echo "  just schema-oracle-fuzz-box      # ensure Docker ethos-fuzz container"
-    @echo "  just schema-oracle-cov           # Docker libFuzzer (continuous)"
-    @echo "  just schema-oracle-cov -- -max_total_time=60"
-    @echo "  just schema-oracle-fuzz -- --duration-secs 60  # host corpus bitcoind + Docker continuous"
-    @echo "  just schema-oracle-smoke -- --rounds 16"
-    @echo "  just schema-oracle-test  # unit/integration only (not fuzz)"
-    @echo "  just sane                # Full check before push (lint + tests)"
-    @echo "  just generate-from-ir            # Generate client from IR (full RPC surface)"
-    @echo "  just generate-from-ir ../ethos-bitcoind {{LATEST_VERSION}}   # Generate into repo with version (full RPC surface)"
-    @echo "  just generate-from-ir ../ethos-bitcoind {{LATEST_VERSION}} --exclude-hidden-rpcs   # Generate without hidden/testing-only RPCs"
-    @echo "  just patch-openrpc-fidelity        # No-op after Core fidelity dump refresh (recipe compatibility)"
-    @echo "  just process-openrpc resources/ir/openrpc.json resources/ir/bitcoin.ir.json"
-    @echo "  just openrpc-type-fidelity-gate   # Enforce schema fidelity checks and emit JSON report"
-    @echo "  just openrpc-schema-keyword-audit # Draft 7 keyword allowlist + default warnings"
-    @echo "  just process-openrpc-and-generate ../ethos-bitcoind   # OpenRPC → IR → generate into repo"
-    @echo "  STAGE_DOWNSTREAM=1 just process-openrpc-and-generate ../ethos-bitcoind {{LATEST_VERSION}}   # …then stage + ethos HEAD subject as suggested commit"
-    @echo "  just refresh-openrpc     # Core build → dump → openrpc.json + bitcoin.ir.json (no codegen)"
-    @echo "  just loop-openrpc        # Core build → dump → IR → ../ethos-bitcoind → ethos-test-client"
-    @echo "  just loop-openrpc --skip-build --skip-dump   # reuse pinned openrpc.json; codegen + core-test"
-    @echo "  just corpus-pull         # Pull all corpus repositories"
+    cargo audit
