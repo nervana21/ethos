@@ -419,9 +419,18 @@ pub fn global_registry() -> &'static OnceLock<WireSchemaRegistry> {
 
 #[cfg(test)]
 mod tests {
+    use std::path::PathBuf;
+
     use serde_json::json;
 
     use super::*;
+
+    fn pinned_openrpc_doc() -> Value {
+        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../resources/ir/openrpc.json");
+        let content = std::fs::read_to_string(&path)
+            .unwrap_or_else(|e| panic!("read {}: {e}", path.display()));
+        serde_json::from_str(&content).expect("openrpc json")
+    }
 
     fn sample_doc() -> Value {
         json!({
@@ -495,5 +504,27 @@ mod tests {
         assert!(src.contains("SchemaError"));
         assert!(src.contains("minItems"));
         assert!(src.contains("schema-validate"));
+    }
+
+    /// Pinned dump smoke for getblock positional params and verbosity 0 result arm.
+    /// Verbosity schema is default only with no type. Reject via bad blockhash or arity.
+    #[test]
+    fn getblock_positional_accepts_hash_rejects_bad_blockhash() {
+        let reg =
+            WireSchemaRegistry::from_openrpc_document(&pinned_openrpc_doc()).expect("registry");
+        let hash = json!("000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f");
+
+        reg.validate_params_positional("getblock", &[hash.clone(), json!(0)]).expect("valid");
+        reg.validate_params_positional("getblock", &[hash]).expect("hash only");
+
+        let err =
+            reg.validate_params_positional("getblock", &[json!(1)]).expect_err("non-string hash");
+        assert!(err.to_string().contains("parameters"), "{err}");
+        let err = reg.validate_params_positional("getblock", &[]).expect_err("missing required");
+        assert_eq!(err.method, "getblock");
+
+        reg.validate_result("getblock", &json!("00")).expect("hex result arm");
+        let err = reg.validate_result("getblock", &json!(true)).expect_err("bool result");
+        assert!(err.to_string().contains("result"), "{err}");
     }
 }
