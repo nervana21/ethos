@@ -16,6 +16,7 @@ path = "src/main.rs"
 
 [dependencies]
 clap = { version = "4", features = ["derive", "env"] }
+ethos-adapters = { path = "../../adapters", default-features = false, features = ["bitcoin-core"] }
 ethos-analysis = { path = "../analysis" }
 ethos-bitcoind = { path = "../../../ethos-bitcoind", default-features = true }
 ir = { package = "ethos-ir", path = "../../primitives/ir" }

@@ -1,9 +1,9 @@
 //! Live schema-oracle smoke + continuous fuzz against regtest bitcoind.
 //!
 //! Spawns (or attaches to) a node, generates/mutates IR-shaped params, classifies
-//! wire results against Δ. Continuous mode writes oracle findings to a corpus dir.
-//! Exit 1 on any `schema_mismatch` / `decode_fail` in smoke mode; continuous mode
-//! exits 0 after duration (findings on disk are the signal).
+//! wire results against Δ and OpenRPC Draft 7 wire schemas. Continuous mode writes
+//! oracle findings to a corpus dir. Exit 1 on any oracle finding in smoke mode;
+//! continuous mode exits 0 after duration (findings on disk are the signal).
 
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
@@ -11,10 +11,11 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use clap::Parser;
+use ethos_adapters::bitcoin_core::openrpc_schema_validate::WireSchemaRegistry;
 use ethos_analysis::{
     default_allowlist, find_rpc, finding_basename, generate_params, generate_params_with_pool,
     invoke_error_from_rpc_body, mutate_params, pick_rpc, report_to_finding, summarize, InvokeError,
-    OracleClass, OracleReport, ValuePool,
+    OracleClass, OracleReport, PostSuccessChannels, ValuePool,
 };
 use ethos_bitcoind::transport::{DefaultTransport, TransportError, TransportTrait};
 use ethos_bitcoind::{BitcoinNodeManager, NodeManager, TestConfig};
@@ -82,11 +83,29 @@ struct Args {
     /// Skip Raw serde second channel (`DecodeFail`).
     #[arg(long, default_value_t = false)]
     no_raw_decode: bool,
+
+    /// Skip OpenRPC Draft 7 wire schema channel (`WireSchemaMismatch`).
+    #[arg(long, default_value_t = false)]
+    no_wire_schema: bool,
+
+    /// Path to openrpc.json for wire schema validation (default: resources/ir/openrpc.json).
+    #[arg(long, env = "SCHEMA_ORACLE_OPENRPC")]
+    openrpc: Option<PathBuf>,
 }
 
 fn repo_root() -> PathBuf { path::workspace_root_from_manifest(env!("CARGO_MANIFEST_DIR"), 2) }
 
 fn default_ir_path() -> PathBuf { path::canonical_bitcoin_ir_path(&repo_root()) }
+
+fn default_openrpc_path() -> PathBuf { repo_root().join("resources/ir/openrpc.json") }
+
+fn load_wire_registry(path: &Path) -> Result<WireSchemaRegistry, String> {
+    let raw = std::fs::read_to_string(path)
+        .map_err(|e| format!("read openrpc {}: {e}", path.display()))?;
+    let document: serde_json::Value =
+        serde_json::from_str(&raw).map_err(|e| format!("parse openrpc {}: {e}", path.display()))?;
+    WireSchemaRegistry::from_openrpc_document(&document)
+}
 
 fn corpus_bitcoind() -> PathBuf { repo_root().join("corpus/bitcoin/build/bin/bitcoind") }
 
@@ -204,20 +223,35 @@ async fn classify_call(
     pool: &mut ValuePool,
     verbose: bool,
     raw_decode: bool,
+    wire_registry: Option<&WireSchemaRegistry>,
 ) -> Option<OracleReport> {
     let rpc = find_rpc(ir, rpc_name)?;
     let outcome = session.invoke(&rpc.name, &params).await;
-    let wire = match &outcome {
+    let wire_body = match &outcome {
         Ok(v) => Some(v.clone()),
         Err(_) => None,
     };
     let raw = if raw_decode {
-        wire.as_ref().and_then(|v| ethos_schema_oracle::try_raw_decode(rpc_name, v))
+        wire_body.as_ref().and_then(|v| ethos_schema_oracle::try_raw_decode(rpc_name, v))
     } else {
         None
     };
-    let class = ethos_analysis::classify(rpc, &params, outcome, raw);
-    if let Some(ref v) = wire {
+    let wire_schema = match (wire_registry, wire_body.as_ref()) {
+        (Some(reg), Some(value)) => {
+            let params_ok =
+                reg.validate_params_positional(rpc_name, &params).map_err(|e| e.to_string());
+            let result_ok = reg.validate_result(rpc_name, value).map_err(|e| e.to_string());
+            Some(params_ok.and(result_ok))
+        }
+        _ => None,
+    };
+    let class = ethos_analysis::classify(
+        rpc,
+        &params,
+        outcome,
+        PostSuccessChannels { wire_schema, raw_decode: raw },
+    );
+    if let Some(ref v) = wire_body {
         if matches!(class, OracleClass::Ok) || class.is_oracle_finding() {
             pool.ingest_method_result(&rpc.name, v);
         }
@@ -333,6 +367,22 @@ async fn main() -> ExitCode {
         }
     };
 
+    let wire_registry = if args.no_wire_schema {
+        None
+    } else {
+        let openrpc_path = args.openrpc.clone().unwrap_or_else(default_openrpc_path);
+        match load_wire_registry(&openrpc_path) {
+            Ok(reg) => {
+                eprintln!("wire schema {}", openrpc_path.display());
+                Some(reg)
+            }
+            Err(e) => {
+                eprintln!("load openrpc for wire schema: {e}");
+                return ExitCode::from(2);
+            }
+        }
+    };
+
     let session = if let Some(url) = args.rpc_url.clone() {
         eprintln!("attach {url}");
         LiveSession::attach(url, args.rpc_user.clone(), args.rpc_pass.clone())
@@ -360,9 +410,9 @@ async fn main() -> ExitCode {
     }
 
     let exit = if args.continuous {
-        run_continuous(&args, &ir, &session, &mut pool).await
+        run_continuous(&args, &ir, &session, &mut pool, wire_registry.as_ref()).await
     } else {
-        run_smoke(&args, &ir, &session, &mut pool).await
+        run_smoke(&args, &ir, &session, &mut pool, wire_registry.as_ref()).await
     };
 
     session.shutdown().await;
@@ -374,19 +424,29 @@ async fn run_smoke(
     ir: &ProtocolIR,
     session: &LiveSession,
     pool: &mut ValuePool,
+    wire_registry: Option<&WireSchemaRegistry>,
 ) -> ExitCode {
     let mut reports: Vec<OracleReport> = Vec::new();
     let recycle = !args.no_recycle;
     let raw = !args.no_raw_decode;
 
-    // Explicit disc-union tip sweep classified against IR + Raw.
+    // Explicit disc-union tip sweep classified against IR + wire + Raw.
     if recycle {
         if let Some(hash) = pool.pick("blockhash", 1).cloned() {
             eprintln!("disc-union tip getblock sweep…");
             for verbosity in 0..=3 {
                 let params = vec![hash.clone(), serde_json::Value::Number(verbosity.into())];
-                if let Some(r) =
-                    classify_call("getblock", ir, params, session, pool, args.verbose, raw).await
+                if let Some(r) = classify_call(
+                    "getblock",
+                    ir,
+                    params,
+                    session,
+                    pool,
+                    args.verbose,
+                    raw,
+                    wire_registry,
+                )
+                .await
                 {
                     reports.push(r);
                 }
@@ -399,6 +459,7 @@ async fn run_smoke(
                 pool,
                 args.verbose,
                 raw,
+                wire_registry,
             )
             .await
             {
@@ -416,7 +477,17 @@ async fn run_smoke(
                 continue;
             };
             let params = build_params(rpc, &seed, pool, recycle, None, false);
-            if let Some(r) = classify_call(name, ir, params, session, pool, args.verbose, raw).await
+            if let Some(r) = classify_call(
+                name,
+                ir,
+                params,
+                session,
+                pool,
+                args.verbose,
+                raw,
+                wire_registry,
+            )
+            .await
             {
                 reports.push(r);
             }
@@ -435,8 +506,17 @@ async fn run_smoke(
         };
         let seed = &buf[1..];
         let params = build_params(rpc, seed, pool, recycle, None, false);
-        if let Some(r) =
-            classify_call(&rpc.name, ir, params, session, pool, args.verbose, raw).await
+        if let Some(r) = classify_call(
+            &rpc.name,
+            ir,
+            params,
+            session,
+            pool,
+            args.verbose,
+            raw,
+            wire_registry,
+        )
+        .await
         {
             reports.push(r);
         }
@@ -469,6 +549,7 @@ async fn run_continuous(
     ir: &ProtocolIR,
     session: &LiveSession,
     pool: &mut ValuePool,
+    wire_registry: Option<&WireSchemaRegistry>,
 ) -> ExitCode {
     let corpus = resolve_corpus_dir(&args.corpus_dir);
     if let Err(e) = std::fs::create_dir_all(&corpus) {
@@ -507,8 +588,17 @@ async fn run_continuous(
         let params = build_params(rpc, seed, pool, recycle, prev, mutate);
         last_params.insert(rpc.name.clone(), params.clone());
 
-        let Some(report) =
-            classify_call(&rpc.name, ir, params, session, pool, args.verbose, raw).await
+        let Some(report) = classify_call(
+            &rpc.name,
+            ir,
+            params,
+            session,
+            pool,
+            args.verbose,
+            raw,
+            wire_registry,
+        )
+        .await
         else {
             continue;
         };
