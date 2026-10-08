@@ -2,7 +2,7 @@
 
 use ethos_analysis::{
     classify, default_allowlist, find_rpc, generate_params, pick_rpc, resolve_disc_arm,
-    run_oracle_case, summarize, InvokeError, OracleClass, RpcInvoker,
+    run_oracle_case, summarize, InvokeError, OracleClass, PostSuccessChannels, RpcInvoker,
 };
 use ir::ProtocolIR;
 use path::{canonical_bitcoin_ir_path, rpc_golden_path, workspace_root_from_manifest};
@@ -40,7 +40,7 @@ fn golden_getdifficulty_matches_ir() {
     let ir = load_ir();
     let rpc = find_rpc(&ir, "getdifficulty").expect("getdifficulty in IR");
     let golden = load_golden("getdifficulty_result_min.json");
-    let class = classify(rpc, &[], Ok(golden), None);
+    let class = classify(rpc, &[], Ok(golden), PostSuccessChannels::none());
     assert_eq!(class, OracleClass::Ok, "golden must match IR result");
 }
 
@@ -49,7 +49,7 @@ fn golden_getblockchaininfo_matches_ir() {
     let ir = load_ir();
     let rpc = find_rpc(&ir, "getblockchaininfo").expect("getblockchaininfo in IR");
     let golden = load_golden("getblockchaininfo_result_min.json");
-    let class = classify(rpc, &[], Ok(golden), None);
+    let class = classify(rpc, &[], Ok(golden), PostSuccessChannels::none());
     assert_eq!(class, OracleClass::Ok, "golden must match IR result");
 }
 
@@ -57,7 +57,7 @@ fn golden_getblockchaininfo_matches_ir() {
 fn injected_wrong_shape_is_schema_mismatch() {
     let ir = load_ir();
     let rpc = find_rpc(&ir, "getdifficulty").expect("getdifficulty in IR");
-    let class = classify(rpc, &[], Ok(json!({"nope": true})), None);
+    let class = classify(rpc, &[], Ok(json!({"nope": true})), PostSuccessChannels::none());
     assert!(
         matches!(class, OracleClass::SchemaMismatch { .. }),
         "wrong shape must be schema_mismatch, got {class:?}"
@@ -76,7 +76,7 @@ fn fixture_invoker_end_to_end_ok() {
         .collect(),
     };
     let rpc = find_rpc(&ir, "getconnectioncount").expect("getconnectioncount");
-    let report = run_oracle_case(rpc, b"abc", &mut inv, None);
+    let report = run_oracle_case(rpc, b"abc", &mut inv, PostSuccessChannels::none());
     assert_eq!(report.class, OracleClass::Ok);
 }
 
@@ -122,10 +122,11 @@ fn getblock_disc_arm_hex_ok_object_mismatch() {
     };
     assert_eq!(arm.protocol_type.as_deref(), Some("string"));
 
-    let class_ok = classify(rpc, &params_v0, Ok(json!("00")), None);
+    let class_ok = classify(rpc, &params_v0, Ok(json!("00")), PostSuccessChannels::none());
     assert_eq!(class_ok, OracleClass::Ok, "hex body must match verbosity0 arm");
 
-    let class_bad = classify(rpc, &params_v0, Ok(json!({"hash": "x"})), None);
+    let class_bad =
+        classify(rpc, &params_v0, Ok(json!({"hash": "x"})), PostSuccessChannels::none());
     assert!(
         matches!(class_bad, OracleClass::SchemaMismatch { .. }),
         "object body must fail verbosity0 arm, got {class_bad:?}"
@@ -158,6 +159,6 @@ fn getblockheader_verbose_false_is_hex_arm() {
         return;
     };
     assert_eq!(arm.protocol_type.as_deref(), Some("string"));
-    let class = classify(rpc, &params, Ok(json!("00ab")), None);
+    let class = classify(rpc, &params, Ok(json!("00ab")), PostSuccessChannels::none());
     assert_eq!(class, OracleClass::Ok);
 }

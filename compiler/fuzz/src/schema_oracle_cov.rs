@@ -21,7 +21,7 @@ use std::sync::OnceLock;
 
 use ethos_analysis::{
     classify, default_allowlist, generate_params, generate_result_value, mutate_params, pick_rpc,
-    InvokeError, OracleReport, RpcInvoker,
+    InvokeError, OracleReport, PostSuccessChannels, RpcInvoker,
 };
 use ir::ProtocolIR;
 use serde_json::Value;
@@ -214,17 +214,22 @@ pub fn run_cov_guided_case(
     // Side-path: force classify edges without marking interesting.
     let channel = (mode >> 1) & 0b11;
     if channel == 0b10 {
-        let _ = classify(rpc, &params, Ok(Value::Bool(false)), None);
+        let _ = classify(rpc, &params, Ok(Value::Bool(false)), PostSuccessChannels::none());
     } else if channel == 0b11 {
         let ok_body = if let Some(ty) = rpc.result.as_ref() {
             generate_result_value(ty, entropy)
         } else {
             Value::Null
         };
-        let _ = classify(rpc, &params, Ok(ok_body), Some(Err("cov-guided injected decode".into())));
+        let _ = classify(
+            rpc,
+            &params,
+            Ok(ok_body),
+            PostSuccessChannels::raw(Some(Err("cov-guided injected decode".into()))),
+        );
     }
 
-    let class = classify(rpc, &params, outcome, None);
+    let class = classify(rpc, &params, outcome, PostSuccessChannels::none());
     // Synth bodies can fail IR validate (gen vs check gap). Only goldens count as findings.
     let interesting = !injected && from_golden && class.is_oracle_finding();
     Some(CovGuidedOutcome {

@@ -1,9 +1,10 @@
 //! Schema-oracle RPC fuzz: mutate within Δ, classify wire vs IR.
 //!
 //! Living Δ for Core RPC — dump/IR is the oracle. A call outcome is classified as:
-//! - [`OracleClass::Ok`] — success and response matches `RpcDef.result`
+//! - [`OracleClass::Ok`] — success and response matches `RpcDef.result` (+ wire/Raw when present)
 //! - [`OracleClass::ExpectedReject`] — JSON-RPC error (state / validation)
 //! - [`OracleClass::SchemaMismatch`] — success but response fails IR check (**oracle hit**)
+//! - [`OracleClass::WireSchemaMismatch`] — IR ok but OpenRPC Draft 7 wire schema fails (**oracle hit**)
 //! - [`OracleClass::DecodeFail`] — optional Raw-type serde failure after IR ok
 //! - [`OracleClass::TransportError`] — client/transport failure (not an RPC error body)
 //!
@@ -34,6 +35,11 @@ pub enum OracleClass {
         /// Path-aware detail from [`validate_json_matches_type`].
         detail: String,
     },
+    /// IR matched but OpenRPC Draft 7 wire schema validation failed (dump vs traffic).
+    WireSchemaMismatch {
+        /// Detail from Draft 7 `validate_result` / `validate_params`.
+        detail: String,
+    },
     /// IR matched but an optional Raw serde decode failed.
     DecodeFail {
         /// Decode error detail.
@@ -47,9 +53,36 @@ pub enum OracleClass {
 }
 
 impl OracleClass {
-    /// True when this class is a Δ / codegen finding (not a normal reject).
+    /// True when this class is a Δ / dump / codegen finding (not a normal reject).
     pub fn is_oracle_finding(&self) -> bool {
-        matches!(self, Self::SchemaMismatch { .. } | Self::DecodeFail { .. })
+        matches!(
+            self,
+            Self::SchemaMismatch { .. } | Self::WireSchemaMismatch { .. } | Self::DecodeFail { .. }
+        )
+    }
+}
+
+/// Optional checks run only after IR result validation succeeds.
+#[derive(Debug, Clone, Default)]
+pub struct PostSuccessChannels {
+    /// OpenRPC Draft 7 wire schema (`Err` = dump disagrees with live traffic).
+    pub wire_schema: Option<Result<(), String>>,
+    /// Raw serde decode (`Err` = codegen / Response fail after IR ok).
+    pub raw_decode: Option<Result<(), String>>,
+}
+
+impl PostSuccessChannels {
+    /// No post-success channels (IR-only classify).
+    pub fn none() -> Self { Self::default() }
+
+    /// Raw channel only (wire skipped).
+    pub fn raw(raw_decode: Option<Result<(), String>>) -> Self {
+        Self { wire_schema: None, raw_decode }
+    }
+
+    /// Wire channel only (Raw skipped).
+    pub fn wire(wire_schema: Option<Result<(), String>>) -> Self {
+        Self { wire_schema, raw_decode: None }
     }
 }
 
@@ -422,12 +455,12 @@ fn generate_primitive(hint: &str, ty: &TypeDef, cur: &mut ByteCursor<'_>) -> Val
 /// When `rpc.result_discriminator` is set, validates only the union arm selected by
 /// request `params` (disc-arm oracle). Otherwise validates the full result type.
 ///
-/// `raw_decode`: optional second channel — `Err` = Raw serde failed after IR ok.
+/// After IR ok, [`PostSuccessChannels`] run in order: wire schema, then Raw decode.
 pub fn classify(
     rpc: &RpcDef,
     params: &[Value],
     outcome: Result<Value, InvokeError>,
-    raw_decode: Option<Result<(), String>>,
+    channels: PostSuccessChannels,
 ) -> OracleClass {
     match outcome {
         Err(InvokeError::Transport(detail)) => OracleClass::TransportError { detail },
@@ -438,7 +471,10 @@ pub fn classify(
                     return OracleClass::SchemaMismatch { detail };
                 }
             }
-            if let Some(Err(detail)) = raw_decode {
+            if let Some(Err(detail)) = channels.wire_schema {
+                return OracleClass::WireSchemaMismatch { detail };
+            }
+            if let Some(Err(detail)) = channels.raw_decode {
                 return OracleClass::DecodeFail { detail };
             }
             OracleClass::Ok
@@ -587,11 +623,11 @@ pub fn run_oracle_case(
     rpc: &RpcDef,
     data: &[u8],
     invoker: &mut dyn RpcInvoker,
-    raw_decode: Option<Result<(), String>>,
+    channels: PostSuccessChannels,
 ) -> OracleReport {
     let params = generate_params(rpc, data);
     let outcome = invoker.invoke(&rpc.name, &params);
-    let class = classify(rpc, &params, outcome, raw_decode);
+    let class = classify(rpc, &params, outcome, channels);
     OracleReport { method: rpc.name.clone(), params, class }
 }
 
@@ -791,6 +827,8 @@ pub fn report_to_finding(report: &OracleReport, seed: &[u8]) -> Value {
             ("expected_reject", serde_json::json!({ "code": code, "message": message })),
         OracleClass::SchemaMismatch { detail } =>
             ("schema_mismatch", Value::String(detail.clone())),
+        OracleClass::WireSchemaMismatch { detail } =>
+            ("wire_schema_mismatch", Value::String(detail.clone())),
         OracleClass::DecodeFail { detail } => ("decode_fail", Value::String(detail.clone())),
         OracleClass::TransportError { detail } =>
             ("transport_error", Value::String(detail.clone())),
@@ -816,6 +854,7 @@ pub fn finding_basename(report: &OracleReport) -> String {
         OracleClass::Ok => "ok",
         OracleClass::ExpectedReject { .. } => "reject",
         OracleClass::SchemaMismatch { .. } => "mismatch",
+        OracleClass::WireSchemaMismatch { .. } => "wire",
         OracleClass::DecodeFail { .. } => "decode",
         OracleClass::TransportError { .. } => "transport",
     };
@@ -832,6 +871,7 @@ pub fn summarize(reports: &[OracleReport]) -> BTreeMap<&'static str, usize> {
             OracleClass::Ok => "ok",
             OracleClass::ExpectedReject { .. } => "expected_reject",
             OracleClass::SchemaMismatch { .. } => "schema_mismatch",
+            OracleClass::WireSchemaMismatch { .. } => "wire_schema_mismatch",
             OracleClass::DecodeFail { .. } => "decode_fail",
             OracleClass::TransportError { .. } => "transport_error",
         };
@@ -891,14 +931,14 @@ mod tests {
     #[test]
     fn classify_ok_number() {
         let rpc = primitive_number_rpc();
-        let class = classify(&rpc, &[], Ok(json!(1.5)), None);
+        let class = classify(&rpc, &[], Ok(json!(1.5)), PostSuccessChannels::none());
         assert_eq!(class, OracleClass::Ok);
     }
 
     #[test]
     fn classify_schema_mismatch_on_wrong_shape() {
         let rpc = primitive_number_rpc();
-        let class = classify(&rpc, &[], Ok(json!("not-a-number")), None);
+        let class = classify(&rpc, &[], Ok(json!("not-a-number")), PostSuccessChannels::none());
         assert!(matches!(class, OracleClass::SchemaMismatch { .. }));
         assert!(class.is_oracle_finding());
     }
@@ -910,7 +950,7 @@ mod tests {
             &rpc,
             &[],
             Err(InvokeError::Rpc { code: Some(-8), message: "invalid".into() }),
-            None,
+            PostSuccessChannels::none(),
         );
         assert_eq!(
             class,
@@ -934,15 +974,48 @@ mod tests {
     #[test]
     fn classify_decode_fail_after_ir_ok() {
         let rpc = primitive_number_rpc();
-        let class = classify(&rpc, &[], Ok(json!(2)), Some(Err("serde boom".into())));
+        let class = classify(
+            &rpc,
+            &[],
+            Ok(json!(2)),
+            PostSuccessChannels::raw(Some(Err("serde boom".into()))),
+        );
         assert_eq!(class, OracleClass::DecodeFail { detail: "serde boom".into() });
+    }
+
+    #[test]
+    fn classify_wire_schema_mismatch_after_ir_ok() {
+        let rpc = primitive_number_rpc();
+        let class = classify(
+            &rpc,
+            &[],
+            Ok(json!(2)),
+            PostSuccessChannels::wire(Some(Err("pattern failed".into()))),
+        );
+        assert_eq!(class, OracleClass::WireSchemaMismatch { detail: "pattern failed".into() });
+        assert!(class.is_oracle_finding());
+    }
+
+    #[test]
+    fn classify_wire_mismatch_before_raw_decode() {
+        let rpc = primitive_number_rpc();
+        let class = classify(
+            &rpc,
+            &[],
+            Ok(json!(2)),
+            PostSuccessChannels {
+                wire_schema: Some(Err("wire boom".into())),
+                raw_decode: Some(Err("serde boom".into())),
+            },
+        );
+        assert_eq!(class, OracleClass::WireSchemaMismatch { detail: "wire boom".into() });
     }
 
     #[test]
     fn run_oracle_case_with_mock() {
         let rpc = primitive_number_rpc();
         let mut inv = MockInvoker { response: Ok(json!(42)) };
-        let report = run_oracle_case(&rpc, b"\0\0\0", &mut inv, None);
+        let report = run_oracle_case(&rpc, b"\0\0\0", &mut inv, PostSuccessChannels::none());
         assert_eq!(report.method, "getdifficulty");
         assert_eq!(report.class, OracleClass::Ok);
     }
