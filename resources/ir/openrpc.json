@@ -15,7 +15,7 @@
           "required": true,
           "schema": {
             "type": "string",
-            "pattern": "^[0-9a-fA-F]+$"
+            "pattern": "^([0-9a-fA-F]{2})*$"
           },
           "description": "The transaction id"
         }
@@ -37,7 +37,7 @@
           "required": true,
           "schema": {
             "type": "string",
-            "pattern": "^[0-9a-fA-F]+$"
+            "pattern": "^([0-9a-fA-F]{2})*$"
           },
           "description": "A transaction identifier to abort. It will be matched against both txid and wtxid for all transactions in the private broadcast queue.\nIf the provided id matches a txid that corresponds to multiple transactions with different wtxids, multiple transactions will be removed and returned."
         }
@@ -54,17 +54,17 @@
                 "properties": {
                   "txid": {
                     "type": "string",
-                    "pattern": "^[0-9a-fA-F]+$",
+                    "pattern": "^([0-9a-fA-F]{2})*$",
                     "description": "The transaction hash in hex"
                   },
                   "wtxid": {
                     "type": "string",
-                    "pattern": "^[0-9a-fA-F]+$",
+                    "pattern": "^([0-9a-fA-F]{2})*$",
                     "description": "The transaction witness hash in hex"
                   },
                   "hex": {
                     "type": "string",
-                    "pattern": "^[0-9a-fA-F]+$",
+                    "pattern": "^([0-9a-fA-F]{2})*$",
                     "description": "The serialized, hex-encoded transaction data"
                   }
                 },
@@ -310,24 +310,24 @@
                         "type": "array",
                         "items": {
                           "type": "string",
-                          "pattern": "^[0-9a-fA-F]+$"
+                          "pattern": "^([0-9a-fA-F]{2})*$"
                         }
                       },
                       "signatures": {
                         "type": "array",
                         "items": {
                           "type": "string",
-                          "pattern": "^[0-9a-fA-F]+$"
+                          "pattern": "^([0-9a-fA-F]{2})*$"
                         }
                       },
                       "redeemscript": {
                         "type": "string",
-                        "pattern": "^[0-9a-fA-F]+$",
+                        "pattern": "^([0-9a-fA-F]{2})*$",
                         "description": "Hash160 of the redeem script that is missing"
                       },
                       "witnessscript": {
                         "type": "string",
-                        "pattern": "^[0-9a-fA-F]+$",
+                        "pattern": "^([0-9a-fA-F]{2})*$",
                         "description": "SHA256 of the witness script that is missing"
                       }
                     },
@@ -407,7 +407,7 @@
           "required": true,
           "schema": {
             "type": "string",
-            "pattern": "^[0-9a-fA-F]+$"
+            "pattern": "^([0-9a-fA-F]{2})*$"
           },
           "description": "The txid to be bumped"
         },
@@ -469,7 +469,7 @@
                           "properties": {
                             "data": {
                               "type": "string",
-                              "pattern": "^[0-9a-fA-F]+$",
+                              "pattern": "^([0-9a-fA-F]{2})*$",
                               "description": "A key-value pair. The key must be \"data\", the value is hex-encoded data that becomes a part of an OP_RETURN output"
                             }
                           },
@@ -505,7 +505,7 @@
           "properties": {
             "txid": {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]+$",
+              "pattern": "^([0-9a-fA-F]{2})*$",
               "description": "The id of the new transaction."
             },
             "origfee": {
@@ -584,7 +584,7 @@
             "type": "array",
             "items": {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]+$"
+              "pattern": "^([0-9a-fA-F]{2})*$"
             }
           },
           "description": "The hex strings of partially signed transactions"
@@ -607,7 +607,7 @@
           "required": true,
           "schema": {
             "type": "string",
-            "pattern": "^[0-9a-fA-F]+$"
+            "pattern": "^([0-9a-fA-F]{2})*$"
           },
           "description": "The hex string of a raw transaction"
         },
@@ -666,7 +666,7 @@
             "type": "array",
             "items": {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]+$"
+              "pattern": "^([0-9a-fA-F]{2})*$"
             }
           },
           "description": "The hex-encoded public keys."
@@ -692,7 +692,7 @@
             },
             "redeemScript": {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]+$",
+              "pattern": "^([0-9a-fA-F]{2})*$",
               "description": "The string value of the hex-encoded redemption script."
             },
             "descriptor": {
@@ -731,7 +731,7 @@
               "properties": {
                 "txid": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "The transaction id"
                 },
                 "vout": {
@@ -781,7 +781,7 @@
                       "properties": {
                         "data": {
                           "type": "string",
-                          "pattern": "^[0-9a-fA-F]+$",
+                          "pattern": "^([0-9a-fA-F]{2})*$",
                           "description": "A key-value pair. The key must be \"data\", the value is hex-encoded data that becomes a part of an OP_RETURN output"
                         }
                       },
@@ -859,7 +859,7 @@
               "properties": {
                 "txid": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "The transaction id"
                 },
                 "vout": {
@@ -909,7 +909,7 @@
                       "properties": {
                         "data": {
                           "type": "string",
-                          "pattern": "^[0-9a-fA-F]+$",
+                          "pattern": "^([0-9a-fA-F]{2})*$",
                           "description": "A key-value pair. The key must be \"data\", the value is hex-encoded data that becomes a part of an OP_RETURN output"
                         }
                       },
@@ -960,7 +960,7 @@
         "name": "result",
         "schema": {
           "type": "string",
-          "pattern": "^[0-9a-fA-F]+$"
+          "pattern": "^([0-9a-fA-F]{2})*$"
         }
       },
       "x-bitcoin-category": "rawtransactions"
@@ -1141,12 +1141,12 @@
               "properties": {
                 "txid": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "The transaction id"
                 },
                 "hash": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "The transaction hash (differs from txid for witness transactions)"
                 },
                 "size": {
@@ -1177,12 +1177,12 @@
                     "properties": {
                       "coinbase": {
                         "type": "string",
-                        "pattern": "^[0-9a-fA-F]+$",
+                        "pattern": "^([0-9a-fA-F]{2})*$",
                         "description": "The coinbase value (only if coinbase transaction)"
                       },
                       "txid": {
                         "type": "string",
-                        "pattern": "^[0-9a-fA-F]+$",
+                        "pattern": "^([0-9a-fA-F]{2})*$",
                         "description": "The transaction id (if not coinbase transaction)"
                       },
                       "vout": {
@@ -1198,7 +1198,7 @@
                           },
                           "hex": {
                             "type": "string",
-                            "pattern": "^[0-9a-fA-F]+$",
+                            "pattern": "^([0-9a-fA-F]{2})*$",
                             "description": "The raw signature script bytes, hex-encoded"
                           }
                         },
@@ -1213,7 +1213,7 @@
                         "type": "array",
                         "items": {
                           "type": "string",
-                          "pattern": "^[0-9a-fA-F]+$"
+                          "pattern": "^([0-9a-fA-F]{2})*$"
                         }
                       },
                       "sequence": {
@@ -1254,7 +1254,7 @@
                           },
                           "hex": {
                             "type": "string",
-                            "pattern": "^[0-9a-fA-F]+$",
+                            "pattern": "^([0-9a-fA-F]{2})*$",
                             "description": "The raw output script bytes, hex-encoded"
                           },
                           "address": {
@@ -1309,7 +1309,7 @@
                   },
                   "master_fingerprint": {
                     "type": "string",
-                    "pattern": "^[0-9a-fA-F]+$",
+                    "pattern": "^([0-9a-fA-F]{2})*$",
                     "description": "The fingerprint of the master key"
                   },
                   "path": {
@@ -1364,7 +1364,7 @@
                 "properties": {
                   "identifier": {
                     "type": "string",
-                    "pattern": "^[0-9a-fA-F]+$",
+                    "pattern": "^([0-9a-fA-F]{2})*$",
                     "description": "The hex string for the proprietary identifier"
                   },
                   "subtype": {
@@ -1373,12 +1373,12 @@
                   },
                   "key": {
                     "type": "string",
-                    "pattern": "^[0-9a-fA-F]+$",
+                    "pattern": "^([0-9a-fA-F]{2})*$",
                     "description": "The hex for the key"
                   },
                   "value": {
                     "type": "string",
-                    "pattern": "^[0-9a-fA-F]+$",
+                    "pattern": "^([0-9a-fA-F]{2})*$",
                     "description": "The hex for the value"
                   }
                 },
@@ -1396,7 +1396,7 @@
               "type": "object",
               "additionalProperties": {
                 "type": "string",
-                "pattern": "^[0-9a-fA-F]+$"
+                "pattern": "^([0-9a-fA-F]{2})*$"
               },
               "description": "The unknown global fields"
             },
@@ -1410,12 +1410,12 @@
                     "properties": {
                       "txid": {
                         "type": "string",
-                        "pattern": "^[0-9a-fA-F]+$",
+                        "pattern": "^([0-9a-fA-F]{2})*$",
                         "description": "The transaction id"
                       },
                       "hash": {
                         "type": "string",
-                        "pattern": "^[0-9a-fA-F]+$",
+                        "pattern": "^([0-9a-fA-F]{2})*$",
                         "description": "The transaction hash (differs from txid for witness transactions)"
                       },
                       "size": {
@@ -1446,12 +1446,12 @@
                           "properties": {
                             "coinbase": {
                               "type": "string",
-                              "pattern": "^[0-9a-fA-F]+$",
+                              "pattern": "^([0-9a-fA-F]{2})*$",
                               "description": "The coinbase value (only if coinbase transaction)"
                             },
                             "txid": {
                               "type": "string",
-                              "pattern": "^[0-9a-fA-F]+$",
+                              "pattern": "^([0-9a-fA-F]{2})*$",
                               "description": "The transaction id (if not coinbase transaction)"
                             },
                             "vout": {
@@ -1467,7 +1467,7 @@
                                 },
                                 "hex": {
                                   "type": "string",
-                                  "pattern": "^[0-9a-fA-F]+$",
+                                  "pattern": "^([0-9a-fA-F]{2})*$",
                                   "description": "The raw signature script bytes, hex-encoded"
                                 }
                               },
@@ -1482,7 +1482,7 @@
                               "type": "array",
                               "items": {
                                 "type": "string",
-                                "pattern": "^[0-9a-fA-F]+$"
+                                "pattern": "^([0-9a-fA-F]{2})*$"
                               }
                             },
                             "sequence": {
@@ -1523,7 +1523,7 @@
                                 },
                                 "hex": {
                                   "type": "string",
-                                  "pattern": "^[0-9a-fA-F]+$",
+                                  "pattern": "^([0-9a-fA-F]{2})*$",
                                   "description": "The raw output script bytes, hex-encoded"
                                 },
                                 "address": {
@@ -1587,7 +1587,7 @@
                           },
                           "hex": {
                             "type": "string",
-                            "pattern": "^[0-9a-fA-F]+$",
+                            "pattern": "^([0-9a-fA-F]{2})*$",
                             "description": "The raw output script bytes, hex-encoded"
                           },
                           "type": {
@@ -1634,7 +1634,7 @@
                       },
                       "hex": {
                         "type": "string",
-                        "pattern": "^[0-9a-fA-F]+$",
+                        "pattern": "^([0-9a-fA-F]{2})*$",
                         "description": "The raw redeem script bytes, hex-encoded"
                       },
                       "type": {
@@ -1658,7 +1658,7 @@
                       },
                       "hex": {
                         "type": "string",
-                        "pattern": "^[0-9a-fA-F]+$",
+                        "pattern": "^([0-9a-fA-F]{2})*$",
                         "description": "The raw witness script bytes, hex-encoded"
                       },
                       "type": {
@@ -1708,7 +1708,7 @@
                       },
                       "hex": {
                         "type": "string",
-                        "pattern": "^[0-9a-fA-F]+$",
+                        "pattern": "^([0-9a-fA-F]{2})*$",
                         "description": "The raw final signature script bytes, hex-encoded"
                       }
                     },
@@ -1722,7 +1722,7 @@
                     "type": "array",
                     "items": {
                       "type": "string",
-                      "pattern": "^[0-9a-fA-F]+$"
+                      "pattern": "^([0-9a-fA-F]{2})*$"
                     }
                   },
                   "ripemd160_preimages": {
@@ -1751,7 +1751,7 @@
                   },
                   "previous_txid": {
                     "type": "string",
-                    "pattern": "^[0-9a-fA-F]+$",
+                    "pattern": "^([0-9a-fA-F]{2})*$",
                     "description": "TXID of the transaction containing the output being spent by this input"
                   },
                   "previous_vout": {
@@ -1772,7 +1772,7 @@
                   },
                   "taproot_key_path_sig": {
                     "type": "string",
-                    "pattern": "^[0-9a-fA-F]+$",
+                    "pattern": "^([0-9a-fA-F]{2})*$",
                     "description": "hex-encoded signature for the Taproot key path spend"
                   },
                   "taproot_script_path_sigs": {
@@ -1808,7 +1808,7 @@
                       "properties": {
                         "script": {
                           "type": "string",
-                          "pattern": "^[0-9a-fA-F]+$",
+                          "pattern": "^([0-9a-fA-F]{2})*$",
                           "description": "A leaf script"
                         },
                         "leaf_ver": {
@@ -1819,7 +1819,7 @@
                           "type": "array",
                           "items": {
                             "type": "string",
-                            "pattern": "^[0-9a-fA-F]+$"
+                            "pattern": "^([0-9a-fA-F]{2})*$"
                           },
                           "description": "The control blocks for this script"
                         }
@@ -1853,7 +1853,7 @@
                           "type": "array",
                           "items": {
                             "type": "string",
-                            "pattern": "^[0-9a-fA-F]+$"
+                            "pattern": "^([0-9a-fA-F]{2})*$"
                           },
                           "description": "The hashes of the leaves this pubkey appears in"
                         }
@@ -1869,12 +1869,12 @@
                   },
                   "taproot_internal_key": {
                     "type": "string",
-                    "pattern": "^[0-9a-fA-F]+$",
+                    "pattern": "^([0-9a-fA-F]{2})*$",
                     "description": "The hex-encoded Taproot x-only internal key"
                   },
                   "taproot_merkle_root": {
                     "type": "string",
-                    "pattern": "^[0-9a-fA-F]+$",
+                    "pattern": "^([0-9a-fA-F]{2})*$",
                     "description": "The hex-encoded Taproot merkle root"
                   },
                   "musig2_participant_pubkeys": {
@@ -1884,14 +1884,14 @@
                       "properties": {
                         "aggregate_pubkey": {
                           "type": "string",
-                          "pattern": "^[0-9a-fA-F]+$",
+                          "pattern": "^([0-9a-fA-F]{2})*$",
                           "description": "The compressed aggregate public key for which the participants create."
                         },
                         "participant_pubkeys": {
                           "type": "array",
                           "items": {
                             "type": "string",
-                            "pattern": "^[0-9a-fA-F]+$"
+                            "pattern": "^([0-9a-fA-F]{2})*$"
                           }
                         }
                       },
@@ -1909,22 +1909,22 @@
                       "properties": {
                         "participant_pubkey": {
                           "type": "string",
-                          "pattern": "^[0-9a-fA-F]+$",
+                          "pattern": "^([0-9a-fA-F]{2})*$",
                           "description": "The compressed public key of the participant that created this pubnonce."
                         },
                         "aggregate_pubkey": {
                           "type": "string",
-                          "pattern": "^[0-9a-fA-F]+$",
+                          "pattern": "^([0-9a-fA-F]{2})*$",
                           "description": "The compressed aggregate public key for which this pubnonce is for."
                         },
                         "leaf_hash": {
                           "type": "string",
-                          "pattern": "^[0-9a-fA-F]+$",
+                          "pattern": "^([0-9a-fA-F]{2})*$",
                           "description": "The hash of the leaf script that contains the aggregate pubkey being signed for. Omitted when signing for the internal key."
                         },
                         "pubnonce": {
                           "type": "string",
-                          "pattern": "^[0-9a-fA-F]+$",
+                          "pattern": "^([0-9a-fA-F]{2})*$",
                           "description": "The public nonce itself."
                         }
                       },
@@ -1943,22 +1943,22 @@
                       "properties": {
                         "participant_pubkey": {
                           "type": "string",
-                          "pattern": "^[0-9a-fA-F]+$",
+                          "pattern": "^([0-9a-fA-F]{2})*$",
                           "description": "The compressed public key of the participant that created this partial signature."
                         },
                         "aggregate_pubkey": {
                           "type": "string",
-                          "pattern": "^[0-9a-fA-F]+$",
+                          "pattern": "^([0-9a-fA-F]{2})*$",
                           "description": "The compressed aggregate public key for which this partial signature is for."
                         },
                         "leaf_hash": {
                           "type": "string",
-                          "pattern": "^[0-9a-fA-F]+$",
+                          "pattern": "^([0-9a-fA-F]{2})*$",
                           "description": "The hash of the leaf script that contains the aggregate pubkey being signed for. Omitted when signing for the internal key."
                         },
                         "partial_sig": {
                           "type": "string",
-                          "pattern": "^[0-9a-fA-F]+$",
+                          "pattern": "^([0-9a-fA-F]{2})*$",
                           "description": "The partial signature itself."
                         }
                       },
@@ -1974,7 +1974,7 @@
                     "type": "object",
                     "additionalProperties": {
                       "type": "string",
-                      "pattern": "^[0-9a-fA-F]+$"
+                      "pattern": "^([0-9a-fA-F]{2})*$"
                     },
                     "description": "The unknown input fields"
                   },
@@ -1985,7 +1985,7 @@
                       "properties": {
                         "identifier": {
                           "type": "string",
-                          "pattern": "^[0-9a-fA-F]+$",
+                          "pattern": "^([0-9a-fA-F]{2})*$",
                           "description": "The hex string for the proprietary identifier"
                         },
                         "subtype": {
@@ -1994,12 +1994,12 @@
                         },
                         "key": {
                           "type": "string",
-                          "pattern": "^[0-9a-fA-F]+$",
+                          "pattern": "^([0-9a-fA-F]{2})*$",
                           "description": "The hex for the key"
                         },
                         "value": {
                           "type": "string",
-                          "pattern": "^[0-9a-fA-F]+$",
+                          "pattern": "^([0-9a-fA-F]{2})*$",
                           "description": "The hex for the value"
                         }
                       },
@@ -2031,7 +2031,7 @@
                       },
                       "hex": {
                         "type": "string",
-                        "pattern": "^[0-9a-fA-F]+$",
+                        "pattern": "^([0-9a-fA-F]{2})*$",
                         "description": "The raw redeem script bytes, hex-encoded"
                       },
                       "type": {
@@ -2055,7 +2055,7 @@
                       },
                       "hex": {
                         "type": "string",
-                        "pattern": "^[0-9a-fA-F]+$",
+                        "pattern": "^([0-9a-fA-F]{2})*$",
                         "description": "The raw witness script bytes, hex-encoded"
                       },
                       "type": {
@@ -2113,7 +2113,7 @@
                       },
                       "hex": {
                         "type": "string",
-                        "pattern": "^[0-9a-fA-F]+$",
+                        "pattern": "^([0-9a-fA-F]{2})*$",
                         "description": "The raw output script bytes, hex-encoded"
                       },
                       "address": {
@@ -2136,7 +2136,7 @@
                   },
                   "taproot_internal_key": {
                     "type": "string",
-                    "pattern": "^[0-9a-fA-F]+$",
+                    "pattern": "^([0-9a-fA-F]{2})*$",
                     "description": "The hex-encoded Taproot x-only internal key"
                   },
                   "taproot_tree": {
@@ -2187,7 +2187,7 @@
                           "type": "array",
                           "items": {
                             "type": "string",
-                            "pattern": "^[0-9a-fA-F]+$"
+                            "pattern": "^([0-9a-fA-F]{2})*$"
                           },
                           "description": "The hashes of the leaves this pubkey appears in"
                         }
@@ -2208,14 +2208,14 @@
                       "properties": {
                         "aggregate_pubkey": {
                           "type": "string",
-                          "pattern": "^[0-9a-fA-F]+$",
+                          "pattern": "^([0-9a-fA-F]{2})*$",
                           "description": "The compressed aggregate public key for which the participants create."
                         },
                         "participant_pubkeys": {
                           "type": "array",
                           "items": {
                             "type": "string",
-                            "pattern": "^[0-9a-fA-F]+$"
+                            "pattern": "^([0-9a-fA-F]{2})*$"
                           }
                         }
                       },
@@ -2230,7 +2230,7 @@
                     "type": "object",
                     "additionalProperties": {
                       "type": "string",
-                      "pattern": "^[0-9a-fA-F]+$"
+                      "pattern": "^([0-9a-fA-F]{2})*$"
                     },
                     "description": "The unknown output fields"
                   },
@@ -2241,7 +2241,7 @@
                       "properties": {
                         "identifier": {
                           "type": "string",
-                          "pattern": "^[0-9a-fA-F]+$",
+                          "pattern": "^([0-9a-fA-F]{2})*$",
                           "description": "The hex string for the proprietary identifier"
                         },
                         "subtype": {
@@ -2250,12 +2250,12 @@
                         },
                         "key": {
                           "type": "string",
-                          "pattern": "^[0-9a-fA-F]+$",
+                          "pattern": "^([0-9a-fA-F]{2})*$",
                           "description": "The hex for the key"
                         },
                         "value": {
                           "type": "string",
-                          "pattern": "^[0-9a-fA-F]+$",
+                          "pattern": "^([0-9a-fA-F]{2})*$",
                           "description": "The hex for the value"
                         }
                       },
@@ -2300,7 +2300,7 @@
           "required": true,
           "schema": {
             "type": "string",
-            "pattern": "^[0-9a-fA-F]+$"
+            "pattern": "^([0-9a-fA-F]{2})*$"
           },
           "description": "The transaction hex string"
         },
@@ -2321,12 +2321,12 @@
           "properties": {
             "txid": {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]+$",
+              "pattern": "^([0-9a-fA-F]{2})*$",
               "description": "The transaction id"
             },
             "hash": {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]+$",
+              "pattern": "^([0-9a-fA-F]{2})*$",
               "description": "The transaction hash (differs from txid for witness transactions)"
             },
             "size": {
@@ -2357,12 +2357,12 @@
                 "properties": {
                   "coinbase": {
                     "type": "string",
-                    "pattern": "^[0-9a-fA-F]+$",
+                    "pattern": "^([0-9a-fA-F]{2})*$",
                     "description": "The coinbase value (only if coinbase transaction)"
                   },
                   "txid": {
                     "type": "string",
-                    "pattern": "^[0-9a-fA-F]+$",
+                    "pattern": "^([0-9a-fA-F]{2})*$",
                     "description": "The transaction id (if not coinbase transaction)"
                   },
                   "vout": {
@@ -2378,7 +2378,7 @@
                       },
                       "hex": {
                         "type": "string",
-                        "pattern": "^[0-9a-fA-F]+$",
+                        "pattern": "^([0-9a-fA-F]{2})*$",
                         "description": "The raw signature script bytes, hex-encoded"
                       }
                     },
@@ -2393,7 +2393,7 @@
                     "type": "array",
                     "items": {
                       "type": "string",
-                      "pattern": "^[0-9a-fA-F]+$"
+                      "pattern": "^([0-9a-fA-F]{2})*$"
                     }
                   },
                   "sequence": {
@@ -2434,7 +2434,7 @@
                       },
                       "hex": {
                         "type": "string",
-                        "pattern": "^[0-9a-fA-F]+$",
+                        "pattern": "^([0-9a-fA-F]{2})*$",
                         "description": "The raw output script bytes, hex-encoded"
                       },
                       "address": {
@@ -2489,7 +2489,7 @@
           "required": true,
           "schema": {
             "type": "string",
-            "pattern": "^[0-9a-fA-F]+$"
+            "pattern": "^([0-9a-fA-F]{2})*$"
           },
           "description": "the hex-encoded script"
         }
@@ -2528,7 +2528,7 @@
                 },
                 "hex": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "The raw output script bytes, hex-encoded"
                 },
                 "type": {
@@ -2800,7 +2800,7 @@
             },
             "hex": {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]+$",
+              "pattern": "^([0-9a-fA-F]{2})*$",
               "description": "The hex-encoded network transaction if complete"
             }
           },
@@ -2903,7 +2903,7 @@
             },
             "base_hash": {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]+$",
+              "pattern": "^([0-9a-fA-F]{2})*$",
               "description": "the hash of the base of the snapshot"
             },
             "base_height": {
@@ -2916,7 +2916,7 @@
             },
             "txoutset_hash": {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]+$",
+              "pattern": "^([0-9a-fA-F]{2})*$",
               "description": "the hash of the UTXO set contents"
             },
             "nchaintx": {
@@ -3117,7 +3117,7 @@
                 "properties": {
                   "fingerprint": {
                     "type": "string",
-                    "pattern": "^[0-9a-fA-F]+$",
+                    "pattern": "^([0-9a-fA-F]{2})*$",
                     "description": "Master key fingerprint"
                   },
                   "name": {
@@ -3628,7 +3628,7 @@
             },
             "file_hash": {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]+$",
+              "pattern": "^([0-9a-fA-F]{2})*$",
               "description": "the SHA256 hash of the exported ASMap data"
             }
           },
@@ -3706,7 +3706,7 @@
             },
             "hex": {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]+$",
+              "pattern": "^([0-9a-fA-F]{2})*$",
               "description": "The hex-encoded network transaction if extracted"
             },
             "complete": {
@@ -3731,7 +3731,7 @@
           "required": true,
           "schema": {
             "type": "string",
-            "pattern": "^[0-9a-fA-F]+$"
+            "pattern": "^([0-9a-fA-F]{2})*$"
           },
           "description": "The hex string of the raw transaction"
         },
@@ -3824,7 +3824,7 @@
                   "properties": {
                     "txid": {
                       "type": "string",
-                      "pattern": "^[0-9a-fA-F]+$",
+                      "pattern": "^([0-9a-fA-F]{2})*$",
                       "description": "The transaction id"
                     },
                     "vout": {
@@ -3874,7 +3874,7 @@
                     "type": "array",
                     "items": {
                       "type": "string",
-                      "pattern": "^[0-9a-fA-F]+$"
+                      "pattern": "^([0-9a-fA-F]{2})*$"
                     },
                     "default": [],
                     "description": "Public keys involved in this transaction."
@@ -3883,7 +3883,7 @@
                     "type": "array",
                     "items": {
                       "type": "string",
-                      "pattern": "^[0-9a-fA-F]+$"
+                      "pattern": "^([0-9a-fA-F]{2})*$"
                     },
                     "default": [],
                     "description": "Scripts involved in this transaction."
@@ -3921,7 +3921,7 @@
           "properties": {
             "hex": {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]+$",
+              "pattern": "^([0-9a-fA-F]{2})*$",
               "description": "The resulting raw transaction (hex-encoded string)"
             },
             "fee": {
@@ -3973,7 +3973,7 @@
             "type": "array",
             "items": {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]+$"
+              "pattern": "^([0-9a-fA-F]{2})*$"
             }
           },
           "description": "An array of hex strings which are either txids or raw transactions.\nTxids must reference transactions currently in the mempool.\nAll transactions must be valid and in valid order, otherwise the block will be rejected."
@@ -3995,12 +3995,12 @@
           "properties": {
             "hash": {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]+$",
+              "pattern": "^([0-9a-fA-F]{2})*$",
               "description": "hash of generated block"
             },
             "hex": {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]+$",
+              "pattern": "^([0-9a-fA-F]{2})*$",
               "description": "hex of generated block, only present when submit=false"
             }
           },
@@ -4048,7 +4048,7 @@
           "type": "array",
           "items": {
             "type": "string",
-            "pattern": "^[0-9a-fA-F]+$"
+            "pattern": "^([0-9a-fA-F]{2})*$"
           }
         }
       },
@@ -4090,7 +4090,7 @@
           "type": "array",
           "items": {
             "type": "string",
-            "pattern": "^[0-9a-fA-F]+$"
+            "pattern": "^([0-9a-fA-F]{2})*$"
           }
         }
       },
@@ -4217,7 +4217,7 @@
             },
             "scriptPubKey": {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]+$",
+              "pattern": "^([0-9a-fA-F]{2})*$",
               "description": "The hex-encoded output script generated by the address."
             },
             "ismine": {
@@ -4258,7 +4258,7 @@
             },
             "witness_program": {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]+$",
+              "pattern": "^([0-9a-fA-F]{2})*$",
               "description": "The hex value of the witness program."
             },
             "script": {
@@ -4267,7 +4267,7 @@
             },
             "hex": {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]+$",
+              "pattern": "^([0-9a-fA-F]{2})*$",
               "description": "The redeemscript for the p2sh address."
             },
             "pubkeys": {
@@ -4283,7 +4283,7 @@
             },
             "pubkey": {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]+$",
+              "pattern": "^([0-9a-fA-F]{2})*$",
               "description": "The hex value of the raw public key for single-key addresses (possibly embedded in P2SH or P2WSH)."
             },
             "embedded": {
@@ -4295,7 +4295,7 @@
                 },
                 "scriptPubKey": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "The hex-encoded output script generated by the address."
                 },
                 "isscript": {
@@ -4312,7 +4312,7 @@
                 },
                 "witness_program": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "The hex value of the witness program."
                 },
                 "script": {
@@ -4321,7 +4321,7 @@
                 },
                 "hex": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "The redeemscript for the p2sh address."
                 },
                 "pubkeys": {
@@ -4337,7 +4337,7 @@
                 },
                 "pubkey": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "The hex value of the raw public key for single-key addresses (possibly embedded in P2SH or P2WSH)."
                 },
                 "iscompressed": {
@@ -4353,7 +4353,7 @@
                     },
                     "scriptPubKey": {
                       "type": "string",
-                      "pattern": "^[0-9a-fA-F]+$",
+                      "pattern": "^([0-9a-fA-F]{2})*$",
                       "description": "The hex-encoded output script generated by the address."
                     },
                     "isscript": {
@@ -4370,7 +4370,7 @@
                     },
                     "witness_program": {
                       "type": "string",
-                      "pattern": "^[0-9a-fA-F]+$",
+                      "pattern": "^([0-9a-fA-F]{2})*$",
                       "description": "The hex value of the witness program."
                     },
                     "script": {
@@ -4379,7 +4379,7 @@
                     },
                     "hex": {
                       "type": "string",
-                      "pattern": "^[0-9a-fA-F]+$",
+                      "pattern": "^([0-9a-fA-F]{2})*$",
                       "description": "The redeemscript for the p2sh address."
                     },
                     "pubkeys": {
@@ -4395,7 +4395,7 @@
                     },
                     "pubkey": {
                       "type": "string",
-                      "pattern": "^[0-9a-fA-F]+$",
+                      "pattern": "^([0-9a-fA-F]{2})*$",
                       "description": "The hex value of the raw public key for single-key addresses (possibly embedded in P2SH or P2WSH)."
                     },
                     "iscompressed": {
@@ -4425,12 +4425,12 @@
             },
             "hdseedid": {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]+$",
+              "pattern": "^([0-9a-fA-F]{2})*$",
               "description": "The Hash160 of the HD seed."
             },
             "hdmasterfingerprint": {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]+$",
+              "pattern": "^([0-9a-fA-F]{2})*$",
               "description": "The fingerprint of the master key."
             },
             "labels": {
@@ -4593,7 +4593,7 @@
               "properties": {
                 "hash": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "hash of the block this information was generated on"
                 },
                 "height": {
@@ -4626,7 +4626,7 @@
         "name": "result",
         "schema": {
           "type": "string",
-          "pattern": "^[0-9a-fA-F]+$"
+          "pattern": "^([0-9a-fA-F]{2})*$"
         }
       },
       "x-bitcoin-category": "blockchain"
@@ -4640,7 +4640,7 @@
           "required": true,
           "schema": {
             "type": "string",
-            "pattern": "^[0-9a-fA-F]+$"
+            "pattern": "^([0-9a-fA-F]{2})*$"
           },
           "description": "The block hash"
         },
@@ -4662,7 +4662,7 @@
           "oneOf": [
             {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]+$",
+              "pattern": "^([0-9a-fA-F]{2})*$",
               "description": "for verbosity = 0"
             },
             {
@@ -4670,7 +4670,7 @@
               "properties": {
                 "hash": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "the block hash (same as provided)"
                 },
                 "confirmations": {
@@ -4706,12 +4706,12 @@
                     },
                     "coinbase": {
                       "type": "string",
-                      "pattern": "^[0-9a-fA-F]+$",
+                      "pattern": "^([0-9a-fA-F]{2})*$",
                       "description": "The coinbase input's script"
                     },
                     "witness": {
                       "type": "string",
-                      "pattern": "^[0-9a-fA-F]+$",
+                      "pattern": "^([0-9a-fA-F]{2})*$",
                       "description": "The coinbase input's first (and only) witness stack element, if present"
                     }
                   },
@@ -4734,19 +4734,19 @@
                 },
                 "versionHex": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "The block version formatted in hexadecimal"
                 },
                 "merkleroot": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "The merkle root"
                 },
                 "tx": {
                   "type": "array",
                   "items": {
                     "type": "string",
-                    "pattern": "^[0-9a-fA-F]+$"
+                    "pattern": "^([0-9a-fA-F]{2})*$"
                   },
                   "description": "The transaction ids"
                 },
@@ -4766,12 +4766,12 @@
                 },
                 "bits": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "nBits: compact representation of the block difficulty target"
                 },
                 "target": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "The difficulty target"
                 },
                 "difficulty": {
@@ -4780,7 +4780,7 @@
                 },
                 "chainwork": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "Expected number of hashes required to produce the chain up to this block (in hex)"
                 },
                 "nTx": {
@@ -4789,12 +4789,12 @@
                 },
                 "previousblockhash": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "The hash of the previous block (if available)"
                 },
                 "nextblockhash": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "The hash of the next block (if available)"
                 }
               },
@@ -4827,7 +4827,7 @@
               "properties": {
                 "hash": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "the block hash (same as provided)"
                 },
                 "confirmations": {
@@ -4863,12 +4863,12 @@
                     },
                     "coinbase": {
                       "type": "string",
-                      "pattern": "^[0-9a-fA-F]+$",
+                      "pattern": "^([0-9a-fA-F]{2})*$",
                       "description": "The coinbase input's script"
                     },
                     "witness": {
                       "type": "string",
-                      "pattern": "^[0-9a-fA-F]+$",
+                      "pattern": "^([0-9a-fA-F]{2})*$",
                       "description": "The coinbase input's first (and only) witness stack element, if present"
                     }
                   },
@@ -4891,12 +4891,12 @@
                 },
                 "versionHex": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "The block version formatted in hexadecimal"
                 },
                 "merkleroot": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "The merkle root"
                 },
                 "tx": {
@@ -4906,12 +4906,12 @@
                     "properties": {
                       "txid": {
                         "type": "string",
-                        "pattern": "^[0-9a-fA-F]+$",
+                        "pattern": "^([0-9a-fA-F]{2})*$",
                         "description": "The transaction id"
                       },
                       "hash": {
                         "type": "string",
-                        "pattern": "^[0-9a-fA-F]+$",
+                        "pattern": "^([0-9a-fA-F]{2})*$",
                         "description": "The transaction hash (differs from txid for witness transactions)"
                       },
                       "size": {
@@ -4942,12 +4942,12 @@
                           "properties": {
                             "coinbase": {
                               "type": "string",
-                              "pattern": "^[0-9a-fA-F]+$",
+                              "pattern": "^([0-9a-fA-F]{2})*$",
                               "description": "The coinbase value (only if coinbase transaction)"
                             },
                             "txid": {
                               "type": "string",
-                              "pattern": "^[0-9a-fA-F]+$",
+                              "pattern": "^([0-9a-fA-F]{2})*$",
                               "description": "The transaction id (if not coinbase transaction)"
                             },
                             "vout": {
@@ -4963,7 +4963,7 @@
                                 },
                                 "hex": {
                                   "type": "string",
-                                  "pattern": "^[0-9a-fA-F]+$",
+                                  "pattern": "^([0-9a-fA-F]{2})*$",
                                   "description": "The raw signature script bytes, hex-encoded"
                                 }
                               },
@@ -4978,7 +4978,7 @@
                               "type": "array",
                               "items": {
                                 "type": "string",
-                                "pattern": "^[0-9a-fA-F]+$"
+                                "pattern": "^([0-9a-fA-F]{2})*$"
                               }
                             },
                             "sequence": {
@@ -5019,7 +5019,7 @@
                                 },
                                 "hex": {
                                   "type": "string",
-                                  "pattern": "^[0-9a-fA-F]+$",
+                                  "pattern": "^([0-9a-fA-F]{2})*$",
                                   "description": "The raw output script bytes, hex-encoded"
                                 },
                                 "address": {
@@ -5054,7 +5054,7 @@
                       },
                       "hex": {
                         "type": "string",
-                        "pattern": "^[0-9a-fA-F]+$",
+                        "pattern": "^([0-9a-fA-F]{2})*$",
                         "description": "The hex-encoded transaction data"
                       }
                     },
@@ -5089,12 +5089,12 @@
                 },
                 "bits": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "nBits: compact representation of the block difficulty target"
                 },
                 "target": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "The difficulty target"
                 },
                 "difficulty": {
@@ -5103,7 +5103,7 @@
                 },
                 "chainwork": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "Expected number of hashes required to produce the chain up to this block (in hex)"
                 },
                 "nTx": {
@@ -5112,12 +5112,12 @@
                 },
                 "previousblockhash": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "The hash of the previous block (if available)"
                 },
                 "nextblockhash": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "The hash of the next block (if available)"
                 }
               },
@@ -5150,7 +5150,7 @@
               "properties": {
                 "hash": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "the block hash (same as provided)"
                 },
                 "confirmations": {
@@ -5186,12 +5186,12 @@
                     },
                     "coinbase": {
                       "type": "string",
-                      "pattern": "^[0-9a-fA-F]+$",
+                      "pattern": "^([0-9a-fA-F]{2})*$",
                       "description": "The coinbase input's script"
                     },
                     "witness": {
                       "type": "string",
-                      "pattern": "^[0-9a-fA-F]+$",
+                      "pattern": "^([0-9a-fA-F]{2})*$",
                       "description": "The coinbase input's first (and only) witness stack element, if present"
                     }
                   },
@@ -5214,12 +5214,12 @@
                 },
                 "versionHex": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "The block version formatted in hexadecimal"
                 },
                 "merkleroot": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "The merkle root"
                 },
                 "tx": {
@@ -5229,12 +5229,12 @@
                     "properties": {
                       "txid": {
                         "type": "string",
-                        "pattern": "^[0-9a-fA-F]+$",
+                        "pattern": "^([0-9a-fA-F]{2})*$",
                         "description": "The transaction id"
                       },
                       "hash": {
                         "type": "string",
-                        "pattern": "^[0-9a-fA-F]+$",
+                        "pattern": "^([0-9a-fA-F]{2})*$",
                         "description": "The transaction hash (differs from txid for witness transactions)"
                       },
                       "size": {
@@ -5265,12 +5265,12 @@
                           "properties": {
                             "coinbase": {
                               "type": "string",
-                              "pattern": "^[0-9a-fA-F]+$",
+                              "pattern": "^([0-9a-fA-F]{2})*$",
                               "description": "The coinbase value (only if coinbase transaction)"
                             },
                             "txid": {
                               "type": "string",
-                              "pattern": "^[0-9a-fA-F]+$",
+                              "pattern": "^([0-9a-fA-F]{2})*$",
                               "description": "The transaction id (if not coinbase transaction)"
                             },
                             "vout": {
@@ -5286,7 +5286,7 @@
                                 },
                                 "hex": {
                                   "type": "string",
-                                  "pattern": "^[0-9a-fA-F]+$",
+                                  "pattern": "^([0-9a-fA-F]{2})*$",
                                   "description": "The raw signature script bytes, hex-encoded"
                                 }
                               },
@@ -5301,7 +5301,7 @@
                               "type": "array",
                               "items": {
                                 "type": "string",
-                                "pattern": "^[0-9a-fA-F]+$"
+                                "pattern": "^([0-9a-fA-F]{2})*$"
                               }
                             },
                             "prevout": {
@@ -5333,7 +5333,7 @@
                                     },
                                     "hex": {
                                       "type": "string",
-                                      "pattern": "^[0-9a-fA-F]+$",
+                                      "pattern": "^([0-9a-fA-F]{2})*$",
                                       "description": "The raw output script bytes, hex-encoded"
                                     },
                                     "address": {
@@ -5401,7 +5401,7 @@
                                 },
                                 "hex": {
                                   "type": "string",
-                                  "pattern": "^[0-9a-fA-F]+$",
+                                  "pattern": "^([0-9a-fA-F]{2})*$",
                                   "description": "The raw output script bytes, hex-encoded"
                                 },
                                 "address": {
@@ -5436,7 +5436,7 @@
                       },
                       "hex": {
                         "type": "string",
-                        "pattern": "^[0-9a-fA-F]+$",
+                        "pattern": "^([0-9a-fA-F]{2})*$",
                         "description": "The hex-encoded transaction data"
                       }
                     },
@@ -5471,12 +5471,12 @@
                 },
                 "bits": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "nBits: compact representation of the block difficulty target"
                 },
                 "target": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "The difficulty target"
                 },
                 "difficulty": {
@@ -5485,7 +5485,7 @@
                 },
                 "chainwork": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "Expected number of hashes required to produce the chain up to this block (in hex)"
                 },
                 "nTx": {
@@ -5494,12 +5494,12 @@
                 },
                 "previousblockhash": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "The hash of the previous block (if available)"
                 },
                 "nextblockhash": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "The hash of the next block (if available)"
                 }
               },
@@ -5559,12 +5559,12 @@
             },
             "bits": {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]+$",
+              "pattern": "^([0-9a-fA-F]{2})*$",
               "description": "nBits: compact representation of the block difficulty target"
             },
             "target": {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]+$",
+              "pattern": "^([0-9a-fA-F]{2})*$",
               "description": "the difficulty target"
             },
             "difficulty": {
@@ -5615,7 +5615,7 @@
                 },
                 "chainwork": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "total amount of work in background validated chain, in hexadecimal"
                 }
               },
@@ -5632,7 +5632,7 @@
             },
             "chainwork": {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]+$",
+              "pattern": "^([0-9a-fA-F]{2})*$",
               "description": "total amount of work in active chain, in hexadecimal"
             },
             "size_on_disk": {
@@ -5657,7 +5657,7 @@
             },
             "signet_challenge": {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]+$",
+              "pattern": "^([0-9a-fA-F]{2})*$",
               "description": "the block challenge (aka. block script), in hexadecimal (only present if the current network is a signet)"
             },
             "warnings": {
@@ -5711,7 +5711,7 @@
           "required": true,
           "schema": {
             "type": "string",
-            "pattern": "^[0-9a-fA-F]+$"
+            "pattern": "^([0-9a-fA-F]{2})*$"
           },
           "description": "The hash of the block"
         },
@@ -5732,12 +5732,12 @@
           "properties": {
             "filter": {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]+$",
+              "pattern": "^([0-9a-fA-F]{2})*$",
               "description": "the hex-encoded filter data"
             },
             "header": {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]+$",
+              "pattern": "^([0-9a-fA-F]{2})*$",
               "description": "the hex-encoded filter header"
             }
           },
@@ -5759,7 +5759,7 @@
           "required": true,
           "schema": {
             "type": "string",
-            "pattern": "^[0-9a-fA-F]+$"
+            "pattern": "^([0-9a-fA-F]{2})*$"
           },
           "description": "The block hash to try to fetch"
         },
@@ -5799,7 +5799,7 @@
         "name": "result",
         "schema": {
           "type": "string",
-          "pattern": "^[0-9a-fA-F]+$"
+          "pattern": "^([0-9a-fA-F]{2})*$"
         }
       },
       "x-bitcoin-category": "blockchain"
@@ -5813,7 +5813,7 @@
           "required": true,
           "schema": {
             "type": "string",
-            "pattern": "^[0-9a-fA-F]+$"
+            "pattern": "^([0-9a-fA-F]{2})*$"
           },
           "description": "The block hash"
         },
@@ -5836,7 +5836,7 @@
               "properties": {
                 "hash": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "the block hash (same as provided)"
                 },
                 "confirmations": {
@@ -5853,12 +5853,12 @@
                 },
                 "versionHex": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "The block version formatted in hexadecimal"
                 },
                 "merkleroot": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "The merkle root"
                 },
                 "time": {
@@ -5877,12 +5877,12 @@
                 },
                 "bits": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "nBits: compact representation of the block difficulty target"
                 },
                 "target": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "The difficulty target"
                 },
                 "difficulty": {
@@ -5891,7 +5891,7 @@
                 },
                 "chainwork": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "Expected number of hashes required to produce the current chain"
                 },
                 "nTx": {
@@ -5900,12 +5900,12 @@
                 },
                 "previousblockhash": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "The hash of the previous block (if available)"
                 },
                 "nextblockhash": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "The hash of the next block (if available)"
                 }
               },
@@ -5930,7 +5930,7 @@
             },
             {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]+$",
+              "pattern": "^([0-9a-fA-F]{2})*$",
               "description": "for verbose=false"
             }
           ]
@@ -5989,7 +5989,7 @@
             },
             "blockhash": {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]+$",
+              "pattern": "^([0-9a-fA-F]{2})*$",
               "description": "The block hash (to check for potential reorgs)"
             },
             "feerate_percentiles": {
@@ -6160,7 +6160,7 @@
               },
               "data": {
                 "type": "string",
-                "pattern": "^[0-9a-fA-F]+$",
+                "pattern": "^([0-9a-fA-F]{2})*$",
                 "description": "proposed block data to check, encoded in hexadecimal; valid only for mode=\"proposal\""
               }
             },
@@ -6226,17 +6226,17 @@
                     "properties": {
                       "data": {
                         "type": "string",
-                        "pattern": "^[0-9a-fA-F]+$",
+                        "pattern": "^([0-9a-fA-F]{2})*$",
                         "description": "transaction data encoded in hexadecimal (byte-for-byte)"
                       },
                       "txid": {
                         "type": "string",
-                        "pattern": "^[0-9a-fA-F]+$",
+                        "pattern": "^([0-9a-fA-F]{2})*$",
                         "description": "transaction hash excluding witness data, shown in byte-reversed hex"
                       },
                       "hash": {
                         "type": "string",
-                        "pattern": "^[0-9a-fA-F]+$",
+                        "pattern": "^([0-9a-fA-F]{2})*$",
                         "description": "transaction hash including witness data, shown in byte-reversed hex"
                       },
                       "depends": {
@@ -6276,7 +6276,7 @@
                   "type": "object",
                   "additionalProperties": {
                     "type": "string",
-                    "pattern": "^[0-9a-fA-F]+$"
+                    "pattern": "^([0-9a-fA-F]{2})*$"
                   },
                   "description": "data that should be included in the coinbase's scriptSig content"
                 },
@@ -6306,7 +6306,7 @@
                 },
                 "noncerange": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "A range of valid nonces"
                 },
                 "sigoplimit": {
@@ -6336,12 +6336,12 @@
                 },
                 "signet_challenge": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "Only on signet"
                 },
                 "default_witness_commitment": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "a valid witness commitment for the unmodified block template"
                 }
               },
@@ -6398,17 +6398,17 @@
                   },
                   "bestblockhash": {
                     "type": "string",
-                    "pattern": "^[0-9a-fA-F]+$",
+                    "pattern": "^([0-9a-fA-F]{2})*$",
                     "description": "blockhash of the tip"
                   },
                   "bits": {
                     "type": "string",
-                    "pattern": "^[0-9a-fA-F]+$",
+                    "pattern": "^([0-9a-fA-F]{2})*$",
                     "description": "nBits: compact representation of the block difficulty target"
                   },
                   "target": {
                     "type": "string",
-                    "pattern": "^[0-9a-fA-F]+$",
+                    "pattern": "^([0-9a-fA-F]{2})*$",
                     "description": "The difficulty target"
                   },
                   "difficulty": {
@@ -6421,7 +6421,7 @@
                   },
                   "snapshot_blockhash": {
                     "type": "string",
-                    "pattern": "^[0-9a-fA-F]+$",
+                    "pattern": "^([0-9a-fA-F]{2})*$",
                     "description": "the base block of the snapshot this chainstate is based on, if any"
                   },
                   "coins_db_cache_bytes": {
@@ -6479,7 +6479,7 @@
               },
               "hash": {
                 "type": "string",
-                "pattern": "^[0-9a-fA-F]+$",
+                "pattern": "^([0-9a-fA-F]{2})*$",
                 "description": "block hash of the tip"
               },
               "branchlen": {
@@ -6521,7 +6521,7 @@
           "required": false,
           "schema": {
             "type": "string",
-            "pattern": "^[0-9a-fA-F]+$",
+            "pattern": "^([0-9a-fA-F]{2})*$",
             "x-bitcoin-default-hint": "chain tip"
           },
           "description": "The hash of the block that ends the window."
@@ -6543,7 +6543,7 @@
             },
             "window_final_block_hash": {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]+$",
+              "pattern": "^([0-9a-fA-F]{2})*$",
               "description": "The hash of the final block in the window"
             },
             "window_final_block_height": {
@@ -6599,7 +6599,7 @@
           "required": false,
           "schema": {
             "type": "string",
-            "pattern": "^[0-9a-fA-F]+$",
+            "pattern": "^([0-9a-fA-F]{2})*$",
             "x-bitcoin-default-hint": "hash of current chain tip"
           },
           "description": "The block hash at which to query deployment state"
@@ -6754,7 +6754,7 @@
             "type": "array",
             "items": {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]+$"
+              "pattern": "^([0-9a-fA-F]{2})*$"
             }
           },
           "description": "The list of blockhashes to examine for activity. Order doesn't matter. Must be along main chain or an error is thrown.\n"
@@ -6843,7 +6843,7 @@
                       },
                       "blockhash": {
                         "type": "string",
-                        "pattern": "^[0-9a-fA-F]+$",
+                        "pattern": "^([0-9a-fA-F]{2})*$",
                         "description": "The blockhash this spend appears in (omitted if unconfirmed)"
                       },
                       "height": {
@@ -6852,7 +6852,7 @@
                       },
                       "spend_txid": {
                         "type": "string",
-                        "pattern": "^[0-9a-fA-F]+$",
+                        "pattern": "^([0-9a-fA-F]{2})*$",
                         "description": "The txid of the spending transaction"
                       },
                       "spend_vin": {
@@ -6861,7 +6861,7 @@
                       },
                       "prevout_txid": {
                         "type": "string",
-                        "pattern": "^[0-9a-fA-F]+$",
+                        "pattern": "^([0-9a-fA-F]{2})*$",
                         "description": "The txid of the prevout"
                       },
                       "prevout_vout": {
@@ -6881,7 +6881,7 @@
                           },
                           "hex": {
                             "type": "string",
-                            "pattern": "^[0-9a-fA-F]+$",
+                            "pattern": "^([0-9a-fA-F]{2})*$",
                             "description": "The raw output script bytes, hex-encoded"
                           },
                           "address": {
@@ -6927,7 +6927,7 @@
                       },
                       "blockhash": {
                         "type": "string",
-                        "pattern": "^[0-9a-fA-F]+$",
+                        "pattern": "^([0-9a-fA-F]{2})*$",
                         "description": "The block that this receive is in (omitted if unconfirmed)"
                       },
                       "height": {
@@ -6936,7 +6936,7 @@
                       },
                       "txid": {
                         "type": "string",
-                        "pattern": "^[0-9a-fA-F]+$",
+                        "pattern": "^([0-9a-fA-F]{2})*$",
                         "description": "The txid of the receiving transaction"
                       },
                       "vout": {
@@ -6956,7 +6956,7 @@
                           },
                           "hex": {
                             "type": "string",
-                            "pattern": "^[0-9a-fA-F]+$",
+                            "pattern": "^([0-9a-fA-F]{2})*$",
                             "description": "The raw output script bytes, hex-encoded"
                           },
                           "address": {
@@ -7271,7 +7271,7 @@
           "required": true,
           "schema": {
             "type": "string",
-            "pattern": "^[0-9a-fA-F]+$"
+            "pattern": "^([0-9a-fA-F]{2})*$"
           },
           "description": "The transaction id (must be in mempool)"
         },
@@ -7293,7 +7293,7 @@
               "type": "array",
               "items": {
                 "type": "string",
-                "pattern": "^[0-9a-fA-F]+$"
+                "pattern": "^([0-9a-fA-F]{2})*$"
               },
               "description": "for verbose = false"
             },
@@ -7349,7 +7349,7 @@
                   },
                   "wtxid": {
                     "type": "string",
-                    "pattern": "^[0-9a-fA-F]+$",
+                    "pattern": "^([0-9a-fA-F]{2})*$",
                     "description": "hash of serialized transaction, including witness data"
                   },
                   "fees": {
@@ -7394,7 +7394,7 @@
                     "type": "array",
                     "items": {
                       "type": "string",
-                      "pattern": "^[0-9a-fA-F]+$"
+                      "pattern": "^([0-9a-fA-F]{2})*$"
                     },
                     "description": "unconfirmed transactions used as inputs for this transaction"
                   },
@@ -7402,7 +7402,7 @@
                     "type": "array",
                     "items": {
                       "type": "string",
-                      "pattern": "^[0-9a-fA-F]+$"
+                      "pattern": "^([0-9a-fA-F]{2})*$"
                     },
                     "description": "unconfirmed transactions spending outputs from this transaction"
                   },
@@ -7447,7 +7447,7 @@
           "required": true,
           "schema": {
             "type": "string",
-            "pattern": "^[0-9a-fA-F]+$"
+            "pattern": "^([0-9a-fA-F]{2})*$"
           },
           "description": "The txid of a transaction in the cluster"
         }
@@ -7483,7 +7483,7 @@
                     "type": "array",
                     "items": {
                       "type": "string",
-                      "pattern": "^[0-9a-fA-F]+$"
+                      "pattern": "^([0-9a-fA-F]{2})*$"
                     },
                     "description": "transactions in this chunk in mining order"
                   }
@@ -7517,7 +7517,7 @@
           "required": true,
           "schema": {
             "type": "string",
-            "pattern": "^[0-9a-fA-F]+$"
+            "pattern": "^([0-9a-fA-F]{2})*$"
           },
           "description": "The transaction id (must be in mempool)"
         },
@@ -7539,7 +7539,7 @@
               "type": "array",
               "items": {
                 "type": "string",
-                "pattern": "^[0-9a-fA-F]+$"
+                "pattern": "^([0-9a-fA-F]{2})*$"
               },
               "description": "for verbose = false"
             },
@@ -7595,7 +7595,7 @@
                   },
                   "wtxid": {
                     "type": "string",
-                    "pattern": "^[0-9a-fA-F]+$",
+                    "pattern": "^([0-9a-fA-F]{2})*$",
                     "description": "hash of serialized transaction, including witness data"
                   },
                   "fees": {
@@ -7640,7 +7640,7 @@
                     "type": "array",
                     "items": {
                       "type": "string",
-                      "pattern": "^[0-9a-fA-F]+$"
+                      "pattern": "^([0-9a-fA-F]{2})*$"
                     },
                     "description": "unconfirmed transactions used as inputs for this transaction"
                   },
@@ -7648,7 +7648,7 @@
                     "type": "array",
                     "items": {
                       "type": "string",
-                      "pattern": "^[0-9a-fA-F]+$"
+                      "pattern": "^([0-9a-fA-F]{2})*$"
                     },
                     "description": "unconfirmed transactions spending outputs from this transaction"
                   },
@@ -7693,7 +7693,7 @@
           "required": true,
           "schema": {
             "type": "string",
-            "pattern": "^[0-9a-fA-F]+$"
+            "pattern": "^([0-9a-fA-F]{2})*$"
           },
           "description": "The transaction id (must be in mempool)"
         }
@@ -7750,7 +7750,7 @@
             },
             "wtxid": {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]+$",
+              "pattern": "^([0-9a-fA-F]{2})*$",
               "description": "hash of serialized transaction, including witness data"
             },
             "fees": {
@@ -7795,7 +7795,7 @@
               "type": "array",
               "items": {
                 "type": "string",
-                "pattern": "^[0-9a-fA-F]+$"
+                "pattern": "^([0-9a-fA-F]{2})*$"
               },
               "description": "unconfirmed transactions used as inputs for this transaction"
             },
@@ -7803,7 +7803,7 @@
               "type": "array",
               "items": {
                 "type": "string",
-                "pattern": "^[0-9a-fA-F]+$"
+                "pattern": "^([0-9a-fA-F]{2})*$"
               },
               "description": "unconfirmed transactions spending outputs from this transaction"
             },
@@ -7985,7 +7985,7 @@
             },
             "bits": {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]+$",
+              "pattern": "^([0-9a-fA-F]{2})*$",
               "description": "The current nBits, compact representation of the block difficulty target"
             },
             "difficulty": {
@@ -7994,7 +7994,7 @@
             },
             "target": {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]+$",
+              "pattern": "^([0-9a-fA-F]{2})*$",
               "description": "The current target"
             },
             "networkhashps": {
@@ -8016,7 +8016,7 @@
             },
             "signet_challenge": {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]+$",
+              "pattern": "^([0-9a-fA-F]{2})*$",
               "description": "The block challenge (aka. block script), in hexadecimal (only present if the current network is a signet)"
             },
             "next": {
@@ -8028,7 +8028,7 @@
                 },
                 "bits": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "The next target nBits"
                 },
                 "difficulty": {
@@ -8037,7 +8037,7 @@
                 },
                 "target": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "The next target"
                 }
               },
@@ -8201,7 +8201,7 @@
             },
             "localservices": {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]+$",
+              "pattern": "^([0-9a-fA-F]{2})*$",
               "description": "the services we offer to the network"
             },
             "localservicesnames": {
@@ -8304,7 +8304,7 @@
             },
             "asmap_version": {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]+$",
+              "pattern": "^([0-9a-fA-F]{2})*$",
               "description": "the SHA256 hash of the asmap data used for IP bucketing (only displayed if the -asmap config option is set)"
             },
             "relayfee": {
@@ -8644,7 +8644,7 @@
               "type": "array",
               "items": {
                 "type": "string",
-                "pattern": "^[0-9a-fA-F]+$"
+                "pattern": "^([0-9a-fA-F]{2})*$"
               },
               "description": "for verbose = 0"
             },
@@ -8655,12 +8655,12 @@
                 "properties": {
                   "txid": {
                     "type": "string",
-                    "pattern": "^[0-9a-fA-F]+$",
+                    "pattern": "^([0-9a-fA-F]{2})*$",
                     "description": "The transaction hash in hex"
                   },
                   "wtxid": {
                     "type": "string",
-                    "pattern": "^[0-9a-fA-F]+$",
+                    "pattern": "^([0-9a-fA-F]{2})*$",
                     "description": "The transaction witness hash in hex"
                   },
                   "bytes": {
@@ -8706,12 +8706,12 @@
                 "properties": {
                   "txid": {
                     "type": "string",
-                    "pattern": "^[0-9a-fA-F]+$",
+                    "pattern": "^([0-9a-fA-F]{2})*$",
                     "description": "The transaction hash in hex"
                   },
                   "wtxid": {
                     "type": "string",
-                    "pattern": "^[0-9a-fA-F]+$",
+                    "pattern": "^([0-9a-fA-F]{2})*$",
                     "description": "The transaction witness hash in hex"
                   },
                   "bytes": {
@@ -8738,7 +8738,7 @@
                   },
                   "hex": {
                     "type": "string",
-                    "pattern": "^[0-9a-fA-F]+$",
+                    "pattern": "^([0-9a-fA-F]{2})*$",
                     "description": "The serialized, hex-encoded transaction data"
                   }
                 },
@@ -8798,7 +8798,7 @@
               },
               "services": {
                 "type": "string",
-                "pattern": "^[0-9a-fA-F]+$",
+                "pattern": "^([0-9a-fA-F]{2})*$",
                 "description": "The services offered"
               },
               "servicesnames": {
@@ -9049,17 +9049,17 @@
                 "properties": {
                   "txid": {
                     "type": "string",
-                    "pattern": "^[0-9a-fA-F]+$",
+                    "pattern": "^([0-9a-fA-F]{2})*$",
                     "description": "The transaction hash in hex"
                   },
                   "wtxid": {
                     "type": "string",
-                    "pattern": "^[0-9a-fA-F]+$",
+                    "pattern": "^([0-9a-fA-F]{2})*$",
                     "description": "The transaction witness hash in hex"
                   },
                   "hex": {
                     "type": "string",
-                    "pattern": "^[0-9a-fA-F]+$",
+                    "pattern": "^([0-9a-fA-F]{2})*$",
                     "description": "The serialized, hex-encoded transaction data"
                   },
                   "time_added": {
@@ -9240,7 +9240,7 @@
               "type": "array",
               "items": {
                 "type": "string",
-                "pattern": "^[0-9a-fA-F]+$"
+                "pattern": "^([0-9a-fA-F]{2})*$"
               },
               "description": "for verbose = false"
             },
@@ -9296,7 +9296,7 @@
                   },
                   "wtxid": {
                     "type": "string",
-                    "pattern": "^[0-9a-fA-F]+$",
+                    "pattern": "^([0-9a-fA-F]{2})*$",
                     "description": "hash of serialized transaction, including witness data"
                   },
                   "fees": {
@@ -9341,7 +9341,7 @@
                     "type": "array",
                     "items": {
                       "type": "string",
-                      "pattern": "^[0-9a-fA-F]+$"
+                      "pattern": "^([0-9a-fA-F]{2})*$"
                     },
                     "description": "unconfirmed transactions used as inputs for this transaction"
                   },
@@ -9349,7 +9349,7 @@
                     "type": "array",
                     "items": {
                       "type": "string",
-                      "pattern": "^[0-9a-fA-F]+$"
+                      "pattern": "^([0-9a-fA-F]{2})*$"
                     },
                     "description": "unconfirmed transactions spending outputs from this transaction"
                   },
@@ -9387,7 +9387,7 @@
                   "type": "array",
                   "items": {
                     "type": "string",
-                    "pattern": "^[0-9a-fA-F]+$"
+                    "pattern": "^([0-9a-fA-F]{2})*$"
                   }
                 },
                 "mempool_sequence": {
@@ -9416,7 +9416,7 @@
           "required": true,
           "schema": {
             "type": "string",
-            "pattern": "^[0-9a-fA-F]+$"
+            "pattern": "^([0-9a-fA-F]{2})*$"
           },
           "description": "The transaction id"
         },
@@ -9436,7 +9436,7 @@
           "required": false,
           "schema": {
             "type": "string",
-            "pattern": "^[0-9a-fA-F]+$"
+            "pattern": "^([0-9a-fA-F]{2})*$"
           },
           "description": "The block in which to look for the transaction"
         }
@@ -9458,7 +9458,7 @@
                 },
                 "blockhash": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "the block hash"
                 },
                 "vsize_adjusted": {
@@ -9480,17 +9480,17 @@
                 },
                 "hex": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "The serialized, hex-encoded data for 'txid'"
                 },
                 "txid": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "The transaction id (same as provided)"
                 },
                 "hash": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "The transaction hash (differs from txid for witness transactions)"
                 },
                 "size": {
@@ -9521,12 +9521,12 @@
                     "properties": {
                       "coinbase": {
                         "type": "string",
-                        "pattern": "^[0-9a-fA-F]+$",
+                        "pattern": "^([0-9a-fA-F]{2})*$",
                         "description": "The coinbase value (only if coinbase transaction)"
                       },
                       "txid": {
                         "type": "string",
-                        "pattern": "^[0-9a-fA-F]+$",
+                        "pattern": "^([0-9a-fA-F]{2})*$",
                         "description": "The transaction id (if not coinbase transaction)"
                       },
                       "vout": {
@@ -9542,7 +9542,7 @@
                           },
                           "hex": {
                             "type": "string",
-                            "pattern": "^[0-9a-fA-F]+$",
+                            "pattern": "^([0-9a-fA-F]{2})*$",
                             "description": "The raw signature script bytes, hex-encoded"
                           }
                         },
@@ -9557,7 +9557,7 @@
                         "type": "array",
                         "items": {
                           "type": "string",
-                          "pattern": "^[0-9a-fA-F]+$"
+                          "pattern": "^([0-9a-fA-F]{2})*$"
                         }
                       },
                       "sequence": {
@@ -9598,7 +9598,7 @@
                           },
                           "hex": {
                             "type": "string",
-                            "pattern": "^[0-9a-fA-F]+$",
+                            "pattern": "^([0-9a-fA-F]{2})*$",
                             "description": "The raw output script bytes, hex-encoded"
                           },
                           "address": {
@@ -9652,7 +9652,7 @@
                 },
                 "blockhash": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "the block hash"
                 },
                 "vsize_adjusted": {
@@ -9674,7 +9674,7 @@
                 },
                 "hex": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "The serialized, hex-encoded data for 'txid'"
                 },
                 "fee": {
@@ -9683,12 +9683,12 @@
                 },
                 "txid": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "The transaction id"
                 },
                 "hash": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "The transaction hash (differs from txid for witness transactions)"
                 },
                 "size": {
@@ -9719,12 +9719,12 @@
                     "properties": {
                       "coinbase": {
                         "type": "string",
-                        "pattern": "^[0-9a-fA-F]+$",
+                        "pattern": "^([0-9a-fA-F]{2})*$",
                         "description": "The coinbase value (only if coinbase transaction)"
                       },
                       "txid": {
                         "type": "string",
-                        "pattern": "^[0-9a-fA-F]+$",
+                        "pattern": "^([0-9a-fA-F]{2})*$",
                         "description": "The transaction id (if not coinbase transaction)"
                       },
                       "vout": {
@@ -9740,7 +9740,7 @@
                           },
                           "hex": {
                             "type": "string",
-                            "pattern": "^[0-9a-fA-F]+$",
+                            "pattern": "^([0-9a-fA-F]{2})*$",
                             "description": "The raw signature script bytes, hex-encoded"
                           }
                         },
@@ -9755,7 +9755,7 @@
                         "type": "array",
                         "items": {
                           "type": "string",
-                          "pattern": "^[0-9a-fA-F]+$"
+                          "pattern": "^([0-9a-fA-F]{2})*$"
                         }
                       },
                       "prevout": {
@@ -9787,7 +9787,7 @@
                               },
                               "hex": {
                                 "type": "string",
-                                "pattern": "^[0-9a-fA-F]+$",
+                                "pattern": "^([0-9a-fA-F]{2})*$",
                                 "description": "The raw output script bytes, hex-encoded"
                               },
                               "address": {
@@ -9855,7 +9855,7 @@
                           },
                           "hex": {
                             "type": "string",
-                            "pattern": "^[0-9a-fA-F]+$",
+                            "pattern": "^([0-9a-fA-F]{2})*$",
                             "description": "The raw output script bytes, hex-encoded"
                           },
                           "address": {
@@ -10090,7 +10090,7 @@
             },
             "blockhash": {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]+$",
+              "pattern": "^([0-9a-fA-F]{2})*$",
               "description": "The block hash containing the transaction."
             },
             "blockheight": {
@@ -10108,19 +10108,19 @@
             },
             "txid": {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]+$",
+              "pattern": "^([0-9a-fA-F]{2})*$",
               "description": "The transaction id."
             },
             "wtxid": {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]+$",
+              "pattern": "^([0-9a-fA-F]{2})*$",
               "description": "The hash of serialized transaction, including witness data."
             },
             "alternate_wtxids": {
               "type": "array",
               "items": {
                 "type": "string",
-                "pattern": "^[0-9a-fA-F]+$"
+                "pattern": "^([0-9a-fA-F]{2})*$"
               },
               "description": "The wtxids of transactions with different witness data but the same txid."
             },
@@ -10128,25 +10128,25 @@
               "type": "array",
               "items": {
                 "type": "string",
-                "pattern": "^[0-9a-fA-F]+$"
+                "pattern": "^([0-9a-fA-F]{2})*$"
               },
               "description": "Confirmed transactions that have been detected by the wallet to conflict with this transaction."
             },
             "replaced_by_txid": {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]+$",
+              "pattern": "^([0-9a-fA-F]{2})*$",
               "description": "Only if 'category' is 'send'. The txid if this tx was replaced."
             },
             "replaces_txid": {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]+$",
+              "pattern": "^([0-9a-fA-F]{2})*$",
               "description": "Only if 'category' is 'send'. The txid if this tx replaces another."
             },
             "mempoolconflicts": {
               "type": "array",
               "items": {
                 "type": "string",
-                "pattern": "^[0-9a-fA-F]+$"
+                "pattern": "^([0-9a-fA-F]{2})*$"
               },
               "description": "Transactions in the mempool that directly conflict with either this transaction or an ancestor transaction"
             },
@@ -10233,7 +10233,7 @@
             },
             "hex": {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]+$",
+              "pattern": "^([0-9a-fA-F]{2})*$",
               "description": "Raw data for transaction"
             },
             "decoded": {
@@ -10241,12 +10241,12 @@
               "properties": {
                 "txid": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "The transaction id"
                 },
                 "hash": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "The transaction hash (differs from txid for witness transactions)"
                 },
                 "size": {
@@ -10277,12 +10277,12 @@
                     "properties": {
                       "coinbase": {
                         "type": "string",
-                        "pattern": "^[0-9a-fA-F]+$",
+                        "pattern": "^([0-9a-fA-F]{2})*$",
                         "description": "The coinbase value (only if coinbase transaction)"
                       },
                       "txid": {
                         "type": "string",
-                        "pattern": "^[0-9a-fA-F]+$",
+                        "pattern": "^([0-9a-fA-F]{2})*$",
                         "description": "The transaction id (if not coinbase transaction)"
                       },
                       "vout": {
@@ -10298,7 +10298,7 @@
                           },
                           "hex": {
                             "type": "string",
-                            "pattern": "^[0-9a-fA-F]+$",
+                            "pattern": "^([0-9a-fA-F]{2})*$",
                             "description": "The raw signature script bytes, hex-encoded"
                           }
                         },
@@ -10313,7 +10313,7 @@
                         "type": "array",
                         "items": {
                           "type": "string",
-                          "pattern": "^[0-9a-fA-F]+$"
+                          "pattern": "^([0-9a-fA-F]{2})*$"
                         }
                       },
                       "sequence": {
@@ -10354,7 +10354,7 @@
                           },
                           "hex": {
                             "type": "string",
-                            "pattern": "^[0-9a-fA-F]+$",
+                            "pattern": "^([0-9a-fA-F]{2})*$",
                             "description": "The raw output script bytes, hex-encoded"
                           },
                           "address": {
@@ -10407,7 +10407,7 @@
               "properties": {
                 "hash": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "hash of the block this information was generated on"
                 },
                 "height": {
@@ -10451,7 +10451,7 @@
           "required": true,
           "schema": {
             "type": "string",
-            "pattern": "^[0-9a-fA-F]+$"
+            "pattern": "^([0-9a-fA-F]{2})*$"
           },
           "description": "The transaction id"
         },
@@ -10486,7 +10486,7 @@
               "properties": {
                 "bestblock": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "The hash of the block at the tip of the chain"
                 },
                 "confirmations": {
@@ -10511,7 +10511,7 @@
                     },
                     "hex": {
                       "type": "string",
-                      "pattern": "^[0-9a-fA-F]+$",
+                      "pattern": "^([0-9a-fA-F]{2})*$",
                       "description": "The raw output script bytes, hex-encoded"
                     },
                     "type": {
@@ -10562,7 +10562,7 @@
             "type": "array",
             "items": {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]+$"
+              "pattern": "^([0-9a-fA-F]{2})*$"
             }
           },
           "description": "The txids to filter"
@@ -10572,7 +10572,7 @@
           "required": false,
           "schema": {
             "type": "string",
-            "pattern": "^[0-9a-fA-F]+$"
+            "pattern": "^([0-9a-fA-F]{2})*$"
           },
           "description": "If specified, looks for txid in the block with this hash"
         }
@@ -10635,7 +10635,7 @@
             },
             "bestblock": {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]+$",
+              "pattern": "^([0-9a-fA-F]{2})*$",
               "description": "The hash of the block at which these statistics are calculated"
             },
             "txouts": {
@@ -10648,12 +10648,12 @@
             },
             "hash_serialized_3": {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]+$",
+              "pattern": "^([0-9a-fA-F]{2})*$",
               "description": "The serialized hash (only present if 'hash_serialized_3' hash_type is chosen)"
             },
             "muhash": {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]+$",
+              "pattern": "^([0-9a-fA-F]{2})*$",
               "description": "The serialized hash (only present if 'muhash' hash_type is chosen)"
             },
             "transactions": {
@@ -10768,7 +10768,7 @@
               "properties": {
                 "txid": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "The transaction id"
                 },
                 "vout": {
@@ -10815,7 +10815,7 @@
             "properties": {
               "txid": {
                 "type": "string",
-                "pattern": "^[0-9a-fA-F]+$",
+                "pattern": "^([0-9a-fA-F]{2})*$",
                 "description": "the transaction id of the checked output"
               },
               "vout": {
@@ -10824,17 +10824,17 @@
               },
               "spendingtxid": {
                 "type": "string",
-                "pattern": "^[0-9a-fA-F]+$",
+                "pattern": "^([0-9a-fA-F]{2})*$",
                 "description": "the transaction id of the mempool transaction spending this output (omitted if unspent)"
               },
               "spendingtx": {
                 "type": "string",
-                "pattern": "^[0-9a-fA-F]+$",
+                "pattern": "^([0-9a-fA-F]{2})*$",
                 "description": "the transaction spending this output (only if return_spending_tx is set, omitted if unspent)"
               },
               "blockhash": {
                 "type": "string",
-                "pattern": "^[0-9a-fA-F]+$",
+                "pattern": "^([0-9a-fA-F]{2})*$",
                 "description": "the hash of the spending block (omitted if unspent or the spending tx is not confirmed)"
               }
             },
@@ -10949,7 +10949,7 @@
               "properties": {
                 "hash": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "hash of the block this information was generated on"
                 },
                 "height": {
@@ -11223,7 +11223,7 @@
           "required": true,
           "schema": {
             "type": "string",
-            "pattern": "^[0-9a-fA-F]+$"
+            "pattern": "^([0-9a-fA-F]{2})*$"
           },
           "description": "A raw transaction in hex funding an already-existing address in wallet"
         },
@@ -11232,7 +11232,7 @@
           "required": true,
           "schema": {
             "type": "string",
-            "pattern": "^[0-9a-fA-F]+$"
+            "pattern": "^([0-9a-fA-F]{2})*$"
           },
           "description": "The hex output from gettxoutproof that contains the transaction"
         }
@@ -11254,7 +11254,7 @@
           "required": true,
           "schema": {
             "type": "string",
-            "pattern": "^[0-9a-fA-F]+$"
+            "pattern": "^([0-9a-fA-F]{2})*$"
           },
           "description": "the hash of the block to mark as invalid"
         }
@@ -11519,7 +11519,7 @@
             "properties": {
               "txid": {
                 "type": "string",
-                "pattern": "^[0-9a-fA-F]+$",
+                "pattern": "^([0-9a-fA-F]{2})*$",
                 "description": "The transaction id locked"
               },
               "vout": {
@@ -11614,7 +11614,7 @@
                 "type": "array",
                 "items": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$"
+                  "pattern": "^([0-9a-fA-F]{2})*$"
                 }
               }
             },
@@ -11807,7 +11807,7 @@
                   },
                   "blockhash": {
                     "type": "string",
-                    "pattern": "^[0-9a-fA-F]+$",
+                    "pattern": "^([0-9a-fA-F]{2})*$",
                     "description": "The block hash containing the transaction."
                   },
                   "blockheight": {
@@ -11825,19 +11825,19 @@
                   },
                   "txid": {
                     "type": "string",
-                    "pattern": "^[0-9a-fA-F]+$",
+                    "pattern": "^([0-9a-fA-F]{2})*$",
                     "description": "The transaction id."
                   },
                   "wtxid": {
                     "type": "string",
-                    "pattern": "^[0-9a-fA-F]+$",
+                    "pattern": "^([0-9a-fA-F]{2})*$",
                     "description": "The hash of serialized transaction, including witness data."
                   },
                   "alternate_wtxids": {
                     "type": "array",
                     "items": {
                       "type": "string",
-                      "pattern": "^[0-9a-fA-F]+$"
+                      "pattern": "^([0-9a-fA-F]{2})*$"
                     },
                     "description": "The wtxids of transactions with different witness data but the same txid."
                   },
@@ -11845,25 +11845,25 @@
                     "type": "array",
                     "items": {
                       "type": "string",
-                      "pattern": "^[0-9a-fA-F]+$"
+                      "pattern": "^([0-9a-fA-F]{2})*$"
                     },
                     "description": "Confirmed transactions that have been detected by the wallet to conflict with this transaction."
                   },
                   "replaced_by_txid": {
                     "type": "string",
-                    "pattern": "^[0-9a-fA-F]+$",
+                    "pattern": "^([0-9a-fA-F]{2})*$",
                     "description": "Only if 'category' is 'send'. The txid if this tx was replaced."
                   },
                   "replaces_txid": {
                     "type": "string",
-                    "pattern": "^[0-9a-fA-F]+$",
+                    "pattern": "^([0-9a-fA-F]{2})*$",
                     "description": "Only if 'category' is 'send'. The txid if this tx replaces another."
                   },
                   "mempoolconflicts": {
                     "type": "array",
                     "items": {
                       "type": "string",
-                      "pattern": "^[0-9a-fA-F]+$"
+                      "pattern": "^([0-9a-fA-F]{2})*$"
                     },
                     "description": "Transactions in the mempool that directly conflict with either this transaction or an ancestor transaction"
                   },
@@ -11963,7 +11963,7 @@
                   },
                   "blockhash": {
                     "type": "string",
-                    "pattern": "^[0-9a-fA-F]+$",
+                    "pattern": "^([0-9a-fA-F]{2})*$",
                     "description": "The block hash containing the transaction."
                   },
                   "blockheight": {
@@ -11981,19 +11981,19 @@
                   },
                   "txid": {
                     "type": "string",
-                    "pattern": "^[0-9a-fA-F]+$",
+                    "pattern": "^([0-9a-fA-F]{2})*$",
                     "description": "The transaction id."
                   },
                   "wtxid": {
                     "type": "string",
-                    "pattern": "^[0-9a-fA-F]+$",
+                    "pattern": "^([0-9a-fA-F]{2})*$",
                     "description": "The hash of serialized transaction, including witness data."
                   },
                   "alternate_wtxids": {
                     "type": "array",
                     "items": {
                       "type": "string",
-                      "pattern": "^[0-9a-fA-F]+$"
+                      "pattern": "^([0-9a-fA-F]{2})*$"
                     },
                     "description": "The wtxids of transactions with different witness data but the same txid."
                   },
@@ -12001,25 +12001,25 @@
                     "type": "array",
                     "items": {
                       "type": "string",
-                      "pattern": "^[0-9a-fA-F]+$"
+                      "pattern": "^([0-9a-fA-F]{2})*$"
                     },
                     "description": "Confirmed transactions that have been detected by the wallet to conflict with this transaction."
                   },
                   "replaced_by_txid": {
                     "type": "string",
-                    "pattern": "^[0-9a-fA-F]+$",
+                    "pattern": "^([0-9a-fA-F]{2})*$",
                     "description": "Only if 'category' is 'send'. The txid if this tx was replaced."
                   },
                   "replaces_txid": {
                     "type": "string",
-                    "pattern": "^[0-9a-fA-F]+$",
+                    "pattern": "^([0-9a-fA-F]{2})*$",
                     "description": "Only if 'category' is 'send'. The txid if this tx replaces another."
                   },
                   "mempoolconflicts": {
                     "type": "array",
                     "items": {
                       "type": "string",
-                      "pattern": "^[0-9a-fA-F]+$"
+                      "pattern": "^([0-9a-fA-F]{2})*$"
                     },
                     "description": "Transactions in the mempool that directly conflict with either this transaction or an ancestor transaction"
                   },
@@ -12081,7 +12081,7 @@
             },
             "lastblock": {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]+$",
+              "pattern": "^([0-9a-fA-F]{2})*$",
               "description": "The hash of the block (target_confirmations-1) from the best block on the main chain, or the genesis hash if the referenced block does not exist yet. This is typically used to feed back into listsinceblock the next time you call it. So you would generally use a target_confirmations of say 6, so you will be continually re-notified of transactions until they've reached 6 confirmations plus any new ones"
             }
           },
@@ -12181,7 +12181,7 @@
               },
               "blockhash": {
                 "type": "string",
-                "pattern": "^[0-9a-fA-F]+$",
+                "pattern": "^([0-9a-fA-F]{2})*$",
                 "description": "The block hash containing the transaction."
               },
               "blockheight": {
@@ -12199,19 +12199,19 @@
               },
               "txid": {
                 "type": "string",
-                "pattern": "^[0-9a-fA-F]+$",
+                "pattern": "^([0-9a-fA-F]{2})*$",
                 "description": "The transaction id."
               },
               "wtxid": {
                 "type": "string",
-                "pattern": "^[0-9a-fA-F]+$",
+                "pattern": "^([0-9a-fA-F]{2})*$",
                 "description": "The hash of serialized transaction, including witness data."
               },
               "alternate_wtxids": {
                 "type": "array",
                 "items": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$"
+                  "pattern": "^([0-9a-fA-F]{2})*$"
                 },
                 "description": "The wtxids of transactions with different witness data but the same txid."
               },
@@ -12219,25 +12219,25 @@
                 "type": "array",
                 "items": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$"
+                  "pattern": "^([0-9a-fA-F]{2})*$"
                 },
                 "description": "Confirmed transactions that have been detected by the wallet to conflict with this transaction."
               },
               "replaced_by_txid": {
                 "type": "string",
-                "pattern": "^[0-9a-fA-F]+$",
+                "pattern": "^([0-9a-fA-F]{2})*$",
                 "description": "Only if 'category' is 'send'. The txid if this tx was replaced."
               },
               "replaces_txid": {
                 "type": "string",
-                "pattern": "^[0-9a-fA-F]+$",
+                "pattern": "^([0-9a-fA-F]{2})*$",
                 "description": "Only if 'category' is 'send'. The txid if this tx replaces another."
               },
               "mempoolconflicts": {
                 "type": "array",
                 "items": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$"
+                  "pattern": "^([0-9a-fA-F]{2})*$"
                 },
                 "description": "Transactions in the mempool that directly conflict with either this transaction or an ancestor transaction"
               },
@@ -12404,7 +12404,7 @@
             "properties": {
               "txid": {
                 "type": "string",
-                "pattern": "^[0-9a-fA-F]+$",
+                "pattern": "^([0-9a-fA-F]{2})*$",
                 "description": "the transaction id"
               },
               "vout": {
@@ -12421,7 +12421,7 @@
               },
               "scriptPubKey": {
                 "type": "string",
-                "pattern": "^[0-9a-fA-F]+$",
+                "pattern": "^([0-9a-fA-F]{2})*$",
                 "description": "the output script"
               },
               "amount": {
@@ -12447,7 +12447,7 @@
               },
               "redeemScript": {
                 "type": "string",
-                "pattern": "^[0-9a-fA-F]+$",
+                "pattern": "^([0-9a-fA-F]{2})*$",
                 "description": "The redeem script if the output script is P2SH"
               },
               "witnessScript": {
@@ -12580,7 +12580,7 @@
             },
             "tip_hash": {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]+$",
+              "pattern": "^([0-9a-fA-F]{2})*$",
               "description": "the hash of the base of the snapshot"
             },
             "base_height": {
@@ -12671,7 +12671,7 @@
               "properties": {
                 "txid": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "The transaction id"
                 },
                 "vout": {
@@ -12849,7 +12849,7 @@
           "required": true,
           "schema": {
             "type": "string",
-            "pattern": "^[0-9a-fA-F]+$"
+            "pattern": "^([0-9a-fA-F]{2})*$"
           },
           "description": "the hash of the block to mark as precious"
         }
@@ -12871,7 +12871,7 @@
           "required": true,
           "schema": {
             "type": "string",
-            "pattern": "^[0-9a-fA-F]+$"
+            "pattern": "^([0-9a-fA-F]{2})*$"
           },
           "description": "The transaction id."
         },
@@ -12931,7 +12931,7 @@
           "required": true,
           "schema": {
             "type": "string",
-            "pattern": "^[0-9a-fA-F]+$"
+            "pattern": "^([0-9a-fA-F]{2})*$"
           },
           "description": "The txid to be bumped"
         },
@@ -12993,7 +12993,7 @@
                           "properties": {
                             "data": {
                               "type": "string",
-                              "pattern": "^[0-9a-fA-F]+$",
+                              "pattern": "^([0-9a-fA-F]{2})*$",
                               "description": "A key-value pair. The key must be \"data\", the value is hex-encoded data that becomes a part of an OP_RETURN output"
                             }
                           },
@@ -13074,7 +13074,7 @@
           "required": true,
           "schema": {
             "type": "string",
-            "pattern": "^[0-9a-fA-F]+$"
+            "pattern": "^([0-9a-fA-F]{2})*$"
           },
           "description": "the hash of the block to reconsider"
         }
@@ -13096,7 +13096,7 @@
           "required": true,
           "schema": {
             "type": "string",
-            "pattern": "^[0-9a-fA-F]+$"
+            "pattern": "^([0-9a-fA-F]{2})*$"
           },
           "description": "The hex-encoded id of the transaction you are deleting"
         }
@@ -13499,7 +13499,7 @@
                   "type": "array",
                   "items": {
                     "type": "string",
-                    "pattern": "^[0-9a-fA-F]+$"
+                    "pattern": "^([0-9a-fA-F]{2})*$"
                   },
                   "description": "Blocks that may have matched a scanobject."
                 },
@@ -13630,7 +13630,7 @@
                 },
                 "bestblock": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "The hash of the block at the tip of the chain"
                 },
                 "unspents": {
@@ -13640,7 +13640,7 @@
                     "properties": {
                       "txid": {
                         "type": "string",
-                        "pattern": "^[0-9a-fA-F]+$",
+                        "pattern": "^([0-9a-fA-F]{2})*$",
                         "description": "The transaction id"
                       },
                       "vout": {
@@ -13649,7 +13649,7 @@
                       },
                       "scriptPubKey": {
                         "type": "string",
-                        "pattern": "^[0-9a-fA-F]+$",
+                        "pattern": "^([0-9a-fA-F]{2})*$",
                         "description": "The output script"
                       },
                       "desc": {
@@ -13671,7 +13671,7 @@
                       },
                       "blockhash": {
                         "type": "string",
-                        "pattern": "^[0-9a-fA-F]+$",
+                        "pattern": "^([0-9a-fA-F]{2})*$",
                         "description": "Blockhash of the unspent transaction output"
                       },
                       "confirmations": {
@@ -13769,7 +13769,7 @@
                       "properties": {
                         "data": {
                           "type": "string",
-                          "pattern": "^[0-9a-fA-F]+$",
+                          "pattern": "^([0-9a-fA-F]{2})*$",
                           "description": "A key-value pair. The key must be \"data\", the value is hex-encoded data that becomes a part of an OP_RETURN output"
                         }
                       },
@@ -13892,7 +13892,7 @@
                   "properties": {
                     "txid": {
                       "type": "string",
-                      "pattern": "^[0-9a-fA-F]+$",
+                      "pattern": "^([0-9a-fA-F]{2})*$",
                       "description": "The transaction id"
                     },
                     "vout": {
@@ -13971,7 +13971,7 @@
                     "type": "array",
                     "items": {
                       "type": "string",
-                      "pattern": "^[0-9a-fA-F]+$"
+                      "pattern": "^([0-9a-fA-F]{2})*$"
                     },
                     "default": [],
                     "description": "Public keys involved in this transaction."
@@ -13980,7 +13980,7 @@
                     "type": "array",
                     "items": {
                       "type": "string",
-                      "pattern": "^[0-9a-fA-F]+$"
+                      "pattern": "^([0-9a-fA-F]{2})*$"
                     },
                     "default": [],
                     "description": "Scripts involved in this transaction."
@@ -14022,12 +14022,12 @@
             },
             "txid": {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]+$",
+              "pattern": "^([0-9a-fA-F]{2})*$",
               "description": "The transaction id for the send. Only 1 transaction is created regardless of the number of addresses."
             },
             "hex": {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]+$",
+              "pattern": "^([0-9a-fA-F]{2})*$",
               "description": "If add_to_wallet is false, the hex-encoded raw transaction with signature(s)"
             },
             "psbt": {
@@ -14146,7 +14146,7 @@
                   "properties": {
                     "txid": {
                       "type": "string",
-                      "pattern": "^[0-9a-fA-F]+$",
+                      "pattern": "^([0-9a-fA-F]{2})*$",
                       "description": "The transaction id"
                     },
                     "vout": {
@@ -14226,7 +14226,7 @@
                     "type": "array",
                     "items": {
                       "type": "string",
-                      "pattern": "^[0-9a-fA-F]+$"
+                      "pattern": "^([0-9a-fA-F]{2})*$"
                     },
                     "default": [],
                     "description": "Public keys involved in this transaction."
@@ -14235,7 +14235,7 @@
                     "type": "array",
                     "items": {
                       "type": "string",
-                      "pattern": "^[0-9a-fA-F]+$"
+                      "pattern": "^([0-9a-fA-F]{2})*$"
                     },
                     "default": [],
                     "description": "Scripts involved in this transaction."
@@ -14268,12 +14268,12 @@
             },
             "txid": {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]+$",
+              "pattern": "^([0-9a-fA-F]{2})*$",
               "description": "The transaction id for the send. Only 1 transaction is created regardless of the number of addresses."
             },
             "hex": {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]+$",
+              "pattern": "^([0-9a-fA-F]{2})*$",
               "description": "If add_to_wallet is false, the hex-encoded raw transaction with signature(s)"
             },
             "psbt": {
@@ -14409,7 +14409,7 @@
           "oneOf": [
             {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]+$",
+              "pattern": "^([0-9a-fA-F]{2})*$",
               "description": "if verbose is not set or set to false"
             },
             {
@@ -14417,7 +14417,7 @@
               "properties": {
                 "txid": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "The transaction id for the send. Only 1 transaction is created regardless of\nthe number of addresses."
                 },
                 "fee_reason": {
@@ -14462,7 +14462,7 @@
           "required": true,
           "schema": {
             "type": "string",
-            "pattern": "^[0-9a-fA-F]+$"
+            "pattern": "^([0-9a-fA-F]{2})*$"
           },
           "description": "The serialized message body to send, in hex, without a message header"
         }
@@ -14486,7 +14486,7 @@
           "required": true,
           "schema": {
             "type": "string",
-            "pattern": "^[0-9a-fA-F]+$"
+            "pattern": "^([0-9a-fA-F]{2})*$"
           },
           "description": "The hex string of the raw transaction"
         },
@@ -14527,7 +14527,7 @@
         "name": "result",
         "schema": {
           "type": "string",
-          "pattern": "^[0-9a-fA-F]+$"
+          "pattern": "^([0-9a-fA-F]{2})*$"
         }
       },
       "x-bitcoin-category": "rawtransactions"
@@ -14652,7 +14652,7 @@
           "oneOf": [
             {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]+$",
+              "pattern": "^([0-9a-fA-F]{2})*$",
               "description": "if verbose is not set or set to false"
             },
             {
@@ -14660,7 +14660,7 @@
               "properties": {
                 "txid": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "The transaction id."
                 },
                 "fee_reason": {
@@ -14938,7 +14938,7 @@
               "properties": {
                 "txid": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "The transaction id"
                 },
                 "vout": {
@@ -14947,17 +14947,17 @@
                 },
                 "scriptPubKey": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "output script"
                 },
                 "redeemScript": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "(required for P2SH) redeem script"
                 },
                 "witnessScript": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "(required for P2WSH or P2SH-P2WSH) witness script"
                 },
                 "amount": {
@@ -14999,7 +14999,7 @@
           "properties": {
             "hex": {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]+$",
+              "pattern": "^([0-9a-fA-F]{2})*$",
               "description": "The hex-encoded raw transaction with signature(s)"
             },
             "complete": {
@@ -15013,7 +15013,7 @@
                 "properties": {
                   "txid": {
                     "type": "string",
-                    "pattern": "^[0-9a-fA-F]+$",
+                    "pattern": "^([0-9a-fA-F]{2})*$",
                     "description": "The hash of the referenced, previous transaction"
                   },
                   "vout": {
@@ -15024,12 +15024,12 @@
                     "type": "array",
                     "items": {
                       "type": "string",
-                      "pattern": "^[0-9a-fA-F]+$"
+                      "pattern": "^([0-9a-fA-F]{2})*$"
                     }
                   },
                   "scriptSig": {
                     "type": "string",
-                    "pattern": "^[0-9a-fA-F]+$",
+                    "pattern": "^([0-9a-fA-F]{2})*$",
                     "description": "The hex-encoded signature script"
                   },
                   "sequence": {
@@ -15085,7 +15085,7 @@
               "properties": {
                 "txid": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "The transaction id"
                 },
                 "vout": {
@@ -15094,17 +15094,17 @@
                 },
                 "scriptPubKey": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "The output script"
                 },
                 "redeemScript": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "(required for P2SH) redeem script"
                 },
                 "witnessScript": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "(required for P2WSH or P2SH-P2WSH) witness script"
                 },
                 "amount": {
@@ -15146,7 +15146,7 @@
           "properties": {
             "hex": {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]+$",
+              "pattern": "^([0-9a-fA-F]{2})*$",
               "description": "The hex-encoded raw transaction with signature(s)"
             },
             "complete": {
@@ -15160,7 +15160,7 @@
                 "properties": {
                   "txid": {
                     "type": "string",
-                    "pattern": "^[0-9a-fA-F]+$",
+                    "pattern": "^([0-9a-fA-F]{2})*$",
                     "description": "The hash of the referenced, previous transaction"
                   },
                   "vout": {
@@ -15171,12 +15171,12 @@
                     "type": "array",
                     "items": {
                       "type": "string",
-                      "pattern": "^[0-9a-fA-F]+$"
+                      "pattern": "^([0-9a-fA-F]{2})*$"
                     }
                   },
                   "scriptSig": {
                     "type": "string",
-                    "pattern": "^[0-9a-fA-F]+$",
+                    "pattern": "^([0-9a-fA-F]{2})*$",
                     "description": "The hex-encoded signature script"
                   },
                   "sequence": {
@@ -15221,7 +15221,7 @@
             "type": "array",
             "items": {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]+$"
+              "pattern": "^([0-9a-fA-F]{2})*$"
             }
           },
           "description": "An array of hex strings of raw transactions.\n"
@@ -15291,7 +15291,7 @@
           "required": true,
           "schema": {
             "type": "string",
-            "pattern": "^[0-9a-fA-F]+$"
+            "pattern": "^([0-9a-fA-F]{2})*$"
           },
           "description": "the hex-encoded block data to submit"
         },
@@ -15332,7 +15332,7 @@
           "required": true,
           "schema": {
             "type": "string",
-            "pattern": "^[0-9a-fA-F]+$"
+            "pattern": "^([0-9a-fA-F]{2})*$"
           },
           "description": "the hex-encoded block header data"
         }
@@ -15356,7 +15356,7 @@
             "type": "array",
             "items": {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]+$"
+              "pattern": "^([0-9a-fA-F]{2})*$"
             }
           },
           "description": "An array of raw transactions.\nThe package must consist of a transaction with (some, all, or none of) its unconfirmed parents. A single transaction is permitted.\nNone of the parents may depend on each other. Parents that are already in mempool do not need to be present in the package.\nThe package must be topologically sorted, with the child being the last element in the array if there are multiple elements."
@@ -15410,12 +15410,12 @@
                 "properties": {
                   "txid": {
                     "type": "string",
-                    "pattern": "^[0-9a-fA-F]+$",
+                    "pattern": "^([0-9a-fA-F]{2})*$",
                     "description": "The transaction hash in hex"
                   },
                   "other-wtxid": {
                     "type": "string",
-                    "pattern": "^[0-9a-fA-F]+$",
+                    "pattern": "^([0-9a-fA-F]{2})*$",
                     "description": "The wtxid of a different transaction with the same txid but different witness found in the mempool. This means the submitted transaction was ignored."
                   },
                   "vsize_adjusted": {
@@ -15447,7 +15447,7 @@
                         "type": "array",
                         "items": {
                           "type": "string",
-                          "pattern": "^[0-9a-fA-F]+$"
+                          "pattern": "^([0-9a-fA-F]{2})*$"
                         },
                         "description": "if effective-feerate is provided, the wtxids of the transactions whose fees and vsizes are included in effective-feerate."
                       }
@@ -15474,7 +15474,7 @@
               "type": "array",
               "items": {
                 "type": "string",
-                "pattern": "^[0-9a-fA-F]+$"
+                "pattern": "^([0-9a-fA-F]{2})*$"
               },
               "description": "List of txids of replaced transactions"
             }
@@ -15511,7 +15511,7 @@
             "type": "array",
             "items": {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]+$"
+              "pattern": "^([0-9a-fA-F]{2})*$"
             }
           },
           "description": "An array of hex strings of raw transactions."
@@ -15542,12 +15542,12 @@
             "properties": {
               "txid": {
                 "type": "string",
-                "pattern": "^[0-9a-fA-F]+$",
+                "pattern": "^([0-9a-fA-F]{2})*$",
                 "description": "The transaction hash in hex"
               },
               "wtxid": {
                 "type": "string",
-                "pattern": "^[0-9a-fA-F]+$",
+                "pattern": "^([0-9a-fA-F]{2})*$",
                 "description": "The transaction witness hash in hex"
               },
               "package-error": {
@@ -15587,7 +15587,7 @@
                     "type": "array",
                     "items": {
                       "type": "string",
-                      "pattern": "^[0-9a-fA-F]+$"
+                      "pattern": "^([0-9a-fA-F]{2})*$"
                     },
                     "description": "transactions whose fees and vsizes are included in effective-feerate."
                   }
@@ -15771,7 +15771,7 @@
             },
             "scriptPubKey": {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]+$",
+              "pattern": "^([0-9a-fA-F]{2})*$",
               "description": "The hex-encoded output script generated by the address"
             },
             "isscript": {
@@ -15788,7 +15788,7 @@
             },
             "witness_program": {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]+$",
+              "pattern": "^([0-9a-fA-F]{2})*$",
               "description": "The hex value of the witness program"
             },
             "error": {
@@ -15888,7 +15888,7 @@
           "required": true,
           "schema": {
             "type": "string",
-            "pattern": "^[0-9a-fA-F]+$"
+            "pattern": "^([0-9a-fA-F]{2})*$"
           },
           "description": "The hex-encoded proof generated by gettxoutproof"
         }
@@ -15899,7 +15899,7 @@
           "type": "array",
           "items": {
             "type": "string",
-            "pattern": "^[0-9a-fA-F]+$"
+            "pattern": "^([0-9a-fA-F]{2})*$"
           }
         }
       },
@@ -15914,7 +15914,7 @@
           "required": true,
           "schema": {
             "type": "string",
-            "pattern": "^[0-9a-fA-F]+$"
+            "pattern": "^([0-9a-fA-F]{2})*$"
           },
           "description": "Block hash to wait for."
         },
@@ -15935,7 +15935,7 @@
           "properties": {
             "hash": {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]+$",
+              "pattern": "^([0-9a-fA-F]{2})*$",
               "description": "The blockhash"
             },
             "height": {
@@ -15981,7 +15981,7 @@
           "properties": {
             "hash": {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]+$",
+              "pattern": "^([0-9a-fA-F]{2})*$",
               "description": "The blockhash"
             },
             "height": {
@@ -16016,7 +16016,7 @@
           "required": false,
           "schema": {
             "type": "string",
-            "pattern": "^[0-9a-fA-F]+$"
+            "pattern": "^([0-9a-fA-F]{2})*$"
           },
           "description": "Method waits for the chain tip to differ from this."
         }
@@ -16028,7 +16028,7 @@
           "properties": {
             "hash": {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]+$",
+              "pattern": "^([0-9a-fA-F]{2})*$",
               "description": "The blockhash"
             },
             "height": {
@@ -16059,7 +16059,7 @@
               "properties": {
                 "txid": {
                   "type": "string",
-                  "pattern": "^[0-9a-fA-F]+$",
+                  "pattern": "^([0-9a-fA-F]{2})*$",
                   "description": "The transaction id"
                 },
                 "vout": {
@@ -16114,7 +16114,7 @@
                       "properties": {
                         "data": {
                           "type": "string",
-                          "pattern": "^[0-9a-fA-F]+$",
+                          "pattern": "^([0-9a-fA-F]{2})*$",
                           "description": "A key-value pair. The key must be \"data\", the value is hex-encoded data that becomes a part of an OP_RETURN output"
                         }
                       },
@@ -16253,7 +16253,7 @@
                     "type": "array",
                     "items": {
                       "type": "string",
-                      "pattern": "^[0-9a-fA-F]+$"
+                      "pattern": "^([0-9a-fA-F]{2})*$"
                     },
                     "default": [],
                     "description": "Public keys involved in this transaction."
@@ -16262,7 +16262,7 @@
                     "type": "array",
                     "items": {
                       "type": "string",
-                      "pattern": "^[0-9a-fA-F]+$"
+                      "pattern": "^([0-9a-fA-F]{2})*$"
                     },
                     "default": [],
                     "description": "Scripts involved in this transaction."
@@ -16505,7 +16505,7 @@
             },
             "hex": {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]+$",
+              "pattern": "^([0-9a-fA-F]{2})*$",
               "description": "The hex-encoded network transaction if complete"
             }
           },

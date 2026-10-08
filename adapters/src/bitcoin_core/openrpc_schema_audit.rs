@@ -5,11 +5,17 @@
 //! Port of `corpus/openrpc-generator` `audit` mode: every schema node must use a known
 //! keyword set, must compile as Draft 7 JSON Schema, and `default` values that fail their
 //! own schema are reported as warnings.
+//!
+//! Hex-family `pattern` values (Bitcoin Core `STR_HEX`) must match the allowlisted
+//! even-byte form so empty hex stays valid and odd-length hex stays rejected.
 
 use std::collections::{BTreeMap, HashSet};
 use std::fmt;
 
 use serde_json::{Map, Value};
+
+/// Allowed OpenRPC `pattern` for Core `STR_HEX` (zero or more hex-encoded bytes).
+pub const ALLOWED_STR_HEX_PATTERN: &str = r"^([0-9a-fA-F]{2})*$";
 
 /// Aggregate audit findings for one OpenRPC document.
 #[derive(Debug, Default)]
@@ -221,7 +227,13 @@ fn inspect_schema(schema: &Value, path: &str, report: &mut AuditReport) -> Resul
                 if value.as_u64().is_none() {
                     return Err(format!("{here} must be a nonnegative integer"));
                 },
-            "pattern" | "description" =>
+            "pattern" => {
+                let Some(pattern) = value.as_str() else {
+                    return Err(format!("{here} must be a string"));
+                };
+                check_hex_pattern(pattern, &here)?;
+            }
+            "description" =>
                 if !value.is_string() {
                     return Err(format!("{here} must be a string"));
                 },
@@ -285,6 +297,23 @@ fn compile_schema(schema: &Value, path: &str) -> Result<jsonschema::Validator, S
         .map_err(|error| format!("{path}: invalid JSON Schema: {error}"))
 }
 
+/// True when `pattern` looks like a Core `STR_HEX` / hex-digit run constraint.
+pub fn is_hex_family_pattern(pattern: &str) -> bool {
+    pattern.contains("0-9a-fA-F") || pattern.contains("0-9A-Fa-f") || pattern.contains("0-9a-f")
+}
+
+fn check_hex_pattern(pattern: &str, path: &str) -> Result<(), String> {
+    if !is_hex_family_pattern(pattern) {
+        return Ok(());
+    }
+    if pattern == ALLOWED_STR_HEX_PATTERN {
+        return Ok(());
+    }
+    Err(format!(
+        "{path}: hex pattern {pattern:?} not in allowlist (expected {ALLOWED_STR_HEX_PATTERN:?})"
+    ))
+}
+
 #[cfg(test)]
 mod tests {
     use serde_json::json;
@@ -328,5 +357,25 @@ mod tests {
         }]}));
         let error = inspect(&document).unwrap_err();
         assert!(error.contains("properties[\"arbitrary-key\"].mystery"), "{error}");
+    }
+
+    #[test]
+    fn legacy_str_hex_plus_pattern_fails_audit() {
+        let document = with_header(json!({"methods": [{
+            "name": "foo", "params": [],
+            "result": {"name": "result", "schema": {"type": "string", "pattern": "^[0-9a-fA-F]+$"}}
+        }]}));
+        let error = inspect(&document).unwrap_err();
+        assert!(error.contains("hex pattern"), "{error}");
+        assert!(error.contains("allowlist"), "{error}");
+    }
+
+    #[test]
+    fn allowed_str_hex_pattern_passes_audit() {
+        let document = with_header(json!({"methods": [{
+            "name": "foo", "params": [],
+            "result": {"name": "result", "schema": {"type": "string", "pattern": ALLOWED_STR_HEX_PATTERN}}
+        }]}));
+        inspect(&document).expect("allowed STR_HEX pattern");
     }
 }

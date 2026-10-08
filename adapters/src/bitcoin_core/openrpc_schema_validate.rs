@@ -527,4 +527,78 @@ mod tests {
         let err = reg.validate_result("getblock", &json!(true)).expect_err("bool result");
         assert!(err.to_string().contains("result"), "{err}");
     }
+
+    fn str_hex_method_doc(pattern: &str) -> Value {
+        json!({
+            "openrpc": "1.4.1",
+            "info": {"title": "t", "version": "0"},
+            "methods": [{
+                "name": "echohex",
+                "description": "test",
+                "params": [{
+                    "name": "data",
+                    "required": true,
+                    "schema": {"type": "string", "pattern": pattern}
+                }],
+                "result": {
+                    "name": "result",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "scriptSig": {
+                                "type": "object",
+                                "properties": {
+                                    "hex": {"type": "string", "pattern": pattern}
+                                }
+                            }
+                        }
+                    }
+                }
+            }]
+        })
+    }
+
+    #[test]
+    fn empty_hex_matches_allowed_str_hex_pattern() {
+        let pattern = crate::bitcoin_core::openrpc_schema_audit::ALLOWED_STR_HEX_PATTERN;
+        let reg = WireSchemaRegistry::from_openrpc_document(&str_hex_method_doc(pattern))
+            .expect("registry");
+        reg.validate_result("echohex", &json!({"scriptSig": {"hex": ""}})).expect("empty hex ok");
+        reg.validate_result("echohex", &json!({"scriptSig": {"hex": "ab"}})).expect("even hex ok");
+        let err = reg
+            .validate_result("echohex", &json!({"scriptSig": {"hex": "a"}}))
+            .expect_err("odd hex");
+        assert!(err.to_string().contains("result"), "{err}");
+        reg.validate_params_positional("echohex", &[json!("")]).expect("empty param");
+        reg.validate_params_positional("echohex", &[json!("00")]).expect("even param");
+        let err = reg.validate_params_positional("echohex", &[json!("0")]).expect_err("odd param");
+        assert!(err.to_string().contains("parameters"), "{err}");
+    }
+
+    #[test]
+    fn legacy_plus_pattern_rejects_empty_hex() {
+        let reg = WireSchemaRegistry::from_openrpc_document(&str_hex_method_doc(r"^[0-9a-fA-F]+$"))
+            .expect("registry");
+        let err = reg
+            .validate_result("echohex", &json!({"scriptSig": {"hex": ""}}))
+            .expect_err("legacy + rejects empty");
+        assert!(err.to_string().contains("result"), "{err}");
+    }
+
+    #[test]
+    fn pinned_dump_getblock_hex_arm_allows_empty_string() {
+        let doc = pinned_openrpc_doc();
+        let dump = serde_json::to_string(&doc).expect("serialize");
+        assert!(
+            !dump.contains(r#"^[0-9a-fA-F]+$"#),
+            "pinned dump must not retain legacy STR_HEX +"
+        );
+        assert!(
+            dump.contains(crate::bitcoin_core::openrpc_schema_audit::ALLOWED_STR_HEX_PATTERN),
+            "pinned dump must use allowed STR_HEX pattern"
+        );
+        let reg = WireSchemaRegistry::from_openrpc_document(&doc).expect("registry");
+        // Verbosity-0 arm is STR_HEX; empty must validate after Core #36462 / Ethos dump pin.
+        reg.validate_result("getblock", &json!("")).expect("empty hex result arm");
+    }
 }
