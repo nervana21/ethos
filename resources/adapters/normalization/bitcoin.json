@@ -113,6 +113,7 @@
       "ListDescriptors": "listdescriptors",
       "ListLabels": "listlabels",
       "ListLockUnspent": "listlockunspent",
+      "ListRawTransactions": "listrawtransactions",
       "ListReceivedByAddress": "listreceivedbyaddress",
       "ListReceivedByLabel": "listreceivedbylabel",
       "ListSinceBlock": "listsinceblock",
