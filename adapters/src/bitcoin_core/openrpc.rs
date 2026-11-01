@@ -5,7 +5,7 @@
 //! After OpenRPC → IR conversion, `openrpc_type_disambiguation` assigns distinct `TypeDef::name`
 //! values where the schema overloads one name for different object shapes.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 
 use ir::{
@@ -3173,6 +3173,68 @@ mod tests {
             );
         }
     }
+
+    #[test]
+    fn update_canonical_retains_omitted_rpc() {
+        let ir_path = std::env::temp_dir().join(format!(
+            "ethos_ir_retain_test_{}_{}.json",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_nanos())
+                .unwrap_or(0)
+        ));
+
+        let prior = ProtocolIR::new(vec![ProtocolModule::new(
+            "rpc".into(),
+            "Bitcoin RPC API".into(),
+            vec![
+                ProtocolDef::RpcMethod(ir::RpcDef {
+                    name: "getblockchaininfo".into(),
+                    category: "blockchain".into(),
+                    version_added: Some("0.17".into()),
+                    ..ir::RpcDef::default()
+                }),
+                ProtocolDef::RpcMethod(ir::RpcDef {
+                    name: "abandontransaction".into(),
+                    category: "wallet".into(),
+                    version_added: Some("0.17".into()),
+                    ..ir::RpcDef::default()
+                }),
+            ],
+        )]);
+        prior.to_file(&ir_path).expect("write prior IR");
+
+        // Slim dump: only getblockchaininfo (wallet omitted).
+        let doc: OpenRpcDoc = serde_json::from_value(serde_json::json!({
+            "openrpc": "1.2.6",
+            "info": { "version": "v32.1.0", "title": "Bitcoin Core" },
+            "methods": [{
+                "name": "getblockchaininfo",
+                "description": "kept",
+                "params": [],
+                "result": {
+                    "name": "result",
+                    "schema": { "type": "object", "properties": {} }
+                },
+                "x-bitcoin-category": "blockchain"
+            }]
+        }))
+        .expect("slim openrpc");
+
+        update_canonical_ir_from_openrpc(&ir_path, doc, "32.1.0").expect("slim update");
+
+        let after = ProtocolIR::from_file(&ir_path).expect("reload");
+        let _ = std::fs::remove_file(&ir_path);
+        let by_name: HashMap<_, _> =
+            after.get_rpc_methods().into_iter().map(|r| (r.name.as_str(), r)).collect();
+        assert!(by_name.contains_key("abandontransaction"), "omitted RPC must be retained");
+        assert_eq!(
+            by_name["abandontransaction"].version_added.as_deref(),
+            Some("0.17"),
+            "retained omitted RPC must keep prior version_added"
+        );
+    }
 }
 
 /// Converts OpenRPC (Bitcoin Core) to `ProtocolIR` using a preloaded version map.
@@ -3224,7 +3286,8 @@ pub fn convert_to_protocol_ir_with_version(doc: OpenRpcDoc, version: Option<Stri
 ///
 /// Single place for "update canonical from OpenRPC" semantics. Uses per-definition merge:
 /// for each method in the converted IR, merges version_* from existing IR then writes into
-/// the rpc module; never clones the whole module.
+/// the rpc module. Methods present in the prior IR but absent from this dump are **kept**
+/// (preserves `version_added` / schema across slim or feature-stripped dumps).
 pub fn update_canonical_ir_from_openrpc(
     canonical_path: &Path,
     doc: OpenRpcDoc,
@@ -3234,15 +3297,18 @@ pub fn update_canonical_ir_from_openrpc(
     let protocol_ir =
         convert_to_protocol_ir_with_version_map(doc, Some(version.to_string()), &version_map);
 
-    let existing_rpcs: HashMap<String, &ir::RpcDef> =
-        existing_ir.get_rpc_methods().into_iter().map(|r| (r.name.clone(), r)).collect();
+    let existing_rpcs: HashMap<String, ir::RpcDef> =
+        existing_ir.get_rpc_methods().into_iter().map(|r| (r.name.clone(), r.clone())).collect();
 
     let converted_module = protocol_ir.modules().first().expect("convert produces one rpc module");
-    let mut new_defs = Vec::with_capacity(converted_module.definitions().len());
+    let mut new_defs =
+        Vec::with_capacity(converted_module.definitions().len() + existing_rpcs.len());
+    let mut converted_names = HashSet::with_capacity(converted_module.definitions().len());
     for def in converted_module.definitions() {
         match def {
             ProtocolDef::RpcMethod(ref rpc) => {
                 let mut rpc = rpc.clone();
+                converted_names.insert(rpc.name.clone());
                 if let Some(existing_rpc) = existing_rpcs.get(&rpc.name) {
                     merge_version_from_existing_rpc(&mut rpc, existing_rpc);
                 }
@@ -3251,6 +3317,23 @@ pub fn update_canonical_ir_from_openrpc(
             other => new_defs.push(other.clone()),
         }
     }
+
+    let mut retained: Vec<String> =
+        existing_rpcs.keys().filter(|name| !converted_names.contains(*name)).cloned().collect();
+    retained.sort();
+    for name in &retained {
+        let existing_rpc = existing_rpcs.get(name).expect("key from map");
+        new_defs.push(ProtocolDef::RpcMethod(existing_rpc.clone()));
+    }
+    if !retained.is_empty() {
+        eprintln!(
+            "warning: OpenRPC dump omitted {} RPC(s); keeping prior IR defs (preserves version_added): {}",
+            retained.len(),
+            retained.join(", ")
+        );
+    }
+
+    sort_definitions_by_name(&mut new_defs);
 
     if let Some(rpc_module) = existing_ir.modules_mut().iter_mut().find(|m| m.name() == "rpc") {
         *rpc_module.definitions_mut() = new_defs;
