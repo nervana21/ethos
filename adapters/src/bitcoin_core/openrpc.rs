@@ -801,8 +801,33 @@ fn merge_version_into_param(our: &mut ir::ParamDef, existing: &ir::ParamDef) {
     merge_version_into_type_def(&mut our.param_type, &existing.param_type);
 }
 
-/// Copies version_removed and nested version fields from an existing `RpcDef` into our `RpcDef` (method-level version_added already set).
+/// Pick the earlier of two `version_added` strings for IR storage (never prefer dump-major clobber).
+fn earlier_version_added_for_storage(a: &str, b: &str) -> String {
+    let a_n = ProtocolVersion::normalize_version_added_for_storage(a);
+    let b_n = ProtocolVersion::normalize_version_added_for_storage(b);
+    let a_maj = ProtocolVersion::effective_major_for_comparison(&a_n);
+    let b_maj = ProtocolVersion::effective_major_for_comparison(&b_n);
+    if a_maj != b_maj {
+        return if a_maj < b_maj { a_n } else { b_n };
+    }
+    // Same major: for 0.x prefer lower minor (`0.17` before `0.18`). Else normalized equal.
+    if a_maj == 0 {
+        let a_minor = a_n.split('.').nth(1).and_then(|s| s.parse::<u32>().ok()).unwrap_or(0);
+        let b_minor = b_n.split('.').nth(1).and_then(|s| s.parse::<u32>().ok()).unwrap_or(0);
+        return if a_minor <= b_minor { a_n } else { b_n };
+    }
+    a_n
+}
+
+/// Copies version_added/version_removed and nested version fields from an existing `RpcDef`.
+/// Method-level `version_added` keeps the earlier stamp (OpenRPC has none; dump version must not win).
 fn merge_version_from_existing_rpc(our: &mut ir::RpcDef, existing: &ir::RpcDef) {
+    if let Some(ref ex_v) = existing.version_added {
+        our.version_added = Some(match our.version_added.as_deref() {
+            None => ProtocolVersion::normalize_version_added_for_storage(ex_v),
+            Some(our_v) => earlier_version_added_for_storage(ex_v, our_v),
+        });
+    }
     if existing.version_removed.is_some() {
         our.version_removed = existing.version_removed.clone();
     }
@@ -3175,6 +3200,30 @@ mod tests {
     }
 
     #[test]
+    fn earlier_version_added_prefers_historic_over_dump_major() {
+        assert_eq!(earlier_version_added_for_storage("0.17", "32"), "0.17");
+        assert_eq!(earlier_version_added_for_storage("32", "0.17"), "0.17");
+        assert_eq!(earlier_version_added_for_storage("28", "32"), "28");
+        assert_eq!(earlier_version_added_for_storage("0.17", "0.18"), "0.17");
+    }
+
+    #[test]
+    fn merge_method_version_added_keeps_earlier_stamp() {
+        let existing = ir::RpcDef {
+            name: "abandontransaction".into(),
+            version_added: Some("0.17".into()),
+            ..ir::RpcDef::default()
+        };
+        let mut ours = ir::RpcDef {
+            name: "abandontransaction".into(),
+            version_added: Some("32".into()),
+            ..ir::RpcDef::default()
+        };
+        merge_version_from_existing_rpc(&mut ours, &existing);
+        assert_eq!(ours.version_added.as_deref(), Some("0.17"));
+    }
+
+    #[test]
     fn update_canonical_retains_omitted_rpc() {
         let ir_path = std::env::temp_dir().join(format!(
             "ethos_ir_retain_test_{}_{}.json",
@@ -3235,6 +3284,103 @@ mod tests {
             "retained omitted RPC must keep prior version_added"
         );
     }
+
+    #[test]
+    fn update_canonical_keeps_earlier_version_added_on_remerge() {
+        let ir_path = std::env::temp_dir().join(format!(
+            "ethos_ir_clobber_test_{}_{}.json",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_nanos())
+                .unwrap_or(0)
+        ));
+
+        let prior = ProtocolIR::new(vec![ProtocolModule::new(
+            "rpc".into(),
+            "Bitcoin RPC API".into(),
+            vec![
+                ProtocolDef::RpcMethod(ir::RpcDef {
+                    name: "getblockchaininfo".into(),
+                    category: "blockchain".into(),
+                    version_added: Some("0.17".into()),
+                    ..ir::RpcDef::default()
+                }),
+                ProtocolDef::RpcMethod(ir::RpcDef {
+                    name: "abandontransaction".into(),
+                    category: "wallet".into(),
+                    version_added: Some("0.17".into()),
+                    ..ir::RpcDef::default()
+                }),
+            ],
+        )]);
+        prior.to_file(&ir_path).expect("write prior IR");
+
+        // Slim dump: only getblockchaininfo (wallet omitted).
+        let doc: OpenRpcDoc = serde_json::from_value(serde_json::json!({
+            "openrpc": "1.2.6",
+            "info": { "version": "v32.1.0", "title": "Bitcoin Core" },
+            "methods": [{
+                "name": "getblockchaininfo",
+                "description": "kept",
+                "params": [],
+                "result": {
+                    "name": "result",
+                    "schema": { "type": "object", "properties": {} }
+                },
+                "x-bitcoin-category": "blockchain"
+            }]
+        }))
+        .expect("slim openrpc");
+
+        update_canonical_ir_from_openrpc(&ir_path, doc, "32.1.0").expect("slim update");
+
+        // Full dump brings wallet RPC back; must reuse retained 0.17, not stamp 32.
+        let full: OpenRpcDoc = serde_json::from_value(serde_json::json!({
+            "openrpc": "1.2.6",
+            "info": { "version": "v32.1.0", "title": "Bitcoin Core" },
+            "methods": [
+                {
+                    "name": "getblockchaininfo",
+                    "description": "kept",
+                    "params": [],
+                    "result": {
+                        "name": "result",
+                        "schema": { "type": "object", "properties": {} }
+                    },
+                    "x-bitcoin-category": "blockchain"
+                },
+                {
+                    "name": "abandontransaction",
+                    "description": "wallet back",
+                    "params": [],
+                    "result": {
+                        "name": "result",
+                        "schema": { "type": "null" }
+                    },
+                    "x-bitcoin-category": "wallet"
+                }
+            ]
+        }))
+        .expect("full openrpc");
+        update_canonical_ir_from_openrpc(&ir_path, full, "32.1.0").expect("full update");
+
+        let after = ProtocolIR::from_file(&ir_path).expect("reload");
+        let _ = std::fs::remove_file(&ir_path);
+        let by_name: HashMap<_, _> =
+            after.get_rpc_methods().into_iter().map(|r| (r.name.as_str(), r)).collect();
+        assert!(by_name.contains_key("abandontransaction"), "omitted RPC must be retained");
+        assert_eq!(
+            by_name["abandontransaction"].version_added.as_deref(),
+            Some("0.17"),
+            "retained then re-dumped RPC must keep historic version_added"
+        );
+        assert_eq!(
+            by_name["getblockchaininfo"].version_added.as_deref(),
+            Some("0.17"),
+            "present RPC must not take dump major when prior stamp exists"
+        );
+    }
 }
 
 /// Converts OpenRPC (Bitcoin Core) to `ProtocolIR` using a preloaded version map.
@@ -3287,7 +3433,8 @@ pub fn convert_to_protocol_ir_with_version(doc: OpenRpcDoc, version: Option<Stri
 /// Single place for "update canonical from OpenRPC" semantics. Uses per-definition merge:
 /// for each method in the converted IR, merges version_* from existing IR then writes into
 /// the rpc module. Methods present in the prior IR but absent from this dump are **kept**
-/// (preserves `version_added` / schema across slim or feature-stripped dumps).
+/// (preserves `version_added` / schema across slim or feature-stripped dumps). Without that,
+/// a later full dump would treat them as new and stamp dump `info.version` (data loss).
 pub fn update_canonical_ir_from_openrpc(
     canonical_path: &Path,
     doc: OpenRpcDoc,
