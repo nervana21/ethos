@@ -9,7 +9,7 @@ set positional-arguments
 
 NIGHTLY_VERSION := trim(read(justfile_directory() / "nightly-version"))
 RELEASE := if env_var_or_default('FAST', '1') == '1' { "--profile dev-fast" } else { "--release" }
-LATEST_VERSION := "v30.2.11"
+LATEST_VERSION := "v32.1.0"
 
 _default:
     @echo "just sync | client | check"

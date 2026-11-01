@@ -62,7 +62,7 @@ fn main() {
                 "  {}                                    # Build bitcoin_core from registry",
                 args[0]
             );
-            eprintln!("  {} resources/ir/bitcoin.ir.json bitcoin_core v30.2.11", args[0]);
+            eprintln!("  {} resources/ir/bitcoin.ir.json bitcoin_core v32.1.0", args[0]);
             eprintln!("  {} --dump-ir bitcoin_core", args[0]);
             std::process::exit(1);
         }

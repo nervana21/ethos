@@ -1,6 +1,6 @@
 {
-  "version": 320000,
-  "subversion": "/Satoshi:32.0.0/",
+  "version": 320100,
+  "subversion": "/Satoshi:32.1.0/",
   "protocolversion": 70016,
   "localservices": "0000000000000409",
   "localservicesnames": ["NETWORK", "WITNESS", "NETWORK_LIMITED"],
