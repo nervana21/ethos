@@ -14,11 +14,12 @@ LATEST_VERSION := "v30.2.11"
 _default:
     @echo "just sync | client | check"
     @echo ""
-    @echo "  sync *flags     corpus bitcoind, openrpc.json, IR, dump audits"
+    @echo "  sync *flags     full-RPC corpus bitcoind, openrpc.json, IR, dump audits"
     @echo "  client *flags   pinned dump, ethos-bitcoind, core-test"
     @echo "  check           lint, dump audits, workspace tests"
     @echo ""
     @echo "Flags for sync/client: --skip-build --skip-dump --skip-client --dance --stage --no-hidden"
+    @echo "sync refuses Core builds without the appropriate features"
     @echo "Also: fmt lint docsrs corpus-pull"
 
 # --- public ---
