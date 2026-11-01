@@ -27,7 +27,6 @@ readme = "README.md"
 keywords = ["bitcoin", "protocol", "compiler", "integration-testing"]
 categories = ["cryptography", "data-structures", "api-bindings"]
 repository = "https://github.com/nervana21/ethos"
-homepage = "https://github.com/nervana21/ethos"
 documentation = "https://docs.rs/{}"
 
 "#,
