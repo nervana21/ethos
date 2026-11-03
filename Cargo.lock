@@ -587,6 +587,7 @@ name = "ethos-codegen-golden-decode"
 version = "0.1.0"
 dependencies = [
  "bitcoin",
+ "bitcoin-units 0.3.0",
  "ethos-codegen",
  "ethos-ir",
  "ethos-path",

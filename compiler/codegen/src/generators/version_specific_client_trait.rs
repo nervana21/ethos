@@ -217,8 +217,10 @@ impl VersionSpecificClientTraitGenerator {
                         TypeRegistry::map_argument_type_with_adapter(arg, adapter.as_ref());
                     // Record external symbol usage if the adapter mapped to a bitcoin type
                     if let Some(stripped) = base_ty.strip_prefix("bitcoin::") {
-                        // Take the last path segment as the symbol (e.g., Address, Amount)
-                        let symbol = stripped.split("::").last().unwrap_or(stripped);
+                        // Strip generics (`Address<…>` → `Address`) then last path segment.
+                        let without_generics = stripped.split('<').next().unwrap_or(stripped);
+                        let symbol =
+                            without_generics.split("::").last().unwrap_or(without_generics);
                         record_external_symbol_usage("bitcoin", symbol);
                     }
                     let param_type = if !arg.required {
@@ -334,18 +336,18 @@ impl VersionSpecificClientTraitGenerator {
                     let (base_ty, _) =
                         TypeRegistry::map_argument_type_with_adapter(arg, adapter.as_ref());
                     let field_name = param.name.as_str();
-                    let is_fee_rate = field_name == "fee_rate";
                     let is_max_fee_rate = field_name == "maxfeerate";
                     let is_amounts_map = field_name == "amounts"
                         && base_ty.contains("HashMap")
                         && base_ty.contains("Amount");
-                    let push_expr = if base_ty == "FeeRate" && is_fee_rate {
-                        format!("serde_json::json!({}.to_sat_per_vb_floor())", param_name)
-                    } else if base_ty == "FeeRate" && is_max_fee_rate {
+                    // FeeRate: maxfeerate = BTC/kvB; all other FeeRate params = sat/vB.
+                    let push_expr = if base_ty == "FeeRate" && is_max_fee_rate {
                         format!(
                             "serde_json::json!(({}.to_sat_per_kvb_floor() as f64) / 100_000_000.0)",
                             param_name
                         )
+                    } else if base_ty == "FeeRate" {
+                        format!("serde_json::json!({}.to_sat_per_vb_floor())", param_name)
                     } else if base_ty == "bitcoin::Amount" {
                         format!("serde_json::json!({}.to_btc())", param_name)
                     } else if is_amounts_map {
@@ -370,19 +372,18 @@ impl VersionSpecificClientTraitGenerator {
                     let (base_ty, _) =
                         TypeRegistry::map_argument_type_with_adapter(arg, adapter.as_ref());
                     let field_name = param.name.as_str();
-                    let is_fee_rate = field_name == "fee_rate";
                     let is_max_fee_rate = field_name == "maxfeerate";
                     let is_amounts_map = field_name == "amounts"
                         && base_ty.contains("HashMap")
                         && base_ty.contains("Amount");
-                    let some_expr = if base_ty == "FeeRate" && is_fee_rate {
-                        format!(
-                            "{}.as_ref().map(|val| serde_json::json!(val.to_sat_per_vb_floor()))",
-                            param_name
-                        )
-                    } else if base_ty == "FeeRate" && is_max_fee_rate {
+                    let some_expr = if base_ty == "FeeRate" && is_max_fee_rate {
                         format!(
                             "{}.as_ref().map(|val| serde_json::json!((val.to_sat_per_kvb_floor() as f64) / 100_000_000.0))",
+                            param_name
+                        )
+                    } else if base_ty == "FeeRate" {
+                        format!(
+                            "{}.as_ref().map(|val| serde_json::json!(val.to_sat_per_vb_floor()))",
                             param_name
                         )
                     } else if base_ty == "bitcoin::Amount" {

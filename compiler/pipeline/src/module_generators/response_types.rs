@@ -50,6 +50,8 @@ impl ModuleGenerator for ResponseTypesModuleGenerator {
             "pub enum HashOrHeight {{ Hash(bitcoin::BlockHash), Height(i64) }}"
         )?;
         writeln!(types_content, "pub type FeeRate = bitcoin_units::FeeRate;")?;
+        // Core FeeRate wire units: response rates + maxfeerate = BTC/kvB; param feerate = sat/vB.
+        types_content.push_str(codegen::generators::wire_serde::AS_BTC_PER_KVB_MODULE);
         std::fs::write(&types_mod_rs, types_content)?;
 
         Ok(())

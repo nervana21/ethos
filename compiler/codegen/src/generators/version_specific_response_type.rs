@@ -182,6 +182,7 @@ impl VersionSpecificResponseTypeGenerator {
         let mut needs_taptree = false;
         let mut needs_proprietarykey = false;
         let mut needs_hashmap = false;
+        let mut needs_fee_rate = false;
 
         // Check all methods for type usage - generate directly from IR
         for method in methods {
@@ -195,6 +196,9 @@ impl VersionSpecificResponseTypeGenerator {
                 }
                 if root_rust_type.contains("HashMap") {
                     needs_hashmap = true;
+                }
+                if root_rust_type == "FeeRate" || root_rust_type.contains("FeeRate") {
+                    needs_fee_rate = true;
                 }
                 let mut scan_fields = |fields: &[ir::FieldDef]| {
                     for field in fields {
@@ -229,6 +233,9 @@ impl VersionSpecificResponseTypeGenerator {
                         }
                         if field_type.contains("ProprietaryKey") {
                             needs_proprietarykey = true;
+                        }
+                        if rust_type == "FeeRate" || rust_type.starts_with("FeeRate") {
+                            needs_fee_rate = true;
                         }
                     }
                 };
@@ -285,6 +292,11 @@ impl VersionSpecificResponseTypeGenerator {
         if needs_txout {
             out.push_str("use bitcoin::TxOut;\n");
             record_external_symbol("bitcoin", "TxOut");
+        }
+        if needs_fee_rate {
+            // Alias before any struct fields; skip duplicate in `generate_type_alias`.
+            out.push_str("pub type FeeRate = bitcoin_units::FeeRate;\n");
+            out.push_str(crate::generators::wire_serde::AS_BTC_PER_KVB_MODULE);
         }
 
         out.push('\n');
@@ -1138,7 +1150,10 @@ impl VersionSpecificResponseTypeGenerator {
             base_field_type = format!("Box<{struct_name}>");
         }
         if base_field_type.starts_with("bitcoin::") {
-            let symbol = base_field_type.split("::").last().unwrap_or(&base_field_type);
+            // Strip generics (`Address<…>` → `Address`) before taking the last path segment.
+            let without_generics =
+                base_field_type.split('<').next().unwrap_or(base_field_type.as_str());
+            let symbol = without_generics.split("::").last().unwrap_or(without_generics);
             record_external_symbol("bitcoin", symbol);
         }
         let field_name = rust_ident;
@@ -1164,13 +1179,15 @@ impl VersionSpecificResponseTypeGenerator {
 
         let is_option = field_type.starts_with("Option<");
         let amount_option = base_field_type == "bitcoin::Amount" && is_option;
-        // `force_opt` uses `#[serde(default)]`; Option + Amount merges `default` into the Amount attribute below.
-        if force_opt && !amount_option {
+        let fee_rate_option = base_field_type == "FeeRate" && is_option;
+        let unit_serde_option = amount_option || fee_rate_option;
+        // `force_opt` uses `#[serde(default)]`; Option + Amount/FeeRate merges `default` below.
+        if force_opt && !unit_serde_option {
             writeln!(buf, "    #[serde(default)]")?;
         }
 
         // Core omits absent optionals; never emit JSON `null` for `None`.
-        if is_option && !amount_option {
+        if is_option && !unit_serde_option {
             writeln!(buf, "    #[serde(skip_serializing_if = \"Option::is_none\")]")?;
         }
 
@@ -1183,6 +1200,18 @@ impl VersionSpecificResponseTypeGenerator {
                 )?;
             } else {
                 writeln!(buf, "    #[serde(with = \"bitcoin::amount::serde::as_btc\")]")?;
+            }
+        }
+
+        // FeeRate response rates: BTC/kvB (module emitted in this file when needed).
+        if base_field_type == "FeeRate" {
+            if is_option {
+                writeln!(
+                    buf,
+                    "    #[serde(default, skip_serializing_if = \"Option::is_none\", with = \"serde_fee_rate::as_btc_per_kvb::opt\")]"
+                )?;
+            } else {
+                writeln!(buf, "    #[serde(with = \"serde_fee_rate::as_btc_per_kvb\")]")?;
             }
         }
 
@@ -1208,7 +1237,8 @@ impl VersionSpecificResponseTypeGenerator {
         );
         // If the mapped type is from the bitcoin crate, record it for re-exports
         if let Some(stripped) = mapped.strip_prefix("bitcoin::") {
-            let symbol = stripped.split("::").last().unwrap_or(stripped);
+            let without_generics = stripped.split('<').next().unwrap_or(stripped);
+            let symbol = without_generics.split("::").last().unwrap_or(without_generics);
             crate::generators::version_specific_response_type::record_external_symbol_usage(
                 "bitcoin", symbol,
             );
@@ -2330,6 +2360,8 @@ impl VersionSpecificResponseTypeGenerator {
                     "amount" => "bitcoin::Amount",
                     "blockhash" => "bitcoin::BlockHash",
                     "txid" => "bitcoin::Txid",
+                    // Emitted once at file top when FeeRate fields exist; avoid `FeeRate = String`.
+                    "feerate" | "fee_rate" => return Ok(String::new()),
                     _ => "String",
                 }
             }

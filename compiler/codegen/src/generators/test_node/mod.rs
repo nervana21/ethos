@@ -78,11 +78,6 @@ impl TestNodeGenerator {
             type_adapter.as_ref(),
         );
 
-        // Whether any param is FeeRate with name "maxfeerate" (needs custom BTC/kvB serde).
-        let uses_maxfeerate = crate::generators::fee_rate_utils::methods_use_maxfeerate(
-            methods.iter(),
-            type_adapter.as_ref(),
-        );
         let uses_sendall_recipient =
             methods_use_sendall_recipient(methods.iter(), type_adapter.as_ref());
         let uses_get_block_template_request =
@@ -99,41 +94,7 @@ impl TestNodeGenerator {
             header.push_str("use crate::types::FeeRate;\n");
         }
 
-        // Serde helper for Option<FeeRate> as maxfeerate (BTC/kvB f64). FeeRate has no built-in Serialize.
-        if uses_maxfeerate {
-            header.push_str(
-                r#"
-mod serde_fee_rate {
-    pub mod maxfeerate_opt {
-        use serde::{Deserialize, Deserializer, Serializer};
-
-        use crate::types::FeeRate;
-
-        #[allow(clippy::ref_option)]
-        pub fn serialize<S>(f: &Option<FeeRate>, s: S) -> Result<S::Ok, S::Error>
-        where
-            S: Serializer,
-        {
-            match f {
-                Some(r) => s.serialize_some(&((r.to_sat_per_kvb_floor() as f64) / 100_000_000.0)),
-                None => s.serialize_none(),
-            }
-        }
-
-        #[allow(dead_code)]
-        pub fn deserialize<'d, D: Deserializer<'d>>(d: D) -> Result<Option<FeeRate>, D::Error> {
-            let opt: Option<f64> = Option::deserialize(d)?;
-            Ok(opt.map(|v| {
-                let sat_per_kvb = (v * 100_000_000.0).round().clamp(0.0, u32::MAX as f64) as u32;
-                FeeRate::from_sat_per_kvb(sat_per_kvb)
-            }))
-        }
-    }
-}
-
-"#,
-            );
-        }
+        // maxfeerate FeeRate params use crate::types::serde_fee_rate::as_btc_per_kvb (+ ::opt).
         // Serde helper for sendmany "amounts": HashMap<Address, Amount> with values as BTC in JSON.
         if uses_amounts_map {
             header.push_str(
@@ -276,10 +237,14 @@ pub struct GetBlockTemplateRequest {
 
                 write_doc_comment(&mut code, &p.description, "    ")
                     .expect("Failed to write field doc");
-                // FeeRate has no Serialize; use crate serde(with) helpers or bitcoin_units.
+                // FeeRate has no Serialize; unit-explicit serde modules (sat/vB vs BTC/kvB).
                 if base_ty == "FeeRate" {
                     let with_path = if p.name == "maxfeerate" {
-                        "crate::bitcoin_core_client::params::serde_fee_rate::maxfeerate_opt"
+                        if p.required {
+                            "crate::types::serde_fee_rate::as_btc_per_kvb"
+                        } else {
+                            "crate::types::serde_fee_rate::as_btc_per_kvb::opt"
+                        }
                     } else if p.required {
                         "bitcoin_units::fee_rate::serde::as_sat_per_vb_floor"
                     } else {
