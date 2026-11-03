@@ -665,21 +665,8 @@ const CATEGORY_RULES: &[CategoryRule] = &[
         field_name: Some("balance"),
         category: BitcoinCoreRpcType::Float,
     },
-    CategoryRule {
-        rpc_type: RpcJsonType::Amount,
-        field_name: Some("fee_rate"),
-        category: BitcoinCoreRpcType::Float,
-    },
-    CategoryRule {
-        rpc_type: RpcJsonType::Amount,
-        field_name: Some("estimated_feerate"),
-        category: BitcoinCoreRpcType::Float,
-    },
-    CategoryRule {
-        rpc_type: RpcJsonType::Amount,
-        field_name: Some("maxfeerate"),
-        category: BitcoinCoreRpcType::Float,
-    },
+    // Fee *rates* (BTC/kvB on response wire). Result mapping lives in bitcoin_core_utils;
+    // keep these Float here only for the dead categorize path parity on non-rate leftovers.
     CategoryRule {
         rpc_type: RpcJsonType::Amount,
         field_name: Some("maxburnamount"),
@@ -687,38 +674,7 @@ const CATEGORY_RULES: &[CategoryRule] = &[
     },
     CategoryRule {
         rpc_type: RpcJsonType::Amount,
-        field_name: Some("relayfee"),
-        category: BitcoinCoreRpcType::Float,
-    },
-    CategoryRule {
-        rpc_type: RpcJsonType::Amount,
-        field_name: Some("incrementalfee"),
-        category: BitcoinCoreRpcType::Float,
-    },
-    CategoryRule {
-        rpc_type: RpcJsonType::Amount,
-        field_name: Some("incrementalrelayfee"),
-        category: BitcoinCoreRpcType::Float,
-    },
-    // Amount fields that Bitcoin Core returns as BTC floats
-    CategoryRule {
-        rpc_type: RpcJsonType::Amount,
-        field_name: Some("mempoolminfee"),
-        category: BitcoinCoreRpcType::Float,
-    },
-    CategoryRule {
-        rpc_type: RpcJsonType::Amount,
-        field_name: Some("minrelaytxfee"),
-        category: BitcoinCoreRpcType::Float,
-    },
-    CategoryRule {
-        rpc_type: RpcJsonType::Amount,
         field_name: Some("total_fee"),
-        category: BitcoinCoreRpcType::Float,
-    },
-    CategoryRule {
-        rpc_type: RpcJsonType::Amount,
-        field_name: Some("blockmintxfee"),
         category: BitcoinCoreRpcType::Float,
     },
     // Default rule for "type": "amount" fields that don't match specific patterns (like result amounts)

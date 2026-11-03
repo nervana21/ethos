@@ -66,8 +66,10 @@ pub fn map_parameter_type_to_rust(param_type: &str, param_name: &str) -> String 
 
     // Amount-domain parameters get more specific handling based on field name.
     if param_type == "amount" {
-        // feerate: sat/vB, maxfeerate: BTC/kvB. Both are fee *rates*, not plain amounts.
-        // Represent them with the shared FeeRate type; other amount fields stay as bitcoin::Amount.
+        // FeeRate wire units (Core JSON-RPC):
+        // - feerate / fee_rate (normalized feerate): sat/vB
+        // - maxfeerate: BTC/kvB
+        // Both are fee *rates*, not plain amounts.
         return match normalized_param.as_str() {
             "feerate" | "maxfeerate" => "FeeRate".to_owned(),
             _ => "bitcoin::Amount".to_owned(),
@@ -168,6 +170,8 @@ enum ResultCategory {
     BitcoinBlockHash,
     BitcoinTxid,
     BitcoinAmount,
+    /// FeeRate on the wire as BTC per kvB (Core JSON-RPC response rates).
+    BitcoinFeeRateBtcPerKvb,
     BitcoinScript,
     BitcoinScriptPubKey,
     HashOrHeight,
@@ -195,6 +199,7 @@ fn result_category_to_rust_type(category: ResultCategory) -> &'static str {
         ResultCategory::BitcoinBlockHash => "bitcoin::BlockHash",
         ResultCategory::BitcoinTxid => "bitcoin::Txid",
         ResultCategory::BitcoinAmount => "bitcoin::Amount",
+        ResultCategory::BitcoinFeeRateBtcPerKvb => "FeeRate",
         ResultCategory::BitcoinScript | ResultCategory::BitcoinScriptPubKey => "bitcoin::ScriptBuf",
         ResultCategory::HashOrHeight => "HashOrHeight",
         ResultCategory::BitcoinObject => "serde_json::Map<String, serde_json::Value>",
@@ -242,32 +247,34 @@ const RESULT_CATEGORY_RULES: &[ResultCategoryRule] = &[
     ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("amount"), category: ResultCategory::BitcoinAmount },
     ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("balance"), category: ResultCategory::BitcoinAmount },
     ResultCategoryRule { rpc_type: ResultRpcJsonType::Amount, field_name: Some("balance"), category: ResultCategory::Float },
-    ResultCategoryRule { rpc_type: ResultRpcJsonType::Amount, field_name: Some("fee_rate"), category: ResultCategory::Float },
-    ResultCategoryRule { rpc_type: ResultRpcJsonType::Amount, field_name: Some("estimated_feerate"), category: ResultCategory::Float },
-    ResultCategoryRule { rpc_type: ResultRpcJsonType::Amount, field_name: Some("maxfeerate"), category: ResultCategory::Float },
+    // Fee *rates* (BTC/kvB on Core response wire). Not plain amounts.
+    // Serde: crate::types::serde_fee_rate::as_btc_per_kvb (+ ::opt).
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Amount, field_name: Some("fee_rate"), category: ResultCategory::BitcoinFeeRateBtcPerKvb },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Amount, field_name: Some("estimated_feerate"), category: ResultCategory::BitcoinFeeRateBtcPerKvb },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Amount, field_name: Some("maxfeerate"), category: ResultCategory::BitcoinFeeRateBtcPerKvb },
     ResultCategoryRule { rpc_type: ResultRpcJsonType::Amount, field_name: Some("maxburnamount"), category: ResultCategory::Float },
-    ResultCategoryRule { rpc_type: ResultRpcJsonType::Amount, field_name: Some("relayfee"), category: ResultCategory::Float },
-    ResultCategoryRule { rpc_type: ResultRpcJsonType::Amount, field_name: Some("incrementalfee"), category: ResultCategory::Float },
-    ResultCategoryRule { rpc_type: ResultRpcJsonType::Amount, field_name: Some("incrementalrelayfee"), category: ResultCategory::Float },
-    ResultCategoryRule { rpc_type: ResultRpcJsonType::Amount, field_name: Some("mempoolminfee"), category: ResultCategory::Float },
-    ResultCategoryRule { rpc_type: ResultRpcJsonType::Amount, field_name: Some("minrelaytxfee"), category: ResultCategory::Float },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Amount, field_name: Some("relayfee"), category: ResultCategory::BitcoinFeeRateBtcPerKvb },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Amount, field_name: Some("incrementalfee"), category: ResultCategory::BitcoinFeeRateBtcPerKvb },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Amount, field_name: Some("incrementalrelayfee"), category: ResultCategory::BitcoinFeeRateBtcPerKvb },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Amount, field_name: Some("mempoolminfee"), category: ResultCategory::BitcoinFeeRateBtcPerKvb },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Amount, field_name: Some("minrelaytxfee"), category: ResultCategory::BitcoinFeeRateBtcPerKvb },
     ResultCategoryRule { rpc_type: ResultRpcJsonType::Amount, field_name: Some("total_fee"), category: ResultCategory::Float },
-    ResultCategoryRule { rpc_type: ResultRpcJsonType::Amount, field_name: Some("blockmintxfee"), category: ResultCategory::Float },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Amount, field_name: Some("blockmintxfee"), category: ResultCategory::BitcoinFeeRateBtcPerKvb },
     ResultCategoryRule { rpc_type: ResultRpcJsonType::Amount, field_name: None, category: ResultCategory::BitcoinAmount },
     ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("fee"), category: ResultCategory::Float },
     ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("rate"), category: ResultCategory::Float },
-    ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("feerate"), category: ResultCategory::Float },
-    ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("maxfeerate"), category: ResultCategory::Float },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("feerate"), category: ResultCategory::BitcoinFeeRateBtcPerKvb },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("maxfeerate"), category: ResultCategory::BitcoinFeeRateBtcPerKvb },
     ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("maxburnamount"), category: ResultCategory::Float },
-    ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("relayfee"), category: ResultCategory::Float },
-    ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("incrementalfee"), category: ResultCategory::Float },
-    ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("incrementalrelayfee"), category: ResultCategory::Float },
-    ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("mempoolminfee"), category: ResultCategory::Float },
-    ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("minrelaytxfee"), category: ResultCategory::Float },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("relayfee"), category: ResultCategory::BitcoinFeeRateBtcPerKvb },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("incrementalfee"), category: ResultCategory::BitcoinFeeRateBtcPerKvb },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("incrementalrelayfee"), category: ResultCategory::BitcoinFeeRateBtcPerKvb },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("mempoolminfee"), category: ResultCategory::BitcoinFeeRateBtcPerKvb },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("minrelaytxfee"), category: ResultCategory::BitcoinFeeRateBtcPerKvb },
     ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("difficulty"), category: ResultCategory::Float },
     ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("probability"), category: ResultCategory::Float },
     ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("percentage"), category: ResultCategory::Float },
-    ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("fee_rate"), category: ResultCategory::Float },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("fee_rate"), category: ResultCategory::BitcoinFeeRateBtcPerKvb },
     ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("port"), category: ResultCategory::Port },
     ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("nrequired"), category: ResultCategory::SmallInteger },
     ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("minconf"), category: ResultCategory::SmallInteger },
@@ -308,7 +315,6 @@ const RESULT_CATEGORY_RULES: &[ResultCategoryRule] = &[
     ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("verificationprogress"), category: ResultCategory::Float },
     ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("difficulty"), category: ResultCategory::Float },
     ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("networkhashps"), category: ResultCategory::Float },
-    ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("incrementalrelayfee"), category: ResultCategory::Float },
     ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("count_tok"), category: ResultCategory::Float },
     ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: Some("size_tok"), category: ResultCategory::Float },
     ResultCategoryRule { rpc_type: ResultRpcJsonType::Number, field_name: None, category: ResultCategory::LargeInteger },
@@ -334,8 +340,11 @@ JSON `number` (Core NUM) mapping in this crate (field-name rules, not OpenRPC `i
 - Signed domains (`confirmations`, `changepos`, `nblocks`, …): `i64`\n\
 - Small unsigned (`version`, `verbosity`, `locktime`, `n`, min/max conf, …): `u32`\n\
 - Port: `u16`\n\
-- Fee / difficulty / probability / percentage / rate fields: `f64`\n\
-- Amounts (`amount`, `balance`, …): `bitcoin::Amount` (BTC float on the wire)\n\
+- Difficulty / probability / percentage / non-rate floats: `f64`\n\
+- Fee *rates* (BTC/kvB on response wire: `relayfee`, `mempoolminfee`, `estimated_feerate`,\n\
+  `feerate`, …): `FeeRate` with `serde_fee_rate::as_btc_per_kvb`\n\
+  (param `feerate`/`fee_rate` is sat/vB; param `maxfeerate` is BTC/kvB)\n\
+- Amounts (`amount`, `balance`, …): `bitcoin::Amount` (BTC float on the wire via `as_btc`)\n\
 \n\
 When Core OpenRPC gains explicit integer stamps, IR/codegen will prefer those over names.\n\
 Do not treat field-name heuristics as a Core dump contract."
@@ -449,5 +458,9 @@ mod tests {
         assert_eq!(map_result_type_to_rust("number", "", "Current difficulty value"), "f64");
         assert_eq!(map_result_type_to_rust("boolean", "permitbaremultisig", ""), "bool");
         assert_eq!(map_result_type_to_rust("unknown_type", "field", ""), "serde_json::Value");
+        assert_eq!(map_result_type_to_rust("amount", "relayfee", ""), "FeeRate");
+        assert_eq!(map_result_type_to_rust("amount", "estimated_feerate", ""), "FeeRate");
+        assert_eq!(map_result_type_to_rust("number", "mempoolminfee", ""), "FeeRate");
+        assert_eq!(map_result_type_to_rust("number", "feerate", ""), "FeeRate");
     }
 }

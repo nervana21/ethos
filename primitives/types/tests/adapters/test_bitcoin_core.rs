@@ -162,17 +162,17 @@ fn test_parse_response_schema() {
 fn test_map_type_to_rust() {
     let adapter = BitcoinCoreAdapter;
 
-    let bitcoin_float_fields = vec![
-        "difficulty",
-        "verificationprogress",
-        "relayfee",
-        "incrementalfee",
-        "incrementalrelayfee",
-        "networkhashps",
-    ];
+    let bitcoin_float_fields = vec!["difficulty", "verificationprogress", "networkhashps"];
     for field in bitcoin_float_fields {
         let result = create_method_result("number", field, &format!("{} field", field), false);
         assert_eq!(adapter.map_type_to_rust(&result), "f64");
+    }
+
+    let fee_rate_fields =
+        vec!["relayfee", "incrementalfee", "incrementalrelayfee", "mempoolminfee"];
+    for field in fee_rate_fields {
+        let result = create_method_result("number", field, &format!("{} field", field), false);
+        assert_eq!(adapter.map_type_to_rust(&result), "FeeRate");
     }
 
     let hex_txid_result = create_method_result("hex", "txid", "A hex value", false);

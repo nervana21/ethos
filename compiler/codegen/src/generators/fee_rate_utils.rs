@@ -1,6 +1,14 @@
 // SPDX-License-Identifier: CC0-1.0
 
 //! Shared helpers for detecting semantic `FeeRate` usage in RPC definitions.
+//!
+//! Wire units (Core JSON-RPC):
+//! - **sat/vB**: param `feerate` / `fee_rate` → `bitcoin_units::fee_rate::serde::as_sat_per_vb_floor`
+//! - **BTC/kvB**: param `maxfeerate`; response `estimated_feerate`, `relayfee`,
+//!   `mempoolminfee`, `minrelaytxfee`, `incrementalrelayfee`, `blockmintxfee`,
+//!   estimatesmartfee `feerate` → `serde_fee_rate::as_btc_per_kvb`
+//!
+//! See also `crate::generators::wire_serde`.
 
 use ir::{ParamDef, RpcDef};
 use types::type_adapter::TypeAdapter;
