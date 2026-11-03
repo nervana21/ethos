@@ -9,7 +9,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
 COMPOSE_DIR="$ROOT/compiler/fuzz"
 BITCOIND_CRATE="${ETHOS_BITCOIND_PATH:-$ROOT/../ethos-bitcoind}"
-BITCOIND="${BITCOIND_PATH:-$ROOT/corpus/bitcoin/build/bin/bitcoind}"
+BITCOIND="${BITCOIND_PATH:-$ROOT/corpus/bitcoin/build_ethos/bin/bitcoind}"
 BITCOIN_CLI="${BITCOIN_CLI_PATH:-$(dirname "$BITCOIND")/bitcoin-cli}"
 DATADIR="${SCHEMA_ORACLE_DATADIR:-$ROOT/outputs/schema_oracle_regtest}"
 RPC_PORT="${SCHEMA_ORACLE_RPC_PORT:-18443}"

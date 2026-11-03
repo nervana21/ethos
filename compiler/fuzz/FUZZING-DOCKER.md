@@ -35,7 +35,7 @@ container. Avoid `bash -lc` — login shells reset PATH and yield
 
 IR dump (`resources/ir/openrpc.json`) must match the live node.
 Corpus `bitcoind` is Darwin Mach-O — cannot run inside Linux Docker — so the live
-script spawns **host** `$BITCOIND_PATH` (default `corpus/bitcoin/build/bin/bitcoind`)
+script spawns **host** `$BITCOIND_PATH` (default `corpus/bitcoin/build_ethos/bin/bitcoind`)
 and points the Docker oracle at `http://host.docker.internal:18443`.
 
 Do **not** use compose `bitcoin/bitcoin:30.2` for this hunt (version skew causes
