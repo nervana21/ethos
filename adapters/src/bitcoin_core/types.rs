@@ -271,7 +271,8 @@ impl BitcoinCoreRpcType {
             BitcoinCoreRpcType::BitcoinBlockHash => "bitcoin::BlockHash",
             BitcoinCoreRpcType::BitcoinTxid => "bitcoin::Txid",
             BitcoinCoreRpcType::BitcoinAmount => "bitcoin::Amount",
-            BitcoinCoreRpcType::BitcoinAddress => "bitcoin::Address",
+            BitcoinCoreRpcType::BitcoinAddress =>
+                "bitcoin::Address<bitcoin::address::NetworkUnchecked>",
             BitcoinCoreRpcType::BitcoinScript => "bitcoin::ScriptBuf",
             BitcoinCoreRpcType::BitcoinScriptPubKey => "bitcoin::ScriptBuf",
             BitcoinCoreRpcType::HashOrHeight => "HashOrHeight",

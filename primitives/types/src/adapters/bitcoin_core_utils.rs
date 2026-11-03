@@ -55,13 +55,14 @@ pub fn map_parameter_type_to_rust(param_type: &str, param_name: &str) -> String 
         // Specific field-name rules for strongly-typed Bitcoin types
         // Fall back to String for generic string/hex parameters
         return match normalized_param.as_str() {
-            "address" => "bitcoin::Address",
-            "blockhash" => "bitcoin::BlockHash",
-            "txid" => "bitcoin::Txid",
-            "scriptpubkey" | "script" | "redeemscript" | "witnessscript" => "bitcoin::ScriptBuf",
-            _ => "String",
-        }
-        .to_owned();
+            // RPC address strings are network-unchecked until require_network / assume_checked.
+            "address" => "bitcoin::Address<bitcoin::address::NetworkUnchecked>".to_owned(),
+            "blockhash" => "bitcoin::BlockHash".to_owned(),
+            "txid" => "bitcoin::Txid".to_owned(),
+            "scriptpubkey" | "script" | "redeemscript" | "witnessscript" =>
+                "bitcoin::ScriptBuf".to_owned(),
+            _ => "String".to_owned(),
+        };
     }
 
     // Amount-domain parameters get more specific handling based on field name.
@@ -169,6 +170,7 @@ enum ResultCategory {
     Null,
     BitcoinBlockHash,
     BitcoinTxid,
+    BitcoinAddress,
     BitcoinAmount,
     /// FeeRate on the wire as BTC per kvB (Core JSON-RPC response rates).
     BitcoinFeeRateBtcPerKvb,
@@ -198,6 +200,7 @@ fn result_category_to_rust_type(category: ResultCategory) -> &'static str {
         ResultCategory::Null => "()",
         ResultCategory::BitcoinBlockHash => "bitcoin::BlockHash",
         ResultCategory::BitcoinTxid => "bitcoin::Txid",
+        ResultCategory::BitcoinAddress => "bitcoin::Address<bitcoin::address::NetworkUnchecked>",
         ResultCategory::BitcoinAmount => "bitcoin::Amount",
         ResultCategory::BitcoinFeeRateBtcPerKvb => "FeeRate",
         ResultCategory::BitcoinScript | ResultCategory::BitcoinScriptPubKey => "bitcoin::ScriptBuf",
@@ -233,6 +236,7 @@ const RESULT_CATEGORY_RULES: &[ResultCategoryRule] = &[
     ResultCategoryRule { rpc_type: ResultRpcJsonType::String, field_name: Some("txid"), category: ResultCategory::BitcoinTxid },
     ResultCategoryRule { rpc_type: ResultRpcJsonType::Hex, field_name: Some("transactionid"), category: ResultCategory::BitcoinTxid },
     ResultCategoryRule { rpc_type: ResultRpcJsonType::String, field_name: Some("blockhash"), category: ResultCategory::BitcoinBlockHash },
+    ResultCategoryRule { rpc_type: ResultRpcJsonType::String, field_name: Some("address"), category: ResultCategory::BitcoinAddress },
     ResultCategoryRule { rpc_type: ResultRpcJsonType::String, field_name: Some("script_pubkey"), category: ResultCategory::BitcoinScriptPubKey },
     ResultCategoryRule { rpc_type: ResultRpcJsonType::Hex, field_name: Some("script_pubkey"), category: ResultCategory::BitcoinScriptPubKey },
     ResultCategoryRule { rpc_type: ResultRpcJsonType::String, field_name: Some("script"), category: ResultCategory::BitcoinScript },
@@ -388,7 +392,10 @@ mod tests {
     #[test]
     fn test_map_parameter_type_to_rust() {
         let address = map_parameter_type_to_rust("string", "address");
-        assert_eq!(address, "bitcoin::Address");
+        assert!(
+            address.contains("Address") && address.contains("NetworkUnchecked"),
+            "RPC address strings default to NetworkUnchecked, got {address}"
+        );
 
         let blockhash = map_parameter_type_to_rust("string", "blockhash");
         assert_eq!(blockhash, "bitcoin::BlockHash");
@@ -453,6 +460,7 @@ mod tests {
     #[test]
     fn test_map_result_type_to_rust() {
         assert_eq!(map_result_type_to_rust("hex", "txid", ""), "bitcoin::Txid");
+        assert!(map_result_type_to_rust("string", "address", "").contains("NetworkUnchecked"));
         assert_eq!(map_result_type_to_rust("hex", "data", ""), "String");
         assert_eq!(map_result_type_to_rust("number", "height", ""), "u64");
         assert_eq!(map_result_type_to_rust("number", "", "Current difficulty value"), "f64");
