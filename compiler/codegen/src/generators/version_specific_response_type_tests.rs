@@ -21,6 +21,9 @@ fn scalar_type_aliases_use_bitcoin_types() {
     // `Txid` must be mapped (it was previously missing and defaulted to `String`)
     let txid_alias = gen.generate_type_alias("Txid").unwrap();
     assert!(txid_alias.contains("pub type Txid = bitcoin::Txid;"));
+
+    let wtxid_alias = gen.generate_type_alias("Wtxid").unwrap();
+    assert!(wtxid_alias.contains("pub type Wtxid = bitcoin::Wtxid;"));
 }
 
 #[test]

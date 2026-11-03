@@ -2360,6 +2360,7 @@ impl VersionSpecificResponseTypeGenerator {
                     "amount" => "bitcoin::Amount",
                     "blockhash" => "bitcoin::BlockHash",
                     "txid" => "bitcoin::Txid",
+                    "wtxid" => "bitcoin::Wtxid",
                     // Emitted once at file top when FeeRate fields exist; avoid `FeeRate = String`.
                     "feerate" | "fee_rate" => return Ok(String::new()),
                     _ => "String",

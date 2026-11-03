@@ -570,7 +570,7 @@ const CONCAT_TO_SNAKE: &[(&str, &str)] = &[
     ("withintarget", "within_target"),
     ("witnessScript", "witness_script"),
     ("witnessscript", "witness_script"),
-    ("wtxid", "w_txid"),
+    // `wtxid` is a legal Rust ident; keep the field name (do not rename to w_txid).
 ];
 
 /// Converts JSON-style keys (camelCase / mixed case like `nTx`, `versionHex`) to Rust `snake_case`.
