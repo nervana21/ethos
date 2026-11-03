@@ -334,7 +334,7 @@ impl BitcoinCoreRpcType {
     pub fn bitcoin_amount_deserializer_attribute(&self) -> Option<&'static str> {
         match self {
             BitcoinCoreRpcType::BitcoinAmount =>
-                Some("#[serde(deserialize_with = \"amount_from_btc_float\")]"),
+                Some("#[serde(with = \"bitcoin::amount::serde::as_btc\")]"),
             _ => None,
         }
     }

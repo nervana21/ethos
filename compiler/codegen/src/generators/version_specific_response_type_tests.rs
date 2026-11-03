@@ -1522,12 +1522,8 @@ fn amount_fields_emit_btc_float_serde_pair() {
     };
     let code = gen.generate_method_response(&method).expect("generate").expect("response");
     assert!(
-        code.contains("serialize_with = \"amount_to_btc_float\""),
-        "expected BTC float serializer on required Amount:\n{code}"
-    );
-    assert!(
-        code.contains("deserialize_with = \"amount_from_btc_float\""),
-        "expected Amount deserializer:\n{code}"
+        code.contains("with = \"bitcoin::amount::serde::as_btc\""),
+        "expected as_btc on required Amount:\n{code}"
     );
     assert!(
         code.contains("skip_serializing_if = \"Option::is_none\""),

@@ -182,7 +182,6 @@ impl VersionSpecificResponseTypeGenerator {
         let mut needs_taptree = false;
         let mut needs_proprietarykey = false;
         let mut needs_hashmap = false;
-        let mut needs_amount_deserializer = false;
 
         // Check all methods for type usage - generate directly from IR
         for method in methods {
@@ -230,9 +229,6 @@ impl VersionSpecificResponseTypeGenerator {
                         }
                         if field_type.contains("ProprietaryKey") {
                             needs_proprietarykey = true;
-                        }
-                        if rust_type == "bitcoin::Amount" || rust_type.contains("bitcoin::Amount") {
-                            needs_amount_deserializer = true;
                         }
                     }
                 };
@@ -351,153 +347,7 @@ impl VersionSpecificResponseTypeGenerator {
 
         out.push_str(&self.emit_rpc_prelude(methods)?);
 
-        // Add amount deserializer helper functions if needed
-        if needs_amount_deserializer {
-            // Deserializer for non-optional Amount fields
-            out.push_str("\n/// Deserializer for bitcoin::Amount that handles both float (BTC) and integer (satoshis) formats\n");
-            out.push_str("/// Bitcoin Core returns amounts as floats in BTC, but some fields may be integers in satoshis\n");
-            out.push_str("fn amount_from_btc_float<'de, D>(deserializer: D) -> Result<bitcoin::Amount, D::Error>\n");
-            out.push_str("where\n");
-            out.push_str("    D: serde::Deserializer<'de>,\n");
-            out.push_str("{\n");
-            out.push_str("    use serde::de::{self, Visitor};\n");
-            out.push_str("    use std::fmt;\n");
-            out.push_str("\n");
-            out.push_str("    struct AmountVisitor;\n");
-            out.push_str("\n");
-            out.push_str("    impl Visitor<'_> for AmountVisitor {\n");
-            out.push_str("        type Value = bitcoin::Amount;\n");
-            out.push_str("\n");
-            out.push_str(
-                "        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {\n",
-            );
-            out.push_str(
-                "            formatter.write_str(\"a number (float BTC or integer satoshis)\")\n",
-            );
-            out.push_str("        }\n");
-            out.push_str("\n");
-            out.push_str("        fn visit_f64<E>(self, v: f64) -> Result<Self::Value, E>\n");
-            out.push_str("        where\n");
-            out.push_str("            E: de::Error,\n");
-            out.push_str("        {\n");
-            out.push_str("            bitcoin::Amount::from_btc(v).map_err(|e| E::custom(format!(\"Invalid BTC amount: {}\", e)))\n");
-            out.push_str("        }\n");
-            out.push_str("\n");
-            out.push_str("        fn visit_u64<E>(self, v: u64) -> Result<Self::Value, E>\n");
-            out.push_str("        where\n");
-            out.push_str("            E: de::Error,\n");
-            out.push_str("        {\n");
-            out.push_str("            Ok(bitcoin::Amount::from_sat(v))\n");
-            out.push_str("        }\n");
-            out.push_str("\n");
-            out.push_str("        fn visit_i64<E>(self, v: i64) -> Result<Self::Value, E>\n");
-            out.push_str("        where\n");
-            out.push_str("            E: de::Error,\n");
-            out.push_str("        {\n");
-            out.push_str("            if v < 0 {\n");
-            out.push_str("                return Err(E::custom(format!(\"Amount cannot be negative: {}\", v)));\n");
-            out.push_str("            }\n");
-            out.push_str("            Ok(bitcoin::Amount::from_sat(v as u64))\n");
-            out.push_str("        }\n");
-            out.push_str("    }\n");
-            out.push_str("\n");
-            out.push_str("    deserializer.deserialize_any(AmountVisitor)\n");
-            out.push_str("}\n");
-
-            // Deserializer for optional Amount fields
-            out.push_str("\n/// Deserializer for Option<bitcoin::Amount> that handles both float (BTC) and integer (satoshis) formats\n");
-            out.push_str("/// Bitcoin Core returns amounts as floats in BTC, but some fields may be integers in satoshis\n");
-            out.push_str("/// This deserializer also handles null/None values\n");
-            out.push_str("fn option_amount_from_btc_float<'de, D>(deserializer: D) -> Result<Option<bitcoin::Amount>, D::Error>\n");
-            out.push_str("where\n");
-            out.push_str("    D: serde::Deserializer<'de>,\n");
-            out.push_str("{\n");
-            out.push_str("    use serde::de::{self, Visitor};\n");
-            out.push_str("    use std::fmt;\n");
-            out.push_str("\n");
-            out.push_str("    struct OptionAmountVisitor;\n");
-            out.push_str("\n");
-            out.push_str("    #[allow(clippy::needless_lifetimes)]\n");
-            out.push_str("    impl<'de> Visitor<'de> for OptionAmountVisitor {\n");
-            out.push_str("        type Value = Option<bitcoin::Amount>;\n");
-            out.push_str("\n");
-            out.push_str(
-                "        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {\n",
-            );
-            out.push_str("            formatter.write_str(\"an optional number (float BTC or integer satoshis)\")\n");
-            out.push_str("        }\n");
-            out.push_str("\n");
-            out.push_str("        fn visit_none<E>(self) -> Result<Self::Value, E>\n");
-            out.push_str("        where\n");
-            out.push_str("            E: de::Error,\n");
-            out.push_str("        {\n");
-            out.push_str("            Ok(None)\n");
-            out.push_str("        }\n");
-            out.push_str("\n");
-            out.push_str("        fn visit_some<D>(self, deserializer: D) -> Result<Self::Value, D::Error>\n");
-            out.push_str("        where\n");
-            out.push_str("            D: serde::Deserializer<'de>,\n");
-            out.push_str("        {\n");
-            out.push_str("            amount_from_btc_float(deserializer).map(Some)\n");
-            out.push_str("        }\n");
-            out.push_str("\n");
-            out.push_str("        fn visit_f64<E>(self, v: f64) -> Result<Self::Value, E>\n");
-            out.push_str("        where\n");
-            out.push_str("            E: de::Error,\n");
-            out.push_str("        {\n");
-            out.push_str("            bitcoin::Amount::from_btc(v)\n");
-            out.push_str(
-                "                .map_err(|e| E::custom(format!(\"Invalid BTC amount: {}\", e)))\n",
-            );
-            out.push_str("                .map(Some)\n");
-            out.push_str("        }\n");
-            out.push_str("\n");
-            out.push_str("        fn visit_u64<E>(self, v: u64) -> Result<Self::Value, E>\n");
-            out.push_str("        where\n");
-            out.push_str("            E: de::Error,\n");
-            out.push_str("        {\n");
-            out.push_str("            Ok(Some(bitcoin::Amount::from_sat(v)))\n");
-            out.push_str("        }\n");
-            out.push_str("\n");
-            out.push_str("        fn visit_i64<E>(self, v: i64) -> Result<Self::Value, E>\n");
-            out.push_str("        where\n");
-            out.push_str("            E: de::Error,\n");
-            out.push_str("        {\n");
-            out.push_str("            if v < 0 {\n");
-            out.push_str("                return Err(E::custom(format!(\"Amount cannot be negative: {}\", v)));\n");
-            out.push_str("            }\n");
-            out.push_str("            Ok(Some(bitcoin::Amount::from_sat(v as u64)))\n");
-            out.push_str("        }\n");
-            out.push_str("    }\n");
-            out.push_str("\n");
-            out.push_str("    deserializer.deserialize_any(OptionAmountVisitor)\n");
-            out.push_str("}\n");
-
-            // Serializers: Core wire amounts are BTC floats, never sat integers.
-            out.push_str(
-                "\n/// Serialize [`bitcoin::Amount`] as a BTC float (Core JSON-RPC wire).\n",
-            );
-            out.push_str("fn amount_to_btc_float<S>(amount: &bitcoin::Amount, serializer: S) -> Result<S::Ok, S::Error>\n");
-            out.push_str("where\n");
-            out.push_str("    S: serde::Serializer,\n");
-            out.push_str("{\n");
-            out.push_str("    serializer.serialize_f64(amount.to_btc())\n");
-            out.push_str("}\n");
-
-            out.push_str("\n/// Serialize `Option<bitcoin::Amount>` as a BTC float when `Some`.\n");
-            out.push_str("fn option_amount_to_btc_float<S>(\n");
-            out.push_str("    amount: &Option<bitcoin::Amount>,\n");
-            out.push_str("    serializer: S,\n");
-            out.push_str(") -> Result<S::Ok, S::Error>\n");
-            out.push_str("where\n");
-            out.push_str("    S: serde::Serializer,\n");
-            out.push_str("{\n");
-            out.push_str("    match amount {\n");
-            out.push_str("        Some(a) => amount_to_btc_float(a, serializer),\n");
-            out.push_str("        None => serializer.serialize_none(),\n");
-            out.push_str("    }\n");
-            out.push_str("}\n");
-        }
+        // Amount fields use bitcoin::amount::serde::as_btc (+ ::opt).
 
         let filename = "responses.rs".to_string();
         Ok(vec![(filename, out)])
@@ -1324,19 +1174,15 @@ impl VersionSpecificResponseTypeGenerator {
             writeln!(buf, "    #[serde(skip_serializing_if = \"Option::is_none\")]")?;
         }
 
-        // Amount: decode BTC float or sat integer; encode BTC float (Core wire).
+        // Amount: BTC float only on Core response wire → upstream as_btc / as_btc::opt.
         if base_field_type == "bitcoin::Amount" {
-            // `default` is required for Option + `deserialize_with` so a missing JSON field deserializes as None.
             if is_option {
                 writeln!(
                     buf,
-                    "    #[serde(default, skip_serializing_if = \"Option::is_none\", serialize_with = \"option_amount_to_btc_float\", deserialize_with = \"option_amount_from_btc_float\")]"
+                    "    #[serde(default, skip_serializing_if = \"Option::is_none\", with = \"bitcoin::amount::serde::as_btc::opt\")]"
                 )?;
             } else {
-                writeln!(
-                    buf,
-                    "    #[serde(serialize_with = \"amount_to_btc_float\", deserialize_with = \"amount_from_btc_float\")]"
-                )?;
+                writeln!(buf, "    #[serde(with = \"bitcoin::amount::serde::as_btc\")]")?;
             }
         }
 
