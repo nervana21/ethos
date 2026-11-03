@@ -16,6 +16,9 @@ pub use node_manager::NodeManagerGenerator;
 /// Shared helpers for generator modules
 pub mod fee_rate_utils;
 
+/// Shared Core wire serde source templates (`as_btc_per_kvb`).
+pub mod wire_serde;
+
 /// Allowlisted non-mechanical Raw response rules (`response_field_type_override`, etc.).
 pub mod raw_response_policy;
 
