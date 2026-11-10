@@ -32723,6 +32723,1067 @@
         },
         {
           "RpcMethod": {
+            "name": "listrawtransactions",
+            "description": "Returns up to 'count' most recent wallet transactions ordered from oldest to newest, skipping the first 'skip' transactions. Unlike `listtransactions`, each wallet transaction appears exactly once with its net wallet balance change excluding fee, without logical interpretation (no category assignment, no change suppression). This means consolidation and self-transfer transactions that are invisible in `listtransactions` are included here.",
+            "params": [
+              {
+                "name": "count",
+                "param_type": {
+                  "name": "number",
+                  "description": "The number of transactions to return.",
+                  "kind": "Primitive",
+                  "fields": null,
+                  "variants": null,
+                  "base_type": null,
+                  "protocol_type": "number"
+                },
+                "required": false,
+                "description": "The number of transactions to return.",
+                "default_value": "10"
+              },
+              {
+                "name": "skip",
+                "param_type": {
+                  "name": "number",
+                  "description": "The number of transactions to skip.",
+                  "kind": "Primitive",
+                  "fields": null,
+                  "variants": null,
+                  "base_type": null,
+                  "protocol_type": "number"
+                },
+                "required": false,
+                "description": "The number of transactions to skip.",
+                "default_value": "0"
+              },
+              {
+                "name": "verbose",
+                "param_type": {
+                  "name": "boolean",
+                  "description": "Whether to include a `decoded` field containing the decoded transaction (equivalent to RPC decoderawtransaction)",
+                  "kind": "Primitive",
+                  "fields": null,
+                  "variants": null,
+                  "base_type": null,
+                  "protocol_type": "boolean"
+                },
+                "required": false,
+                "description": "Whether to include a `decoded` field containing the decoded transaction (equivalent to RPC decoderawtransaction)",
+                "default_value": "false"
+              }
+            ],
+            "result": {
+              "name": "array",
+              "description": "",
+              "kind": "Array",
+              "fields": [
+                {
+                  "key": {
+                    "Anonymous": 0
+                  },
+                  "field_type": {
+                    "name": "ListRawTransactionsResultItem",
+                    "description": "",
+                    "kind": "Object",
+                    "fields": [
+                      {
+                        "key": {
+                          "Named": "abandoned"
+                        },
+                        "field_type": {
+                          "name": "boolean",
+                          "description": "'true' if the transaction has been abandoned (inputs are respendable).",
+                          "kind": "Primitive",
+                          "fields": null,
+                          "variants": null,
+                          "base_type": null,
+                          "protocol_type": "boolean"
+                        },
+                        "required": true,
+                        "description": "'true' if the transaction has been abandoned (inputs are respendable).",
+                        "default_value": null
+                      },
+                      {
+                        "key": {
+                          "Named": "alternate_wtxids"
+                        },
+                        "field_type": {
+                          "name": "array",
+                          "description": "The wtxids of transactions with different witness data but the same txid.",
+                          "kind": "Array",
+                          "fields": [
+                            {
+                              "key": {
+                                "Anonymous": 0
+                              },
+                              "field_type": {
+                                "name": "hex",
+                                "description": "The wtxids of transactions with different witness data but the same txid.",
+                                "kind": "Primitive",
+                                "fields": null,
+                                "variants": null,
+                                "base_type": null,
+                                "protocol_type": "hex"
+                              },
+                              "required": true,
+                              "description": "",
+                              "default_value": null
+                            }
+                          ],
+                          "variants": null,
+                          "base_type": null,
+                          "protocol_type": "array",
+                          "type_identity": "listrawtransactions__array__alternate_wtxids__always"
+                        },
+                        "required": true,
+                        "description": "The wtxids of transactions with different witness data but the same txid.",
+                        "default_value": null
+                      },
+                      {
+                        "key": {
+                          "Named": "amount"
+                        },
+                        "field_type": {
+                          "name": "amount",
+                          "description": "The net change to the wallet balance caused by this transaction (excluding fee). Positive means the wallet gained funds, negative means it lost funds, zero means a pure self-transfer (e.g. consolidation).",
+                          "kind": "Primitive",
+                          "fields": null,
+                          "variants": null,
+                          "base_type": null,
+                          "protocol_type": "amount"
+                        },
+                        "required": true,
+                        "description": "The net change to the wallet balance caused by this transaction (excluding fee). Positive means the wallet gained funds, negative means it lost funds, zero means a pure self-transfer (e.g. consolidation).",
+                        "default_value": null
+                      },
+                      {
+                        "key": {
+                          "Named": "bip125-replaceable"
+                        },
+                        "field_type": {
+                          "name": "string",
+                          "description": "(\"yes|no|unknown\") (DEPRECATED) Whether this transaction signals BIP125 replaceability or has an unconfirmed ancestor signaling BIP125 replaceability.\nMay be unknown for unconfirmed transactions not in the mempool because their unconfirmed ancestors are unknown.",
+                          "kind": "Primitive",
+                          "fields": null,
+                          "variants": null,
+                          "base_type": null,
+                          "protocol_type": "string"
+                        },
+                        "required": false,
+                        "description": "(\"yes|no|unknown\") (DEPRECATED) Whether this transaction signals BIP125 replaceability or has an unconfirmed ancestor signaling BIP125 replaceability.\nMay be unknown for unconfirmed transactions not in the mempool because their unconfirmed ancestors are unknown.",
+                        "default_value": null
+                      },
+                      {
+                        "key": {
+                          "Named": "blockhash"
+                        },
+                        "field_type": {
+                          "name": "hex",
+                          "description": "The block hash containing the transaction.",
+                          "kind": "Primitive",
+                          "fields": null,
+                          "variants": null,
+                          "base_type": null,
+                          "protocol_type": "hex"
+                        },
+                        "required": false,
+                        "description": "The block hash containing the transaction.",
+                        "default_value": null
+                      },
+                      {
+                        "key": {
+                          "Named": "blockheight"
+                        },
+                        "field_type": {
+                          "name": "number",
+                          "description": "The block height containing the transaction.",
+                          "kind": "Primitive",
+                          "fields": null,
+                          "variants": null,
+                          "base_type": null,
+                          "protocol_type": "number"
+                        },
+                        "required": false,
+                        "description": "The block height containing the transaction.",
+                        "default_value": null
+                      },
+                      {
+                        "key": {
+                          "Named": "blockindex"
+                        },
+                        "field_type": {
+                          "name": "number",
+                          "description": "The index of the transaction in the block that includes it.",
+                          "kind": "Primitive",
+                          "fields": null,
+                          "variants": null,
+                          "base_type": null,
+                          "protocol_type": "number"
+                        },
+                        "required": false,
+                        "description": "The index of the transaction in the block that includes it.",
+                        "default_value": null
+                      },
+                      {
+                        "key": {
+                          "Named": "blocktime"
+                        },
+                        "field_type": {
+                          "name": "timestamp",
+                          "description": "The block time expressed in UNIX epoch time.",
+                          "kind": "Primitive",
+                          "fields": null,
+                          "variants": null,
+                          "base_type": null,
+                          "protocol_type": "timestamp"
+                        },
+                        "required": false,
+                        "description": "The block time expressed in UNIX epoch time.",
+                        "default_value": null
+                      },
+                      {
+                        "key": {
+                          "Named": "comment"
+                        },
+                        "field_type": {
+                          "name": "string",
+                          "description": "If a comment is associated with the transaction, only present if not empty.",
+                          "kind": "Primitive",
+                          "fields": null,
+                          "variants": null,
+                          "base_type": null,
+                          "protocol_type": "string"
+                        },
+                        "required": false,
+                        "description": "If a comment is associated with the transaction, only present if not empty.",
+                        "default_value": null
+                      },
+                      {
+                        "key": {
+                          "Named": "confirmations"
+                        },
+                        "field_type": {
+                          "name": "number",
+                          "description": "The number of confirmations for the transaction. Negative confirmations means the\ntransaction conflicted that many blocks ago.",
+                          "kind": "Primitive",
+                          "fields": null,
+                          "variants": null,
+                          "base_type": null,
+                          "protocol_type": "number"
+                        },
+                        "required": true,
+                        "description": "The number of confirmations for the transaction. Negative confirmations means the\ntransaction conflicted that many blocks ago.",
+                        "default_value": null
+                      },
+                      {
+                        "key": {
+                          "Named": "decoded"
+                        },
+                        "field_type": {
+                          "name": "ListRawTransactionsDecoded",
+                          "description": "The decoded transaction (only present when `verbose` is passed)",
+                          "kind": "Object",
+                          "fields": [
+                            {
+                              "key": {
+                                "Named": "hash"
+                              },
+                              "field_type": {
+                                "name": "hex",
+                                "description": "The transaction hash (differs from txid for witness transactions)",
+                                "kind": "Primitive",
+                                "fields": null,
+                                "variants": null,
+                                "base_type": null,
+                                "protocol_type": "hex"
+                              },
+                              "required": true,
+                              "description": "The transaction hash (differs from txid for witness transactions)",
+                              "default_value": null
+                            },
+                            {
+                              "key": {
+                                "Named": "locktime"
+                              },
+                              "field_type": {
+                                "name": "timestamp",
+                                "description": "The lock time",
+                                "kind": "Primitive",
+                                "fields": null,
+                                "variants": null,
+                                "base_type": null,
+                                "protocol_type": "timestamp"
+                              },
+                              "required": true,
+                              "description": "The lock time",
+                              "default_value": null
+                            },
+                            {
+                              "key": {
+                                "Named": "size"
+                              },
+                              "field_type": {
+                                "name": "number",
+                                "description": "The serialized transaction size",
+                                "kind": "Primitive",
+                                "fields": null,
+                                "variants": null,
+                                "base_type": null,
+                                "protocol_type": "number"
+                              },
+                              "required": true,
+                              "description": "The serialized transaction size",
+                              "default_value": null
+                            },
+                            {
+                              "key": {
+                                "Named": "txid"
+                              },
+                              "field_type": {
+                                "name": "hex",
+                                "description": "The transaction id",
+                                "kind": "Primitive",
+                                "fields": null,
+                                "variants": null,
+                                "base_type": null,
+                                "protocol_type": "hex"
+                              },
+                              "required": true,
+                              "description": "The transaction id",
+                              "default_value": null
+                            },
+                            {
+                              "key": {
+                                "Named": "version"
+                              },
+                              "field_type": {
+                                "name": "number",
+                                "description": "The version",
+                                "kind": "Primitive",
+                                "fields": null,
+                                "variants": null,
+                                "base_type": null,
+                                "protocol_type": "number"
+                              },
+                              "required": true,
+                              "description": "The version",
+                              "default_value": null
+                            },
+                            {
+                              "key": {
+                                "Named": "vin"
+                              },
+                              "field_type": {
+                                "name": "array",
+                                "description": "",
+                                "kind": "Array",
+                                "fields": [
+                                  {
+                                    "key": {
+                                      "Anonymous": 0
+                                    },
+                                    "field_type": {
+                                      "name": "ListRawTransactionsVin",
+                                      "description": "",
+                                      "kind": "Object",
+                                      "fields": [
+                                        {
+                                          "key": {
+                                            "Named": "coinbase"
+                                          },
+                                          "field_type": {
+                                            "name": "string",
+                                            "description": "The coinbase value (only if coinbase transaction)",
+                                            "kind": "Primitive",
+                                            "fields": null,
+                                            "variants": null,
+                                            "base_type": null,
+                                            "protocol_type": "string"
+                                          },
+                                          "required": false,
+                                          "description": "The coinbase value (only if coinbase transaction)",
+                                          "default_value": null
+                                        },
+                                        {
+                                          "key": {
+                                            "Named": "scriptSig"
+                                          },
+                                          "field_type": {
+                                            "name": "ListRawTransactionsScriptSig",
+                                            "description": "The script (if not coinbase transaction)",
+                                            "kind": "Object",
+                                            "fields": [
+                                              {
+                                                "key": {
+                                                  "Named": "asm"
+                                                },
+                                                "field_type": {
+                                                  "name": "string",
+                                                  "description": "Disassembly of the signature script",
+                                                  "kind": "Primitive",
+                                                  "fields": null,
+                                                  "variants": null,
+                                                  "base_type": null,
+                                                  "protocol_type": "string"
+                                                },
+                                                "required": true,
+                                                "description": "Disassembly of the signature script",
+                                                "default_value": null
+                                              },
+                                              {
+                                                "key": {
+                                                  "Named": "hex"
+                                                },
+                                                "field_type": {
+                                                  "name": "hex",
+                                                  "description": "The raw signature script bytes, hex-encoded",
+                                                  "kind": "Primitive",
+                                                  "fields": null,
+                                                  "variants": null,
+                                                  "base_type": null,
+                                                  "protocol_type": "hex"
+                                                },
+                                                "required": true,
+                                                "description": "The raw signature script bytes, hex-encoded",
+                                                "default_value": null
+                                              }
+                                            ],
+                                            "variants": null,
+                                            "base_type": null,
+                                            "protocol_type": "object",
+                                            "type_identity": "ListRawTransactionsScriptSig"
+                                          },
+                                          "required": false,
+                                          "description": "The script (if not coinbase transaction)",
+                                          "default_value": null
+                                        },
+                                        {
+                                          "key": {
+                                            "Named": "sequence"
+                                          },
+                                          "field_type": {
+                                            "name": "number",
+                                            "description": "The script sequence number",
+                                            "kind": "Primitive",
+                                            "fields": null,
+                                            "variants": null,
+                                            "base_type": null,
+                                            "protocol_type": "number"
+                                          },
+                                          "required": true,
+                                          "description": "The script sequence number",
+                                          "default_value": null
+                                        },
+                                        {
+                                          "key": {
+                                            "Named": "txid"
+                                          },
+                                          "field_type": {
+                                            "name": "hex",
+                                            "description": "The transaction id (if not coinbase transaction)",
+                                            "kind": "Primitive",
+                                            "fields": null,
+                                            "variants": null,
+                                            "base_type": null,
+                                            "protocol_type": "hex"
+                                          },
+                                          "required": false,
+                                          "description": "The transaction id (if not coinbase transaction)",
+                                          "default_value": null
+                                        },
+                                        {
+                                          "key": {
+                                            "Named": "txinwitness"
+                                          },
+                                          "field_type": {
+                                            "name": "array",
+                                            "description": "",
+                                            "kind": "Array",
+                                            "fields": [
+                                              {
+                                                "key": {
+                                                  "Anonymous": 0
+                                                },
+                                                "field_type": {
+                                                  "name": "string",
+                                                  "description": "",
+                                                  "kind": "Primitive",
+                                                  "fields": null,
+                                                  "variants": null,
+                                                  "base_type": null,
+                                                  "protocol_type": "string"
+                                                },
+                                                "required": true,
+                                                "description": "",
+                                                "default_value": null
+                                              }
+                                            ],
+                                            "variants": null,
+                                            "base_type": null,
+                                            "protocol_type": "array",
+                                            "type_identity": "listrawtransactions__array__txinwitness__always"
+                                          },
+                                          "required": false,
+                                          "description": "",
+                                          "default_value": null
+                                        },
+                                        {
+                                          "key": {
+                                            "Named": "vout"
+                                          },
+                                          "field_type": {
+                                            "name": "number",
+                                            "description": "The output number (if not coinbase transaction)",
+                                            "kind": "Primitive",
+                                            "fields": null,
+                                            "variants": null,
+                                            "base_type": null,
+                                            "protocol_type": "number"
+                                          },
+                                          "required": false,
+                                          "description": "The output number (if not coinbase transaction)",
+                                          "default_value": null
+                                        }
+                                      ],
+                                      "variants": null,
+                                      "base_type": null,
+                                      "protocol_type": "object",
+                                      "type_identity": "ListRawTransactionsVin"
+                                    },
+                                    "required": true,
+                                    "description": "",
+                                    "default_value": null
+                                  }
+                                ],
+                                "variants": null,
+                                "base_type": null,
+                                "protocol_type": "array",
+                                "type_identity": "listrawtransactions__array__vin__always"
+                              },
+                              "required": true,
+                              "description": "",
+                              "default_value": null
+                            },
+                            {
+                              "key": {
+                                "Named": "vout"
+                              },
+                              "field_type": {
+                                "name": "array",
+                                "description": "",
+                                "kind": "Array",
+                                "fields": [
+                                  {
+                                    "key": {
+                                      "Anonymous": 0
+                                    },
+                                    "field_type": {
+                                      "name": "ListRawTransactionsVout",
+                                      "description": "",
+                                      "kind": "Object",
+                                      "fields": [
+                                        {
+                                          "key": {
+                                            "Named": "ischange"
+                                          },
+                                          "field_type": {
+                                            "name": "boolean",
+                                            "description": "Output script is change (only present if true)",
+                                            "kind": "Primitive",
+                                            "fields": null,
+                                            "variants": null,
+                                            "base_type": null,
+                                            "protocol_type": "boolean"
+                                          },
+                                          "required": false,
+                                          "description": "Output script is change (only present if true)",
+                                          "default_value": null
+                                        },
+                                        {
+                                          "key": {
+                                            "Named": "n"
+                                          },
+                                          "field_type": {
+                                            "name": "number",
+                                            "description": "index",
+                                            "kind": "Primitive",
+                                            "fields": null,
+                                            "variants": null,
+                                            "base_type": null,
+                                            "protocol_type": "number"
+                                          },
+                                          "required": true,
+                                          "description": "index",
+                                          "default_value": null
+                                        },
+                                        {
+                                          "key": {
+                                            "Named": "scriptPubKey"
+                                          },
+                                          "field_type": {
+                                            "name": "ListRawTransactionsScriptPubKey",
+                                            "description": "",
+                                            "kind": "Object",
+                                            "fields": [
+                                              {
+                                                "key": {
+                                                  "Named": "address"
+                                                },
+                                                "field_type": {
+                                                  "name": "string",
+                                                  "description": "The Bitcoin address (only if a well-defined address exists)",
+                                                  "kind": "Primitive",
+                                                  "fields": null,
+                                                  "variants": null,
+                                                  "base_type": null,
+                                                  "protocol_type": "string"
+                                                },
+                                                "required": false,
+                                                "description": "The Bitcoin address (only if a well-defined address exists)",
+                                                "default_value": null
+                                              },
+                                              {
+                                                "key": {
+                                                  "Named": "asm"
+                                                },
+                                                "field_type": {
+                                                  "name": "string",
+                                                  "description": "Disassembly of the output script",
+                                                  "kind": "Primitive",
+                                                  "fields": null,
+                                                  "variants": null,
+                                                  "base_type": null,
+                                                  "protocol_type": "string"
+                                                },
+                                                "required": true,
+                                                "description": "Disassembly of the output script",
+                                                "default_value": null
+                                              },
+                                              {
+                                                "key": {
+                                                  "Named": "desc"
+                                                },
+                                                "field_type": {
+                                                  "name": "string",
+                                                  "description": "Inferred descriptor for the output",
+                                                  "kind": "Primitive",
+                                                  "fields": null,
+                                                  "variants": null,
+                                                  "base_type": null,
+                                                  "protocol_type": "string"
+                                                },
+                                                "required": true,
+                                                "description": "Inferred descriptor for the output",
+                                                "default_value": null
+                                              },
+                                              {
+                                                "key": {
+                                                  "Named": "hex"
+                                                },
+                                                "field_type": {
+                                                  "name": "hex",
+                                                  "description": "The raw output script bytes, hex-encoded",
+                                                  "kind": "Primitive",
+                                                  "fields": null,
+                                                  "variants": null,
+                                                  "base_type": null,
+                                                  "protocol_type": "hex"
+                                                },
+                                                "required": true,
+                                                "description": "The raw output script bytes, hex-encoded",
+                                                "default_value": null
+                                              },
+                                              {
+                                                "key": {
+                                                  "Named": "type"
+                                                },
+                                                "field_type": {
+                                                  "name": "string",
+                                                  "description": "The type (one of: nonstandard, anchor, pubkey, pubkeyhash, scripthash, multisig, nulldata, witness_v0_scripthash, witness_v0_keyhash, witness_v1_taproot, witness_unknown)",
+                                                  "kind": "Primitive",
+                                                  "fields": null,
+                                                  "variants": null,
+                                                  "base_type": null,
+                                                  "protocol_type": "string"
+                                                },
+                                                "required": true,
+                                                "description": "The type (one of: nonstandard, anchor, pubkey, pubkeyhash, scripthash, multisig, nulldata, witness_v0_scripthash, witness_v0_keyhash, witness_v1_taproot, witness_unknown)",
+                                                "default_value": null
+                                              }
+                                            ],
+                                            "variants": null,
+                                            "base_type": null,
+                                            "protocol_type": "object",
+                                            "type_identity": "ListRawTransactionsScriptPubKey"
+                                          },
+                                          "required": true,
+                                          "description": "",
+                                          "default_value": null
+                                        },
+                                        {
+                                          "key": {
+                                            "Named": "value"
+                                          },
+                                          "field_type": {
+                                            "name": "amount",
+                                            "description": "The value in BTC",
+                                            "kind": "Primitive",
+                                            "fields": null,
+                                            "variants": null,
+                                            "base_type": null,
+                                            "protocol_type": "amount"
+                                          },
+                                          "required": true,
+                                          "description": "The value in BTC",
+                                          "default_value": null
+                                        }
+                                      ],
+                                      "variants": null,
+                                      "base_type": null,
+                                      "protocol_type": "object",
+                                      "type_identity": "ListRawTransactionsVout"
+                                    },
+                                    "required": true,
+                                    "description": "",
+                                    "default_value": null
+                                  }
+                                ],
+                                "variants": null,
+                                "base_type": null,
+                                "protocol_type": "array",
+                                "type_identity": "listrawtransactions__array__vout__always"
+                              },
+                              "required": true,
+                              "description": "",
+                              "default_value": null
+                            },
+                            {
+                              "key": {
+                                "Named": "vsize"
+                              },
+                              "field_type": {
+                                "name": "number",
+                                "description": "The virtual transaction size (differs from size for witness transactions)",
+                                "kind": "Primitive",
+                                "fields": null,
+                                "variants": null,
+                                "base_type": null,
+                                "protocol_type": "number"
+                              },
+                              "required": true,
+                              "description": "The virtual transaction size (differs from size for witness transactions)",
+                              "default_value": null
+                            },
+                            {
+                              "key": {
+                                "Named": "weight"
+                              },
+                              "field_type": {
+                                "name": "number",
+                                "description": "The transaction's weight (between vsize*4-3 and vsize*4)",
+                                "kind": "Primitive",
+                                "fields": null,
+                                "variants": null,
+                                "base_type": null,
+                                "protocol_type": "number"
+                              },
+                              "required": true,
+                              "description": "The transaction's weight (between vsize*4-3 and vsize*4)",
+                              "default_value": null
+                            }
+                          ],
+                          "variants": null,
+                          "base_type": null,
+                          "protocol_type": "object",
+                          "type_identity": "ListRawTransactionsDecoded"
+                        },
+                        "required": false,
+                        "description": "The decoded transaction (only present when `verbose` is passed)",
+                        "default_value": null
+                      },
+                      {
+                        "key": {
+                          "Named": "fee"
+                        },
+                        "field_type": {
+                          "name": "amount",
+                          "description": "The fee paid in BTC. This is negative and only present when the wallet funded the transaction.",
+                          "kind": "Primitive",
+                          "fields": null,
+                          "variants": null,
+                          "base_type": null,
+                          "protocol_type": "amount"
+                        },
+                        "required": false,
+                        "description": "The fee paid in BTC. This is negative and only present when the wallet funded the transaction.",
+                        "default_value": null
+                      },
+                      {
+                        "key": {
+                          "Named": "generated"
+                        },
+                        "field_type": {
+                          "name": "boolean",
+                          "description": "Only present if the transaction's only input is a coinbase one.",
+                          "kind": "Primitive",
+                          "fields": null,
+                          "variants": null,
+                          "base_type": null,
+                          "protocol_type": "boolean"
+                        },
+                        "required": false,
+                        "description": "Only present if the transaction's only input is a coinbase one.",
+                        "default_value": null
+                      },
+                      {
+                        "key": {
+                          "Named": "hex"
+                        },
+                        "field_type": {
+                          "name": "hex",
+                          "description": "Raw data for transaction",
+                          "kind": "Primitive",
+                          "fields": null,
+                          "variants": null,
+                          "base_type": null,
+                          "protocol_type": "hex"
+                        },
+                        "required": true,
+                        "description": "Raw data for transaction",
+                        "default_value": null
+                      },
+                      {
+                        "key": {
+                          "Named": "mempoolconflicts"
+                        },
+                        "field_type": {
+                          "name": "array",
+                          "description": "Transactions in the mempool that directly conflict with either this transaction or an ancestor transaction",
+                          "kind": "Array",
+                          "fields": [
+                            {
+                              "key": {
+                                "Anonymous": 0
+                              },
+                              "field_type": {
+                                "name": "string",
+                                "description": "Transactions in the mempool that directly conflict with either this transaction or an ancestor transaction",
+                                "kind": "Primitive",
+                                "fields": null,
+                                "variants": null,
+                                "base_type": null,
+                                "protocol_type": "string"
+                              },
+                              "required": true,
+                              "description": "",
+                              "default_value": null
+                            }
+                          ],
+                          "variants": null,
+                          "base_type": null,
+                          "protocol_type": "array",
+                          "type_identity": "listrawtransactions__array__mempoolconflicts__always"
+                        },
+                        "required": true,
+                        "description": "Transactions in the mempool that directly conflict with either this transaction or an ancestor transaction",
+                        "default_value": null
+                      },
+                      {
+                        "key": {
+                          "Named": "replaced_by_txid"
+                        },
+                        "field_type": {
+                          "name": "hex",
+                          "description": "The txid of the transaction that replaced this one.",
+                          "kind": "Primitive",
+                          "fields": null,
+                          "variants": null,
+                          "base_type": null,
+                          "protocol_type": "hex"
+                        },
+                        "required": false,
+                        "description": "The txid of the transaction that replaced this one.",
+                        "default_value": null
+                      },
+                      {
+                        "key": {
+                          "Named": "replaces_txid"
+                        },
+                        "field_type": {
+                          "name": "hex",
+                          "description": "The txid of the transaction that this one replaces.",
+                          "kind": "Primitive",
+                          "fields": null,
+                          "variants": null,
+                          "base_type": null,
+                          "protocol_type": "hex"
+                        },
+                        "required": false,
+                        "description": "The txid of the transaction that this one replaces.",
+                        "default_value": null
+                      },
+                      {
+                        "key": {
+                          "Named": "time"
+                        },
+                        "field_type": {
+                          "name": "timestamp",
+                          "description": "The transaction time expressed in UNIX epoch time.",
+                          "kind": "Primitive",
+                          "fields": null,
+                          "variants": null,
+                          "base_type": null,
+                          "protocol_type": "timestamp"
+                        },
+                        "required": true,
+                        "description": "The transaction time expressed in UNIX epoch time.",
+                        "default_value": null
+                      },
+                      {
+                        "key": {
+                          "Named": "timereceived"
+                        },
+                        "field_type": {
+                          "name": "timestamp",
+                          "description": "The time received expressed in UNIX epoch time.",
+                          "kind": "Primitive",
+                          "fields": null,
+                          "variants": null,
+                          "base_type": null,
+                          "protocol_type": "timestamp"
+                        },
+                        "required": true,
+                        "description": "The time received expressed in UNIX epoch time.",
+                        "default_value": null
+                      },
+                      {
+                        "key": {
+                          "Named": "to"
+                        },
+                        "field_type": {
+                          "name": "string",
+                          "description": "If a comment to is associated with the transaction.",
+                          "kind": "Primitive",
+                          "fields": null,
+                          "variants": null,
+                          "base_type": null,
+                          "protocol_type": "string"
+                        },
+                        "required": false,
+                        "description": "If a comment to is associated with the transaction.",
+                        "default_value": null
+                      },
+                      {
+                        "key": {
+                          "Named": "trusted"
+                        },
+                        "field_type": {
+                          "name": "boolean",
+                          "description": "Whether we consider the transaction to be trusted and safe to spend from.\nOnly present when the transaction has 0 confirmations (or negative confirmations, if conflicted).",
+                          "kind": "Primitive",
+                          "fields": null,
+                          "variants": null,
+                          "base_type": null,
+                          "protocol_type": "boolean"
+                        },
+                        "required": false,
+                        "description": "Whether we consider the transaction to be trusted and safe to spend from.\nOnly present when the transaction has 0 confirmations (or negative confirmations, if conflicted).",
+                        "default_value": null
+                      },
+                      {
+                        "key": {
+                          "Named": "txid"
+                        },
+                        "field_type": {
+                          "name": "hex",
+                          "description": "The transaction id.",
+                          "kind": "Primitive",
+                          "fields": null,
+                          "variants": null,
+                          "base_type": null,
+                          "protocol_type": "hex"
+                        },
+                        "required": true,
+                        "description": "The transaction id.",
+                        "default_value": null
+                      },
+                      {
+                        "key": {
+                          "Named": "walletconflicts"
+                        },
+                        "field_type": {
+                          "name": "array",
+                          "description": "Confirmed transactions that have been detected by the wallet to conflict with this transaction.",
+                          "kind": "Array",
+                          "fields": [
+                            {
+                              "key": {
+                                "Anonymous": 0
+                              },
+                              "field_type": {
+                                "name": "string",
+                                "description": "Confirmed transactions that have been detected by the wallet to conflict with this transaction.",
+                                "kind": "Primitive",
+                                "fields": null,
+                                "variants": null,
+                                "base_type": null,
+                                "protocol_type": "string"
+                              },
+                              "required": true,
+                              "description": "",
+                              "default_value": null
+                            }
+                          ],
+                          "variants": null,
+                          "base_type": null,
+                          "protocol_type": "array",
+                          "type_identity": "listrawtransactions__array__walletconflicts__always"
+                        },
+                        "required": true,
+                        "description": "Confirmed transactions that have been detected by the wallet to conflict with this transaction.",
+                        "default_value": null
+                      },
+                      {
+                        "key": {
+                          "Named": "wtxid"
+                        },
+                        "field_type": {
+                          "name": "hex",
+                          "description": "The hash of serialized transaction, including witness data.",
+                          "kind": "Primitive",
+                          "fields": null,
+                          "variants": null,
+                          "base_type": null,
+                          "protocol_type": "hex"
+                        },
+                        "required": true,
+                        "description": "The hash of serialized transaction, including witness data.",
+                        "default_value": null
+                      }
+                    ],
+                    "variants": null,
+                    "base_type": null,
+                    "protocol_type": "object",
+                    "type_identity": "ListRawTransactionsResultItem"
+                  },
+                  "required": true,
+                  "description": "",
+                  "default_value": null
+                }
+              ],
+              "variants": null,
+              "base_type": null,
+              "protocol_type": "array",
+              "type_identity": "listrawtransactions__array__result__always"
+            },
+            "category": "wallet",
+            "access_level": "Public",
+            "requires_private_keys": false,
+            "version_added": "33"
+          }
+        },
+        {
+          "RpcMethod": {
             "name": "listreceivedbyaddress",
             "description": "List balances by receiving address.",
             "params": [

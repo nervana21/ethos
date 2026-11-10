@@ -11550,6 +11550,346 @@
       "x-bitcoin-category": "wallet"
     },
     {
+      "name": "listrawtransactions",
+      "description": "Returns up to 'count' most recent wallet transactions ordered from oldest to newest, skipping the first 'skip' transactions. Unlike `listtransactions`, each wallet transaction appears exactly once with its net wallet balance change excluding fee, without logical interpretation (no category assignment, no change suppression). This means consolidation and self-transfer transactions that are invisible in `listtransactions` are included here.",
+      "params": [
+        {
+          "name": "count",
+          "required": false,
+          "schema": {
+            "type": "number",
+            "default": 10
+          },
+          "description": "The number of transactions to return."
+        },
+        {
+          "name": "skip",
+          "required": false,
+          "schema": {
+            "type": "number",
+            "default": 0
+          },
+          "description": "The number of transactions to skip."
+        },
+        {
+          "name": "verbose",
+          "required": false,
+          "schema": {
+            "type": "boolean",
+            "default": false
+          },
+          "description": "Whether to include a `decoded` field containing the decoded transaction (equivalent to RPC decoderawtransaction)"
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "amount": {
+                "type": "number",
+                "x-bitcoin-unit": "amount",
+                "description": "The net change to the wallet balance caused by this transaction (excluding fee). Positive means the wallet gained funds, negative means it lost funds, zero means a pure self-transfer (e.g. consolidation)."
+              },
+              "fee": {
+                "type": "number",
+                "x-bitcoin-unit": "amount",
+                "description": "The fee paid in BTC. This is negative and only present when the wallet funded the transaction."
+              },
+              "confirmations": {
+                "type": "number",
+                "description": "The number of confirmations for the transaction. Negative confirmations means the\ntransaction conflicted that many blocks ago."
+              },
+              "generated": {
+                "type": "boolean",
+                "description": "Only present if the transaction's only input is a coinbase one."
+              },
+              "trusted": {
+                "type": "boolean",
+                "description": "Whether we consider the transaction to be trusted and safe to spend from.\nOnly present when the transaction has 0 confirmations (or negative confirmations, if conflicted)."
+              },
+              "blockhash": {
+                "type": "string",
+                "pattern": "^([0-9a-fA-F]{2})*$",
+                "description": "The block hash containing the transaction."
+              },
+              "blockheight": {
+                "type": "number",
+                "description": "The block height containing the transaction."
+              },
+              "blockindex": {
+                "type": "number",
+                "description": "The index of the transaction in the block that includes it."
+              },
+              "blocktime": {
+                "type": "number",
+                "x-bitcoin-unit": "unix-time",
+                "description": "The block time expressed in UNIX epoch time."
+              },
+              "txid": {
+                "type": "string",
+                "pattern": "^([0-9a-fA-F]{2})*$",
+                "description": "The transaction id."
+              },
+              "wtxid": {
+                "type": "string",
+                "pattern": "^([0-9a-fA-F]{2})*$",
+                "description": "The hash of serialized transaction, including witness data."
+              },
+              "alternate_wtxids": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^([0-9a-fA-F]{2})*$"
+                },
+                "description": "The wtxids of transactions with different witness data but the same txid."
+              },
+              "walletconflicts": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^([0-9a-fA-F]{2})*$"
+                },
+                "description": "Confirmed transactions that have been detected by the wallet to conflict with this transaction."
+              },
+              "replaced_by_txid": {
+                "type": "string",
+                "pattern": "^([0-9a-fA-F]{2})*$",
+                "description": "The txid of the transaction that replaced this one."
+              },
+              "replaces_txid": {
+                "type": "string",
+                "pattern": "^([0-9a-fA-F]{2})*$",
+                "description": "The txid of the transaction that this one replaces."
+              },
+              "mempoolconflicts": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^([0-9a-fA-F]{2})*$"
+                },
+                "description": "Transactions in the mempool that directly conflict with either this transaction or an ancestor transaction"
+              },
+              "to": {
+                "type": "string",
+                "description": "If a comment to is associated with the transaction."
+              },
+              "time": {
+                "type": "number",
+                "x-bitcoin-unit": "unix-time",
+                "description": "The transaction time expressed in UNIX epoch time."
+              },
+              "timereceived": {
+                "type": "number",
+                "x-bitcoin-unit": "unix-time",
+                "description": "The time received expressed in UNIX epoch time."
+              },
+              "comment": {
+                "type": "string",
+                "description": "If a comment is associated with the transaction, only present if not empty."
+              },
+              "bip125-replaceable": {
+                "type": "string",
+                "description": "(\"yes|no|unknown\") (DEPRECATED) Whether this transaction signals BIP125 replaceability or has an unconfirmed ancestor signaling BIP125 replaceability.\nMay be unknown for unconfirmed transactions not in the mempool because their unconfirmed ancestors are unknown."
+              },
+              "abandoned": {
+                "type": "boolean",
+                "description": "'true' if the transaction has been abandoned (inputs are respendable)."
+              },
+              "hex": {
+                "type": "string",
+                "pattern": "^([0-9a-fA-F]{2})*$",
+                "description": "Raw data for transaction"
+              },
+              "decoded": {
+                "type": "object",
+                "properties": {
+                  "txid": {
+                    "type": "string",
+                    "pattern": "^([0-9a-fA-F]{2})*$",
+                    "description": "The transaction id"
+                  },
+                  "hash": {
+                    "type": "string",
+                    "pattern": "^([0-9a-fA-F]{2})*$",
+                    "description": "The transaction hash (differs from txid for witness transactions)"
+                  },
+                  "size": {
+                    "type": "number",
+                    "description": "The serialized transaction size"
+                  },
+                  "vsize": {
+                    "type": "number",
+                    "description": "The virtual transaction size (differs from size for witness transactions)"
+                  },
+                  "weight": {
+                    "type": "number",
+                    "description": "The transaction's weight (between vsize*4-3 and vsize*4)"
+                  },
+                  "version": {
+                    "type": "number",
+                    "description": "The version"
+                  },
+                  "locktime": {
+                    "type": "number",
+                    "x-bitcoin-unit": "unix-time",
+                    "description": "The lock time"
+                  },
+                  "vin": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "coinbase": {
+                          "type": "string",
+                          "pattern": "^([0-9a-fA-F]{2})*$",
+                          "description": "The coinbase value (only if coinbase transaction)"
+                        },
+                        "txid": {
+                          "type": "string",
+                          "pattern": "^([0-9a-fA-F]{2})*$",
+                          "description": "The transaction id (if not coinbase transaction)"
+                        },
+                        "vout": {
+                          "type": "number",
+                          "description": "The output number (if not coinbase transaction)"
+                        },
+                        "scriptSig": {
+                          "type": "object",
+                          "properties": {
+                            "asm": {
+                              "type": "string",
+                              "description": "Disassembly of the signature script"
+                            },
+                            "hex": {
+                              "type": "string",
+                              "pattern": "^([0-9a-fA-F]{2})*$",
+                              "description": "The raw signature script bytes, hex-encoded"
+                            }
+                          },
+                          "additionalProperties": false,
+                          "required": [
+                            "asm",
+                            "hex"
+                          ],
+                          "description": "The script (if not coinbase transaction)"
+                        },
+                        "txinwitness": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "pattern": "^([0-9a-fA-F]{2})*$"
+                          }
+                        },
+                        "sequence": {
+                          "type": "number",
+                          "description": "The script sequence number"
+                        }
+                      },
+                      "additionalProperties": false,
+                      "required": [
+                        "sequence"
+                      ]
+                    }
+                  },
+                  "vout": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "value": {
+                          "type": "number",
+                          "x-bitcoin-unit": "amount",
+                          "description": "The value in BTC"
+                        },
+                        "n": {
+                          "type": "number",
+                          "description": "index"
+                        },
+                        "scriptPubKey": {
+                          "type": "object",
+                          "properties": {
+                            "asm": {
+                              "type": "string",
+                              "description": "Disassembly of the output script"
+                            },
+                            "desc": {
+                              "type": "string",
+                              "description": "Inferred descriptor for the output"
+                            },
+                            "hex": {
+                              "type": "string",
+                              "pattern": "^([0-9a-fA-F]{2})*$",
+                              "description": "The raw output script bytes, hex-encoded"
+                            },
+                            "address": {
+                              "type": "string",
+                              "description": "The Bitcoin address (only if a well-defined address exists)"
+                            },
+                            "type": {
+                              "type": "string",
+                              "description": "The type (one of: nonstandard, anchor, pubkey, pubkeyhash, scripthash, multisig, nulldata, witness_v0_scripthash, witness_v0_keyhash, witness_v1_taproot, witness_unknown)"
+                            }
+                          },
+                          "additionalProperties": false,
+                          "required": [
+                            "asm",
+                            "desc",
+                            "hex",
+                            "type"
+                          ]
+                        },
+                        "ischange": {
+                          "type": "boolean",
+                          "description": "Output script is change (only present if true)"
+                        }
+                      },
+                      "additionalProperties": false,
+                      "required": [
+                        "value",
+                        "n",
+                        "scriptPubKey"
+                      ]
+                    }
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "txid",
+                  "hash",
+                  "size",
+                  "vsize",
+                  "weight",
+                  "version",
+                  "locktime",
+                  "vin",
+                  "vout"
+                ],
+                "description": "The decoded transaction (only present when `verbose` is passed)"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "amount",
+              "confirmations",
+              "txid",
+              "wtxid",
+              "alternate_wtxids",
+              "walletconflicts",
+              "mempoolconflicts",
+              "time",
+              "timereceived",
+              "abandoned",
+              "hex"
+            ]
+          }
+        }
+      },
+      "x-bitcoin-category": "wallet"
+    },
+    {
       "name": "listreceivedbyaddress",
       "description": "List balances by receiving address.",
       "params": [
