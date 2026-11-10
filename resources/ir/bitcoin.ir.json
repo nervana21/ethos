@@ -38101,7 +38101,8 @@
             "category": "wallet",
             "access_level": "Public",
             "requires_private_keys": false,
-            "version_added": "0.17"
+            "version_added": "0.17",
+            "version_removed": "33"
           }
         },
         {
