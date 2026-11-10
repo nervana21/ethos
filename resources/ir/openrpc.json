@@ -13440,28 +13440,6 @@
       "x-bitcoin-category": "hidden"
     },
     {
-      "name": "removeprunedfunds",
-      "description": "(DEPRECATED) This feature will be removed in the next major release. Start bitcoind with the `-deprecatedrpc=removeprunedfunds` option in order to use this.\nDeletes the specified transaction from the wallet. Meant for use with pruned wallets and as a companion to importprunedfunds. This will affect wallet balances.",
-      "params": [
-        {
-          "name": "txid",
-          "required": true,
-          "schema": {
-            "type": "string",
-            "pattern": "^([0-9a-fA-F]{2})*$"
-          },
-          "description": "The hex-encoded id of the transaction you are deleting"
-        }
-      ],
-      "result": {
-        "name": "result",
-        "schema": {
-          "type": "null"
-        }
-      },
-      "x-bitcoin-category": "wallet"
-    },
-    {
       "name": "rescanblockchain",
       "description": "Rescan the local blockchain for wallet related transactions.\nNote: Use \"getwalletinfo\" to query the scanning progress.\nThe rescan is significantly faster if block filters are available\n(using startup option \"-blockfilterindex=1\").",
       "params": [
