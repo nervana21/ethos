@@ -819,17 +819,17 @@ fn earlier_version_added_for_storage(a: &str, b: &str) -> String {
     a_n
 }
 
-/// Copies version_added/version_removed and nested version fields from an existing `RpcDef`.
+/// Copies version_added and nested version fields from an existing `RpcDef`.
 /// Method-level `version_added` keeps the earlier stamp (OpenRPC has none; dump version must not win).
+///
+/// Method-level `version_removed` is **not** copied: presence in the dump means the RPC is live
+/// again, so convert's `None` must stick (a prior tombstone would otherwise never clear).
 fn merge_version_from_existing_rpc(our: &mut ir::RpcDef, existing: &ir::RpcDef) {
     if let Some(ref ex_v) = existing.version_added {
         our.version_added = Some(match our.version_added.as_deref() {
             None => ProtocolVersion::normalize_version_added_for_storage(ex_v),
             Some(our_v) => earlier_version_added_for_storage(ex_v, our_v),
         });
-    }
-    if existing.version_removed.is_some() {
-        our.version_removed = existing.version_removed.clone();
     }
     for our_p in our.params.iter_mut() {
         if let Some(ex_p) = existing.params.iter().find(|e| e.name == our_p.name) {
@@ -3271,7 +3271,8 @@ mod tests {
         }))
         .expect("slim openrpc");
 
-        update_canonical_ir_from_openrpc(&ir_path, doc, "32.1.0").expect("slim update");
+        update_canonical_ir_from_openrpc(&ir_path, doc, "32.1.0", false)
+            .expect("incomplete update");
 
         let after = ProtocolIR::from_file(&ir_path).expect("reload");
         let _ = std::fs::remove_file(&ir_path);
@@ -3282,6 +3283,10 @@ mod tests {
             by_name["abandontransaction"].version_added.as_deref(),
             Some("0.17"),
             "retained omitted RPC must keep prior version_added"
+        );
+        assert!(
+            by_name["abandontransaction"].version_removed.is_none(),
+            "incomplete dump without stamp_removals must not set version_removed"
         );
     }
 
@@ -3333,7 +3338,8 @@ mod tests {
         }))
         .expect("slim openrpc");
 
-        update_canonical_ir_from_openrpc(&ir_path, doc, "32.1.0").expect("slim update");
+        update_canonical_ir_from_openrpc(&ir_path, doc, "32.1.0", false)
+            .expect("incomplete update");
 
         // Full dump brings wallet RPC back; must reuse retained 0.17, not stamp 32.
         let full: OpenRpcDoc = serde_json::from_value(serde_json::json!({
@@ -3363,7 +3369,7 @@ mod tests {
             ]
         }))
         .expect("full openrpc");
-        update_canonical_ir_from_openrpc(&ir_path, full, "32.1.0").expect("full update");
+        update_canonical_ir_from_openrpc(&ir_path, full, "32.1.0", false).expect("full update");
 
         let after = ProtocolIR::from_file(&ir_path).expect("reload");
         let _ = std::fs::remove_file(&ir_path);
@@ -3380,6 +3386,227 @@ mod tests {
             Some("0.17"),
             "present RPC must not take dump major when prior stamp exists"
         );
+    }
+
+    fn temp_ir_path(label: &str) -> PathBuf {
+        std::env::temp_dir().join(format!(
+            "ethos_ir_{label}_{}_{}.json",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_nanos())
+                .unwrap_or(0)
+        ))
+    }
+
+    fn minimal_method(name: &str, category: &str) -> serde_json::Value {
+        serde_json::json!({
+            "name": name,
+            "description": name,
+            "params": [],
+            "result": {
+                "name": "result",
+                "schema": { "type": "null" }
+            },
+            "x-bitcoin-category": category
+        })
+    }
+
+    #[test]
+    fn update_canonical_stamps_version_removed_when_requested() {
+        let ir_path = temp_ir_path("stamp_removed");
+        let prior = ProtocolIR::new(vec![ProtocolModule::new(
+            "rpc".into(),
+            "Bitcoin RPC API".into(),
+            vec![
+                ProtocolDef::RpcMethod(ir::RpcDef {
+                    name: "getblockchaininfo".into(),
+                    category: "blockchain".into(),
+                    version_added: Some("0.17".into()),
+                    ..ir::RpcDef::default()
+                }),
+                ProtocolDef::RpcMethod(ir::RpcDef {
+                    name: "removeprunedfunds".into(),
+                    category: "wallet".into(),
+                    version_added: Some("0.17".into()),
+                    ..ir::RpcDef::default()
+                }),
+            ],
+        )]);
+        prior.to_file(&ir_path).expect("write prior IR");
+
+        let doc: OpenRpcDoc = serde_json::from_value(serde_json::json!({
+            "openrpc": "1.2.6",
+            "info": { "version": "v32.99.0-dev", "title": "Bitcoin Core" },
+            "methods": [minimal_method("getblockchaininfo", "blockchain")]
+        }))
+        .expect("openrpc");
+
+        update_canonical_ir_from_openrpc(&ir_path, doc, "32.99.0-dev", true).expect("stamp update");
+
+        let after = ProtocolIR::from_file(&ir_path).expect("reload");
+        let _ = std::fs::remove_file(&ir_path);
+        let by_name: HashMap<_, _> =
+            after.get_rpc_methods().into_iter().map(|r| (r.name.clone(), r)).collect();
+        assert_eq!(by_name["removeprunedfunds"].version_removed.as_deref(), Some("33"));
+        assert_eq!(by_name["removeprunedfunds"].version_added.as_deref(), Some("0.17"));
+        assert!(by_name["getblockchaininfo"].version_removed.is_none());
+    }
+
+    #[test]
+    fn update_canonical_keeps_first_version_removed_on_resync() {
+        let ir_path = temp_ir_path("keep_removed");
+        let prior = ProtocolIR::new(vec![ProtocolModule::new(
+            "rpc".into(),
+            "Bitcoin RPC API".into(),
+            vec![
+                ProtocolDef::RpcMethod(ir::RpcDef {
+                    name: "getblockchaininfo".into(),
+                    category: "blockchain".into(),
+                    version_added: Some("0.17".into()),
+                    ..ir::RpcDef::default()
+                }),
+                ProtocolDef::RpcMethod(ir::RpcDef {
+                    name: "removeprunedfunds".into(),
+                    category: "wallet".into(),
+                    version_added: Some("0.17".into()),
+                    version_removed: Some("33".into()),
+                    ..ir::RpcDef::default()
+                }),
+            ],
+        )]);
+        prior.to_file(&ir_path).expect("write prior IR");
+
+        let doc: OpenRpcDoc = serde_json::from_value(serde_json::json!({
+            "openrpc": "1.2.6",
+            "info": { "version": "v34.99.0-dev", "title": "Bitcoin Core" },
+            "methods": [minimal_method("getblockchaininfo", "blockchain")]
+        }))
+        .expect("openrpc");
+
+        update_canonical_ir_from_openrpc(&ir_path, doc, "34.99.0-dev", true).expect("resync");
+
+        let after = ProtocolIR::from_file(&ir_path).expect("reload");
+        let _ = std::fs::remove_file(&ir_path);
+        let by_name: HashMap<_, _> =
+            after.get_rpc_methods().into_iter().map(|r| (r.name.clone(), r)).collect();
+        assert_eq!(
+            by_name["removeprunedfunds"].version_removed.as_deref(),
+            Some("33"),
+            "first omission stamp must not drift on later syncs"
+        );
+    }
+
+    #[test]
+    fn update_canonical_clears_version_removed_when_method_returns() {
+        let ir_path = temp_ir_path("clear_removed");
+        let prior = ProtocolIR::new(vec![ProtocolModule::new(
+            "rpc".into(),
+            "Bitcoin RPC API".into(),
+            vec![
+                ProtocolDef::RpcMethod(ir::RpcDef {
+                    name: "getblockchaininfo".into(),
+                    category: "blockchain".into(),
+                    version_added: Some("0.17".into()),
+                    ..ir::RpcDef::default()
+                }),
+                ProtocolDef::RpcMethod(ir::RpcDef {
+                    name: "removeprunedfunds".into(),
+                    category: "wallet".into(),
+                    version_added: Some("0.17".into()),
+                    version_removed: Some("33".into()),
+                    ..ir::RpcDef::default()
+                }),
+            ],
+        )]);
+        prior.to_file(&ir_path).expect("write prior IR");
+
+        let doc: OpenRpcDoc = serde_json::from_value(serde_json::json!({
+            "openrpc": "1.2.6",
+            "info": { "version": "v33.0.0", "title": "Bitcoin Core" },
+            "methods": [
+                minimal_method("getblockchaininfo", "blockchain"),
+                minimal_method("removeprunedfunds", "wallet")
+            ]
+        }))
+        .expect("openrpc");
+
+        update_canonical_ir_from_openrpc(&ir_path, doc, "33.0.0", true).expect("reappear");
+
+        let after = ProtocolIR::from_file(&ir_path).expect("reload");
+        let _ = std::fs::remove_file(&ir_path);
+        let by_name: HashMap<_, _> =
+            after.get_rpc_methods().into_iter().map(|r| (r.name.clone(), r)).collect();
+        assert!(
+            by_name["removeprunedfunds"].version_removed.is_none(),
+            "live dump must clear prior version_removed"
+        );
+        assert_eq!(by_name["removeprunedfunds"].version_added.as_deref(), Some("0.17"));
+    }
+
+    #[test]
+    fn extract_version_ir_excludes_removed_rpc() {
+        let ir = ProtocolIR::new(vec![ProtocolModule::new(
+            "rpc".into(),
+            "Bitcoin RPC API".into(),
+            vec![
+                ProtocolDef::RpcMethod(ir::RpcDef {
+                    name: "getblockchaininfo".into(),
+                    category: "blockchain".into(),
+                    version_added: Some("0.17".into()),
+                    ..ir::RpcDef::default()
+                }),
+                ProtocolDef::RpcMethod(ir::RpcDef {
+                    name: "removeprunedfunds".into(),
+                    category: "wallet".into(),
+                    version_added: Some("0.17".into()),
+                    version_removed: Some("33".into()),
+                    ..ir::RpcDef::default()
+                }),
+            ],
+        )]);
+
+        let v32 = extract_version_ir(ir.clone(), "32.0.0");
+        let names32: HashSet<_> =
+            v32.get_rpc_methods().into_iter().map(|r| r.name.clone()).collect();
+        assert!(names32.contains("removeprunedfunds"));
+        assert!(names32.contains("getblockchaininfo"));
+
+        let v33 = extract_version_ir(ir, "33.0.0");
+        let names33: HashSet<_> =
+            v33.get_rpc_methods().into_iter().map(|r| r.name.clone()).collect();
+        assert!(!names33.contains("removeprunedfunds"));
+        assert!(names33.contains("getblockchaininfo"));
+    }
+
+    #[test]
+    fn pinned_ir_only_rpcs_have_version_removed() {
+        let root = path::workspace_root_from_manifest(env!("CARGO_MANIFEST_DIR"), 1);
+        let ir = ProtocolIR::from_file(&path::canonical_bitcoin_ir_path(&root)).expect("load IR");
+        let dump = load_openrpc_doc(&root.join("resources/ir/openrpc.json")).expect("load dump");
+        assert_ir_only_rpcs_have_version_removed(&ir, &dump).expect("IR-only must be stamped");
+    }
+
+    #[test]
+    fn assert_ir_only_rpcs_have_version_removed_fails_without_stamp() {
+        let ir = ProtocolIR::new(vec![ProtocolModule::new(
+            "rpc".into(),
+            "Bitcoin RPC API".into(),
+            vec![ProtocolDef::RpcMethod(ir::RpcDef {
+                name: "removeprunedfunds".into(),
+                category: "wallet".into(),
+                version_added: Some("0.17".into()),
+                ..ir::RpcDef::default()
+            })],
+        )]);
+        let dump: OpenRpcDoc = serde_json::from_value(serde_json::json!({
+            "openrpc": "1.2.6",
+            "info": { "version": "v32.99.0-dev", "title": "Bitcoin Core" },
+            "methods": [minimal_method("getblockchaininfo", "blockchain")]
+        }))
+        .expect("openrpc");
+        let err = assert_ir_only_rpcs_have_version_removed(&ir, &dump).expect_err("must fail");
+        assert!(err.contains("removeprunedfunds"));
     }
 }
 
@@ -3433,12 +3660,17 @@ pub fn convert_to_protocol_ir_with_version(doc: OpenRpcDoc, version: Option<Stri
 /// Single place for "update canonical from OpenRPC" semantics. Uses per-definition merge:
 /// for each method in the converted IR, merges version_* from existing IR then writes into
 /// the rpc module. Methods present in the prior IR but absent from this dump are **kept**
-/// (preserves `version_added` / schema across slim or feature-stripped dumps). Without that,
+/// (preserves `version_added` / schema across incomplete or feature-stripped dumps). Without that,
 /// a later full dump would treat them as new and stamp dump `info.version` (data loss).
+///
+/// When `stamp_removals` is true (trusted full dump only), each retained omission without an
+/// existing `version_removed` gets `normalize_version_added_for_storage(version)`. Already-set
+/// removals are left alone (first omission wins).
 pub fn update_canonical_ir_from_openrpc(
     canonical_path: &Path,
     doc: OpenRpcDoc,
     version: &str,
+    stamp_removals: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let (mut existing_ir, version_map) = load_ir_and_version_map_from_path(canonical_path)?;
     let protocol_ir =
@@ -3468,16 +3700,31 @@ pub fn update_canonical_ir_from_openrpc(
     let mut retained: Vec<String> =
         existing_rpcs.keys().filter(|name| !converted_names.contains(*name)).cloned().collect();
     retained.sort();
+    let mut stamped: Vec<String> = Vec::new();
     for name in &retained {
         let existing_rpc = existing_rpcs.get(name).expect("key from map");
-        new_defs.push(ProtocolDef::RpcMethod(existing_rpc.clone()));
+        let mut rpc = existing_rpc.clone();
+        if stamp_removals && rpc.version_removed.is_none() {
+            let removed = ProtocolVersion::normalize_version_added_for_storage(version);
+            rpc.version_removed = Some(removed.clone());
+            stamped.push(format!("{name}@{removed}"));
+        }
+        new_defs.push(ProtocolDef::RpcMethod(rpc));
     }
     if !retained.is_empty() {
-        eprintln!(
-            "warning: OpenRPC dump omitted {} RPC(s); keeping prior IR defs (preserves version_added): {}",
-            retained.len(),
-            retained.join(", ")
-        );
+        if stamp_removals && !stamped.is_empty() {
+            eprintln!(
+                "warning: OpenRPC dump omitted {} RPC(s); keeping prior IR defs and stamping version_removed: {}",
+                retained.len(),
+                stamped.join(", ")
+            );
+        } else {
+            eprintln!(
+                "warning: OpenRPC dump omitted {} RPC(s); keeping prior IR defs (preserves version_added): {}",
+                retained.len(),
+                retained.join(", ")
+            );
+        }
     }
 
     sort_definitions_by_name(&mut new_defs);
@@ -3496,36 +3743,82 @@ pub fn update_canonical_ir_from_openrpc(
     Ok(())
 }
 
+/// Every IR method absent from the tip OpenRPC dump must carry `version_removed`.
+pub fn assert_ir_only_rpcs_have_version_removed(
+    ir: &ProtocolIR,
+    dump: &OpenRpcDoc,
+) -> Result<(), String> {
+    let dump_names: HashSet<&str> = dump.methods.iter().map(|m| m.name.as_str()).collect();
+    let mut missing = Vec::new();
+    for rpc in ir.get_rpc_methods() {
+        if !dump_names.contains(rpc.name.as_str()) && rpc.version_removed.is_none() {
+            missing.push(rpc.name.clone());
+        }
+    }
+    missing.sort();
+    if missing.is_empty() {
+        Ok(())
+    } else {
+        Err(format!(
+            "IR method(s) absent from OpenRPC dump lack version_removed: {}",
+            missing.join(", ")
+        ))
+    }
+}
+
 /// Runs the `process_bitcoin_openrpc` binary entry point.
 ///
 /// Usage patterns:
-/// 1. Convert OpenRPC to IR: process_bitcoin_openrpc <openrpc_file> [output_file]
+/// 1. Convert OpenRPC to IR: process_bitcoin_openrpc [--stamp-removals] <openrpc_file> [output_file]
 /// 2. Extract version-specific IR: process_bitcoin_openrpc <version> [output_file]
 ///
 /// Library entry point for the `process_bitcoin_openrpc` binary.
 pub fn run(args: &[String]) -> Result<(), Box<dyn std::error::Error>> {
-    if args.len() < 2 {
+    let mut stamp_removals = false;
+    let mut positional: Vec<&str> = Vec::new();
+    for a in &args[1..] {
+        if a == "--stamp-removals" {
+            stamp_removals = true;
+        } else if a.starts_with('-') {
+            eprintln!("error: unknown flag: {a}");
+            std::process::exit(1);
+        } else {
+            positional.push(a.as_str());
+        }
+    }
+
+    if positional.is_empty() {
         eprintln!("Usage:");
         eprintln!(
-            "  {} <openrpc_file> [output_file]                     # Convert OpenRPC to IR",
+            "  {} [--stamp-removals] <openrpc_file> [output_file]  # Convert OpenRPC to IR",
             args[0]
         );
         eprintln!("  {} <version> [output_file]                         # Extract version-specific IR from canonical IR", args[0]);
         eprintln!();
+        eprintln!(
+            "  --stamp-removals  On canonical IR update, stamp version_removed for dump omissions"
+        );
+        eprintln!("                   (trusted full dumps only; just sync enables this).");
+        eprintln!();
         eprintln!("Examples:");
         eprintln!("  {} openrpc.json output.ir.json", args[0]);
+        eprintln!("  {} --stamp-removals openrpc.json resources/ir/bitcoin.ir.json", args[0]);
         eprintln!("  {} 30.2", args[0]);
         eprintln!("  {} 30.2 v30_2_0_bitcoin.ir.json", args[0]);
         std::process::exit(1);
     }
 
-    let first_arg = &args[1];
+    let first_arg = positional[0];
 
     // Check if first argument is a version string (contains only digits and dots, or starts with 'v')
     let is_version =
         first_arg.trim_start_matches('v').chars().all(|c| c.is_ascii_digit() || c == '.');
 
     if is_version {
+        if stamp_removals {
+            eprintln!("error: --stamp-removals only applies to OpenRPC → IR conversion");
+            std::process::exit(1);
+        }
         // Mode 2: Extract version-specific IR from canonical IR
         let version = first_arg.trim_start_matches('v');
         let project_root = find_project_root()?;
@@ -3534,8 +3827,8 @@ pub fn run(args: &[String]) -> Result<(), Box<dyn std::error::Error>> {
         let canonical_ir = ProtocolIR::from_file(&canonical_ir_path)?;
         let version_ir = extract_version_ir(canonical_ir, version);
 
-        let output_file = if args.len() >= 3 {
-            PathBuf::from(&args[2])
+        let output_file = if positional.len() >= 2 {
+            PathBuf::from(positional[1])
         } else {
             get_ir_dir()?.join(version_ir_filename(version, "bitcoin"))
         };
@@ -3551,8 +3844,8 @@ pub fn run(args: &[String]) -> Result<(), Box<dyn std::error::Error>> {
 
         let project_root = find_project_root()?;
         let canonical_ir_path = canonical_bitcoin_ir_path(&project_root);
-        let output_file = if args.len() >= 3 {
-            PathBuf::from(&args[2])
+        let output_file = if positional.len() >= 2 {
+            PathBuf::from(positional[1])
         } else {
             get_ir_dir()?.join(version_ir_filename(&version, "bitcoin"))
         };
@@ -3560,14 +3853,24 @@ pub fn run(args: &[String]) -> Result<(), Box<dyn std::error::Error>> {
         let writing_canonical = output_resolved == canonical_ir_path;
 
         if writing_canonical {
-            update_canonical_ir_from_openrpc(&output_resolved, doc, &version)?;
+            update_canonical_ir_from_openrpc(&output_resolved, doc, &version, stamp_removals)?;
         } else {
+            if stamp_removals {
+                eprintln!(
+                    "error: --stamp-removals requires writing canonical IR ({})",
+                    canonical_ir_path.display()
+                );
+                std::process::exit(1);
+            }
             let protocol_ir = convert_to_protocol_ir_with_version(doc, Some(version.clone()));
             protocol_ir.to_file(&output_resolved)?;
         }
 
         println!("✓ Converted OpenRPC to IR: {}", output_resolved.display());
         println!("  Version: {}", version);
+        if stamp_removals {
+            println!("  stamp_removals: on");
+        }
     }
 
     Ok(())

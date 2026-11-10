@@ -42,11 +42,12 @@ check: lint
 
 # --- private helpers (loop_openrpc.sh) ---
 
-_ir input output="":
+# Extra flags (e.g. --stamp-removals) go after positional paths for process_bitcoin_openrpc.
+_ir input output="" *flags:
     @if [ -z "{{output}}" ]; then \
-        cargo run {{RELEASE}} -p ethos-adapters --bin process_bitcoin_openrpc -- {{input}}; \
+        cargo run {{RELEASE}} -p ethos-adapters --bin process_bitcoin_openrpc -- {{flags}} {{input}}; \
     else \
-        cargo run {{RELEASE}} -p ethos-adapters --bin process_bitcoin_openrpc -- {{input}} {{output}}; \
+        cargo run {{RELEASE}} -p ethos-adapters --bin process_bitcoin_openrpc -- {{flags}} {{input}} {{output}}; \
     fi
 
 _audit-fidelity input="resources/ir/openrpc.json" report="resources/reports/openrpc_type_fidelity_report.json":
