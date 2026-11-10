@@ -116,7 +116,7 @@
           "schema": {
             "type": "string"
           },
-          "description": "Type of connection to open (\"outbound-full-relay\", \"block-relay-only\", \"addr-fetch\" or \"feeler\")."
+          "description": "Type of connection to open (\"outbound-full-relay\", \"block-relay-only\", \"addr-fetch\", \"feeler\" or \"manual\")."
         },
         {
           "name": "v2transport",
@@ -184,7 +184,7 @@
     },
     {
       "name": "addnode",
-      "description": "Attempts to add or remove a node from the addnode list.\nOr try a connection to a node once.\nNodes added using addnode (or -connect) are protected from DoS disconnection and are not required to be\nfull nodes/support SegWit as other outbound peers are (though such peers will not be synced from).\nAddnode connections are limited to 8 at a time and are counted separately from the -maxconnections limit.",
+      "description": "Attempts to add or remove a node from the addnode list.\nOr try a connection to a node once.\nNodes added using addnode (or -connect) are protected from DoS disconnection and IBD block stalling\ndisconnection, and are not required to be full nodes or support SegWit as other outbound peers are (though\nsuch peers will not be synced from).\nAddnode connections are limited to 8 at a time and are counted separately from the -maxconnections limit.",
       "params": [
         {
           "name": "node",
