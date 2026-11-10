@@ -12696,7 +12696,7 @@
           "schema": {
             "type": "object",
             "properties": {
-              "minimumAmount": {
+              "minimum_amount": {
                 "oneOf": [
                   {
                     "type": "number"
@@ -12708,7 +12708,7 @@
                 "default": "0.00",
                 "description": "Minimum value of each UTXO in BTC"
               },
-              "maximumAmount": {
+              "maximum_amount": {
                 "oneOf": [
                   {
                     "type": "number"
@@ -12720,12 +12720,12 @@
                 "x-bitcoin-default-hint": "unlimited",
                 "description": "Maximum value of each UTXO in BTC"
               },
-              "maximumCount": {
+              "maximum_count": {
                 "type": "number",
                 "x-bitcoin-default-hint": "unlimited",
                 "description": "Maximum number of UTXOs"
               },
-              "minimumSumAmount": {
+              "minimum_sum_amount": {
                 "oneOf": [
                   {
                     "type": "number"

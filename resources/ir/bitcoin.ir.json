@@ -36178,7 +36178,7 @@
                     },
                     {
                       "key": {
-                        "Named": "maximumAmount"
+                        "Named": "maximum_amount"
                       },
                       "field_type": {
                         "name": "query_optionsMaximumAmount",
@@ -36223,7 +36223,7 @@
                     },
                     {
                       "key": {
-                        "Named": "maximumCount"
+                        "Named": "maximum_count"
                       },
                       "field_type": {
                         "name": "number",
@@ -36240,7 +36240,7 @@
                     },
                     {
                       "key": {
-                        "Named": "minimumAmount"
+                        "Named": "minimum_amount"
                       },
                       "field_type": {
                         "name": "query_optionsMinimumAmount",
@@ -36285,7 +36285,7 @@
                     },
                     {
                       "key": {
-                        "Named": "minimumSumAmount"
+                        "Named": "minimum_sum_amount"
                       },
                       "field_type": {
                         "name": "query_optionsMinimumSumAmount",
