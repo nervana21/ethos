@@ -12444,7 +12444,7 @@
         {
           "RpcMethod": {
             "name": "getaddrmaninfo",
-            "description": "Provides information about the node's address manager by returning the number of addresses in the `new` and `tried` tables and their sum for all networks.",
+            "description": "Provides information about the node's address manager by returning the number of unique addresses in the `new` and `tried` tables and their sum for all networks.",
             "params": [],
             "result": {
               "name": "GetAddrManInfoResultMap",
@@ -12466,7 +12466,7 @@
                     },
                     "field_type": {
                       "name": "number",
-                      "description": "number of addresses in the new table, which represent potential peers the node has discovered but hasn't yet successfully connected to.",
+                      "description": "number of unique addresses in the new table, which represent potential peers the node has discovered but hasn't yet successfully connected to. An address can be stored in multiple new table buckets but is counted only once.",
                       "kind": "Primitive",
                       "fields": null,
                       "variants": null,
@@ -12474,7 +12474,7 @@
                       "protocol_type": "number"
                     },
                     "required": true,
-                    "description": "number of addresses in the new table, which represent potential peers the node has discovered but hasn't yet successfully connected to.",
+                    "description": "number of unique addresses in the new table, which represent potential peers the node has discovered but hasn't yet successfully connected to. An address can be stored in multiple new table buckets but is counted only once.",
                     "default_value": null
                   },
                   {
@@ -12483,7 +12483,7 @@
                     },
                     "field_type": {
                       "name": "number",
-                      "description": "total number of addresses in both new/tried tables",
+                      "description": "total number of unique addresses in both new/tried tables",
                       "kind": "Primitive",
                       "fields": null,
                       "variants": null,
@@ -12491,7 +12491,7 @@
                       "protocol_type": "number"
                     },
                     "required": true,
-                    "description": "total number of addresses in both new/tried tables",
+                    "description": "total number of unique addresses in both new/tried tables",
                     "default_value": null
                   },
                   {
