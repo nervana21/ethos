@@ -19,7 +19,7 @@ _default:
     @echo "  check           lint, dump audits, workspace tests"
     @echo ""
     @echo "Flags for sync/client: --skip-build --skip-dump --skip-client --dance --stage --no-hidden"
-    @echo "sync uses corpus/bitcoin/build_ethos (not build_kernel); refuses slim/feature-stripped caches"
+    @echo "sync uses $HOME/bitcoin/build_ethos (not build_kernel); refuses slim/feature-stripped caches"
     @echo "Also: fmt lint docsrs corpus-pull"
 
 # --- public ---
