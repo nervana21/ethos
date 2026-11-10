@@ -14774,7 +14774,7 @@
                 },
                 "fee_reason": {
                   "type": "string",
-                  "description": "The reason the wallet selected this fee rate (e.g. fee rate estimator, mempool minimum, fallback, or minimum required)."
+                  "description": "The reason the wallet selected this fee rate (\"Fee Rate Estimator\", \"Mempool Min Fee\", \"User Specified Fee\", \"Fallback fee\", \"Minimum Required Fee\")."
                 }
               },
               "additionalProperties": false,
@@ -15017,7 +15017,7 @@
                 },
                 "fee_reason": {
                   "type": "string",
-                  "description": "The reason the wallet selected this fee rate (e.g. fee rate estimator, mempool minimum, fallback, or minimum required)."
+                  "description": "The reason the wallet selected this fee rate (\"Fee Rate Estimator\", \"Mempool Min Fee\", \"User Specified Fee\", \"Fallback fee\", \"Minimum Required Fee\")."
                 }
               },
               "additionalProperties": false,

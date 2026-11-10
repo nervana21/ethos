@@ -41724,7 +41724,7 @@
                         },
                         "field_type": {
                           "name": "string",
-                          "description": "The reason the wallet selected this fee rate (e.g. fee rate estimator, mempool minimum, fallback, or minimum required).",
+                          "description": "The reason the wallet selected this fee rate (\"Fee Rate Estimator\", \"Mempool Min Fee\", \"User Specified Fee\", \"Fallback fee\", \"Minimum Required Fee\").",
                           "kind": "Primitive",
                           "fields": null,
                           "variants": null,
@@ -41732,7 +41732,7 @@
                           "protocol_type": "string"
                         },
                         "required": true,
-                        "description": "The reason the wallet selected this fee rate (e.g. fee rate estimator, mempool minimum, fallback, or minimum required).",
+                        "description": "The reason the wallet selected this fee rate (\"Fee Rate Estimator\", \"Mempool Min Fee\", \"User Specified Fee\", \"Fallback fee\", \"Minimum Required Fee\").",
                         "default_value": null
                       },
                       {
@@ -42223,7 +42223,7 @@
                         },
                         "field_type": {
                           "name": "string",
-                          "description": "The reason the wallet selected this fee rate (e.g. fee rate estimator, mempool minimum, fallback, or minimum required).",
+                          "description": "The reason the wallet selected this fee rate (\"Fee Rate Estimator\", \"Mempool Min Fee\", \"User Specified Fee\", \"Fallback fee\", \"Minimum Required Fee\").",
                           "kind": "Primitive",
                           "fields": null,
                           "variants": null,
@@ -42231,7 +42231,7 @@
                           "protocol_type": "string"
                         },
                         "required": true,
-                        "description": "The reason the wallet selected this fee rate (e.g. fee rate estimator, mempool minimum, fallback, or minimum required).",
+                        "description": "The reason the wallet selected this fee rate (\"Fee Rate Estimator\", \"Mempool Min Fee\", \"User Specified Fee\", \"Fallback fee\", \"Minimum Required Fee\").",
                         "default_value": null
                       },
                       {
