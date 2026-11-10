@@ -25192,6 +25192,23 @@
                       },
                       {
                         "key": {
+                          "Named": "last_block_announcement"
+                        },
+                        "field_type": {
+                          "name": "timestamp",
+                          "description": "The UNIX epoch time this peer was first to announce a block",
+                          "kind": "Primitive",
+                          "fields": null,
+                          "variants": null,
+                          "base_type": null,
+                          "protocol_type": "timestamp"
+                        },
+                        "required": true,
+                        "description": "The UNIX epoch time this peer was first to announce a block",
+                        "default_value": null
+                      },
+                      {
+                        "key": {
                           "Named": "last_inv_sequence"
                         },
                         "field_type": {

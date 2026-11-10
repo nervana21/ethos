@@ -8840,6 +8840,11 @@
                 "x-bitcoin-unit": "unix-time",
                 "description": "The UNIX epoch time of the last block received from this peer"
               },
+              "last_block_announcement": {
+                "type": "number",
+                "x-bitcoin-unit": "unix-time",
+                "description": "The UNIX epoch time this peer was first to announce a block"
+              },
               "bytessent": {
                 "type": "number",
                 "description": "The total bytes sent"
@@ -8970,6 +8975,7 @@
               "lastrecv",
               "last_transaction",
               "last_block",
+              "last_block_announcement",
               "bytessent",
               "bytesrecv",
               "conntime",
