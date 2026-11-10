@@ -107,7 +107,13 @@ fn load_wire_registry(path: &Path) -> Result<WireSchemaRegistry, String> {
     WireSchemaRegistry::from_openrpc_document(&document)
 }
 
-fn corpus_bitcoind() -> PathBuf { repo_root().join("corpus/bitcoin/build/bin/bitcoind") }
+fn corpus_bitcoind() -> PathBuf {
+    if let Ok(home) = std::env::var("HOME") {
+        return PathBuf::from(home).join("bitcoin/build/bin/bitcoind");
+    }
+    // Phase A bridge. corpus/bitcoin may still be a symlink to ~/bitcoin.
+    repo_root().join("corpus/bitcoin/build/bin/bitcoind")
+}
 
 fn resolve_bitcoind(explicit: Option<PathBuf>) -> Result<PathBuf, String> {
     let try_path = |path: &Path| -> Option<PathBuf> {
@@ -477,17 +483,9 @@ async fn run_smoke(
                 continue;
             };
             let params = build_params(rpc, &seed, pool, recycle, None, false);
-            if let Some(r) = classify_call(
-                name,
-                ir,
-                params,
-                session,
-                pool,
-                args.verbose,
-                raw,
-                wire_registry,
-            )
-            .await
+            if let Some(r) =
+                classify_call(name, ir, params, session, pool, args.verbose, raw, wire_registry)
+                    .await
             {
                 reports.push(r);
             }
@@ -506,17 +504,9 @@ async fn run_smoke(
         };
         let seed = &buf[1..];
         let params = build_params(rpc, seed, pool, recycle, None, false);
-        if let Some(r) = classify_call(
-            &rpc.name,
-            ir,
-            params,
-            session,
-            pool,
-            args.verbose,
-            raw,
-            wire_registry,
-        )
-        .await
+        if let Some(r) =
+            classify_call(&rpc.name, ir, params, session, pool, args.verbose, raw, wire_registry)
+                .await
         {
             reports.push(r);
         }
@@ -588,17 +578,9 @@ async fn run_continuous(
         let params = build_params(rpc, seed, pool, recycle, prev, mutate);
         last_params.insert(rpc.name.clone(), params.clone());
 
-        let Some(report) = classify_call(
-            &rpc.name,
-            ir,
-            params,
-            session,
-            pool,
-            args.verbose,
-            raw,
-            wire_registry,
-        )
-        .await
+        let Some(report) =
+            classify_call(&rpc.name, ir, params, session, pool, args.verbose, raw, wire_registry)
+                .await
         else {
             continue;
         };
