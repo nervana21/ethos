@@ -22530,6 +22530,23 @@
               "fields": [
                 {
                   "key": {
+                    "Named": "bestblockhash"
+                  },
+                  "field_type": {
+                    "name": "hex",
+                    "description": "The hash of the current best block",
+                    "kind": "Primitive",
+                    "fields": null,
+                    "variants": null,
+                    "base_type": null,
+                    "protocol_type": "hex"
+                  },
+                  "required": true,
+                  "description": "The hash of the current best block",
+                  "default_value": null
+                },
+                {
+                  "key": {
                     "Named": "bits"
                   },
                   "field_type": {

@@ -7975,6 +7975,11 @@
               "type": "number",
               "description": "The current block"
             },
+            "bestblockhash": {
+              "type": "string",
+              "pattern": "^([0-9a-fA-F]{2})*$",
+              "description": "The hash of the current best block"
+            },
             "currentblockweight": {
               "type": "number",
               "description": "The block weight (including reserved weight for block header, txs count and coinbase tx) of the last assembled block (only present if a block was ever assembled)"
@@ -8061,6 +8066,7 @@
           "additionalProperties": false,
           "required": [
             "blocks",
+            "bestblockhash",
             "bits",
             "difficulty",
             "target",
