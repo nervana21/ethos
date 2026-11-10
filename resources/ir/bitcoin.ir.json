@@ -29652,7 +29652,7 @@
                   },
                   "field_type": {
                     "name": "hex",
-                    "description": "Only if 'category' is 'send'. The txid if this tx was replaced.",
+                    "description": "The txid of the transaction that replaced this one.",
                     "kind": "Primitive",
                     "fields": null,
                     "variants": null,
@@ -29660,7 +29660,7 @@
                     "protocol_type": "hex"
                   },
                   "required": false,
-                  "description": "Only if 'category' is 'send'. The txid if this tx was replaced.",
+                  "description": "The txid of the transaction that replaced this one.",
                   "default_value": null
                 },
                 {
@@ -29669,7 +29669,7 @@
                   },
                   "field_type": {
                     "name": "hex",
-                    "description": "Only if 'category' is 'send'. The txid if this tx replaces another.",
+                    "description": "The txid of the transaction that this one replaces.",
                     "kind": "Primitive",
                     "fields": null,
                     "variants": null,
@@ -29677,7 +29677,7 @@
                     "protocol_type": "hex"
                   },
                   "required": false,
-                  "description": "Only if 'category' is 'send'. The txid if this tx replaces another.",
+                  "description": "The txid of the transaction that this one replaces.",
                   "default_value": null
                 },
                 {
@@ -33549,7 +33549,7 @@
                               },
                               "field_type": {
                                 "name": "hex",
-                                "description": "Only if 'category' is 'send'. The txid if this tx was replaced.",
+                                "description": "The txid of the transaction that replaced this one.",
                                 "kind": "Primitive",
                                 "fields": null,
                                 "variants": null,
@@ -33557,7 +33557,7 @@
                                 "protocol_type": "hex"
                               },
                               "required": false,
-                              "description": "Only if 'category' is 'send'. The txid if this tx was replaced.",
+                              "description": "The txid of the transaction that replaced this one.",
                               "default_value": null
                             },
                             {
@@ -33566,7 +33566,7 @@
                               },
                               "field_type": {
                                 "name": "hex",
-                                "description": "Only if 'category' is 'send'. The txid if this tx replaces another.",
+                                "description": "The txid of the transaction that this one replaces.",
                                 "kind": "Primitive",
                                 "fields": null,
                                 "variants": null,
@@ -33574,7 +33574,7 @@
                                 "protocol_type": "hex"
                               },
                               "required": false,
-                              "description": "Only if 'category' is 'send'. The txid if this tx replaces another.",
+                              "description": "The txid of the transaction that this one replaces.",
                               "default_value": null
                             },
                             {
@@ -34122,7 +34122,7 @@
                               },
                               "field_type": {
                                 "name": "hex",
-                                "description": "Only if 'category' is 'send'. The txid if this tx was replaced.",
+                                "description": "The txid of the transaction that replaced this one.",
                                 "kind": "Primitive",
                                 "fields": null,
                                 "variants": null,
@@ -34130,7 +34130,7 @@
                                 "protocol_type": "hex"
                               },
                               "required": false,
-                              "description": "Only if 'category' is 'send'. The txid if this tx was replaced.",
+                              "description": "The txid of the transaction that replaced this one.",
                               "default_value": null
                             },
                             {
@@ -34139,7 +34139,7 @@
                               },
                               "field_type": {
                                 "name": "hex",
-                                "description": "Only if 'category' is 'send'. The txid if this tx replaces another.",
+                                "description": "The txid of the transaction that this one replaces.",
                                 "kind": "Primitive",
                                 "fields": null,
                                 "variants": null,
@@ -34147,7 +34147,7 @@
                                 "protocol_type": "hex"
                               },
                               "required": false,
-                              "description": "Only if 'category' is 'send'. The txid if this tx replaces another.",
+                              "description": "The txid of the transaction that this one replaces.",
                               "default_value": null
                             },
                             {
@@ -34769,7 +34769,7 @@
                         },
                         "field_type": {
                           "name": "hex",
-                          "description": "Only if 'category' is 'send'. The txid if this tx was replaced.",
+                          "description": "The txid of the transaction that replaced this one.",
                           "kind": "Primitive",
                           "fields": null,
                           "variants": null,
@@ -34777,7 +34777,7 @@
                           "protocol_type": "hex"
                         },
                         "required": false,
-                        "description": "Only if 'category' is 'send'. The txid if this tx was replaced.",
+                        "description": "The txid of the transaction that replaced this one.",
                         "default_value": null
                       },
                       {
@@ -34786,7 +34786,7 @@
                         },
                         "field_type": {
                           "name": "hex",
-                          "description": "Only if 'category' is 'send'. The txid if this tx replaces another.",
+                          "description": "The txid of the transaction that this one replaces.",
                           "kind": "Primitive",
                           "fields": null,
                           "variants": null,
@@ -34794,7 +34794,7 @@
                           "protocol_type": "hex"
                         },
                         "required": false,
-                        "description": "Only if 'category' is 'send'. The txid if this tx replaces another.",
+                        "description": "The txid of the transaction that this one replaces.",
                         "default_value": null
                       },
                       {

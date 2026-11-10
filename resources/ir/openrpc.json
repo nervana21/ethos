@@ -10135,12 +10135,12 @@
             "replaced_by_txid": {
               "type": "string",
               "pattern": "^([0-9a-fA-F]{2})*$",
-              "description": "Only if 'category' is 'send'. The txid if this tx was replaced."
+              "description": "The txid of the transaction that replaced this one."
             },
             "replaces_txid": {
               "type": "string",
               "pattern": "^([0-9a-fA-F]{2})*$",
-              "description": "Only if 'category' is 'send'. The txid if this tx replaces another."
+              "description": "The txid of the transaction that this one replaces."
             },
             "mempoolconflicts": {
               "type": "array",
@@ -11852,12 +11852,12 @@
                   "replaced_by_txid": {
                     "type": "string",
                     "pattern": "^([0-9a-fA-F]{2})*$",
-                    "description": "Only if 'category' is 'send'. The txid if this tx was replaced."
+                    "description": "The txid of the transaction that replaced this one."
                   },
                   "replaces_txid": {
                     "type": "string",
                     "pattern": "^([0-9a-fA-F]{2})*$",
-                    "description": "Only if 'category' is 'send'. The txid if this tx replaces another."
+                    "description": "The txid of the transaction that this one replaces."
                   },
                   "mempoolconflicts": {
                     "type": "array",
@@ -12008,12 +12008,12 @@
                   "replaced_by_txid": {
                     "type": "string",
                     "pattern": "^([0-9a-fA-F]{2})*$",
-                    "description": "Only if 'category' is 'send'. The txid if this tx was replaced."
+                    "description": "The txid of the transaction that replaced this one."
                   },
                   "replaces_txid": {
                     "type": "string",
                     "pattern": "^([0-9a-fA-F]{2})*$",
-                    "description": "Only if 'category' is 'send'. The txid if this tx replaces another."
+                    "description": "The txid of the transaction that this one replaces."
                   },
                   "mempoolconflicts": {
                     "type": "array",
@@ -12226,12 +12226,12 @@
               "replaced_by_txid": {
                 "type": "string",
                 "pattern": "^([0-9a-fA-F]{2})*$",
-                "description": "Only if 'category' is 'send'. The txid if this tx was replaced."
+                "description": "The txid of the transaction that replaced this one."
               },
               "replaces_txid": {
                 "type": "string",
                 "pattern": "^([0-9a-fA-F]{2})*$",
-                "description": "Only if 'category' is 'send'. The txid if this tx replaces another."
+                "description": "The txid of the transaction that this one replaces."
               },
               "mempoolconflicts": {
                 "type": "array",
