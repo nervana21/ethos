@@ -16150,18 +16150,18 @@
           "required": false,
           "schema": {
             "type": "number",
-            "x-bitcoin-default-hint": "3, range=0-4"
+            "default": 3
           },
-          "description": "How thorough the block verification is:\n- level 0 reads the blocks from disk\n- level 1 verifies block validity\n- level 2 verifies undo data\n- level 3 checks disconnection of tip blocks\n- level 4 tries to reconnect the blocks\n- each level includes the checks of the previous levels"
+          "description": "How thorough the block verification is (range 0-4):\n- level 0 reads the blocks from disk\n- level 1 verifies block validity\n- level 2 verifies undo data\n- level 3 checks disconnection of tip blocks\n- level 4 tries to reconnect the blocks\n- each level includes the checks of the previous levels"
         },
         {
           "name": "nblocks",
           "required": false,
           "schema": {
             "type": "number",
-            "x-bitcoin-default-hint": "6, 0=all"
+            "default": 6
           },
-          "description": "The number of blocks to check."
+          "description": "The number of blocks to check (0=all)."
         }
       ],
       "result": {

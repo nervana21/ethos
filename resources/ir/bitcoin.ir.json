@@ -45114,7 +45114,7 @@
                 "name": "checklevel",
                 "param_type": {
                   "name": "number",
-                  "description": "How thorough the block verification is:\n- level 0 reads the blocks from disk\n- level 1 verifies block validity\n- level 2 verifies undo data\n- level 3 checks disconnection of tip blocks\n- level 4 tries to reconnect the blocks\n- each level includes the checks of the previous levels",
+                  "description": "How thorough the block verification is (range 0-4):\n- level 0 reads the blocks from disk\n- level 1 verifies block validity\n- level 2 verifies undo data\n- level 3 checks disconnection of tip blocks\n- level 4 tries to reconnect the blocks\n- each level includes the checks of the previous levels",
                   "kind": "Primitive",
                   "fields": null,
                   "variants": null,
@@ -45122,14 +45122,14 @@
                   "protocol_type": "number"
                 },
                 "required": false,
-                "description": "How thorough the block verification is:\n- level 0 reads the blocks from disk\n- level 1 verifies block validity\n- level 2 verifies undo data\n- level 3 checks disconnection of tip blocks\n- level 4 tries to reconnect the blocks\n- each level includes the checks of the previous levels",
-                "default_value": "3, range=0-4"
+                "description": "How thorough the block verification is (range 0-4):\n- level 0 reads the blocks from disk\n- level 1 verifies block validity\n- level 2 verifies undo data\n- level 3 checks disconnection of tip blocks\n- level 4 tries to reconnect the blocks\n- each level includes the checks of the previous levels",
+                "default_value": "3"
               },
               {
                 "name": "nblocks",
                 "param_type": {
                   "name": "number",
-                  "description": "The number of blocks to check.",
+                  "description": "The number of blocks to check (0=all).",
                   "kind": "Primitive",
                   "fields": null,
                   "variants": null,
@@ -45137,8 +45137,8 @@
                   "protocol_type": "number"
                 },
                 "required": false,
-                "description": "The number of blocks to check.",
-                "default_value": "6, 0=all"
+                "description": "The number of blocks to check (0=all).",
+                "default_value": "6"
               }
             ],
             "result": {
