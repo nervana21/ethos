@@ -10274,7 +10274,7 @@
         {
           "RpcMethod": {
             "name": "fundrawtransaction",
-            "description": "If the transaction has no inputs, they will be automatically selected to meet its out value.\nIt will add at most one change output to the outputs.\nNo existing outputs will be modified unless \"subtractFeeFromOutputs\" is specified.\nNote that inputs which were signed may need to be resigned after completion since in/outputs have been added.\nThe inputs added will not be signed, use signrawtransactionwithkey\nor signrawtransactionwithwallet for that.\nAll existing inputs must either have their previous output transaction be in the wallet\nor be in the UTXO set. Solving data must be provided for non-wallet inputs.\nNote that all inputs selected must be of standard form and P2SH scripts must be\nin the wallet using importdescriptors (to calculate fees).\nYou can see whether this is the case by checking the \"solvable\" field in the listunspent output.\nNote that if specifying an exact fee rate, the resulting transaction may have a higher fee rate\nif the transaction has unconfirmed inputs. This is because the wallet will attempt to make the\nentire package have the given fee rate, not the resulting transaction.",
+            "description": "If the transaction has no inputs, they will be automatically selected to meet its out value.\nIt will add at most one change output to the outputs.\nNo existing outputs will be modified unless \"subtract_fee_from_outputs\" is specified.\nNote that inputs which were signed may need to be resigned after completion since in/outputs have been added.\nThe inputs added will not be signed, use signrawtransactionwithkey\nor signrawtransactionwithwallet for that.\nAll existing inputs must either have their previous output transaction be in the wallet\nor be in the UTXO set. Solving data must be provided for non-wallet inputs.\nNote that all inputs selected must be of standard form and P2SH scripts must be\nin the wallet using importdescriptors (to calculate fees).\nYou can see whether this is the case by checking the \"solvable\" field in the listunspent output.\nNote that if specifying an exact fee rate, the resulting transaction may have a higher fee rate\nif the transaction has unconfirmed inputs. This is because the wallet will attempt to make the\nentire package have the given fee rate, not the resulting transaction.",
             "params": [
               {
                 "name": "hexstring",
@@ -10317,7 +10317,7 @@
                     },
                     {
                       "key": {
-                        "Named": "changeAddress"
+                        "Named": "change_address"
                       },
                       "field_type": {
                         "name": "string",
@@ -10334,7 +10334,7 @@
                     },
                     {
                       "key": {
-                        "Named": "changePosition"
+                        "Named": "change_position"
                       },
                       "field_type": {
                         "name": "number",
@@ -10613,7 +10613,7 @@
                     },
                     {
                       "key": {
-                        "Named": "lockUnspents"
+                        "Named": "lock_unspents"
                       },
                       "field_type": {
                         "name": "boolean",
@@ -10821,11 +10821,11 @@
                     },
                     {
                       "key": {
-                        "Named": "subtractFeeFromOutputs"
+                        "Named": "subtract_fee_from_outputs"
                       },
                       "field_type": {
                         "name": "array",
-                        "description": "The integers.\nThe fee will be equally deducted from the amount of each specified output.\nThose recipients will receive less bitcoins than you enter in their corresponding amount field.\nIf no outputs are specified here, the sender pays the fee.",
+                        "description": "The output indices to subtract the fee from.\nThe fee will be equally deducted from the amount of each specified output.\nThose recipients will receive less bitcoins than you enter in their corresponding amount field.\nIf no outputs are specified here, the sender pays the fee.",
                         "kind": "Array",
                         "fields": [
                           {
@@ -10834,7 +10834,7 @@
                             },
                             "field_type": {
                               "name": "number",
-                              "description": "The integers.\nThe fee will be equally deducted from the amount of each specified output.\nThose recipients will receive less bitcoins than you enter in their corresponding amount field.\nIf no outputs are specified here, the sender pays the fee.",
+                              "description": "The output indices to subtract the fee from.\nThe fee will be equally deducted from the amount of each specified output.\nThose recipients will receive less bitcoins than you enter in their corresponding amount field.\nIf no outputs are specified here, the sender pays the fee.",
                               "kind": "Primitive",
                               "fields": null,
                               "variants": null,
@@ -10851,7 +10851,7 @@
                         "protocol_type": "array"
                       },
                       "required": false,
-                      "description": "The integers.\nThe fee will be equally deducted from the amount of each specified output.\nThose recipients will receive less bitcoins than you enter in their corresponding amount field.\nIf no outputs are specified here, the sender pays the fee.",
+                      "description": "The output indices to subtract the fee from.\nThe fee will be equally deducted from the amount of each specified output.\nThose recipients will receive less bitcoins than you enter in their corresponding amount field.\nIf no outputs are specified here, the sender pays the fee.",
                       "default_value": null
                     }
                   ],
@@ -45833,7 +45833,7 @@
                     },
                     {
                       "key": {
-                        "Named": "changeAddress"
+                        "Named": "change_address"
                       },
                       "field_type": {
                         "name": "string",
@@ -45850,7 +45850,7 @@
                     },
                     {
                       "key": {
-                        "Named": "changePosition"
+                        "Named": "change_position"
                       },
                       "field_type": {
                         "name": "number",
@@ -46042,7 +46042,7 @@
                     },
                     {
                       "key": {
-                        "Named": "lockUnspents"
+                        "Named": "lock_unspents"
                       },
                       "field_type": {
                         "name": "boolean",
@@ -46250,7 +46250,7 @@
                     },
                     {
                       "key": {
-                        "Named": "subtractFeeFromOutputs"
+                        "Named": "subtract_fee_from_outputs"
                       },
                       "field_type": {
                         "name": "array",

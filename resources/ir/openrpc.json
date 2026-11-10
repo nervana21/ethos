@@ -3724,7 +3724,7 @@
     },
     {
       "name": "fundrawtransaction",
-      "description": "If the transaction has no inputs, they will be automatically selected to meet its out value.\nIt will add at most one change output to the outputs.\nNo existing outputs will be modified unless \"subtractFeeFromOutputs\" is specified.\nNote that inputs which were signed may need to be resigned after completion since in/outputs have been added.\nThe inputs added will not be signed, use signrawtransactionwithkey\nor signrawtransactionwithwallet for that.\nAll existing inputs must either have their previous output transaction be in the wallet\nor be in the UTXO set. Solving data must be provided for non-wallet inputs.\nNote that all inputs selected must be of standard form and P2SH scripts must be\nin the wallet using importdescriptors (to calculate fees).\nYou can see whether this is the case by checking the \"solvable\" field in the listunspent output.\nNote that if specifying an exact fee rate, the resulting transaction may have a higher fee rate\nif the transaction has unconfirmed inputs. This is because the wallet will attempt to make the\nentire package have the given fee rate, not the resulting transaction.",
+      "description": "If the transaction has no inputs, they will be automatically selected to meet its out value.\nIt will add at most one change output to the outputs.\nNo existing outputs will be modified unless \"subtract_fee_from_outputs\" is specified.\nNote that inputs which were signed may need to be resigned after completion since in/outputs have been added.\nThe inputs added will not be signed, use signrawtransactionwithkey\nor signrawtransactionwithwallet for that.\nAll existing inputs must either have their previous output transaction be in the wallet\nor be in the UTXO set. Solving data must be provided for non-wallet inputs.\nNote that all inputs selected must be of standard form and P2SH scripts must be\nin the wallet using importdescriptors (to calculate fees).\nYou can see whether this is the case by checking the \"solvable\" field in the listunspent output.\nNote that if specifying an exact fee rate, the resulting transaction may have a higher fee rate\nif the transaction has unconfirmed inputs. This is because the wallet will attempt to make the\nentire package have the given fee rate, not the resulting transaction.",
       "params": [
         {
           "name": "hexstring",
@@ -3760,12 +3760,12 @@
                 "type": "number",
                 "description": "If add_inputs is specified, require inputs with at most this many confirmations."
               },
-              "changeAddress": {
+              "change_address": {
                 "type": "string",
                 "x-bitcoin-default-hint": "automatic",
                 "description": "The bitcoin address to receive the change"
               },
-              "changePosition": {
+              "change_position": {
                 "type": "number",
                 "x-bitcoin-default-hint": "random",
                 "description": "The index of the change output"
@@ -3780,7 +3780,7 @@
                 "default": false,
                 "description": "(DEPRECATED) No longer used"
               },
-              "lockUnspents": {
+              "lock_unspents": {
                 "type": "boolean",
                 "default": false,
                 "description": "Lock selected unspent outputs"
@@ -3809,13 +3809,13 @@
                 "x-bitcoin-default-hint": "not set, fall back to wallet fee estimation",
                 "description": "Specify a fee rate in BTC/kvB."
               },
-              "subtractFeeFromOutputs": {
+              "subtract_fee_from_outputs": {
                 "type": "array",
                 "items": {
                   "type": "number"
                 },
                 "default": [],
-                "description": "The integers.\nThe fee will be equally deducted from the amount of each specified output.\nThose recipients will receive less bitcoins than you enter in their corresponding amount field.\nIf no outputs are specified here, the sender pays the fee."
+                "description": "The output indices to subtract the fee from.\nThe fee will be equally deducted from the amount of each specified output.\nThose recipients will receive less bitcoins than you enter in their corresponding amount field.\nIf no outputs are specified here, the sender pays the fee."
               },
               "input_weights": {
                 "type": "array",
@@ -16519,12 +16519,12 @@
                 "type": "number",
                 "description": "If add_inputs is specified, require inputs with at most this many confirmations."
               },
-              "changeAddress": {
+              "change_address": {
                 "type": "string",
                 "x-bitcoin-default-hint": "automatic",
                 "description": "The bitcoin address to receive the change"
               },
-              "changePosition": {
+              "change_position": {
                 "type": "number",
                 "x-bitcoin-default-hint": "random",
                 "description": "The index of the change output"
@@ -16539,7 +16539,7 @@
                 "default": false,
                 "description": "(DEPRECATED) No longer used"
               },
-              "lockUnspents": {
+              "lock_unspents": {
                 "type": "boolean",
                 "default": false,
                 "description": "Lock selected unspent outputs"
@@ -16568,7 +16568,7 @@
                 "x-bitcoin-default-hint": "not set, fall back to wallet fee estimation",
                 "description": "Specify a fee rate in BTC/kvB."
               },
-              "subtractFeeFromOutputs": {
+              "subtract_fee_from_outputs": {
                 "type": "array",
                 "items": {
                   "type": "number"
