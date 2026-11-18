@@ -4,14 +4,14 @@ version = "0.0.0"
 publish = false
 edition = "2021"
 
-[workspace]
-
 [package.metadata]
 cargo-fuzz = true
 
 [dependencies]
 ethos-fuzz = { path = ".." }
 libfuzzer-sys = "0.4"
+
+[workspace]
 
 [[bin]]
 name = "schema_oracle"
